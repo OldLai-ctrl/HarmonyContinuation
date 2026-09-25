@@ -2,12 +2,14 @@
 #include "plugin/RecommendationWorker.h"
 #include "session/ProductServices.h"
 #include "ui/MainView.h"
+#include "preview/OfflinePreviewRenderer.h"
 #include "vstgui/lib/cframe.h"
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <mmsystem.h>
 #include <chrono>
 #include <algorithm>
 #include <filesystem>
@@ -22,12 +24,13 @@ public:
     explicit DemoApp(std::filesystem::path executable)
         : factoryPath_(executable.parent_path()/"factory.db"),
           userPath_(userPath()),worker_(factoryPath_,userPath_) {}
-    ~DemoApp() { if (frame_) { frame_->close(); frame_=nullptr; main_=nullptr; } }
+    ~DemoApp() { stopAudition(); if (frame_) { frame_->close(); frame_=nullptr; main_=nullptr; } }
     static std::filesystem::path userPath() {
         wchar_t value[32768]{}; const auto n=GetEnvironmentVariableW(L"LOCALAPPDATA",value,32768);
         return n && n<32768?std::filesystem::path(value)/"HarmonyContinuation"/"user.db":std::filesystem::path("user.db");
     }
     bool open(HWND host) {
+        hostWindow_=GetParent(host);
         auto* factory=VSTGUI::getPlatformFactory().asWin32Factory();
         if (factory) { factory->disableDirectComposition(); factory->useD2DHardwareRenderer(false); }
         frame_=new VSTGUI::CFrame(VSTGUI::CRect(0,0,1100,900),nullptr);
@@ -36,6 +39,7 @@ public:
         actions.save=[this](const ContinuationCandidate& c,const session::SaveMetadata& meta) { return save(c,meta); };
         actions.updateUser=[this](const ProgressionTemplate& t) { return update(t); };
         actions.deleteUser=[this](const std::string& id) { return remove(id); };
+        actions.audition=[this](const ContinuationCandidate& c) { audition(c); };
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
         if (!frame_->open(host,VSTGUI::PlatformType::kHWND)) { frame_=nullptr; main_=nullptr; return false; }
@@ -43,6 +47,7 @@ public:
         loadLibrary(); return true;
     }
     bool load(char which) {
+        stopAudition();
         if (which<'A' || which>'H') return false;
         auto path=std::filesystem::path(HC_DEMO_FIXTURE_DIR)/(std::string("case_")+static_cast<char>(which-'A'+'a')+".json");
         auto loaded=demo::loadScenario(path);
@@ -71,11 +76,21 @@ public:
             projectQN_+=std::clamp(seconds,0.0,0.2)*scenario_.tempo/60.0;
             if (main_) main_->setPlaybackPosition(projectQN_,true);
         }
+        if (!auditionId_.empty()) {
+            const auto elapsed=std::chrono::duration<double>(now-auditionStart_).count();
+            if (elapsed>=auditionSeconds_+0.15) stopAudition();
+            else if (main_) main_->setPreviewPosition(auditionId_,elapsed*scenario_.tempo/60.0,auditionQN_);
+        }
     }
     void seek(double qn) { projectQN_=qn; if (main_) main_->setPlaybackPosition(projectQN_,playing_); }
     bool togglePlay() { playing_=!playing_; if (main_) main_->setPlaybackPosition(projectQN_,playing_); return playing_; }
     double projectQN() const { return projectQN_; }
 private:
+    HWND hostWindow_{};
+    std::filesystem::path auditionFile_;
+    std::string auditionId_;
+    double auditionSeconds_{},auditionQN_{};
+    std::chrono::steady_clock::time_point auditionStart_{};
     std::filesystem::path factoryPath_,userPath_;
     plugin::RecommendationWorker worker_;
     VSTGUI::CFrame* frame_{};
@@ -87,6 +102,34 @@ private:
     bool playing_{};
     double projectQN_{};
     std::chrono::steady_clock::time_point lastTick_{std::chrono::steady_clock::now()};
+    void stopAudition() {
+        PlaySoundW(nullptr,nullptr,0);
+        auditionId_.clear(); auditionSeconds_=auditionQN_=0;
+        if (main_) main_->setPreviewPosition({},0,0);
+        if (hostWindow_) SetTimer(hostWindow_,1,playing_?50:250,nullptr);
+        if (!auditionFile_.empty()) { std::error_code ec; std::filesystem::remove(auditionFile_,ec); auditionFile_.clear(); }
+    }
+    void audition(const ContinuationCandidate& candidate) {
+        if (candidate.id==auditionId_) { stopAudition(); return; }
+        stopAudition();
+        const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
+        if (!built) { if (main_) main_->setDropReport("Preview",built.error,false); return; }
+        const auto audio=preview::renderOffline(built.sequence,48000);
+        if (audio.left.empty()) { if (main_) main_->setDropReport("Preview","Render failed",false); return; }
+        auditionFile_=std::filesystem::temp_directory_path()/
+            ("HarmonyContinuationDemo-"+std::to_string(GetCurrentProcessId())+".wav");
+        std::string error;
+        if (!preview::writeWav16(audio,auditionFile_,error) ||
+            !PlaySoundW(auditionFile_.c_str(),nullptr,SND_ASYNC|SND_FILENAME|SND_NODEFAULT)) {
+            if (main_) main_->setDropReport("Preview",error.empty()?"Audio playback failed":error,false);
+            stopAudition(); return;
+        }
+        auditionId_=candidate.id; auditionQN_=built.sequence.totalQN;
+        auditionSeconds_=audio.left.size()/audio.sampleRate;
+        auditionStart_=std::chrono::steady_clock::now();
+        if (main_) main_->setPreviewPosition(auditionId_,0,auditionQN_);
+        if (hostWindow_) SetTimer(hostWindow_,1,40,nullptr);
+    }
     void submit(bool rankingOnly=false) {
         if (state_.imported.events.empty()) return;
         RecommendationRequest request{state_.style,state_.intent};

@@ -101,12 +101,21 @@ void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     recommendations_=r;
     if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected)) selectedCandidate_.reset();
+    const bool resolved=std::any_of(recommendations_.groups.begin(),recommendations_.groups.end(),
+        [](const auto& group){return !group.empty();});
+    const auto oldPins=state_.pinnedCandidateIds;
+    if (resolved) state_.resolvePins(recommendations_);
+    pinnedSnapshots_.clear();
     for (const auto& id:state_.pinnedCandidateIds) {
         const auto found=std::find_if(pinnedSnapshots_.begin(),pinnedSnapshots_.end(),[&](const auto& c){return c.id==id;});
         if (found==pinnedSnapshots_.end()) for (const auto& group:recommendations_.groups)
             for (const auto& candidate:group) if (candidate.id==id) { pinnedSnapshots_.push_back(candidate); break; }
     }
+    if (resolved && oldPins!=state_.pinnedCandidateIds && actions_.stateChanged) actions_.stateChanged(state_);
     invalid();
+}
+void MainView::setPreviewPosition(std::string id,double qn,double totalQN) {
+    previewCandidateId_=std::move(id); previewQN_=qn; previewTotalQN_=totalQN; invalid();
 }
 void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttempt) {
     rawText_=raw.substr(0,12000); parseText_=parsed.substr(0,8000);
@@ -122,6 +131,12 @@ void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<Progres
 }
 void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc) {
     generation_=g; computationMs_=ms; workerBusy_=busy;
+    if (!busy && std::all_of(recommendations_.groups.begin(),recommendations_.groups.end(),
+            [](const auto& group){return group.empty();}) && !state_.pinnedCandidateIds.empty()) {
+        state_.resolvePins(recommendations_);
+        pinnedSnapshots_.clear();
+        if (actions_.stateChanged) actions_.stateChanged(state_);
+    }
     if (fc) factoryCount_=fc; if (uc || !userCount_) userCount_=uc;
     invalidRect(CRect(690,60,1080,92));
 }
@@ -216,7 +231,7 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
-    const auto start=events.size()>3?events.size()-3:0;
+    const std::size_t start=0;
     double total{};
     for (std::size_t i=start;i<events.size();++i)
         total+=(i+1==events.size()?c.suggestedCurrentChordDurationQN.value_or(4.0):events[i].durationQN.value_or(4.0));
@@ -237,6 +252,10 @@ void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,
     box(dc,CRect(cursor-1,area.top-2,cursor+1,area.bottom+2),accent);
     for (std::size_t i=0;i<c.continuation.size();++i)
         drawBlock(c.continuation[i].label,c.continuation[i].durationQN,CColor(50,116,180,255),i+1==c.continuation.size());
+    if (previewCandidateId_==c.id && previewTotalQN_>0) {
+        const auto x=area.left+area.getWidth()*std::clamp(previewQN_/previewTotalQN_,0.0,1.0);
+        box(dc,CRect(x-1,area.top-2,x+1,area.bottom+2),accent);
+    }
 }
 void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
     if (state_.imported.events.empty()) { line(dc,"Drag Chords From Cubase",CRect(20,440,bounds.right-20,490),pale,kCenterText); return; }
@@ -263,7 +282,10 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             line(dc,primaryStyle(c.styles),CRect(845,y+2,930,y+22),muted,kCenterText);
             line(dc,std::find(state_.pinnedCandidateIds.begin(),state_.pinnedCandidateIds.end(),c.id)!=state_.pinnedCandidateIds.end()?"● Pin":"○ Pin",
                  CRect(936,y+2,995,y+22),accent);
-            line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1000,y+2,1070,y+22),muted);
+            if (actions_.audition) {
+                line(dc,previewCandidateId_==c.id?"■":"▶",CRect(1000,y+2,1032,y+22),accent,kCenterText);
+                line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1037,y+2,1080,y+22),muted);
+            } else line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1000,y+2,1070,y+22),muted);
         }
     }
     drawCompare(dc,bounds);
@@ -686,10 +708,12 @@ CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
             if (where.x>=930 && where.x<1000) {
                 if (state_.unpin(c.id)) std::erase_if(pinnedSnapshots_,[&](const auto& candidate){return candidate.id==c.id;});
                 else {
-                    if (!state_.pin(c.id)) actionStatus_="Compare holds at most 3 candidates";
+                    if (!state_.pin(c.id,session::continuationFingerprint(c))) actionStatus_="Compare holds at most 3 candidates";
                     else pinnedSnapshots_.push_back(c);
                 }
                 notifyState();
+            } else if (where.x>=1000 && where.x<1037 && actions_.audition) {
+                actions_.audition(c);
             } else { selectedCandidate_={{group,index}}; invalid(); }
             return kMouseEventHandled;
         }

@@ -23,6 +23,7 @@ public:
         std::function<std::string(const ContinuationCandidate&, const session::SaveMetadata&)> save;
         std::function<std::string(const ProgressionTemplate&)> updateUser;
         std::function<std::string(const std::string&)> deleteUser;
+        std::function<void(const ContinuationCandidate&)> audition;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;
@@ -37,6 +38,7 @@ public:
     void setAnalysis(const HarmonicAnalysisResult&);
     void setMatches(const std::vector<MatchResult>&, std::string status);
     void setRecommendations(const RecommendationSet&);
+    void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
     void setLibrary(std::vector<ProgressionTemplate> factory, std::vector<ProgressionTemplate> user,
@@ -59,6 +61,8 @@ private:
     ChordLocation currentLocation_;
     std::optional<double> projectQN_;
     std::optional<VSTGUI::CCoord> playheadX_;
+    std::string previewCandidateId_;
+    double previewQN_{}, previewTotalQN_{};
     bool playing_{}, workerBusy_{}, sessionDirty_{};
     std::uint64_t generation_{};
     double computationMs_{};

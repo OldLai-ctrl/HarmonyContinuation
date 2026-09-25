@@ -1,19 +1,38 @@
 #include "PluginSessionState.h"
+#include "ProductServices.h"
 #include <algorithm>
 #include <bit>
 #include <cmath>
 #include <stdexcept>
 
 namespace harmony::session {
-bool PluginSessionState::pin(const std::string& id) {
+bool PluginSessionState::pin(const std::string& id, const std::string& fingerprint) {
     if (id.empty() || pinnedCandidateIds.size() >= 3 ||
         std::find(pinnedCandidateIds.begin(), pinnedCandidateIds.end(), id) != pinnedCandidateIds.end()) return false;
-    pinnedCandidateIds.push_back(id); return true;
+    pinnedCandidateIds.push_back(id); pinnedFingerprints.push_back(fingerprint); return true;
 }
 bool PluginSessionState::unpin(const std::string& id) {
-    const auto old = pinnedCandidateIds.size();
-    std::erase(pinnedCandidateIds, id);
-    return pinnedCandidateIds.size() != old;
+    const auto it=std::find(pinnedCandidateIds.begin(),pinnedCandidateIds.end(),id);
+    if (it==pinnedCandidateIds.end()) return false;
+    const auto index=static_cast<std::size_t>(it-pinnedCandidateIds.begin());
+    pinnedCandidateIds.erase(it);
+    if (index<pinnedFingerprints.size()) pinnedFingerprints.erase(pinnedFingerprints.begin()+index);
+    return true;
+}
+void PluginSessionState::resolvePins(const RecommendationSet& set) {
+    std::vector<std::string> ids, fingerprints;
+    for (const auto& fingerprint:pinnedFingerprints) {
+        if (fingerprint.empty()) continue;
+        for (const auto& group:set.groups) for (const auto& candidate:group) {
+            if (continuationFingerprint(candidate)!=fingerprint) continue;
+            if (std::find(ids.begin(),ids.end(),candidate.id)==ids.end()) {
+                ids.push_back(candidate.id); fingerprints.push_back(fingerprint);
+            }
+            goto matched;
+        }
+        matched:;
+    }
+    pinnedCandidateIds=std::move(ids); pinnedFingerprints=std::move(fingerprints);
 }
 AnalysisContext PluginSessionState::analysisContext() const {
     AnalysisContext context;
@@ -32,7 +51,7 @@ RecomputeScope recomputeScope(const PluginSessionState& old,const PluginSessionS
 }
 namespace {
 struct Writer {
-    std::string bytes{"HCS1"};
+    std::string bytes{"HCS2"};
     void u8(std::uint8_t n) { bytes.push_back(static_cast<char>(n)); }
     void u32(std::uint32_t n) { for (int i=0;i<4;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
     void u64(std::uint64_t n) { for (int i=0;i<8;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
@@ -55,6 +74,7 @@ struct Reader {
 std::string serialize(const PluginSessionState& state) {
     if (state.imported.events.size()>64 || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
     Writer w;
+    w.u32(PluginSessionState::currentSchemaVersion);
     w.u32(state.factoryLibraryVersion);
     w.u8(static_cast<std::uint8_t>(state.imported.coordinateMode));
     w.u64(state.imported.revision);
@@ -64,7 +84,10 @@ std::string serialize(const PluginSessionState& state) {
     w.u8(state.intent.has_value()); if (state.intent) w.u8(static_cast<std::uint8_t>(*state.intent));
     w.u8(state.skeletonView); w.u8(static_cast<std::uint8_t>(state.tab)); w.u8(state.debugExpanded);
     w.u8(static_cast<std::uint8_t>(state.pinnedCandidateIds.size()));
-    for (const auto& id : state.pinnedCandidateIds) w.str(id);
+    for (std::size_t i=0;i<state.pinnedCandidateIds.size();++i) {
+        w.str(state.pinnedCandidateIds[i]);
+        w.str(i<state.pinnedFingerprints.size()?state.pinnedFingerprints[i]:std::string{});
+    }
     w.optionalInt(state.meterNumerator); w.optionalInt(state.meterDenominator);
     w.u8(static_cast<std::uint8_t>(state.imported.events.size()));
     for (const auto& chord : state.imported.events) {
@@ -82,8 +105,15 @@ std::string serialize(const PluginSessionState& state) {
 DecodeResult deserialize(std::string_view bytes) {
     DecodeResult result;
     try {
-        if (bytes.size()<4 || bytes.size()>1024*1024 || bytes.substr(0,4)!="HCS1") throw std::runtime_error("unsupported session state");
+        if (bytes.size()<4 || bytes.size()>1024*1024 || bytes.substr(0,3)!="HCS") throw std::runtime_error("unsupported session state");
+        const bool legacy=bytes[3]=='1';
+        if (!legacy && bytes[3]!='2') throw std::runtime_error("UnsupportedVersion");
         Reader r{bytes,4}; auto& s=result.state;
+        if (!legacy) {
+            const auto version=r.u32();
+            if (version!=PluginSessionState::currentSchemaVersion) throw std::runtime_error("UnsupportedVersion");
+        }
+        s.schemaVersion=PluginSessionState::currentSchemaVersion;
         s.factoryLibraryVersion=r.u32();
         const auto coordinate=r.u8(); if (coordinate>2) throw std::runtime_error("invalid coordinate mode");
         s.imported.coordinateMode=static_cast<TimelineCoordinateMode>(coordinate); s.imported.revision=r.u64();
@@ -92,7 +122,10 @@ DecodeResult deserialize(std::string_view bytes) {
         if (r.u8()) { const auto intent=r.u8(); if (intent<1 || intent>4) throw std::runtime_error("invalid intent"); s.intent=static_cast<PhraseIntent>(intent); }
         s.skeletonView=r.u8()!=0; const auto tab=r.u8(); if (tab>3) throw std::runtime_error("invalid tab"); s.tab=static_cast<Tab>(tab); s.debugExpanded=r.u8()!=0;
         const auto pins=r.u8(); if (pins>3) throw std::runtime_error("too many pins");
-        for (int i=0;i<pins;++i) if (!s.pin(r.str())) throw std::runtime_error("invalid pin");
+        for (int i=0;i<pins;++i) {
+            const auto id=r.str(); const auto fingerprint=legacy?std::string{}:r.str();
+            if (!s.pin(id,fingerprint)) throw std::runtime_error("invalid pin");
+        }
         s.meterNumerator=r.optionalInt(); s.meterDenominator=r.optionalInt();
         const auto count=r.u8(); if (count>64) throw std::runtime_error("too many chords");
         for (int i=0;i<count;++i) {

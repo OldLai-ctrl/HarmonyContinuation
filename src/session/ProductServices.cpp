@@ -1,6 +1,7 @@
 #include "ProductServices.h"
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <sstream>
@@ -8,8 +9,19 @@
 namespace harmony::session {
 std::string continuationFingerprint(const ContinuationCandidate& c) {
     std::ostringstream out;
-    for (const auto& event : c.continuation) out << event.degree.degree << ':' << event.degree.alteration << ':'
-        << static_cast<int>(event.quality) << ':' << std::lround(event.durationQN*4) << ';';
+    const auto sized=[&](const std::string& value){out << value.size() << ':' << value;};
+    out << static_cast<int>(c.key.tonic) << ':' << static_cast<int>(c.key.mode) << ':'
+        << static_cast<int>(c.intent) << ':' << static_cast<int>(c.cadence) << ':';
+    sized(c.primaryTemplate); out << ':';
+    if (c.suggestedCurrentChordDurationQN) out << std::bit_cast<std::uint64_t>(*c.suggestedCurrentChordDurationQN);
+    else out << '-';
+    out << ':' << c.continuation.size() << ':';
+    for (const auto& event : c.continuation) {
+        out << event.degree.degree << ':' << event.degree.alteration << ':';
+        sized(event.label);
+        out << ':' << static_cast<int>(event.quality) << ':'
+            << std::bit_cast<std::uint64_t>(event.durationQN) << ';';
+    }
     return out.str();
 }
 namespace {
