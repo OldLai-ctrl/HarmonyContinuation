@@ -77,14 +77,16 @@ bool PLUGIN_API PluginView::open(void* parent) {
         // immediately after open() returns. Keep the CFrame there, as the SDK does.
         frame = new CFrame(CRect(0, 0, 1100, 900), this);
         auto* pluginController = impl_->controller;
-        impl_->main = new ui::MainView(
-            CRect(0, 0, 1100, 900),
-            [pluginController](IDataPackage* data) { pluginController->receivedDrop(data); },
-            [pluginController]() { pluginController->requestSnapshot(); },
-            [pluginController]() { pluginController->inspectClipboard(); },
-            [pluginController](std::optional<harmony::Style> style, std::optional<harmony::PhraseIntent> intent) {
-                pluginController->setRecommendationPreferences(style, intent);
-            });
+        ui::MainView::Actions actions;
+        actions.drop=[pluginController](IDataPackage* data) { pluginController->receivedDrop(data); };
+        actions.refresh=[pluginController]() { pluginController->requestSnapshot(); };
+        actions.clipboard=[pluginController]() { pluginController->inspectClipboard(); };
+        actions.stateChanged=[pluginController](const harmony::session::PluginSessionState& state) { pluginController->applySessionState(state); };
+        actions.save=[pluginController](const harmony::ContinuationCandidate& candidate,const harmony::session::SaveMetadata& metadata) {
+            return pluginController->saveRecommendation(candidate,metadata); };
+        actions.updateUser=[pluginController](const harmony::ProgressionTemplate& item) { return pluginController->updateUserProgression(item); };
+        actions.deleteUser=[pluginController](const std::string& id) { return pluginController->deleteUserProgression(id); };
+        impl_->main = new ui::MainView(CRect(0,0,1100,900),std::move(actions));
         frame->addView(impl_->main);
 
         if (!frame->open(parent, platform)) {

@@ -1,0 +1,29 @@
+{
+  "name": "Case E · C-G-Am-F",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "G",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "Am",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "F",
+      "start": 12
+    }
+  ]
+}

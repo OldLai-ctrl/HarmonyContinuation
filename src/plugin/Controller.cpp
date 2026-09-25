@@ -10,6 +10,8 @@
 #include "pluginterfaces/vst/ivsthostapplication.h"
 #include "pluginterfaces/vst/ivstmessage.h"
 #include "public.sdk/source/vst/utility/stringconvert.h"
+#include "pluginterfaces/base/ibstream.h"
+#include "session/ProductServices.h"
 #if defined(_WIN32)
 #include "platform/windows/ClipboardInspector.h"
 #endif
@@ -179,6 +181,47 @@ tresult PLUGIN_API Controller::initialize(FUnknown* context) {
     return kResultOk;
 }
 
+tresult PLUGIN_API Controller::getState(IBStream* stream) {
+    if (!stream) return kInvalidArgument;
+    try {
+        const auto bytes=harmony::session::serialize(sessionState_);
+        const auto size=static_cast<std::uint32_t>(bytes.size());
+        const char length[4]{static_cast<char>(size),static_cast<char>(size>>8),static_cast<char>(size>>16),static_cast<char>(size>>24)};
+        int32 written{};
+        if (stream->write(const_cast<char*>(length),4,&written)!=kResultOk || written!=4) return kResultFalse;
+        return stream->write(const_cast<char*>(bytes.data()),static_cast<int32>(bytes.size()),&written)==kResultOk &&
+               written==static_cast<int32>(bytes.size())?kResultOk:kResultFalse;
+    } catch (...) { return kResultFalse; }
+}
+tresult PLUGIN_API Controller::setState(IBStream* stream) {
+    if (!stream) return kInvalidArgument;
+    try {
+        char length[4]{}; int32 read{};
+        if (stream->read(length,4,&read)!=kResultOk || read!=4) return kResultFalse;
+        const auto size=static_cast<std::uint32_t>(static_cast<unsigned char>(length[0])) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[1]))<<8) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[2]))<<16) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[3]))<<24);
+        if (size<4 || size>1024*1024) return kResultFalse;
+        std::string bytes(size,'\0');
+        if (stream->read(bytes.data(),static_cast<int32>(size),&read)!=kResultOk || read!=static_cast<int32>(size)) return kResultFalse;
+        auto restored=harmony::session::deserialize(bytes);
+        if (!restored) return kResultFalse;
+        sessionState_=std::move(restored.state);
+        importedProgression_=sessionState_.imported;
+        recommendationRequest_.style=sessionState_.style;
+        recommendationRequest_.preferredIntent=sessionState_.intent;
+        analysis_={}; matches_.clear(); recommendations_={};
+        if (view_) {
+            view_->setSessionState(sessionState_);
+            view_->clearSessionDirty();
+            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);
+        }
+        submitRecommendation();
+        return kResultOk;
+    } catch (...) { return kResultFalse; }
+}
+
 IPlugView* PLUGIN_API Controller::createView(FIDString name) {
     try { return name && std::strcmp(name, ViewType::kEditor) == 0 ? new PluginView(this) : nullptr; }
     catch (...) { return nullptr; }
@@ -207,12 +250,15 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
     transportRateChanged_ = std::move(transportRateChanged);
     if (view_) {
         try {
-            view_->setProgressionSession(importedProgression_);
+            view_->setSessionState(sessionState_);
+            view_->clearSessionDirty();
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
             view_->setHostText("宿主：" + hostName_ + "\n格式：VST3 | 播放位置自动同步");
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
+            reloadLibraries();
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
         }
         catch (...) {}
@@ -226,6 +272,10 @@ void Controller::pollRecommendation() noexcept {
         if (!latest) return;
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
+        recommendationGeneration_=latest->generation;
+        lastComputationMs_=latest->computationMs;
+        if (latest->factoryCount) factoryCount_=latest->factoryCount;
+        userCount_=latest->userCount;
         matches_ = recommendations_.matches;
         matchStatus_ = latest->error.empty()
             ? "RECOMMEND：" + std::to_string(matches_.size()) + " 条匹配已计算"
@@ -234,24 +284,74 @@ void Controller::pollRecommendation() noexcept {
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
         }
+    } catch (...) {}
+}
+
+void Controller::submitRecommendation(bool rankingOnly) {
+    if (importedProgression_.events.empty()) return;
+    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),userDatabasePath());
+    recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,sessionState_.analysisContext(),
+        recommendationRequest_,rankingOnly,sessionState_.imported.revision);
+    matchStatus_="Analyzing…";
+    if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_); }
+}
+void Controller::applySessionState(const harmony::session::PluginSessionState& next) noexcept {
+    try {
+        const auto old=sessionState_;
+        const auto recompute=harmony::session::recomputeScope(old,next);
+        const auto keyChanged=recompute==harmony::session::RecomputeScope::Analysis;
+        sessionState_=next;
+        recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
+        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={}; }
+        if (view_) {
+            view_->setSessionState(sessionState_);
+            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(recommendations_); }
+        }
+        if (recompute!=harmony::session::RecomputeScope::None)
+            submitRecommendation(recompute==harmony::session::RecomputeScope::Ranking);
     } catch (...) {}
 }
 
 void Controller::setRecommendationPreferences(std::optional<harmony::Style> style,
                                                std::optional<harmony::PhraseIntent> intent) noexcept {
+    auto next=sessionState_; next.style=style; next.intent=intent; applySessionState(next);
+}
+
+void Controller::reloadLibraries() {
+    if (!view_) return;
+    auto factory=harmony::library::loadFactory(factoryDatabasePath());
+    auto user=harmony::library::UserLibrary(userDatabasePath()).loadAll();
+    factoryCount_=factory.templates.size(); userCount_=user.templates.size();
+    view_->setLibrary(std::move(factory.templates),std::move(user.templates),
+        !factory?factory.error:!user?user.error:std::string{});
+}
+std::string Controller::saveRecommendation(const harmony::ContinuationCandidate& c,const harmony::session::SaveMetadata& m) noexcept {
     try {
-        recommendationRequest_.style = style;
-        recommendationRequest_.preferredIntent = intent;
-        if (recommendationWorker_ && !importedProgression_.events.empty()) {
-            harmony::AnalysisContext context;
-            context.timeSigNumerator = lastTimeSigNumerator_;
-            context.timeSigDenominator = lastTimeSigDenominator_;
-            recommendationWorker_->submit(importedProgression_.events, context, recommendationRequest_);
-            matchStatus_ = "RECOMMEND：后台更新中…";
-            if (view_) view_->setMatches(matches_, matchStatus_);
-        }
-    } catch (...) {}
+        const auto path=userDatabasePath();
+        if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
+        harmony::library::UserLibrary library(path); std::string error;
+        if (!harmony::session::saveRecommendation(library,importedProgression_,c,m,error)) return "Save failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "Saved to User Library";
+    } catch (const std::exception& e) { return std::string("Save failed: ")+e.what(); }
+}
+std::string Controller::updateUserProgression(const harmony::ProgressionTemplate& item) noexcept {
+    try {
+        std::string error;
+        if (!harmony::library::UserLibrary(userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "User progression updated";
+    } catch (const std::exception& e) { return std::string("Update failed: ")+e.what(); }
+}
+std::string Controller::deleteUserProgression(const std::string& id) noexcept {
+    try {
+        std::string error;
+        if (!harmony::library::UserLibrary(userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "User progression deleted";
+    } catch (const std::exception& e) { return std::string("Delete failed: ")+e.what(); }
 }
 
 void Controller::detach(harmony::ui::MainView* view) noexcept {
@@ -274,15 +374,17 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
             analysisContext.timeSigNumerator = lastTimeSigNumerator_;
             analysisContext.timeSigDenominator = lastTimeSigDenominator_;
             if (importedProgression_.replace(std::move(chords), harmony::TimelineCoordinateMode::AbsoluteProjectQN)) {
+                sessionState_.imported=importedProgression_;
+                sessionState_.pinnedCandidateIds.clear();
+                sessionState_.meterNumerator=lastTimeSigNumerator_;
+                sessionState_.meterDenominator=lastTimeSigDenominator_;
                 analysis_ = {};
                 matches_.clear();
                 recommendations_ = {};
                 matchStatus_ = "RECOMMEND：后台分析中…";
-                if (!recommendationWorker_)
-                    recommendationWorker_ = std::make_unique<RecommendationWorker>(factoryDatabasePath(), userDatabasePath());
-                recommendationWorker_->submit(importedProgression_.events, analysisContext, recommendationRequest_);
+                submitRecommendation();
                 if (view_) {
-                    view_->setProgressionSession(importedProgression_);
+                    view_->setSessionState(sessionState_);
                     view_->setAnalysis(analysis_);
                     view_->setMatches(matches_, matchStatus_);
                     view_->setRecommendations(recommendations_);
@@ -327,9 +429,9 @@ void Controller::inspectClipboard() noexcept {
         raw << "\nB. 原生剪贴板检查器：仅支持 Windows。\n";
 #endif
 
-        if (view_) view_->setDropReport(raw.str(), parsed.str());
+        if (view_) view_->setDropReport(raw.str(), parsed.str(), false);
     } catch (...) {
-        try { if (view_) view_->setDropReport("剪贴板检查失败。", "剪贴板诊断时发生异常，请查看详细信息。"); }
+        try { if (view_) view_->setDropReport("剪贴板检查失败。", "剪贴板诊断时发生异常，请查看详细信息。", false); }
         catch (...) {}
     }
 }

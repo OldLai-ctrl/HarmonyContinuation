@@ -13,6 +13,9 @@ struct WorkerResult {
     HarmonicAnalysisResult analysis;
     RecommendationSet recommendations;
     std::string error;
+    double computationMs{};
+    std::size_t factoryCount{}, userCount{};
+    bool analysisReused{};
 };
 class RecommendationWorker {
 public:
@@ -20,7 +23,9 @@ public:
     ~RecommendationWorker();
     RecommendationWorker(const RecommendationWorker&) = delete;
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
-    std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {});
+    std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {},
+                         bool rankingOnly = false, std::uint64_t phraseRevision = 0);
+    void invalidateLibrary();
     std::optional<WorkerResult> takeLatest();
 private:
     struct Task {
@@ -28,6 +33,8 @@ private:
         Progression progression;
         AnalysisContext context;
         RecommendationRequest request;
+        bool rankingOnly{};
+        std::uint64_t phraseRevision{};
     };
     void run();
     std::filesystem::path factoryPath_, userPath_;
@@ -38,5 +45,6 @@ private:
     std::uint64_t generation_{};
     std::optional<Task> pending_;
     std::optional<WorkerResult> ready_;
+    bool reloadLibrary_{};
 };
 } // namespace harmony::plugin

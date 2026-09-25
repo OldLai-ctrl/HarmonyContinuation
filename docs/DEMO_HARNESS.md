@@ -1,0 +1,7 @@
+# HarmonyContinuationDemo
+
+Build the full `build-vst3` configuration, then run `build-vst3/HarmonyContinuationDemo.exe --case D`. The Windows window has a Case A–H dropdown, Play/Pause, a Project QN slider, and the same `MainView` used by the plugin. The case loads immediately and runs the actual harmony analyzer, matcher, factory/user database loader, and continuation worker. Only the incoming chord phrase and host transport are simulated. Tempo defaults to 120 BPM and the slider uses quarter-note positions. The demo creates no audio.
+
+Scenarios live in `tests/fixtures/demo/case_a.json` through `case_h.json`. Each object contains `name`, `tempo`, `meter`, and a `chords` array; optional `forcedKey`, `style`, and `intent` fields can be added. `chords` use the established flat progression JSON format with `name`, `start`, and optional `duration`. Case F uses a forced A minor interpretation. To add a case, provide a valid file and extend the dropdown's case list; the parser and complete pipeline are also exercised by `ProductizationTests`.
+
+The demo reads `factory.db` beside its executable. Its user database is `%LOCALAPPDATA%\HarmonyContinuation\user.db`, like the plugin. Save, edit, and delete operations therefore affect that real user library. The test executable uses a separate temporary database. The GUI timer is 250 ms while paused and 50 ms during simulated playback. Automated screenshot capture/pixel comparison is deferred; the demo supplies a repeatable human visual QA surface.
