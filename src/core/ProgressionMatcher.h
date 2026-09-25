@@ -12,9 +12,14 @@
 namespace harmony {
 
 using TemplateID = std::string;
-enum class PhraseIntent : std::uint8_t { Unknown, Cadence, Loop, Departure };
-enum class CadenceType : std::uint8_t { None, Authentic, Plagal, Half, Deceptive };
+enum class PhraseIntent : std::uint8_t { Neutral, Develop, Resolve, Loop, Color };
+enum class CadenceType : std::uint8_t {
+    None, Authentic, PerfectAuthentic, ImperfectAuthentic, Plagal, Half,
+    Deceptive, Modal, LoopClosure, Unknown
+};
 using StyleFlags = std::uint32_t;
+enum class Style : StyleFlags { Pop=1u<<0, Rock=1u<<1, Rnb=1u<<2, Jazz=1u<<3,
+                                 CityPop=1u<<4, Functional=1u<<5 };
 
 // No absolute pitch class is stored in a template. Durations are relative QN
 // values; the matcher normalizes them independently for each sequence.
@@ -47,10 +52,20 @@ struct ProgressionTemplate {
     Mode mode{Mode::Major};
     std::vector<MatchEvent> full;
     std::vector<std::size_t> skeletonIndices;
-    PhraseIntent intent{PhraseIntent::Unknown};
+    PhraseIntent intent{PhraseIntent::Neutral};
+    StyleFlags secondaryIntents{};
     CadenceType cadence{CadenceType::None};
     StyleFlags styles{};
+    std::vector<std::pair<Style, float>> styleWeights;
     bool loopable{};
+    int meterNumerator{4};
+    int meterDenominator{4};
+    std::size_t phraseLength{};
+    float complexity{0.5f};
+    std::string sourceType{"factory"};
+    float priorWeight{0.5f};
+    std::vector<std::string> tags;
+    int version{1};
     ProgressionFingerprint fingerprint;
 };
 

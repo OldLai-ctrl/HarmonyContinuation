@@ -81,7 +81,10 @@ bool PLUGIN_API PluginView::open(void* parent) {
             CRect(0, 0, 1100, 900),
             [pluginController](IDataPackage* data) { pluginController->receivedDrop(data); },
             [pluginController]() { pluginController->requestSnapshot(); },
-            [pluginController]() { pluginController->inspectClipboard(); });
+            [pluginController]() { pluginController->inspectClipboard(); },
+            [pluginController](std::optional<harmony::Style> style, std::optional<harmony::PhraseIntent> intent) {
+                pluginController->setRecommendationPreferences(style, intent);
+            });
         frame->addView(impl_->main);
 
         if (!frame->open(parent, platform)) {
@@ -130,7 +133,10 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
         }
 #endif
         setIdleRate(transportPlaying_ ? 50 : 250);
-        if (impl_ && impl_->controller) impl_->controller->pollTransport();
+        if (impl_ && impl_->controller) {
+            impl_->controller->pollRecommendation();
+            impl_->controller->pollTransport();
+        }
         return result;
     }
     return VSTGUIEditor::notify(sender, message);

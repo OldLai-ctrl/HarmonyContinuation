@@ -2,10 +2,13 @@
 #include "core/ImportedProgression.h"
 #include "core/HarmonyAnalysis.h"
 #include "core/ProgressionMatcher.h"
+#include "core/ContinuationEngine.h"
+#include "RecommendationWorker.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <memory>
 #include <string>
 namespace VSTGUI { class IDataPackage; }
 namespace harmony::ui { class MainView; }
@@ -18,6 +21,8 @@ public:
     Steinberg::IPlugView* PLUGIN_API createView(Steinberg::FIDString) override;
     Steinberg::tresult requestSnapshot() noexcept;
     Steinberg::tresult pollTransport() noexcept;
+    void pollRecommendation() noexcept;
+    void setRecommendationPreferences(std::optional<harmony::Style>, std::optional<harmony::PhraseIntent>) noexcept;
     void receivedDrop(VSTGUI::IDataPackage*) noexcept;
     void inspectClipboard() noexcept;
     void attach(harmony::ui::MainView*, std::function<void(bool)> transportRateChanged = {}) noexcept;
@@ -28,6 +33,9 @@ private:
     harmony::ImportedProgressionSession importedProgression_;
     harmony::HarmonicAnalysisResult analysis_;
     std::vector<harmony::MatchResult> matches_;
+    harmony::RecommendationSet recommendations_;
+    harmony::RecommendationRequest recommendationRequest_;
+    std::unique_ptr<RecommendationWorker> recommendationWorker_;
     std::string matchStatus_{"拖入和弦后显示匹配结果"};
     std::uint64_t lastSnapshotGeneration_{};
     unsigned unchangedTransportPolls_{};

@@ -40,6 +40,7 @@ if(HC_BUILD_PLUGIN)
     smtg_add_vst3plugin(HarmonyContinuation
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
+        src/plugin/RecommendationWorker.cpp
         src/ui/MainView.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
@@ -60,7 +61,7 @@ if(HC_BUILD_PLUGIN)
 endif()
 
 add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAnalysis.cpp
-    src/core/ProgressionMatcher.cpp)
+    src/core/ProgressionMatcher.cpp src/core/ContinuationEngine.cpp)
 target_include_directories(harmony_core PUBLIC src)
 target_compile_features(harmony_core PUBLIC cxx_std_20)
 if(MSVC)
@@ -78,6 +79,37 @@ add_library(harmony_dev_json STATIC tools/ProgressionJson.cpp tools/TemplateJson
 target_link_libraries(harmony_dev_json PUBLIC harmony_core)
 target_compile_features(harmony_dev_json PUBLIC cxx_std_20)
 target_include_directories(harmony_dev_json PUBLIC tools "${CMAKE_CURRENT_BINARY_DIR}/generated")
+add_library(harmony_library STATIC src/library/ProgressionLibrary.cpp)
+target_include_directories(harmony_library PUBLIC src)
+target_link_libraries(harmony_library PUBLIC harmony_dev_json)
+target_compile_features(harmony_library PUBLIC cxx_std_20)
+if(WIN32)
+    target_link_libraries(harmony_library PUBLIC winsqlite3)
+else()
+    find_package(SQLite3 REQUIRED)
+    target_link_libraries(harmony_library PUBLIC SQLite::SQLite3)
+endif()
+add_executable(db_compiler tools/db_compiler.cpp)
+target_link_libraries(db_compiler PRIVATE harmony_library)
+add_executable(recommend_cli tools/recommend_cli.cpp)
+target_link_libraries(recommend_cli PRIVATE harmony_library)
+add_executable(recommend_bench tools/recommend_bench.cpp)
+target_link_libraries(recommend_bench PRIVATE harmony_library)
+file(GLOB HC_FACTORY_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory/*.json")
+set(HC_FACTORY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory.db")
+add_custom_command(OUTPUT "${HC_FACTORY_DB}"
+    COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_DB}"
+    DEPENDS db_compiler ${HC_FACTORY_JSON}
+    VERBATIM)
+add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
+if(HC_BUILD_PLUGIN)
+    target_link_libraries(HarmonyContinuation PRIVATE harmony_library)
+    add_dependencies(HarmonyContinuation factory_database)
+    add_custom_command(TARGET HarmonyContinuation POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_DB}"
+            "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.db")
+endif()
 add_executable(harmony_cli tools/harmony_cli.cpp)
 target_link_libraries(harmony_cli PRIVATE harmony_dev_json)
 add_executable(progression_match_cli tools/progression_match_cli.cpp)
@@ -131,6 +163,15 @@ if(BUILD_TESTING)
     target_link_libraries(ProgressionMatcherTests PRIVATE harmony_dev_json)
     target_compile_definitions(ProgressionMatcherTests PRIVATE HC_HARMONY_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/harmony")
     add_test(NAME ProgressionMatcherTests COMMAND ProgressionMatcherTests)
+
+    add_executable(ContinuationEngineTests tests/ContinuationEngineTests.cpp src/plugin/RecommendationWorker.cpp)
+    target_link_libraries(ContinuationEngineTests PRIVATE harmony_library)
+    target_compile_definitions(ContinuationEngineTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}")
+    add_dependencies(ContinuationEngineTests factory_database)
+    if(MSVC)
+        target_compile_options(ContinuationEngineTests PRIVATE /utf-8)
+    endif()
+    add_test(NAME ContinuationEngineTests COMMAND ContinuationEngineTests)
 
     if(HC_BUILD_PLUGIN)
         add_executable(VstXmlParserTests tests/VstXmlParserTests.cpp)

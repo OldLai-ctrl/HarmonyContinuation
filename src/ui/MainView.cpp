@@ -68,8 +68,10 @@ bool overlaps(const CRect& a, const CRect& b) {
 }
 } // namespace
 
-MainView::MainView(const CRect& rect, DropCallback drop, RefreshCallback refresh, ClipboardCallback clipboard)
-    : CView(rect), drop_(std::move(drop)), refresh_(std::move(refresh)), clipboard_(std::move(clipboard)) {}
+MainView::MainView(const CRect& rect, DropCallback drop, RefreshCallback refresh, ClipboardCallback clipboard,
+                   PreferenceCallback preference)
+    : CView(rect), drop_(std::move(drop)), refresh_(std::move(refresh)), clipboard_(std::move(clipboard)),
+      preference_(std::move(preference)) {}
 
 SharedPointer<IDropTarget> MainView::getDropTarget() { return this; }
 DragOperation MainView::onDragEnter(DragEventData event) { return event.drag ? DragOperation::Copy : DragOperation::None; }
@@ -109,6 +111,11 @@ void MainView::setMatches(const std::vector<harmony::MatchResult>& matches, std:
     matches_ = matches;
     matchStatus_ = std::move(status);
     selectedMatch_ = 0;
+    invalid();
+}
+
+void MainView::setRecommendations(const harmony::RecommendationSet& recommendations) {
+    recommendations_ = recommendations;
     invalid();
 }
 
@@ -303,6 +310,80 @@ void MainView::drawMatches(CDrawContext* dc, const CRect& bounds) {
     drawTextRows(dc, trace.str(), CRect(24, traceTop + 23, bounds.right - 24, bounds.bottom - 18), rows, 16, kLeftText);
 }
 
+void MainView::drawRecommendations(CDrawContext* dc, const CRect& bounds) {
+    constexpr const char* styles[]{"Auto", "Pop", "Rock", "R&B", "Jazz", "City Pop", "Functional"};
+    constexpr const char* intents[]{"Auto", "Develop", "Resolve", "Loop", "Color"};
+    dc->setFont(kNormalFont);
+    dc->setFontColor(CColor(151, 184, 223, 255));
+    dc->drawString((std::string("Style: ") + styles[selectedStyle_] + "  [点击切换]").c_str(),
+                   CRect(24, 436, 300, 460), kLeftText);
+    dc->drawString((std::string("Intent: ") + intents[selectedIntent_] + "  [点击切换]").c_str(),
+                   CRect(322, 436, 630, 460), kLeftText);
+    dc->setFontColor(CColor(176, 195, 219, 255));
+    dc->drawString(matchStatus_.c_str(), CRect(645, 436, bounds.right - 24, 460), kRightText);
+    constexpr const char* titles[]{"RESOLVE", "DEVELOP", "LOOP", "COLOR"};
+    for (std::size_t group = 0; group < 4; ++group) {
+        const auto top = 467.0 + 104.0 * static_cast<double>(group);
+        dc->setFontColor(CColor(255, 225, 112, 255));
+        dc->drawString(titles[group], CRect(24, top, 200, top + 19), kLeftText);
+        const auto& options = recommendations_.groups[group];
+        if (options.empty()) {
+            dc->setFontColor(CColor(112, 137, 163, 255));
+            dc->drawString("暂无足够可靠的路径", CRect(220, top, bounds.right - 24, top + 19), kLeftText);
+        }
+        for (std::size_t row = 0; row < std::min<std::size_t>(3, options.size()); ++row) {
+            const auto& candidate = options[row];
+            const auto y = top + 20.0 + 26.0 * static_cast<double>(row);
+            dc->setFillColor(CColor(27, 42, 60, 255));
+            dc->drawRect(CRect(24, y, bounds.right - 24, y + 23), kDrawFilled);
+            dc->setFontColor(CColor(239, 245, 255, 255));
+            std::ostringstream score;
+            score << '#' << row + 1 << "  " << static_cast<int>(std::round(candidate.rankingScore))
+                  << "  " << harmony::formatKey(candidate.key);
+            dc->drawString(score.str().c_str(), CRect(30, y, 220, y + 21), kLeftText);
+            const auto left = 226.0;
+            const auto prefixWidth = 185.0;
+            dc->setFillColor(CColor(55, 68, 84, 255));
+            dc->drawRect(CRect(left, y + 2, left + prefixWidth, y + 21), kDrawFilled);
+            std::string prefix;
+            if (!session_.events.empty()) {
+                const auto first = session_.events.size() > 2 ? session_.events.size() - 2 : 0;
+                for (std::size_t i = first; i < session_.events.size(); ++i) {
+                    if (!prefix.empty()) prefix += " → ";
+                    prefix += session_.events[i].name;
+                }
+                if (candidate.suggestedCurrentChordDurationQN) {
+                    std::ostringstream hold;
+                    hold << " " << std::fixed << std::setprecision(1)
+                         << *candidate.suggestedCurrentChordDurationQN << " QN";
+                    prefix += hold.str();
+                }
+            }
+            dc->setFontColor(CColor(170, 181, 196, 255));
+            dc->drawString(prefix.c_str(), CRect(left + 4, y + 2, left + prefixWidth - 4, y + 20), kCenterText);
+            const auto futureLeft = left + prefixWidth + 5.0;
+            const auto futureWidth = std::max(40.0, bounds.right - 29.0 - futureLeft);
+            double total{};
+            for (const auto& event : candidate.continuation) total += event.durationQN;
+            double cursor = futureLeft;
+            for (std::size_t i = 0; i < candidate.continuation.size(); ++i) {
+                const auto& event = candidate.continuation[i];
+                const auto width = i + 1 == candidate.continuation.size()
+                    ? futureLeft + futureWidth - cursor : futureWidth * event.durationQN / std::max(0.001, total);
+                if (width <= 0) continue;
+                dc->setFillColor(group == 3 ? CColor(118, 84, 166, 255) :
+                                 group == 2 ? CColor(43, 127, 121, 255) : CColor(49, 105, 169, 255));
+                dc->drawRect(CRect(cursor, y + 2, cursor + width - 2, y + 21), kDrawFilled);
+                std::ostringstream label;
+                label << event.label << ' ' << std::setprecision(2) << event.durationQN;
+                dc->setFontColor(CColor(249, 251, 255, 255));
+                if (width >= 40) dc->drawString(label.str().c_str(), CRect(cursor + 2, y + 2, cursor + width - 4, y + 20), kCenterText);
+                cursor += width;
+            }
+        }
+    }
+}
+
 void MainView::drawRect(CDrawContext* dc, const CRect& updateRect) {
     // Transport changes invalidate only the timeline lane. Redraw its cached
     // layout under the dirty region, without formatting diagnostics or painting
@@ -363,14 +444,17 @@ void MainView::drawRect(CDrawContext* dc, const CRect& updateRect) {
     dc->drawString("[ FULL ]", CRect(20, 402, 114, 425), kLeftText);
     dc->setFontColor(showSkeleton_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
     dc->drawString("[ SKELETON ]", CRect(120, 402, 260, 425), kLeftText);
+    dc->setFontColor(showRecommendations_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
+    dc->drawString("[ RECOMMEND ]", CRect(280, 402, 408, 425), kLeftText);
     dc->setFontColor(showMatches_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
-    dc->drawString("[ MATCH ]", CRect(280, 402, 382, 425), kLeftText);
-    dc->setFontColor(showMatches_ ? CColor(151, 184, 223, 255) : CColor(255, 225, 112, 255));
+    dc->drawString("[ MATCH ]", CRect(410, 402, 502, 425), kLeftText);
+    dc->setFontColor(!showMatches_ && !showRecommendations_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
     dc->drawString(debugExpanded_ ? "[ 诊断 / 折叠 ]" : "[ 诊断 / 展开 ]",
-                   CRect(390, 402, bounds.right - 20, 425), kLeftText);
+                   CRect(515, 402, bounds.right - 20, 425), kLeftText);
     dc->setFillColor(CColor(20, 31, 47, 255));
     dc->drawRect(CRect(16, 430, bounds.right - 16, bounds.bottom - 12), kDrawFilled);
     if (showMatches_) { drawMatches(dc, bounds); return; }
+    if (showRecommendations_) { drawRecommendations(dc, bounds); return; }
     dc->setFontColor(CColor(210, 222, 239, 255));
     std::string shown;
     if (debugExpanded_) {
@@ -400,15 +484,33 @@ CMouseEventResult MainView::onMouseDown(CPoint& where, const CButtonState&) {
     } else if (where.y >= 399 && where.y < 429 && where.x < 265 && !analysis_.full.empty()) {
         const bool skeleton = where.x >= 118;
         if (showSkeleton_ != skeleton) { showSkeleton_ = skeleton; invalid(); }
-    } else if (where.y >= 399 && where.y < 429 && where.x >= 275 && where.x < 385) {
-        showMatches_ = true;
+    } else if (where.y >= 399 && where.y < 429 && where.x >= 275 && where.x < 410) {
+        showRecommendations_ = true; showMatches_ = false;
+        invalid();
+    } else if (where.y >= 399 && where.y < 429 && where.x >= 410 && where.x < 510) {
+        showMatches_ = true; showRecommendations_ = false;
+        invalid();
+    } else if (showRecommendations_ && where.y >= 432 && where.y < 464 && where.x < 310) {
+        selectedStyle_ = (selectedStyle_ + 1) % 7;
+        const std::optional<harmony::Style> style = selectedStyle_ == 0 ? std::nullopt :
+            std::optional<harmony::Style>(static_cast<harmony::Style>(1u << (selectedStyle_ - 1)));
+        if (preference_) preference_(style, selectedIntent_ == 0 ? std::nullopt :
+            std::optional<harmony::PhraseIntent>(static_cast<harmony::PhraseIntent>(selectedIntent_ == 1 ? 1 : selectedIntent_ == 2 ? 2 : selectedIntent_ == 3 ? 3 : 4)));
+        invalid();
+    } else if (showRecommendations_ && where.y >= 432 && where.y < 464 && where.x >= 310 && where.x < 640) {
+        selectedIntent_ = (selectedIntent_ + 1) % 5;
+        const std::optional<harmony::Style> style = selectedStyle_ == 0 ? std::nullopt :
+            std::optional<harmony::Style>(static_cast<harmony::Style>(1u << (selectedStyle_ - 1)));
+        const std::optional<harmony::PhraseIntent> intent = selectedIntent_ == 0 ? std::nullopt :
+            std::optional<harmony::PhraseIntent>(static_cast<harmony::PhraseIntent>(selectedIntent_));
+        if (preference_) preference_(style, intent);
         invalid();
     } else if (showMatches_ && where.y >= 464 && where.y < 464 + 43 * 5) {
         const auto index = static_cast<std::size_t>((where.y - 464) / 43);
         if (index < matches_.size()) { selectedMatch_ = index; invalid(); }
-    } else if ((where.y >= 399 && where.y < 429 && where.x >= 385) ||
-               (!showMatches_ && where.y >= 430)) {
-        showMatches_ = false;
+    } else if ((where.y >= 399 && where.y < 429 && where.x >= 510) ||
+               (!showMatches_ && !showRecommendations_ && where.y >= 430)) {
+        showMatches_ = false; showRecommendations_ = false;
         debugExpanded_ = !debugExpanded_;
         invalid();
     }

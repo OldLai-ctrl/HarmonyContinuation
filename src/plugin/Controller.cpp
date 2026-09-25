@@ -7,7 +7,6 @@
 #include "vstgui/lib/cclipboard.h"
 #include "PluginView.h"
 #include "../ui/MainView.h"
-#include "TemplateJson.h"
 #include "pluginterfaces/vst/ivsthostapplication.h"
 #include "pluginterfaces/vst/ivstmessage.h"
 #include "public.sdk/source/vst/utility/stringconvert.h"
@@ -20,12 +19,37 @@
 #include <cstring>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 namespace harmony::plugin {
 using namespace Steinberg;
 using namespace Steinberg::Vst;
 
 namespace {
+#if defined(_WIN32)
+void moduleAnchor() {}
+std::filesystem::path factoryDatabasePath() {
+    HMODULE module{};
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            reinterpret_cast<LPCWSTR>(&moduleAnchor), &module)) return {};
+    wchar_t path[32768]{};
+    const auto length = GetModuleFileNameW(module, path, 32768);
+    if (!length || length >= 32768) return {};
+    return std::filesystem::path(path).parent_path().parent_path() / "Resources" / "factory.db";
+}
+std::filesystem::path userDatabasePath() {
+    wchar_t path[32768]{};
+    const auto length = GetEnvironmentVariableW(L"LOCALAPPDATA", path, 32768);
+    if (!length || length >= 32768) return {};
+    return std::filesystem::path(path) / "HarmonyContinuation" / "user.db";
+}
+#else
+std::filesystem::path factoryDatabasePath() { return "factory.db"; }
+std::filesystem::path userDatabasePath() { return "user.db"; }
+#endif
 const char* qualityName(harmony::ChordQuality q) {
     using Q = harmony::ChordQuality;
     switch (q) {
@@ -186,12 +210,48 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
             view_->setProgressionSession(importedProgression_);
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
+            view_->setRecommendations(recommendations_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
             view_->setHostText("宿主：" + hostName_ + "\n格式：VST3 | 播放位置自动同步");
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
         }
         catch (...) {}
     }
+}
+
+void Controller::pollRecommendation() noexcept {
+    try {
+        if (!recommendationWorker_) return;
+        auto latest = recommendationWorker_->takeLatest();
+        if (!latest) return;
+        analysis_ = std::move(latest->analysis);
+        recommendations_ = std::move(latest->recommendations);
+        matches_ = recommendations_.matches;
+        matchStatus_ = latest->error.empty()
+            ? "RECOMMEND：" + std::to_string(matches_.size()) + " 条匹配已计算"
+            : "RECOMMEND：" + latest->error;
+        if (view_) {
+            view_->setAnalysis(analysis_);
+            view_->setMatches(matches_, matchStatus_);
+            view_->setRecommendations(recommendations_);
+        }
+    } catch (...) {}
+}
+
+void Controller::setRecommendationPreferences(std::optional<harmony::Style> style,
+                                               std::optional<harmony::PhraseIntent> intent) noexcept {
+    try {
+        recommendationRequest_.style = style;
+        recommendationRequest_.preferredIntent = intent;
+        if (recommendationWorker_ && !importedProgression_.events.empty()) {
+            harmony::AnalysisContext context;
+            context.timeSigNumerator = lastTimeSigNumerator_;
+            context.timeSigDenominator = lastTimeSigDenominator_;
+            recommendationWorker_->submit(importedProgression_.events, context, recommendationRequest_);
+            matchStatus_ = "RECOMMEND：后台更新中…";
+            if (view_) view_->setMatches(matches_, matchStatus_);
+        }
+    } catch (...) {}
 }
 
 void Controller::detach(harmony::ui::MainView* view) noexcept {
@@ -213,29 +273,19 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
             harmony::AnalysisContext analysisContext;
             analysisContext.timeSigNumerator = lastTimeSigNumerator_;
             analysisContext.timeSigDenominator = lastTimeSigDenominator_;
-            auto nextAnalysis = harmony::analyzeHarmony(chords, analysisContext);
             if (importedProgression_.replace(std::move(chords), harmony::TimelineCoordinateMode::AbsoluteProjectQN)) {
-                analysis_ = std::move(nextAnalysis);
+                analysis_ = {};
                 matches_.clear();
-                if (importedProgression_.events.size() > 64) {
-                    matchStatus_ = "MATCH：当前导入超过 64 个和弦，开发视图暂不计算；分析与时间轴仍可用。";
-                } else {
-                    // Embedded test templates and matching initialize on import,
-                    // never on editor open or a transport update.
-                    try {
-                        static const auto fixture = harmony::dev::loadDevelopmentTemplates();
-                        if (fixture) {
-                            static const harmony::CandidateIndex index(fixture.templates);
-                            const auto query = harmony::makeMatchQuery(importedProgression_.events, analysisContext);
-                            matches_ = harmony::matchProgression(query, index, {}, 5);
-                            matchStatus_ = "MATCH：开发测试模板 " + std::to_string(index.templates().size()) + " 条";
-                        } else matchStatus_ = "MATCH 测试模板加载失败：" + fixture.error;
-                    } catch (...) { matchStatus_ = "MATCH 计算失败；和声分析与时间轴仍可使用。"; }
-                }
+                recommendations_ = {};
+                matchStatus_ = "RECOMMEND：后台分析中…";
+                if (!recommendationWorker_)
+                    recommendationWorker_ = std::make_unique<RecommendationWorker>(factoryDatabasePath(), userDatabasePath());
+                recommendationWorker_->submit(importedProgression_.events, analysisContext, recommendationRequest_);
                 if (view_) {
                     view_->setProgressionSession(importedProgression_);
                     view_->setAnalysis(analysis_);
                     view_->setMatches(matches_, matchStatus_);
+                    view_->setRecommendations(recommendations_);
                 }
             } else {
                 parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";
