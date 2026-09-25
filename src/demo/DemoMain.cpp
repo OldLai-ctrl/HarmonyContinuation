@@ -3,6 +3,8 @@
 #include "session/ProductServices.h"
 #include "ui/MainView.h"
 #include "preview/OfflinePreviewRenderer.h"
+#include "midi/StandardMidiFileWriter.h"
+#include "snapshot/RecommendationSnapshot.h"
 #include "vstgui/lib/cframe.h"
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
@@ -10,6 +12,7 @@
 #include <commctrl.h>
 #include <shellapi.h>
 #include <mmsystem.h>
+#include <commdlg.h>
 #include <chrono>
 #include <algorithm>
 #include <filesystem>
@@ -19,6 +22,30 @@
 
 namespace {
 using namespace harmony;
+std::optional<std::filesystem::path> savePath(HWND owner,std::wstring name,const wchar_t* filter,const wchar_t* extension) {
+    wchar_t autosave[32768]{};
+    const auto length=GetEnvironmentVariableW(L"HC_DEMO_AUTOSAVE_DIR",autosave,32768);
+    if (length && length<32768) return std::filesystem::path(autosave)/name;
+    wchar_t path[32768]{};
+    const auto count=std::min<std::size_t>(name.size(),32766);
+    std::copy_n(name.begin(),count,path);
+    OPENFILENAMEW dialog{}; dialog.lStructSize=sizeof(dialog); dialog.hwndOwner=owner;
+    dialog.lpstrFilter=filter; dialog.lpstrFile=path; dialog.nMaxFile=32768;
+    dialog.lpstrDefExt=extension; dialog.Flags=OFN_OVERWRITEPROMPT|OFN_PATHMUSTEXIST;
+    if (!GetSaveFileNameW(&dialog)) return std::nullopt;
+    return std::filesystem::path(path);
+}
+std::optional<std::filesystem::path> openSnapshotPath(HWND owner) {
+    wchar_t automated[32768]{};
+    const auto length=GetEnvironmentVariableW(L"HC_DEMO_SNAPSHOT_FILE",automated,32768);
+    if (length && length<32768) return std::filesystem::path(automated);
+    wchar_t path[32768]{};
+    OPENFILENAMEW dialog{}; dialog.lStructSize=sizeof(dialog); dialog.hwndOwner=owner;
+    dialog.lpstrFilter=L"HarmonyContinuation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0";
+    dialog.lpstrFile=path; dialog.nMaxFile=32768; dialog.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST;
+    if (!GetOpenFileNameW(&dialog)) return std::nullopt;
+    return std::filesystem::path(path);
+}
 class DemoApp {
 public:
     explicit DemoApp(std::filesystem::path executable)
@@ -40,6 +67,9 @@ public:
         actions.updateUser=[this](const ProgressionTemplate& t) { return update(t); };
         actions.deleteUser=[this](const std::string& id) { return remove(id); };
         actions.audition=[this](const ContinuationCandidate& c) { audition(c); };
+        actions.exportMidi=[this](const ContinuationCandidate& c) { return exportRecommendation(c); };
+        actions.saveSnapshot=[this](const ContinuationCandidate& c) { return saveRecommendationSnapshot(c); };
+        actions.exportLibraryMidi=[this](const ProgressionTemplate& t) { return exportLibrary(t); };
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
         if (!frame_->open(host,VSTGUI::PlatformType::kHWND)) { frame_=nullptr; main_=nullptr; return false; }
@@ -48,6 +78,8 @@ public:
     }
     bool load(char which) {
         stopAudition();
+        snapshotLoaded_=false;
+        if (main_) main_->setSnapshotMode(false);
         if (which<'A' || which>'H') return false;
         auto path=std::filesystem::path(HC_DEMO_FIXTURE_DIR)/(std::string("case_")+static_cast<char>(which-'A'+'a')+".json");
         auto loaded=demo::loadScenario(path);
@@ -65,10 +97,12 @@ public:
     void tick() {
         if (frame_) frame_->idle();
         if (auto result=worker_.takeLatest()) {
+            if (!snapshotLoaded_) {
             analysis_=std::move(result->analysis); recommendations_=std::move(result->recommendations);
             if (main_) { main_->setAnalysis(analysis_); main_->setMatches(recommendations_.matches,
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
                 main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
+            }
         }
         const auto now=std::chrono::steady_clock::now();
         const auto seconds=std::chrono::duration<double>(now-lastTick_).count(); lastTick_=now;
@@ -85,6 +119,43 @@ public:
     void seek(double qn) { projectQN_=qn; if (main_) main_->setPlaybackPosition(projectQN_,playing_); }
     bool togglePlay() { playing_=!playing_; if (main_) main_->setPlaybackPosition(projectQN_,playing_); return playing_; }
     double projectQN() const { return projectQN_; }
+    void showStatus(std::string status) { if (main_) main_->setActionStatus(std::move(status)); }
+    std::string exportCurrent() {
+        const auto built=preview::buildSequence(state_.imported,nullptr,scenario_.tempo);
+        if (!built) return "Current MIDI: "+built.error;
+        const auto key=state_.forcedKey?state_.forcedKey:
+            (analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt);
+        return exportSequence(built.sequence,nullptr,midi::ExportScope::CurrentOnly,key);
+    }
+    std::string openSnapshot() {
+        const auto path=openSnapshotPath(hostWindow_);
+        if (!path) return "Snapshot open cancelled";
+        const auto decoded=snapshot::loadFile(*path);
+        if (!decoded) return "Snapshot load: "+decoded.error;
+        stopAudition(); snapshotLoaded_=true; playing_=false;
+        const auto& snap=decoded.value;
+        state_={}; state_.imported=snap.imported; state_.forcedKey=snap.key;
+        state_.style=snap.style; state_.intent=snap.intent;
+        state_.meterNumerator=snap.meterNumerator; state_.meterDenominator=snap.meterDenominator;
+        scenario_.name=path->filename().string(); scenario_.tempo=snap.tempoBPM;
+        scenario_.meterNumerator=snap.meterNumerator; scenario_.meterDenominator=snap.meterDenominator;
+        projectQN_=0;
+        analysis_=analyzeHarmony(state_.imported.events,state_.analysisContext());
+        recommendations_={};
+        const auto group=snap.candidate.intent==PhraseIntent::Develop?1:snap.candidate.intent==PhraseIntent::Loop?2:
+            snap.candidate.intent==PhraseIntent::Color?3:0;
+        recommendations_.groups[group].push_back(snap.candidate);
+        if (snap.match) recommendations_.matches.push_back(*snap.match);
+        if (main_) {
+            main_->setSnapshotMode(true); main_->setSessionState(state_);
+            main_->setPlaybackPosition(projectQN_,false); main_->setAnalysis(analysis_);
+            main_->setMatches(recommendations_.matches,"Frozen recommendation snapshot");
+            main_->setRecommendations(recommendations_);
+            main_->setWorkerStatus(0,0,false,0,0);
+            main_->setHostText("Snapshot · "+scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM");
+        }
+        return "Snapshot loaded";
+    }
 private:
     HWND hostWindow_{};
     std::filesystem::path auditionFile_;
@@ -100,6 +171,7 @@ private:
     HarmonicAnalysisResult analysis_;
     RecommendationSet recommendations_;
     bool playing_{};
+    bool snapshotLoaded_{};
     double projectQN_{};
     std::chrono::steady_clock::time_point lastTick_{std::chrono::steady_clock::now()};
     void stopAudition() {
@@ -131,6 +203,7 @@ private:
         if (hostWindow_) SetTimer(hostWindow_,1,40,nullptr);
     }
     void submit(bool rankingOnly=false) {
+        if (snapshotLoaded_) return;
         if (state_.imported.events.empty()) return;
         RecommendationRequest request{state_.style,state_.intent};
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
@@ -141,7 +214,59 @@ private:
         const auto recompute=session::recomputeScope(state_,next);
         state_=next;
         if (main_) main_->setSessionState(state_);
-        if (recompute!=session::RecomputeScope::None) submit(recompute==session::RecomputeScope::Ranking);
+        if (!snapshotLoaded_ && recompute!=session::RecomputeScope::None) submit(recompute==session::RecomputeScope::Ranking);
+    }
+    std::string exportSequence(const preview::Sequence& sequence,const ContinuationCandidate* candidate,
+                               midi::ExportScope scope,std::optional<KeySignature> key) {
+        const auto built=midi::buildClip(sequence,midi::ArrangementMode::VoiceLed,scope,
+            {scenario_.meterNumerator,scenario_.meterDenominator},key,candidate?std::optional(candidate->intent):std::nullopt);
+        if (!built) return "MIDI export: "+built.error;
+        const auto name=midi::suggestedFilename(candidate?std::optional(candidate->intent):std::nullopt,key,1);
+        const auto path=savePath(hostWindow_,std::wstring(name.begin(),name.end()),
+            L"MIDI files\0*.mid\0\0",L"mid");
+        if (!path) return "MIDI export cancelled";
+        const auto payload=midi::makePayload(built.sequence,name);
+        std::string error;
+        if (payload.smfBytes.empty()||!midi::writeToFile(payload.smfBytes,*path,error))
+            return "MIDI export: "+(error.empty()?"invalid payload":error);
+        return "MIDI saved: "+path->filename().string();
+    }
+    std::string exportRecommendation(const ContinuationCandidate& candidate) {
+        const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
+        if (!built) return "MIDI export: "+built.error;
+        return exportSequence(built.sequence,&candidate,midi::ExportScope::FullPhrase,candidate.key);
+    }
+    std::string exportLibrary(const ProgressionTemplate& item) {
+        const auto key=state_.forcedKey.value_or(analysis_.selectedKey?analysis_.selectedKey->key:
+            KeySignature{item.mode==Mode::Major?PitchClass::C:PitchClass::A,item.mode});
+        const auto preview=midi::previewFromTemplate(item,key,scenario_.tempo);
+        if (!preview) return "Library MIDI: "+preview.error;
+        const auto clip=midi::buildClip(preview.sequence,midi::ArrangementMode::VoiceLed,midi::ExportScope::CurrentOnly,
+            {item.meterNumerator,item.meterDenominator},key,item.intent);
+        if (!clip) return "Library MIDI: "+clip.error;
+        const auto name=midi::suggestedFilename(item.intent,key,1);
+        const auto path=savePath(hostWindow_,std::wstring(name.begin(),name.end()),L"MIDI files\0*.mid\0\0",L"mid");
+        if (!path) return "Library MIDI cancelled";
+        const auto payload=midi::makePayload(clip.sequence,name);
+        std::string error;
+        if (payload.smfBytes.empty()||!midi::writeToFile(payload.smfBytes,*path,error))
+            return "Library MIDI: "+(error.empty()?"invalid payload":error);
+        return "Library MIDI saved: "+path->filename().string();
+    }
+    std::string saveRecommendationSnapshot(const ContinuationCandidate& candidate) {
+        try {
+            const auto snap=snapshot::capture(state_.imported,candidate,recommendations_.matches,
+                scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
+                state_.forcedKey?state_.forcedKey:std::optional(candidate.key),state_.style,state_.intent);
+            auto name=midi::suggestedFilename(candidate.intent,candidate.key,1);
+            name.replace(name.size()-4,4,".hcrec.json");
+            const auto path=savePath(hostWindow_,std::wstring(name.begin(),name.end()),
+                L"HarmonyContinuation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0",L"json");
+            if (!path) return "Snapshot save cancelled";
+            std::string error;
+            if (!snapshot::saveFile(snap,*path,error)) return "Snapshot save: "+error;
+            return "Snapshot saved: "+path->filename().string();
+        } catch (const std::exception& e) {return std::string("Snapshot save: ")+e.what();}
     }
     void loadLibrary() {
         auto factory=library::loadFactory(factoryPath_); auto user=library::UserLibrary(userPath_).loadAll();
@@ -176,6 +301,10 @@ LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
             } else if (LOWORD(w)==102 && app) {
                 const bool playing=app->togglePlay(); SetWindowTextW(playButton,playing?L"Pause":L"Play");
                 SetTimer(hwnd,1,playing?50:250,nullptr);
+            } else if (LOWORD(w)==104 && app) {
+                app->showStatus(app->exportCurrent());
+            } else if (LOWORD(w)==105 && app) {
+                app->showStatus(app->openSnapshot());
             }
             return 0;
         case WM_HSCROLL:
@@ -198,17 +327,21 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
         CW_USEDEFAULT,CW_USEDEFAULT,1125,1000,nullptr,nullptr,instance,nullptr);
     if (!hwnd) return 1;
     auto combo=CreateWindowExW(0,L"COMBOBOX",nullptr,WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST|WS_VSCROLL,
-        12,8,330,300,hwnd,reinterpret_cast<HMENU>(101),instance,nullptr);
+        12,8,285,300,hwnd,reinterpret_cast<HMENU>(101),instance,nullptr);
     const wchar_t* cases[]{L"Case A · C → Am → Dm",L"Case B · C → Am → A7 → Dm",L"Case C · Dm7 → G7",
         L"Case D · C → F → Fm",L"Case E · C → G → Am → F",L"Case F · A minor",
         L"Case G · anomalous F#",L"Case H · ambiguous key"};
     for (auto value:cases) SendMessageW(combo,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
-    playButton=CreateWindowExW(0,L"BUTTON",L"Play",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,355,8,85,32,hwnd,
+    playButton=CreateWindowExW(0,L"BUTTON",L"Play",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,305,8,65,32,hwnd,
         reinterpret_cast<HMENU>(102),instance,nullptr);
-    slider=CreateWindowExW(0,TRACKBAR_CLASSW,L"Project QN",WS_CHILD|WS_VISIBLE|TBS_HORZ,455,4,490,40,hwnd,
+    slider=CreateWindowExW(0,TRACKBAR_CLASSW,L"Project QN",WS_CHILD|WS_VISIBLE|TBS_HORZ,380,4,305,40,hwnd,
         reinterpret_cast<HMENU>(103),instance,nullptr);
     SendMessageW(slider,TBM_SETRANGE,TRUE,MAKELPARAM(0,256));
-    CreateWindowExW(0,L"STATIC",L"120 BPM · simulated",WS_CHILD|WS_VISIBLE,950,14,160,25,hwnd,nullptr,instance,nullptr);
+    CreateWindowExW(0,L"BUTTON",L"Current MIDI",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,690,8,112,32,hwnd,
+        reinterpret_cast<HMENU>(104),instance,nullptr);
+    CreateWindowExW(0,L"BUTTON",L"Open Snapshot",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,808,8,112,32,hwnd,
+        reinterpret_cast<HMENU>(105),instance,nullptr);
+    CreateWindowExW(0,L"STATIC",L"120 BPM · simulated",WS_CHILD|WS_VISIBLE,930,14,180,25,hwnd,nullptr,instance,nullptr);
     auto content=CreateWindowExW(0,L"STATIC",nullptr,WS_CHILD|WS_VISIBLE,10,55,1100,900,hwnd,nullptr,instance,nullptr);
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
     char initial='D'; for (int i=1;i+1<argc;++i) if (std::wstring_view(args[i])==L"--case" && wcslen(args[i+1])==1)

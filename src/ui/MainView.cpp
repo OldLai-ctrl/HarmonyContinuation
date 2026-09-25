@@ -117,6 +117,10 @@ void MainView::setRecommendations(const RecommendationSet& r) {
 void MainView::setPreviewPosition(std::string id,double qn,double totalQN) {
     previewCandidateId_=std::move(id); previewQN_=qn; previewTotalQN_=totalQN; invalid();
 }
+void MainView::setSnapshotMode(bool enabled) {
+    visibility_.absoluteMinimumScore=enabled?0.f:60.f;
+    invalid();
+}
 void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttempt) {
     rawText_=raw.substr(0,12000); parseText_=parsed.substr(0,8000);
     recentReports_.push_front(parseText_); if (recentReports_.size()>8) recentReports_.pop_back(); invalid();
@@ -279,10 +283,15 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             drawMiniTimeline(dc,c,CRect(33,y+3,715,y+21));
             line(dc,std::to_string(static_cast<int>(std::round(c.rankingScore))),CRect(720,y+2,760,y+22),pale,kCenterText);
             line(dc,cadenceName(c.cadence),CRect(765,y+2,840,y+22),muted,kCenterText);
-            line(dc,primaryStyle(c.styles),CRect(845,y+2,930,y+22),muted,kCenterText);
+            const bool exportControls=static_cast<bool>(actions_.exportMidi);
+            line(dc,primaryStyle(c.styles),CRect(845,y+2,exportControls?900:930,y+22),muted,kCenterText);
             line(dc,std::find(state_.pinnedCandidateIds.begin(),state_.pinnedCandidateIds.end(),c.id)!=state_.pinnedCandidateIds.end()?"● Pin":"○ Pin",
-                 CRect(936,y+2,995,y+22),accent);
-            if (actions_.audition) {
+                 CRect(exportControls?900:936,y+2,exportControls?950:995,y+22),accent);
+            if (exportControls) {
+                line(dc,previewCandidateId_==c.id?"■":"▶",CRect(950,y+2,981,y+22),accent,kCenterText);
+                line(dc,"MIDI",CRect(982,y+2,1027,y+22),accent,kCenterText);
+                line(dc,"SNAP",CRect(1028,y+2,1080,y+22),muted,kCenterText);
+            } else if (actions_.audition) {
                 line(dc,previewCandidateId_==c.id?"■":"▶",CRect(1000,y+2,1032,y+22),accent,kCenterText);
                 line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1037,y+2,1080,y+22),muted);
             } else line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1000,y+2,1070,y+22),muted);
@@ -405,6 +414,7 @@ void MainView::drawLibrary(CDrawContext* dc,const CRect& bounds) {
             line(dc,"Rename / metadata",CRect(345,706,545,740),accent);
             line(dc,"Delete",CRect(600,706,715,740),CColor(255,175,175,255));
         } else line(dc,"Factory · read only",CRect(345,706,670,740),muted);
+        if (actions_.exportLibraryMidi) line(dc,"Export MIDI",CRect(800,706,1060,740),accent,kRightText);
     }
 }
 void MainView::drawDiagnostics(CDrawContext* dc,const CRect& bounds) {
@@ -619,6 +629,12 @@ CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
         if (state_.tab==session::Tab::Library) {
             if (selectedLibrary_) {
                 if (where.y>=379 && where.y<410 && where.x>=320 && where.x<400) { selectedLibrary_.reset(); invalid(); return kMouseEventHandled; }
+                if (where.y>=699 && where.y<751 && where.x>=790 && actions_.exportLibraryMidi) {
+                    const auto [factory,index]=*selectedLibrary_;
+                    const auto* item=factory?(index<factory_.size()?&factory_[index]:nullptr):(index<user_.size()?&user_[index]:nullptr);
+                    if (item) { actionStatus_=actions_.exportLibraryMidi(*item); invalid(); }
+                    return kMouseEventHandled;
+                }
                 if (!selectedLibrary_->first && selectedLibrary_->second<user_.size() && where.y>=699 && where.y<751) {
                     const auto item=user_[selectedLibrary_->second];
                     if (where.x>=340 && where.x<570) {
@@ -705,14 +721,21 @@ CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
             const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
             if (row>=visible.size() || row>=3) return kMouseEventHandled;
             const auto index=visible[row]; const auto& c=recommendations_.groups[group][index];
-            if (where.x>=930 && where.x<1000) {
+            const bool exportControls=static_cast<bool>(actions_.exportMidi);
+            if (where.x>=(exportControls?900:930) && where.x<(exportControls?950:1000)) {
                 if (state_.unpin(c.id)) std::erase_if(pinnedSnapshots_,[&](const auto& candidate){return candidate.id==c.id;});
                 else {
                     if (!state_.pin(c.id,session::continuationFingerprint(c))) actionStatus_="Compare holds at most 3 candidates";
                     else pinnedSnapshots_.push_back(c);
                 }
                 notifyState();
-            } else if (where.x>=1000 && where.x<1037 && actions_.audition) {
+            } else if (exportControls && where.x>=950 && where.x<982 && actions_.audition) {
+                actions_.audition(c);
+            } else if (exportControls && where.x>=982 && where.x<1028) {
+                actionStatus_=actions_.exportMidi(c); invalid();
+            } else if (exportControls && where.x>=1028 && where.x<1080 && actions_.saveSnapshot) {
+                actionStatus_=actions_.saveSnapshot(c); invalid();
+            } else if (where.x>=1000 && where.x<1037 && actions_.audition && !exportControls) {
                 actions_.audition(c);
             } else { selectedCandidate_={{group,index}}; invalid(); }
             return kMouseEventHandled;

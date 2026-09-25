@@ -24,6 +24,9 @@ public:
         std::function<std::string(const ProgressionTemplate&)> updateUser;
         std::function<std::string(const std::string&)> deleteUser;
         std::function<void(const ContinuationCandidate&)> audition;
+        std::function<std::string(const ContinuationCandidate&)> exportMidi;
+        std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
+        std::function<std::string(const ProgressionTemplate&)> exportLibraryMidi;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;
@@ -39,6 +42,8 @@ public:
     void setMatches(const std::vector<MatchResult>&, std::string status);
     void setRecommendations(const RecommendationSet&);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
+    void setSnapshotMode(bool enabled);
+    void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
     void setLibrary(std::vector<ProgressionTemplate> factory, std::vector<ProgressionTemplate> user,
