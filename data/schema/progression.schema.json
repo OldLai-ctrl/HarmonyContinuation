@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HarmonyContinuation factory phrase",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "mode", "sequence", "intent", "cadence", "loopable", "meter", "styles", "sourceType", "priorWeight", "complexity", "version", "phraseLength"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["major", "minor"]},
+    "sequence": {"type": "string", "minLength": 3},
+    "rhythm": {"type": "string"},
+    "intent": {"enum": ["neutral", "develop", "resolve", "loop", "color"]},
+    "secondaryIntents": {"type": "integer", "minimum": 0},
+    "cadence": {"enum": ["none", "authentic", "perfect_authentic", "imperfect_authentic", "plagal", "half", "deceptive", "modal", "loop_closure", "unknown"]},
+    "loopable": {"type": "boolean"},
+    "meter": {"enum": ["2/4", "3/4", "4/4", "5/4", "6/8", "7/8", "9/8"]},
+    "styles": {"type": "string", "description": "Comma separated style:weight pairs; known styles pop, rock, rnb, jazz, citypop, functional"},
+    "tags": {"type": "string"},
+    "skeleton": {"type": "string", "description": "Ascending comma separated event indices; auto computed if omitted"},
+    "sourceType": {"enum": ["factory", "user"]},
+    "priorWeight": {"type": "number", "minimum": 0, "maximum": 1},
+    "complexity": {"type": "number", "minimum": 0, "maximum": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "phraseLength": {"type": "integer", "minimum": 2}
+  }
+}
