@@ -105,6 +105,13 @@ void MainView::setAnalysis(const harmony::HarmonicAnalysisResult& analysis) {
     invalid();
 }
 
+void MainView::setMatches(const std::vector<harmony::MatchResult>& matches, std::string status) {
+    matches_ = matches;
+    matchStatus_ = std::move(status);
+    selectedMatch_ = 0;
+    invalid();
+}
+
 void MainView::setPlaybackPosition(std::optional<double> projectQN, bool playing) {
     const auto oldLocation = currentLocation_;
     const auto oldPlayheadX = playheadX_;
@@ -241,6 +248,61 @@ void MainView::drawTimeline(CDrawContext* dc, const CRect& updateRect) {
     }
 }
 
+void MainView::drawMatches(CDrawContext* dc, const CRect& bounds) {
+    dc->setFont(kNormalFont);
+    dc->setFontColor(CColor(151, 184, 223, 255));
+    dc->drawString(matchStatus_.c_str(), CRect(24, 438, bounds.right - 24, 460), kLeftText);
+    if (matches_.empty()) return;
+    const auto count = std::min<std::size_t>(5, matches_.size());
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto top = 464.0 + static_cast<double>(i) * 43.0;
+        if (top + 39 > bounds.bottom - 18) break;
+        const auto& match = matches_[i];
+        const CRect row(24, top, bounds.right - 24, top + 39);
+        dc->setFillColor(i == selectedMatch_ ? CColor(37, 63, 89, 255) : CColor(27, 42, 60, 255));
+        dc->drawRect(row, kDrawFilled);
+        dc->setFillColor(CColor(255, 217, 115, 255));
+        dc->drawRect(CRect(row.left, row.bottom - 3,
+                           row.left + (row.getWidth() * std::clamp(match.similarity, 0.f, 1.f)), row.bottom), kDrawFilled);
+        dc->setFontColor(CColor(239, 245, 255, 255));
+        std::ostringstream line;
+        line << static_cast<int>(std::round(match.similarity * 100.f)) << " Match   ";
+        for (std::size_t k = 0; k < match.templateLabels.size(); ++k) {
+            if (k) line << " — ";
+            line << match.templateLabels[k];
+        }
+        line << "   [" << harmony::formatKey(match.key) << "]";
+        dc->drawString(line.str().c_str(), CRect(row.left + 7, row.top + 1, row.right - 7, row.top + 19), kLeftText);
+        std::ostringstream sub;
+        sub << match.templateName << "   结构 " << static_cast<int>(std::round(match.subScores.skeletonHarmony * 100.f))
+            << "  完整 " << static_cast<int>(std::round(match.subScores.fullHarmony * 100.f))
+            << "  节奏 " << static_cast<int>(std::round(match.subScores.rhythmSimilarity * 100.f))
+            << "  对应 " << match.templateMatchStart << "-" << match.templateMatchEnd
+            << "  后续位置 " << match.continuationStartIndex;
+        dc->setFontColor(CColor(163, 193, 220, 255));
+        dc->drawString(sub.str().c_str(), CRect(row.left + 7, row.top + 18, row.right - 7, row.bottom - 3), kLeftText);
+    }
+    const auto traceTop = 464.0 + static_cast<double>(count) * 43.0 + 10.0;
+    if (traceTop >= bounds.bottom - 30) return;
+    const auto& selected = matches_[std::min(selectedMatch_, matches_.size() - 1)];
+    dc->setFontColor(CColor(255, 225, 112, 255));
+    dc->drawString("对应关系 / 点击上方候选查看", CRect(24, traceTop, bounds.right - 24, traceTop + 22), kLeftText);
+    std::ostringstream trace;
+    for (const auto& step : selected.alignmentTrace) {
+        trace << harmony::alignmentOpName(step.operation) << "  ";
+        if (step.queryIndex && *step.queryIndex < session_.events.size()) trace << session_.events[*step.queryIndex].name;
+        else trace << "GAP";
+        trace << "  ↔  ";
+        if (step.templateIndex && *step.templateIndex < selected.templateLabels.size())
+            trace << selected.templateLabels[*step.templateIndex];
+        else trace << "GAP";
+        trace << "  [" << harmony::reasonNames(step.reasons) << "]\n";
+    }
+    dc->setFontColor(CColor(210, 222, 239, 255));
+    const auto rows = std::max(1, static_cast<int>((bounds.bottom - traceTop - 35.0) / 16.0));
+    drawTextRows(dc, trace.str(), CRect(24, traceTop + 23, bounds.right - 24, bounds.bottom - 18), rows, 16, kLeftText);
+}
+
 void MainView::drawRect(CDrawContext* dc, const CRect& updateRect) {
     // Transport changes invalidate only the timeline lane. Redraw its cached
     // layout under the dirty region, without formatting diagnostics or painting
@@ -301,11 +363,14 @@ void MainView::drawRect(CDrawContext* dc, const CRect& updateRect) {
     dc->drawString("[ FULL ]", CRect(20, 402, 114, 425), kLeftText);
     dc->setFontColor(showSkeleton_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
     dc->drawString("[ SKELETON ]", CRect(120, 402, 260, 425), kLeftText);
-    dc->setFontColor(CColor(151, 184, 223, 255));
-    dc->drawString(debugExpanded_ ? "诊断面板  /  点击折叠" : "诊断面板  /  点击展开",
-                   CRect(280, 402, bounds.right - 20, 425), kLeftText);
+    dc->setFontColor(showMatches_ ? CColor(255, 225, 112, 255) : CColor(151, 184, 223, 255));
+    dc->drawString("[ MATCH ]", CRect(280, 402, 382, 425), kLeftText);
+    dc->setFontColor(showMatches_ ? CColor(151, 184, 223, 255) : CColor(255, 225, 112, 255));
+    dc->drawString(debugExpanded_ ? "[ 诊断 / 折叠 ]" : "[ 诊断 / 展开 ]",
+                   CRect(390, 402, bounds.right - 20, 425), kLeftText);
     dc->setFillColor(CColor(20, 31, 47, 255));
     dc->drawRect(CRect(16, 430, bounds.right - 16, bounds.bottom - 12), kDrawFilled);
+    if (showMatches_) { drawMatches(dc, bounds); return; }
     dc->setFontColor(CColor(210, 222, 239, 255));
     std::string shown;
     if (debugExpanded_) {
@@ -335,7 +400,15 @@ CMouseEventResult MainView::onMouseDown(CPoint& where, const CButtonState&) {
     } else if (where.y >= 399 && where.y < 429 && where.x < 265 && !analysis_.full.empty()) {
         const bool skeleton = where.x >= 118;
         if (showSkeleton_ != skeleton) { showSkeleton_ = skeleton; invalid(); }
-    } else if (where.y >= 399) {
+    } else if (where.y >= 399 && where.y < 429 && where.x >= 275 && where.x < 385) {
+        showMatches_ = true;
+        invalid();
+    } else if (showMatches_ && where.y >= 464 && where.y < 464 + 43 * 5) {
+        const auto index = static_cast<std::size_t>((where.y - 464) / 43);
+        if (index < matches_.size()) { selectedMatch_ = index; invalid(); }
+    } else if ((where.y >= 399 && where.y < 429 && where.x >= 385) ||
+               (!showMatches_ && where.y >= 430)) {
+        showMatches_ = false;
         debugExpanded_ = !debugExpanded_;
         invalid();
     }

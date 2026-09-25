@@ -1,6 +1,7 @@
 #pragma once
 #include "core/CurrentChordLocator.h"
 #include "core/HarmonyAnalysis.h"
+#include "core/ProgressionMatcher.h"
 #include "ui/ProgressionTimeline.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
@@ -22,6 +23,7 @@ public:
     void setHostText(std::string, std::string refreshSummary = {});
     void setProgressionSession(const harmony::ImportedProgressionSession&);
     void setAnalysis(const harmony::HarmonicAnalysisResult&);
+    void setMatches(const std::vector<harmony::MatchResult>&, std::string status);
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
@@ -33,6 +35,10 @@ private:
     std::string parseText_{"解析结果：等待拖入"};
     harmony::ImportedProgressionSession session_;
     harmony::HarmonicAnalysisResult analysis_;
+    std::vector<harmony::MatchResult> matches_;
+    std::string matchStatus_;
+    bool showMatches_{};
+    std::size_t selectedMatch_{};
     bool showSkeleton_{};
     std::vector<TimelineBlock> timelineBlocks_;
     harmony::ChordLocation currentLocation_;
@@ -46,6 +52,7 @@ private:
     void rebuildTimeline();
     VSTGUI::CRect chordTileRect(std::size_t eventIndex) const;
     void drawTimeline(VSTGUI::CDrawContext*, const VSTGUI::CRect& updateRect);
+    void drawMatches(VSTGUI::CDrawContext*, const VSTGUI::CRect& bounds);
     std::optional<VSTGUI::CCoord> projectQNToX(double qn) const;
 };
 }

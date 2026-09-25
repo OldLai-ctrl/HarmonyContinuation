@@ -1,6 +1,7 @@
 #pragma once
 #include "core/ImportedProgression.h"
 #include "core/HarmonyAnalysis.h"
+#include "core/ProgressionMatcher.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include <cstdint>
 #include <functional>
@@ -26,6 +27,8 @@ private:
     harmony::ui::MainView* view_{};
     harmony::ImportedProgressionSession importedProgression_;
     harmony::HarmonicAnalysisResult analysis_;
+    std::vector<harmony::MatchResult> matches_;
+    std::string matchStatus_{"拖入和弦后显示匹配结果"};
     std::uint64_t lastSnapshotGeneration_{};
     unsigned unchangedTransportPolls_{};
     std::optional<double> lastProjectQN_;

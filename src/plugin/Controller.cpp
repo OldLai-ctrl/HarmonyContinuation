@@ -7,6 +7,7 @@
 #include "vstgui/lib/cclipboard.h"
 #include "PluginView.h"
 #include "../ui/MainView.h"
+#include "TemplateJson.h"
 #include "pluginterfaces/vst/ivsthostapplication.h"
 #include "pluginterfaces/vst/ivstmessage.h"
 #include "public.sdk/source/vst/utility/stringconvert.h"
@@ -184,6 +185,7 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
         try {
             view_->setProgressionSession(importedProgression_);
             view_->setAnalysis(analysis_);
+            view_->setMatches(matches_, matchStatus_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
             view_->setHostText("宿主：" + hostName_ + "\n格式：VST3 | 播放位置自动同步");
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
@@ -214,9 +216,26 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
             auto nextAnalysis = harmony::analyzeHarmony(chords, analysisContext);
             if (importedProgression_.replace(std::move(chords), harmony::TimelineCoordinateMode::AbsoluteProjectQN)) {
                 analysis_ = std::move(nextAnalysis);
+                matches_.clear();
+                if (importedProgression_.events.size() > 64) {
+                    matchStatus_ = "MATCH：当前导入超过 64 个和弦，开发视图暂不计算；分析与时间轴仍可用。";
+                } else {
+                    // Embedded test templates and matching initialize on import,
+                    // never on editor open or a transport update.
+                    try {
+                        static const auto fixture = harmony::dev::loadDevelopmentTemplates();
+                        if (fixture) {
+                            static const harmony::CandidateIndex index(fixture.templates);
+                            const auto query = harmony::makeMatchQuery(importedProgression_.events, analysisContext);
+                            matches_ = harmony::matchProgression(query, index, {}, 5);
+                            matchStatus_ = "MATCH：开发测试模板 " + std::to_string(index.templates().size()) + " 条";
+                        } else matchStatus_ = "MATCH 测试模板加载失败：" + fixture.error;
+                    } catch (...) { matchStatus_ = "MATCH 计算失败；和声分析与时间轴仍可使用。"; }
+                }
                 if (view_) {
                     view_->setProgressionSession(importedProgression_);
                     view_->setAnalysis(analysis_);
+                    view_->setMatches(matches_, matchStatus_);
                 }
             } else {
                 parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";
