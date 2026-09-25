@@ -4,6 +4,7 @@
 #include "session/PluginSessionState.h"
 #include "session/ProductServices.h"
 #include "ui/ProgressionTimeline.h"
+#include "ui/UILayout.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -35,6 +36,10 @@ public:
     void onDragLeave(VSTGUI::DragEventData) override;
     bool onDrop(VSTGUI::DragEventData) override;
     void setSessionState(const session::PluginSessionState&);
+    void setEditorSizeState(int width,int height) noexcept {
+        state_.editorWidth=static_cast<std::uint32_t>(width);
+        state_.editorHeight=static_cast<std::uint32_t>(height);
+    }
     void clearSessionDirty() { sessionDirty_=false; invalid(); }
     void setHostText(std::string, std::string refreshSummary = {});
     void setProgressionSession(const ImportedProgressionSession&);
@@ -52,6 +57,9 @@ public:
                          std::size_t userCount);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
+    void onMouseWheelEvent(VSTGUI::MouseWheelEvent&) override;
+    void resizeLayout(int width,int height);
+    void setSimulatedContentScale(double scale);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -81,6 +89,9 @@ private:
     std::optional<Mode> libraryMode_;
     std::string librarySearch_;
     std::deque<std::string> recentReports_, recentHostSnapshots_;
+    UILayoutResult layout_;
+    double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
+    std::uint64_t paintGeneration_{};
     enum class Form { None, Save, Rename, Search } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
@@ -93,13 +104,14 @@ private:
     void drawTop(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawPhrase(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawRecommendations(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
-    void drawLibrary(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
-    void drawDiagnostics(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawCompare(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
-    void drawInspector(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
-    void drawForm(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
-    void drawDebugOverlay(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawMiniTimeline(VSTGUI::CDrawContext*, const ContinuationCandidate&, VSTGUI::CRect);
+    void drawResponsiveLibrary(VSTGUI::CDrawContext*);
+    void drawResponsiveDiagnostics(VSTGUI::CDrawContext*);
+    void drawResponsiveInspector(VSTGUI::CDrawContext*);
+    void drawResponsiveForm(VSTGUI::CDrawContext*);
+    VSTGUI::CMouseEventResult onMouseDownResponsive(VSTGUI::CPoint&);
+    void refreshLayout();
     const ContinuationCandidate* selectedCandidate() const;
     const ContinuationCandidate* findCandidate(const std::string&) const;
     void beginForm(Form, std::string initial);

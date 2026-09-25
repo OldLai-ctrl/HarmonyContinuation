@@ -51,7 +51,7 @@ RecomputeScope recomputeScope(const PluginSessionState& old,const PluginSessionS
 }
 namespace {
 struct Writer {
-    std::string bytes{"HCS2"};
+    std::string bytes{"HCS3"};
     void u8(std::uint8_t n) { bytes.push_back(static_cast<char>(n)); }
     void u32(std::uint32_t n) { for (int i=0;i<4;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
     void u64(std::uint64_t n) { for (int i=0;i<8;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
@@ -73,6 +73,8 @@ struct Reader {
 }
 std::string serialize(const PluginSessionState& state) {
     if (state.imported.events.size()>64 || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
+    if (state.editorWidth<900 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
+        throw std::runtime_error("invalid editor size");
     Writer w;
     w.u32(PluginSessionState::currentSchemaVersion);
     w.u32(state.factoryLibraryVersion);
@@ -99,6 +101,7 @@ std::string serialize(const PluginSessionState& state) {
         w.optionalString(chord.extensions.mask); w.optionalString(chord.extensions.pitches);
         w.optionalString(chord.extensions.type); w.optionalString(chord.extensions.color);
     }
+    w.u32(state.editorWidth); w.u32(state.editorHeight);
     if (w.bytes.size()>1024*1024) throw std::runtime_error("session state too large");
     return w.bytes;
 }
@@ -107,11 +110,12 @@ DecodeResult deserialize(std::string_view bytes) {
     try {
         if (bytes.size()<4 || bytes.size()>1024*1024 || bytes.substr(0,3)!="HCS") throw std::runtime_error("unsupported session state");
         const bool legacy=bytes[3]=='1';
-        if (!legacy && bytes[3]!='2') throw std::runtime_error("UnsupportedVersion");
+        const bool version2=bytes[3]=='2', version3=bytes[3]=='3';
+        if (!legacy && !version2 && !version3) throw std::runtime_error("UnsupportedVersion");
         Reader r{bytes,4}; auto& s=result.state;
         if (!legacy) {
             const auto version=r.u32();
-            if (version!=PluginSessionState::currentSchemaVersion) throw std::runtime_error("UnsupportedVersion");
+            if (version!=(version2?2u:3u)) throw std::runtime_error("UnsupportedVersion");
         }
         s.schemaVersion=PluginSessionState::currentSchemaVersion;
         s.factoryLibraryVersion=r.u32();
@@ -138,6 +142,11 @@ DecodeResult deserialize(std::string_view bytes) {
             c.extensions.mask=r.optionalString(); c.extensions.pitches=r.optionalString(); c.extensions.type=r.optionalString(); c.extensions.color=r.optionalString();
             if (c.name.empty() || (c.durationQN && *c.durationQN<=0)) throw std::runtime_error("invalid chord data");
             s.imported.events.push_back(std::move(c));
+        }
+        if (version3) {
+            s.editorWidth=r.u32(); s.editorHeight=r.u32();
+            if (s.editorWidth<900 || s.editorWidth>2200 || s.editorHeight<640 || s.editorHeight>1400)
+                throw std::runtime_error("invalid editor size");
         }
         if (r.at!=bytes.size() || (count && coordinate==0) || !std::is_sorted(s.imported.events.begin(),s.imported.events.end(),
             [](const auto& a,const auto& b){return a.startQN<b.startQN;})) throw std::runtime_error("invalid session order");

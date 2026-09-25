@@ -202,6 +202,9 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(UILayoutTests tests/UILayoutTests.cpp)
+    target_link_libraries(UILayoutTests PRIVATE harmony_product)
+    add_test(NAME UILayoutTests COMMAND UILayoutTests)
     add_executable(MidiExportTests tests/MidiExportTests.cpp)
     target_link_libraries(MidiExportTests PRIVATE harmony_snapshot harmony_demo_scenarios)
     target_compile_definitions(MidiExportTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"

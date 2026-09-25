@@ -39,6 +39,8 @@ int main() {
         check(session::deserialize(session::serialize(intent)).state.intent==PhraseIntent::Resolve,"intent round trip");
         auto view=state; view.skeletonView=true; view.tab=session::Tab::Library;
         check(session::recomputeScope(state,view)==session::RecomputeScope::None,"view does not reanalyze");
+        auto resized=state;resized.editorWidth=1800;resized.editorHeight=1000;
+        check(session::recomputeScope(state,resized)==session::RecomputeScope::None,"resize does not reanalyze");
         check(view.pin("A") && view.pin("B") && view.pin("C") && !view.pin("D"),"pin max three");
         check(view.unpin("B") && view.pinnedCandidateIds.size()==2 && !view.unpin("B"),"unpin");
         view.debugExpanded=true; view.factoryLibraryVersion=3;

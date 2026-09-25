@@ -35,6 +35,9 @@ public:
     void inspectClipboard() noexcept;
     void attach(harmony::ui::MainView*, std::function<void(bool)> transportRateChanged = {}) noexcept;
     void detach(harmony::ui::MainView*) noexcept;
+    std::pair<int,int> editorSize() const noexcept { return {static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight)}; }
+    void editorSizeChanged(int width,int height) noexcept;
+    void setResizeRequest(std::function<void(int,int)> request) { resizeRequest_=std::move(request); }
 private:
     std::string hostName_{"宿主不可用"};
     harmony::ui::MainView* view_{};
@@ -53,6 +56,7 @@ private:
     std::optional<int> lastTimeSigDenominator_;
     bool lastPlaying_{};
     std::function<void(bool)> transportRateChanged_;
+    std::function<void(int,int)> resizeRequest_;
     std::uint64_t recommendationGeneration_{};
     double lastComputationMs_{};
     std::size_t factoryCount_{}, userCount_{};

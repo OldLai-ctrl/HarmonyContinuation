@@ -4,6 +4,7 @@
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/clinestyle.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/events.h"
 #include "vstgui/lib/controls/ctextedit.h"
 #include "vstgui/lib/platform/iplatformframe.h"
 #include <algorithm>
@@ -68,8 +69,66 @@ bool containsText(std::string hay, std::string needle) {
     std::transform(needle.begin(),needle.end(),needle.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
     return hay.find(needle)!=std::string::npos;
 }
+CRect viewRect(UiRect r) { return CRect(r.left,r.top,r.right,r.bottom); }
+std::size_t groupForVisual(std::size_t visual,std::optional<PhraseIntent> intent) {
+    constexpr std::size_t chosenMap[]{4,1,0,2,3};
+    const auto chosen=intent?static_cast<std::size_t>(*intent):0;
+    const auto preferred=chosenMap[std::min(chosen,std::size_t{4})];
+    return visual==0 && preferred<4?preferred:(preferred<4&&visual<=preferred?visual-1:visual);
 }
-MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {}
+}
+MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {
+    layout_=computeLayout({rect.getWidth(),rect.getHeight(),1,session::Tab::Recommend,false,false});
+}
+void MainView::resizeLayout(int width,int height) {
+    setViewSize(CRect(0,0,width,height),true);
+    setMouseableArea(CRect(0,0,width,height));
+    layout_=computeLayout({static_cast<double>(width),static_cast<double>(height),contentScale_,state_.tab,
+        state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()):
+            state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
+        !state_.pinnedCandidateIds.empty()});
+    contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
+    rebuildTimeline();
+    playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
+    if(nameEdit_) {
+        const double w=std::min(590.,layout_.viewport.width()-48),h=300;
+        const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
+        nameEdit_->setViewSize(CRect(x+140,y+53,x+w-22,y+91));
+        if(tagsEdit_)tagsEdit_->setViewSize(CRect(x+140,y+201,x+w-22,y+239));
+    }
+    invalid();
+}
+void MainView::setSimulatedContentScale(double scale) {
+    contentScale_=std::isfinite(scale)&&scale>0?scale:1;
+    resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
+}
+void MainView::refreshLayout() {
+    const auto priorWidth=layout_.timeline.width();
+    layout_=computeLayout({getViewSize().getWidth(),getViewSize().getHeight(),contentScale_,state_.tab,
+        state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()):
+            state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
+        !state_.pinnedCandidateIds.empty()});
+    contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
+    if (priorWidth!=layout_.timeline.width()) rebuildTimeline();
+}
+void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
+    const auto delta=event.deltaY*48.0;
+    if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(event.mousePosition.x,event.mousePosition.y)) {
+        inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
+        invalid();event.consumed=true;return;
+    }
+    if (layout_.timeline.contains(event.mousePosition.x,event.mousePosition.y)) {
+        timelineScroll_=std::clamp(timelineScroll_-delta,0.,
+            std::max(0.,timelineContentWidth_-layout_.timeline.width()));
+        playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
+        invalid(); event.consumed=true; return;
+    }
+    if (layout_.content.contains(event.mousePosition.x,event.mousePosition.y)) {
+        contentScroll_=std::clamp(contentScroll_-delta,0.,layout_.laneScrollMax);
+        invalid(); event.consumed=true; return;
+    }
+    CView::onMouseWheelEvent(event);
+}
 SharedPointer<IDropTarget> MainView::getDropTarget() { return this; }
 DragOperation MainView::onDragEnter(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
 DragOperation MainView::onDragMove(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
@@ -142,19 +201,27 @@ void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t f
         if (actions_.stateChanged) actions_.stateChanged(state_);
     }
     if (fc) factoryCount_=fc; if (uc || !userCount_) userCount_=uc;
-    invalidRect(CRect(690,60,1080,92));
+    invalidRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top));
 }
-void MainView::rebuildTimeline() { timelineBlocks_=layoutTimeline(state_.imported.events,getViewSize().getWidth()-48.0); }
+void MainView::rebuildTimeline() {
+    auto timeline=layoutScrollableTimeline(state_.imported.events,layout_.timeline.width());
+    timelineContentWidth_=timeline.contentWidth;
+    timelineScroll_=std::clamp(timelineScroll_,0.,std::max(0.,timelineContentWidth_-layout_.timeline.width()));
+    timelineBlocks_=std::move(timeline.blocks);
+}
 CRect MainView::chordTileRect(std::size_t i) const {
     const auto it=std::find_if(timelineBlocks_.begin(),timelineBlocks_.end(),[i](const auto& b){return b.eventIndex==i;});
     if (it==timelineBlocks_.end()) return {};
-    const auto left=24.0+it->x; return CRect(left,126,left+std::max(1.0,it->width-3.0),193);
+    const auto left=layout_.timeline.left+it->x-timelineScroll_;
+    return CRect(left,layout_.timeline.top+1,left+std::max(1.0,it->width-3.0),layout_.timeline.bottom-1);
 }
 std::optional<CCoord> MainView::projectQNToX(double qn) const {
     const auto& events=state_.imported.events; if (events.empty() || !std::isfinite(qn) || qn<events.front().startQN) return std::nullopt;
-    const auto span=events.back().startQN-events.front().startQN+2.0;
+    const auto span=timelineSpanQN(events);
     if (span<=0 || !std::isfinite(span)) return std::nullopt;
-    return static_cast<CCoord>(24.0+std::clamp((qn-events.front().startQN)/span,0.0,1.0)*(getViewSize().getWidth()-48.0));
+    const double x=layout_.timeline.left+(qn-events.front().startQN)/span*timelineContentWidth_-timelineScroll_;
+    if (x<layout_.timeline.left || x>layout_.timeline.right) return std::nullopt;
+    return static_cast<CCoord>(x);
 }
 void MainView::setPlaybackPosition(std::optional<double> qn,bool playing) {
     const auto oldLocation=currentLocation_; const auto oldX=playheadX_;
@@ -162,14 +229,16 @@ void MainView::setPlaybackPosition(std::optional<double> qn,bool playing) {
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
     if (oldLocation.activeIndex) invalidRect(chordTileRect(*oldLocation.activeIndex));
     if (currentLocation_.activeIndex) invalidRect(chordTileRect(*currentLocation_.activeIndex));
-    if (oldX) invalidRect(CRect(*oldX-3,120,*oldX+3,200));
-    if (playheadX_) invalidRect(CRect(*playheadX_-3,120,*playheadX_+3,200));
+    if (oldX) invalidRect(CRect(*oldX-3,layout_.timeline.top,*oldX+3,layout_.timeline.bottom));
+    if (playheadX_) invalidRect(CRect(*playheadX_-3,layout_.timeline.top,*playheadX_+3,layout_.timeline.bottom));
 }
 void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
-    const auto bounds=getViewSize(); const CRect lane(18,120,bounds.right-18,200);
+    const CRect lane=viewRect(layout_.timeline);
+    ConcatClip clip(*dc,lane);
     box(dc,lane,CColor(19,32,49,255));
     if (state_.imported.events.empty()) {
-        line(dc,"Drag Chords From Cubase   →   HarmonyContinuation",CRect(24,143,bounds.right-24,177),muted,kCenterText); return;
+        line(dc,"Drag Chords From Cubase   →   HarmonyContinuation",
+            CRect(lane.left+6,lane.top+14,lane.right-6,lane.bottom-8),muted,kCenterText); return;
     }
     const CColor colors[]{CColor(50,116,180,255),CColor(40,139,129,255),CColor(172,111,53,255),CColor(108,91,178,255)};
     for (const auto& block:timelineBlocks_) {
@@ -198,29 +267,34 @@ void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
     if (playheadX_) box(dc,CRect(*playheadX_-1.5,lane.top,*playheadX_+1.5,lane.bottom),CColor(255,237,138,255));
 }
 void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
-    box(dc,CRect(0,0,bounds.right,55),CColor(25,40,58,255));
-    line(dc,keyLabel(state_,analysis_),CRect(18,10,290,42),state_.forcedKey?accent:pale);
-    if (!state_.forcedKey && analysis_.keyCandidates.size()>1 &&
-        (analysis_.keyCandidates[0].confidence<0.35f ||
-         analysis_.keyCandidates[0].confidence-analysis_.keyCandidates[1].confidence<0.09f))
-        line(dc,"Ambiguous",CRect(195,36,285,53),muted);
-    line(dc,"Style: "+(state_.style?styleName(*state_.style):"Auto"),CRect(305,10,515,43));
-    line(dc,"Intent: "+intentLabel(state_.intent),CRect(525,10,710,43));
-    line(dc,state_.skeletonView?"View: SKELETON":"View: FULL",CRect(715,10,875,43),accent);
-    line(dc,"RECOMMEND",CRect(875,10,975,43),state_.tab==session::Tab::Recommend?accent:muted);
-    line(dc,"LIBRARY",CRect(982,10,1077,43),state_.tab==session::Tab::Library?accent:muted);
-    line(dc,"CURRENT PHRASE",CRect(20,70,240,99),pale);
-    if (workerBusy_) line(dc,"Analyzing…",CRect(690,68,bounds.right-25,91),muted,kRightText);
-    else if (matchStatus_.find("Factory library")!=std::string::npos || matchStatus_.find("User library")!=std::string::npos)
-        line(dc,"Library Error · see Library",CRect(690,68,bounds.right-25,91),CColor(255,173,173,255),kRightText);
-    else if (!actionStatus_.empty()) line(dc,actionStatus_,CRect(560,68,bounds.right-25,91),muted,kRightText);
-    line(dc,"MATCH",CRect(918,92,992,116),muted,kRightText);
-    line(dc,state_.debugExpanded?"DEBUG ON":"DEBUG",CRect(997,92,1075,116),state_.debugExpanded?accent:muted,kRightText);
+    (void)bounds;
+    box(dc,viewRect(layout_.topBar),CColor(25,40,58,255));
+    const std::array<std::string,6> labels{
+        keyLabel(state_,analysis_),"Style: "+(state_.style?styleName(*state_.style):"Auto"),
+        "Intent: "+intentLabel(state_.intent),state_.skeletonView?"View: SKELETON":"View: FULL",
+        "RECOMMEND","LIBRARY"};
+    for(std::size_t i=0;i<labels.size();++i)
+        line(dc,labels[i],viewRect(layout_.topControls[i]),
+            i==0&&state_.forcedKey?accent:i==3?accent:
+            i==4&&state_.tab==session::Tab::Recommend?accent:
+            i==5&&state_.tab==session::Tab::Library?accent:i>=4?muted:pale);
+    const auto titleY=layout_.phrase.top-31;
+    line(dc,"CURRENT PHRASE",CRect(20,titleY,235,titleY+27),pale);
+    const auto status=workerBusy_?"Analyzing…":!actionStatus_.empty()?actionStatus_:
+        matchStatus_.find("library")!=std::string::npos?"Library Error · see Library":"";
+    if (!status.empty()) line(dc,status,CRect(255,titleY,layout_.viewport.right-170,titleY+27),muted,kRightText);
+    line(dc,"MATCH",CRect(layout_.viewport.right-150,titleY,layout_.viewport.right-90,titleY+27),muted,kRightText);
+    line(dc,state_.debugExpanded?"DEBUG ON":"DEBUG",CRect(layout_.viewport.right-85,titleY,layout_.viewport.right-20,titleY+27),
+        state_.debugExpanded?accent:muted,kRightText);
 }
 void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
-    drawTimeline(dc,CRect(0,0,bounds.right,bounds.bottom));
-    line(dc,"FULL",CRect(23,208,75,232),state_.skeletonView?muted:accent);
-    line(dc,"SKELETON",CRect(85,208,185,232),state_.skeletonView?accent:muted);
+    (void)bounds;
+    drawTimeline(dc,viewRect(layout_.timeline));
+    const auto y=layout_.timeline.bottom+5;
+    line(dc,"FULL",CRect(24,y,76,y+24),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON",CRect(86,y,190,y+24),state_.skeletonView?accent:muted);
+    if (timelineContentWidth_>layout_.timeline.width()+1)
+        line(dc,"Wheel to scroll phrase",CRect(layout_.timeline.right-215,y,layout_.timeline.right,y+24),muted,kRightText);
     if (state_.imported.events.empty()) return;
     if (selectedChord_ && *selectedChord_<analysis_.full.size()) {
         const auto& event=state_.imported.events[*selectedChord_]; const auto& a=analysis_.full[*selectedChord_];
@@ -228,10 +302,10 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
         const auto target=a.target?std::to_string(a.target->degree):"—";
         line(dc,event.name+"    Degree "+formatDegree(a)+"    Function "+formatFunction(a.function)+
                 "    Weight "+fixed(a.structuralWeight,2)+"    Confidence "+fixed(a.analysisConfidence,2),
-             CRect(23,234,bounds.right-23,256),pale);
+             CRect(23,y+27,layout_.viewport.right-23,y+49),pale);
         line(dc,"Roles "+roles(a.roles)+"    Target "+target+"    Duration "+duration+
-                "    Start "+fixed(event.startQN)+" QN",CRect(23,258,bounds.right-23,280),muted);
-    } else line(dc,"Click a chord for details",CRect(23,237,bounds.right-23,270),muted);
+                "    Start "+fixed(event.startQN)+" QN",CRect(23,y+50,layout_.viewport.right-23,y+72),muted);
+    } else line(dc,"Click a chord for details",CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -241,11 +315,12 @@ void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,
         total+=(i+1==events.size()?c.suggestedCurrentChordDurationQN.value_or(4.0):events[i].durationQN.value_or(4.0));
     for (const auto& e:c.continuation) total+=e.durationQN;
     if (total<=0) return;
+    ConcatClip clip(*dc,CRect(area.left,area.top-3,area.right,area.bottom+3));
     double cursor=area.left;
     const auto drawBlock=[&](std::string label,double duration,CColor color,bool final) {
         const double width=final?area.right-cursor:area.getWidth()*std::max(0.0,duration)/total;
-        if (width<1) return;
-        box(dc,CRect(cursor,area.top,cursor+width-2,area.bottom),color);
+        if (width<1) {cursor+=std::max(0.0,width);return;}
+        if (width>2)box(dc,CRect(cursor,area.top,cursor+width-2,area.bottom),color);
         if (width>29) line(dc,label,CRect(cursor+1,area.top+1,cursor+width-3,area.bottom-1),pale,kCenterText);
         cursor+=width;
     };
@@ -262,40 +337,45 @@ void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,
     }
 }
 void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
-    if (state_.imported.events.empty()) { line(dc,"Drag Chords From Cubase",CRect(20,440,bounds.right-20,490),pale,kCenterText); return; }
+    (void)bounds;
+    if (state_.imported.events.empty()) {
+        line(dc,"Drag Chords From Cubase",viewRect(layout_.content),pale,kCenterText); return;
+    }
     constexpr const char* titles[]{"RESOLVE","DEVELOP","LOOP","COLOR"};
-    const std::size_t chosen=state_.intent?static_cast<std::size_t>(*state_.intent):0;
-    const std::size_t preferred=chosen==0?4:chosen==1?1:chosen==2?0:chosen==3?2:3;
+    {
+    ConcatClip clip(*dc,viewRect(layout_.content));
     for (std::size_t visual=0;visual<4;++visual) {
-        const auto group=visual==0 && preferred<4?preferred:
-            (preferred<4 && visual<=preferred?visual-1:visual);
-        const auto top=292.0+visual*115.0;
-        box(dc,CRect(16,top,bounds.right-16,top+110),panel);
-        line(dc,titles[group],CRect(24,top+4,190,top+27),accent);
+        const auto group=groupForVisual(visual,state_.intent);
+        auto lane=layout_.lanes[visual]; lane.top-=contentScroll_; lane.bottom-=contentScroll_;
+        if(lane.bottom<layout_.content.top||lane.top>layout_.content.bottom)continue;
+        box(dc,viewRect(lane),panel);
+        line(dc,titles[group],CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
         if (recommendations_.groups[group].size()>3)
-            line(dc,"Show More",CRect(920,top+4,1070,top+27),muted,kRightText);
+            line(dc,"Show More",CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
         const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
-        if (visible.empty()) { line(dc,workerBusy_?"Analyzing…":"No strong option",CRect(205,top+4,bounds.right-22,top+27),muted); continue; }
-        for (std::size_t row=0;row<visible.size() && row<3;++row) {
-            const auto& c=recommendations_.groups[group][visible[row]];
-            const auto y=top+27+row*26;
-            box(dc,CRect(23,y,bounds.right-23,y+24),CColor(33,49,69,255));
-            drawMiniTimeline(dc,c,CRect(33,y+3,715,y+21));
-            line(dc,std::to_string(static_cast<int>(std::round(c.rankingScore))),CRect(720,y+2,760,y+22),pale,kCenterText);
-            line(dc,cadenceName(c.cadence),CRect(765,y+2,840,y+22),muted,kCenterText);
-            const bool exportControls=static_cast<bool>(actions_.exportMidi);
-            line(dc,primaryStyle(c.styles),CRect(845,y+2,exportControls?900:930,y+22),muted,kCenterText);
-            line(dc,std::find(state_.pinnedCandidateIds.begin(),state_.pinnedCandidateIds.end(),c.id)!=state_.pinnedCandidateIds.end()?"● Pin":"○ Pin",
-                 CRect(exportControls?900:936,y+2,exportControls?950:995,y+22),accent);
-            if (exportControls) {
-                line(dc,previewCandidateId_==c.id?"■":"▶",CRect(950,y+2,981,y+22),accent,kCenterText);
-                line(dc,"MIDI",CRect(982,y+2,1027,y+22),accent,kCenterText);
-                line(dc,"SNAP",CRect(1028,y+2,1080,y+22),muted,kCenterText);
-            } else if (actions_.audition) {
-                line(dc,previewCandidateId_==c.id?"■":"▶",CRect(1000,y+2,1032,y+22),accent,kCenterText);
-                line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1037,y+2,1080,y+22),muted);
-            } else line(dc,c.supportCount>1?"×"+std::to_string(c.supportCount):"Details",CRect(1000,y+2,1070,y+22),muted);
+        if (visible.empty()) {
+            line(dc,workerBusy_?"Analyzing…":"No strong option",CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
+            continue;
         }
+        for (std::size_t row=0;row<visible.size()&&row<3;++row) {
+            const auto& c=recommendations_.groups[group][visible[row]];
+            const bool exportControls=static_cast<bool>(actions_.exportMidi);
+            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),exportControls);
+            box(dc,viewRect(geometry.row),CColor(33,49,69,255));
+            drawMiniTimeline(dc,c,viewRect(geometry.timeline));
+            line(dc,std::to_string(static_cast<int>(std::round(c.rankingScore))),
+                 viewRect(geometry.score),pale,kCenterText);
+            if(geometry.row.height()>44)line(dc,std::string(intentName(c.intent))+" · "+cadenceName(c.cadence),
+                viewRect(geometry.intent),muted);
+            line(dc,"Pin",viewRect(geometry.pin),accent,kCenterText);
+            if(exportControls) {
+                line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
+                line(dc,"MIDI",viewRect(geometry.midi),accent,kCenterText);
+                line(dc,"SNAP",viewRect(geometry.snapshot),muted,kCenterText);
+            } else if(actions_.audition)
+                line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
+        }
+    }
     }
     drawCompare(dc,bounds);
 }
@@ -311,22 +391,26 @@ const ContinuationCandidate* MainView::selectedCandidate() const {
     return group<4 && index<recommendations_.groups[group].size()?&recommendations_.groups[group][index]:nullptr;
 }
 void MainView::drawCompare(CDrawContext* dc,const CRect& bounds) {
-    box(dc,CRect(16,758,bounds.right-16,bounds.bottom-13),CColor(27,41,58,255));
-    line(dc,"COMPARE  ·  "+std::to_string(state_.pinnedCandidateIds.size())+" / 3",CRect(24,765,260,789),accent);
+    (void)bounds;
+    if (state_.pinnedCandidateIds.empty()) return;
+    const auto tray=layout_.compare;
+    box(dc,viewRect(tray),CColor(27,41,58,255));
+    line(dc,"COMPARE  ·  "+std::to_string(state_.pinnedCandidateIds.size())+" / 3",
+         CRect(tray.left+8,tray.top+3,tray.right-8,tray.top+25),accent);
     std::size_t shown{};
     for (const auto& id:state_.pinnedCandidateIds) {
         const auto* c=findCandidate(id);
-        const auto left=24.0+shown*350.0;
+        const bool stacked=layout_.mode==LayoutMode::Compact;
+        const auto width=stacked?tray.width()-16:(tray.width()-16)/3;
+        const auto left=stacked?tray.left+8:tray.left+8+shown*width;
+        const auto y=stacked?tray.top+27+shown*26:tray.top+27;
         if (c) {
             std::string path;
             for (const auto& event:c->continuation) { if (!path.empty()) path+=" → "; path+=event.label; }
             line(dc,std::string(intentName(c->intent))+"   "+std::to_string(static_cast<int>(std::round(c->rankingScore)))+
-                    "   "+cadenceName(c->cadence),CRect(left,795,left+320,816),pale);
-            line(dc,path+"  ·  "+styleFlags(c->styles),CRect(left,817,left+320,838),muted);
-            if (c->suggestedCurrentChordDurationQN)
-                line(dc,"OPEN "+fixed(*c->suggestedCurrentChordDurationQN)+" QN",CRect(left,839,left+320,858),muted);
-        } else line(dc,"Pinned path unavailable after recompute",CRect(left,795,left+320,835),muted);
-        line(dc,"Unpin ×",CRect(left+250,765,left+325,789),muted);
+                    "  "+path,CRect(left,y,left+width-60,y+22),pale);
+        } else line(dc,"Pinned path unavailable",CRect(left,y,left+width-60,y+22),muted);
+        line(dc,"×",CRect(left+width-42,y,left+width-8,y+22),muted,kCenterText);
         ++shown;
     }
 }
@@ -348,165 +432,29 @@ std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
     };
     append(factory_,true); append(user_,false); return out;
 }
-void MainView::drawLibrary(CDrawContext* dc,const CRect& bounds) {
-    box(dc,CRect(16,287,bounds.right-16,bounds.bottom-16),panel);
-    line(dc,"LIBRARY    Factory "+std::to_string(factory_.size())+"  ·  User "+std::to_string(user_.size()),CRect(24,296,550,323),accent);
-    line(dc,"Style: "+(libraryStyle_?styleName(*libraryStyle_):"All"),CRect(24,328,245,354),muted);
-    line(dc,"Intent: "+intentLabel(libraryIntent_),CRect(255,328,430,354),muted);
-    line(dc,std::string("Mode: ")+(libraryMode_?(*libraryMode_==Mode::Major?"Major":"Minor"):"All"),CRect(440,328,580,354),muted);
-    line(dc,"Search: "+(librarySearch_.empty()?"Name / tag":librarySearch_),CRect(590,328,930,354),muted);
-    line(dc,"QA",CRect(970,328,1060,354),accent);
-    if (!libraryError_.empty()) line(dc,"Library Error: "+libraryError_,CRect(24,360,bounds.right-24,389),CColor(255,173,173,255));
-    const auto filtered=filteredLibrary();
-    const auto offset=libraryPage_*11;
-    for (std::size_t row=0;row<11 && offset+row<filtered.size();++row) {
-        const auto [factory,index]=filtered[offset+row]; const auto& item=factory?factory_[index]:user_[index];
-        const auto y=385.0+row*36.0;
-        box(dc,CRect(24,y,bounds.right-24,y+33),CColor(32,49,69,255));
-        line(dc,factory?"Factory":"User",CRect(31,y+4,105,y+29),factory?muted:accent);
-        line(dc,item.name,CRect(112,y+4,425,y+29),pale);
-        line(dc,styleFlags(item.styles),CRect(435,y+4,670,y+29),muted);
-        line(dc,intentName(item.intent),CRect(680,y+4,790,y+29),muted);
-        line(dc,item.mode==Mode::Major?"Major":"Minor",CRect(805,y+4,900,y+29),muted);
-        line(dc,"Inspect",CRect(950,y+4,1065,y+29),accent);
-    }
-    line(dc,"◀ Previous",CRect(28,795,175,830),muted);
-    line(dc,"Page "+std::to_string(libraryPage_+1)+" / "+std::to_string(std::max<std::size_t>(1,(filtered.size()+10)/11)),
-         CRect(400,795,700,830),muted,kCenterText);
-    line(dc,"Next ▶",CRect(925,795,1070,830),muted,kRightText);
-    if (selectedLibrary_) {
-        const auto [factory,index]=*selectedLibrary_;
-        const auto* item=factory?(index<factory_.size()?&factory_[index]:nullptr):(index<user_.size()?&user_[index]:nullptr);
-        if (!item) return;
-        box(dc,CRect(320,370,1076,783),CColor(18,30,47,255));
-        line(dc,"×    "+item->name+"   ["+item->id+"]",CRect(335,379,1060,407),accent);
-        line(dc,"Style  "+styleFlags(item->styles)+"    Intent  "+intentName(item->intent)+"    Mode  "+
-             (item->mode==Mode::Major?"Major":"Minor")+"    Cadence  "+cadenceName(item->cadence),CRect(335,413,1060,441),pale);
-        line(dc,"Prior  "+fixed(item->priorWeight,2)+"    Rhythm  "+std::to_string(item->meterNumerator)+"/"+
-             std::to_string(item->meterDenominator),CRect(335,441,1060,469),muted);
-        std::string full, skeleton, rhythm;
-        for (std::size_t i=0;i<item->full.size();++i) {
-            if (i) { full+=" → "; rhythm+=" · "; }
-            full+=formatMatchEvent(item->full[i]);
-            rhythm+=item->full[i].durationQN?fixed(*item->full[i].durationQN):"?";
-        }
-        for (const auto i:item->skeletonIndices) if (i<item->full.size()) { if (!skeleton.empty()) skeleton+=" → "; skeleton+=formatMatchEvent(item->full[i]); }
-        line(dc,"FULL: "+full,CRect(335,478,1060,510),pale);
-        line(dc,"SKELETON: "+skeleton,CRect(335,515,1060,545),muted);
-        line(dc,"Rhythm QN: "+rhythm,CRect(335,551,1060,580),muted);
-        std::string tags; for (const auto& t:item->tags) { if (!tags.empty()) tags+=", "; tags+=t; }
-        line(dc,"Tags: "+tags,CRect(335,588,1060,619),muted);
-        std::size_t nearCount{};
-        for (const auto& other:factory_) if (other.id!=item->id && other.fingerprint.skeletonDegrees==item->fingerprint.skeletonDegrees &&
-            other.fingerprint.rhythmShape==item->fingerprint.rhythmShape) ++nearCount;
-        line(dc,"Near duplicate warning: "+std::to_string(nearCount),CRect(335,624,1060,653),muted);
-        double total{}; for (const auto& event:item->full) total+=event.durationQN.value_or(4.0);
-        double cursor=337;
-        if (total>0) for (std::size_t i=0;i<item->full.size();++i) {
-            const auto width=i+1==item->full.size()?1058-cursor:718.0*item->full[i].durationQN.value_or(4.0)/total;
-            if (width>2) {
-                box(dc,CRect(cursor,660,cursor+width-2,691),CColor(50,116,180,255));
-                if (width>35) line(dc,formatMatchEvent(item->full[i]),CRect(cursor+2,662,cursor+width-4,689),pale,kCenterText);
-            }
-            cursor+=width;
-        }
-        if (!factory) {
-            line(dc,"Rename / metadata",CRect(345,706,545,740),accent);
-            line(dc,"Delete",CRect(600,706,715,740),CColor(255,175,175,255));
-        } else line(dc,"Factory · read only",CRect(345,706,670,740),muted);
-        if (actions_.exportLibraryMidi) line(dc,"Export MIDI",CRect(800,706,1060,740),accent,kRightText);
-    }
-}
-void MainView::drawDiagnostics(CDrawContext* dc,const CRect& bounds) {
-    box(dc,CRect(16,287,bounds.right-16,bounds.bottom-15),panel);
-    line(dc,"MATCH / DEBUG    [Refresh host]    [Clipboard]",CRect(24,296,bounds.right-24,325),accent);
-    line(dc,matchStatus_,CRect(24,330,bounds.right-24,357),pale);
-    line(dc,"Analysis / Match / Recommendation generation: "+std::to_string(generation_)+
-         "    Worker: "+(workerBusy_?"busy":"idle")+"    Last: "+fixed(computationMs_,2)+" ms",CRect(24,358,bounds.right-24,385),muted);
-    line(dc,"Factory v"+std::to_string(state_.factoryLibraryVersion)+" · "+std::to_string(factoryCount_)+
-         "    User "+std::to_string(userCount_)+"    Session dirty: "+(sessionDirty_?"yes":"no"),CRect(24,386,bounds.right-24,413),muted);
-    if (!matches_.empty()) {
-        const auto& m=matches_.front();
-        line(dc,"Top match: "+m.templateName+" · "+fixed(m.similarity,2)+" · "+formatKey(m.key),CRect(24,420,bounds.right-24,447),pale);
-        std::string trace;
-        for (const auto& step:m.alignmentTrace) {
-            if (!trace.empty()) trace+="   ";
-            trace+=(step.operation==AlignmentOp::Match?"│":step.operation==AlignmentOp::QueryInsertion?"+":step.operation==AlignmentOp::TemplateDeletion?"-":"≠");
-            trace+=step.queryIndex?std::to_string(*step.queryIndex):"_";
-            trace+="↔"; trace+=step.templateIndex?std::to_string(*step.templateIndex):"_";
-        }
-        line(dc,"USER ↔ TEMPLATE   "+trace,CRect(24,452,bounds.right-24,479),muted);
-    }
-    std::string diagnostic=hostText_+"\n"+parseText_+"\n"+rawText_;
-    std::istringstream in(diagnostic); std::string row; double y=496;
-    while (y<bounds.bottom-22 && std::getline(in,row)) { line(dc,row.substr(0,165),CRect(24,y,bounds.right-24,y+18),muted); y+=18; }
-}
-void MainView::drawInspector(CDrawContext* dc,const CRect& bounds) {
-    const auto* c=selectedCandidate(); if (!c || state_.tab!=session::Tab::Recommend) return;
-    box(dc,CRect(430,280,bounds.right-18,751),CColor(18,30,47,255));
-    line(dc,"×    RECOMMENDATION INSPECTOR",CRect(445,292,bounds.right-32,322),accent);
-    line(dc,"Intent  "+std::string(intentName(c->intent))+"     Key  "+formatKey(c->key)+
-         "     Score  "+std::to_string(static_cast<int>(std::round(c->rankingScore))),CRect(445,329,bounds.right-32,356),pale);
-    const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c->primaryTemplate;});
-    line(dc,"Match  "+fixed(c->matchSimilarity,2)+"    Skeleton  "+fixed(match!=matches_.end()?match->subScores.skeletonHarmony:0,2)+
-         "    FULL  "+fixed(match!=matches_.end()?match->subScores.fullHarmony:0,2)+"    Rhythm  "+fixed(c->subscores.rhythm,2),CRect(445,367,bounds.right-32,394),muted);
-    line(dc,"Style  "+fixed(c->subscores.style,2)+"    Intent  "+fixed(c->subscores.intent,2)+
-         "    Prior  "+fixed(c->subscores.prior,2)+"    Support  "+std::to_string(c->supportCount),CRect(445,397,bounds.right-32,424),muted);
-    line(dc,"Cadence  "+std::string(cadenceName(c->cadence))+"    Path  "+session::continuationFingerprint(*c),
-         CRect(445,427,bounds.right-32,454),muted);
-    std::string sources; for (const auto& id:c->supportingTemplates) { if (!sources.empty()) sources+=", "; sources+=id; }
-    line(dc,"Sources  "+sources,CRect(445,459,bounds.right-32,488),muted);
-    line(dc,"EXISTING                               │ RECOMMENDED",CRect(445,493,bounds.right-32,520),accent);
-    drawMiniTimeline(dc,*c,CRect(447,523,bounds.right-38,553));
-    if (match!=matches_.end()) {
-        line(dc,"USER                         TEMPLATE   ·   Alignment",CRect(445,565,bounds.right-32,590),muted);
-        std::size_t shown{};
-        for (const auto& step:match->alignmentTrace) {
-            if (shown++>=5) break;
-            const auto y=591.0+(shown-1)*22.0;
-            const auto user=step.queryIndex && *step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:"gap";
-            const auto templ=step.templateIndex && *step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:"gap";
-            const auto op=step.operation==AlignmentOp::Match?"│":step.operation==AlignmentOp::QueryInsertion?"+":
-                step.operation==AlignmentOp::TemplateDeletion?"−":"≠";
-            line(dc,user+"       "+op+"       "+templ,CRect(460,y,bounds.right-40,y+20),step.operation==AlignmentOp::Match?CColor(130,202,164,255):muted);
-        }
-    }
-    line(dc,"Save as Custom Progression",CRect(670,708,bounds.right-37,741),accent,kRightText);
-}
-void MainView::drawForm(CDrawContext* dc,const CRect& bounds) {
-    if (form_==Form::None) return;
-    box(dc,CRect(290,310,bounds.right-290,605),CColor(23,39,59,255));
-    line(dc,form_==Form::Save?"SAVE CUSTOM PROGRESSION":form_==Form::Rename?"EDIT USER PROGRESSION":"SEARCH LIBRARY",
-         CRect(315,325,bounds.right-315,355),accent);
-    line(dc,form_==Form::Search?"Name / tag":"Name",CRect(315,365,440,390),muted);
-    if (form_!=Form::Search) {
-        line(dc,"Style: "+(formMetadata_.style?styleName(*formMetadata_.style):"Auto"),CRect(315,425,600,452),pale);
-        line(dc,"Intent: "+std::string(intentName(formMetadata_.intent)),CRect(315,455,600,482),pale);
-        line(dc,"Tags (optional)",CRect(315,486,600,510),muted);
-    }
-    line(dc,"Cancel",CRect(485,563,610,595),muted);
-    line(dc,form_==Form::Search?"Apply":"Save",CRect(680,563,790,595),accent);
-}
-void MainView::drawDebugOverlay(CDrawContext* dc,const CRect& bounds) {
-    if (!state_.debugExpanded) return;
-    box(dc,CRect(bounds.right-365,204,bounds.right-20,283),CColor(34,49,68,255));
-    line(dc,"Generation "+std::to_string(generation_)+" · "+(workerBusy_?"busy":"idle")+
-        " · "+fixed(computationMs_,2)+" ms",CRect(bounds.right-352,208,bounds.right-30,230),pale);
-    line(dc,"Factory v"+std::to_string(state_.factoryLibraryVersion)+" / "+std::to_string(factoryCount_)+
-        " · User "+std::to_string(userCount_),CRect(bounds.right-352,233,bounds.right-30,255),muted);
-    line(dc,std::string("Session dirty ")+(sessionDirty_?"yes":"no"),CRect(bounds.right-352,258,bounds.right-30,280),muted);
-}
 void MainView::drawRect(CDrawContext* dc,const CRect& update) {
+    refreshLayout();
+    ++paintGeneration_;
     const auto bounds=getViewSize();
-    if (update.top>=120 && update.bottom<=200) { drawTimeline(dc,update); return; }
+    if (update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
     box(dc,bounds,background);
     drawTop(dc,bounds); drawPhrase(dc,bounds);
     switch(state_.tab) {
         case session::Tab::Recommend: drawRecommendations(dc,bounds); break;
-        case session::Tab::Library: drawLibrary(dc,bounds); break;
-        default: drawDiagnostics(dc,bounds); break;
+        case session::Tab::Library: drawResponsiveLibrary(dc); break;
+        default: drawResponsiveDiagnostics(dc); break;
     }
-    drawDebugOverlay(dc,bounds); drawInspector(dc,bounds); drawForm(dc,bounds);
+    drawResponsiveInspector(dc); drawResponsiveForm(dc);
+    if(state_.debugExpanded) {
+        const auto x=bounds.right-310,y=layout_.phrase.bottom-47;
+        box(dc,CRect(x,y,bounds.right-18,y+43),CColor(34,49,68,255));
+        const auto mode=layout_.mode==LayoutMode::Compact?"Compact":layout_.mode==LayoutMode::Standard?"Standard":"Wide";
+        line(dc,std::to_string(static_cast<int>(bounds.getWidth()))+" × "+std::to_string(static_cast<int>(bounds.getHeight()))+
+            "  DPI "+fixed(contentScale_,2)+"  "+mode+" / "+std::to_string(layout_.laneColumns),
+            CRect(x+8,y+3,bounds.right-22,y+21),pale);
+        line(dc,"Paint "+std::to_string(paintGeneration_)+" · worker "+(workerBusy_?"busy":"idle"),
+            CRect(x+8,y+21,bounds.right-22,y+39),muted);
+    }
 }
 int MainView::popup(const std::vector<std::string>& items,CPoint point) {
 #if defined(_WIN32)
@@ -529,11 +477,13 @@ int MainView::popup(const std::vector<std::string>& items,CPoint point) {
 }
 void MainView::beginForm(Form kind,std::string initial) {
     if (!getFrame()) return; endForm(); form_=kind;
-    nameEdit_=new CTextEdit(CRect(440,363,785,401),nullptr,0,initial.c_str());
+    const double w=std::min(590.,layout_.viewport.width()-48),h=300;
+    const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
+    nameEdit_=new CTextEdit(CRect(x+140,y+53,x+w-22,y+91),nullptr,0,initial.c_str());
     nameEdit_->setBackColor(CColor(242,247,252,255)); nameEdit_->setFontColor(CColor(20,30,45,255));
     getFrame()->addView(nameEdit_);
     if (kind!=Form::Search) {
-        tagsEdit_=new CTextEdit(CRect(440,510,785,548),nullptr,0,"");
+        tagsEdit_=new CTextEdit(CRect(x+140,y+201,x+w-22,y+239),nullptr,0,"");
         tagsEdit_->setBackColor(CColor(242,247,252,255)); tagsEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(tagsEdit_);
     }
@@ -565,182 +515,330 @@ void MainView::submitForm() {
     endForm();
 }
 CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
+    return onMouseDownResponsive(where);
+}
+CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
-        if (form_!=Form::None) {
-            if (where.y>=561 && where.y<603) {
-                if (where.x>=460 && where.x<630) endForm();
-                else if (where.x>=650 && where.x<810) submitForm();
-            } else if (where.y>=420 && where.y<455 && form_!=Form::Search) {
+        refreshLayout();
+        if(form_!=Form::None) {
+            const double w=std::min(590.,layout_.viewport.width()-48),h=300;
+            const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
+            if(where.y>=y+h-45&&where.y<=y+h) {
+                if(where.x>=x+140&&where.x<x+290)endForm();
+                else if(where.x>=x+w-170&&where.x<=x+w)submitForm();
+            } else if(form_!=Form::Search&&where.y>=y+110&&where.y<y+144) {
                 const auto choice=popup({"Auto","Pop","Rock","R&B","Jazz","City Pop / J-pop","Functional"},where);
                 constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
-                if (choice>=0) formMetadata_.style=choice==0?std::nullopt:std::optional<Style>(styles[choice-1]);
-                invalid();
-            } else if (where.y>=455 && where.y<487 && form_!=Form::Search) {
+                if(choice>=0)formMetadata_.style=choice==0?std::nullopt:std::optional<Style>(styles[choice-1]);invalid();
+            } else if(form_!=Form::Search&&where.y>=y+144&&where.y<y+180) {
                 const auto choice=popup({"Develop","Resolve","Loop","Color"},where);
-                if (choice>=0) formMetadata_.intent=static_cast<PhraseIntent>(choice+1);
-                invalid();
+                if(choice>=0)formMetadata_.intent=static_cast<PhraseIntent>(choice+1);invalid();
             }
             return kMouseEventHandled;
         }
-        if (where.y<55) {
-            if (where.x<295) {
+        for(std::size_t i=0;i<layout_.topControls.size();++i)if(layout_.topControls[i].contains(where.x,where.y)) {
+            if(i==0) {
                 std::vector<std::string> names{"Auto"};
-                for (int i=0;i<12;++i) {
-                    names.push_back(formatKey(KeySignature{static_cast<PitchClass>(i),Mode::Major}));
-                    names.push_back(formatKey(KeySignature{static_cast<PitchClass>(i),Mode::Minor}));
-                }
+                for(int j=0;j<12;++j){names.push_back(formatKey({static_cast<PitchClass>(j),Mode::Major}));
+                    names.push_back(formatKey({static_cast<PitchClass>(j),Mode::Minor}));}
                 const auto choice=popup(names,where);
-                if (choice>=0) { state_.forcedKey=choice==0?std::nullopt:std::optional<KeySignature>(KeySignature{
-                    static_cast<PitchClass>((choice-1)/2),((choice-1)%2)?Mode::Minor:Mode::Major}); notifyState(); }
-            } else if (where.x<520) {
+                if(choice>=0){state_.forcedKey=choice?std::optional<KeySignature>(KeySignature{
+                    static_cast<PitchClass>((choice-1)/2),(choice-1)%2?Mode::Minor:Mode::Major}):std::nullopt;notifyState();}
+            } else if(i==1) {
                 const auto choice=popup({"Auto","Pop","Rock","R&B","Jazz","City Pop / J-pop","Functional"},where);
                 constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
-                if (choice>=0) { state_.style=choice==0?std::nullopt:std::optional<Style>(styles[choice-1]); notifyState(); }
-            } else if (where.x<715) {
+                if(choice>=0){state_.style=choice?std::optional<Style>(styles[choice-1]):std::nullopt;notifyState();}
+            } else if(i==2) {
                 const auto choice=popup({"Auto","Develop","Resolve","Loop","Color"},where);
-                if (choice>=0) { state_.intent=choice==0?std::nullopt:std::optional<PhraseIntent>(static_cast<PhraseIntent>(choice)); notifyState(); }
-            } else if (where.x<870) { state_.skeletonView=!state_.skeletonView; notifyState(); }
-            else if (where.x<980) { state_.tab=session::Tab::Recommend; selectedLibrary_.reset(); notifyState(); }
-            else { state_.tab=session::Tab::Library; selectedCandidate_.reset(); notifyState(); }
+                if(choice>=0){state_.intent=choice?std::optional<PhraseIntent>(static_cast<PhraseIntent>(choice)):std::nullopt;notifyState();}
+            } else if(i==3){state_.skeletonView=!state_.skeletonView;notifyState();}
+            else if(i==4){state_.tab=session::Tab::Recommend;selectedLibrary_.reset();notifyState();}
+            else {state_.tab=session::Tab::Library;selectedCandidate_.reset();notifyState();}
             return kMouseEventHandled;
         }
-        if (where.y>=90 && where.y<118 && where.x>900) {
-            if (where.x<995) state_.tab=session::Tab::Diagnostics;
+        const auto titleY=layout_.phrase.top-31;
+        if(where.y>=titleY&&where.y<titleY+30&&where.x>layout_.viewport.right-160) {
+            if(where.x<layout_.viewport.right-88)state_.tab=session::Tab::Diagnostics;
             else state_.debugExpanded=!state_.debugExpanded;
-            notifyState(); return kMouseEventHandled;
+            notifyState();return kMouseEventHandled;
         }
-        if (where.y>=120 && where.y<202) {
-            for (const auto& b:timelineBlocks_) {
-                const auto rect=chordTileRect(b.eventIndex);
-                if (where.x>=rect.left && where.x<rect.right) { selectedChord_=b.eventIndex; invalid(); break; }
+        if(layout_.timeline.contains(where.x,where.y)) {
+            for(const auto& b:timelineBlocks_) {
+                const auto r=chordTileRect(b.eventIndex);
+                if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();selectedLibrary_.reset();inspectorScroll_=0;invalid();break;}
             }
             return kMouseEventHandled;
         }
-        if (where.y>=203 && where.y<235 && !analysis_.full.empty()) {
-            state_.skeletonView=where.x>=82 && where.x<190; notifyState(); return kMouseEventHandled;
+        if(where.y>=layout_.timeline.bottom&&where.y<layout_.timeline.bottom+30&&where.x<195) {
+            state_.skeletonView=where.x>=82;notifyState();return kMouseEventHandled;
         }
-        if (state_.tab==session::Tab::Diagnostics || state_.tab==session::Tab::Match) {
-            if (where.y>=290 && where.y<325) {
-                if (where.x<550 && actions_.refresh) actions_.refresh();
-                else if (actions_.clipboard) actions_.clipboard();
-            }
-            return kMouseEventHandled;
-        }
-        if (state_.tab==session::Tab::Library) {
-            if (selectedLibrary_) {
-                if (where.y>=379 && where.y<410 && where.x>=320 && where.x<400) { selectedLibrary_.reset(); invalid(); return kMouseEventHandled; }
-                if (where.y>=699 && where.y<751 && where.x>=790 && actions_.exportLibraryMidi) {
+        if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(where.x,where.y)) {
+            const auto area=layout_.inspector;
+            if(where.y<area.top+39) {selectedCandidate_.reset();selectedChord_.reset();selectedLibrary_.reset();invalid();return kMouseEventHandled;}
+            if(where.y>=area.bottom-43) {
+                if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
+                    const auto* c=selectedCandidate();formMetadata_.name="My "+std::string(intentName(c->intent))+" Progression";
+                    formMetadata_.style=state_.style;formMetadata_.intent=c->intent;beginForm(Form::Save,formMetadata_.name);
+                } else if(state_.tab==session::Tab::Library&&selectedLibrary_&&actions_.exportLibraryMidi) {
                     const auto [factory,index]=*selectedLibrary_;
                     const auto* item=factory?(index<factory_.size()?&factory_[index]:nullptr):(index<user_.size()?&user_[index]:nullptr);
-                    if (item) { actionStatus_=actions_.exportLibraryMidi(*item); invalid(); }
-                    return kMouseEventHandled;
-                }
-                if (!selectedLibrary_->first && selectedLibrary_->second<user_.size() && where.y>=699 && where.y<751) {
-                    const auto item=user_[selectedLibrary_->second];
-                    if (where.x>=340 && where.x<570) {
-                        formMetadata_.intent=item.intent; formMetadata_.style.reset();
-                        for (auto s:{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional})
-                            if (item.styles&static_cast<StyleFlags>(s)) { formMetadata_.style=s; break; }
-                        beginForm(Form::Rename,item.name);
-                        if (tagsEdit_) { std::string tags; for (const auto& tag:item.tags) { if (!tags.empty()) tags+=", "; tags+=tag; }
-                            tagsEdit_->setText(tags.c_str()); }
-                    } else if (where.x>=590 && where.x<750 && actions_.deleteUser) {
-                        const auto choice=popup({"Cancel","Delete "+item.name},where);
-                        if (choice==1) { actionStatus_=actions_.deleteUser(item.id); selectedLibrary_.reset(); invalid(); }
-                    }
-                    return kMouseEventHandled;
+                    if(item){actionStatus_=actions_.exportLibraryMidi(*item);invalid();}
                 }
                 return kMouseEventHandled;
             }
-            if (where.y>=326 && where.y<358) {
-                if (where.x<250) {
-                    const auto n=popup({"All","Pop","Rock","R&B","Jazz","City Pop / J-pop","Functional"},where);
+            if(state_.tab==session::Tab::Library&&selectedLibrary_&&!selectedLibrary_->first&&where.y>=area.bottom-75) {
+                const auto item=user_[selectedLibrary_->second];
+                if(where.x<area.left+area.width()/2) {
+                    formMetadata_.name=item.name;formMetadata_.intent=item.intent;
+                    formMetadata_.style.reset();
+                    for(auto style:{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional})
+                        if(item.styles&static_cast<StyleFlags>(style)){formMetadata_.style=style;break;}
+                    beginForm(Form::Rename,item.name);
+                    if(tagsEdit_){std::string tags;for(const auto& tag:item.tags){if(!tags.empty())tags+=", ";tags+=tag;}
+                        tagsEdit_->setText(tags.c_str());}
+                } else if(actions_.deleteUser) {
+                    const auto choice=popup({"Cancel","Delete "+item.name},where);
+                    if(choice==1){actionStatus_=actions_.deleteUser(item.id);selectedLibrary_.reset();invalid();}
+                }
+            }
+            return kMouseEventHandled;
+        }
+        if(!layout_.content.contains(where.x,where.y)) {
+            if(layout_.compare.contains(where.x,where.y)) {
+                const bool stacked=layout_.mode==LayoutMode::Compact;
+                const double cell=stacked?layout_.compare.width()-16:(layout_.compare.width()-16)/3;
+                const auto index=stacked?static_cast<std::size_t>(std::max(0.,std::floor((where.y-layout_.compare.top-27)/26))):
+                    static_cast<std::size_t>(std::max(0.,std::floor((where.x-layout_.compare.left-8)/cell)));
+                if(index<state_.pinnedCandidateIds.size()) {
+                    const double left=stacked?layout_.compare.left+8:layout_.compare.left+8+index*cell;
+                    if(where.x>=left+cell-50){const auto id=state_.pinnedCandidateIds[index];state_.unpin(id);
+                        std::erase_if(pinnedSnapshots_,[&](const auto& c){return c.id==id;});notifyState();}
+                }
+            }
+            return kMouseEventHandled;
+        }
+        if(state_.tab==session::Tab::Diagnostics||state_.tab==session::Tab::Match) {
+            if(where.y<layout_.content.top+38) {
+                if(where.x<layout_.content.left+280&&actions_.refresh)actions_.refresh();
+                else if(actions_.clipboard)actions_.clipboard();
+            }
+            return kMouseEventHandled;
+        }
+        if(state_.tab==session::Tab::Library) {
+            const auto area=layout_.content;
+            const double right=layout_.inspectorMode==InspectorMode::Side?layout_.inspector.left-10:area.right;
+            if(where.x>=right)return kMouseEventHandled;
+            if(where.y>=area.top+36&&where.y<area.top+67) {
+                const double unit=(right-area.left-20)/4;
+                const auto which=std::clamp(static_cast<int>((where.x-area.left-10)/unit),0,3);
+                if(which==0){const auto n=popup({"All","Pop","Rock","R&B","Jazz","City Pop / J-pop","Functional"},where);
                     constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
-                    if (n>=0) libraryStyle_=n?std::optional<Style>(styles[n-1]):std::nullopt;
-                } else if (where.x<435) {
-                    const auto n=popup({"Auto","Develop","Resolve","Loop","Color"},where);
-                    if (n>=0) libraryIntent_=n?std::optional<PhraseIntent>(static_cast<PhraseIntent>(n)):std::nullopt;
-                } else if (where.x<585) {
-                    const auto n=popup({"All","Major","Minor"},where);
-                    if (n>=0) libraryMode_=n?std::optional<Mode>(n==1?Mode::Major:Mode::Minor):std::nullopt;
-                } else if (where.x<940) beginForm(Form::Search,librarySearch_);
-                libraryPage_=0; invalid(); return kMouseEventHandled;
+                    if(n>=0)libraryStyle_=n?std::optional<Style>(styles[n-1]):std::nullopt;}
+                else if(which==1){const auto n=popup({"Auto","Develop","Resolve","Loop","Color"},where);
+                    if(n>=0)libraryIntent_=n?std::optional<PhraseIntent>(static_cast<PhraseIntent>(n)):std::nullopt;}
+                else if(which==2){const auto n=popup({"All","Major","Minor"},where);
+                    if(n>=0)libraryMode_=n?std::optional<Mode>(n==1?Mode::Major:Mode::Minor):std::nullopt;}
+                else beginForm(Form::Search,librarySearch_);
+                libraryPage_=0;invalid();return kMouseEventHandled;
             }
-            if (where.y>=795 && where.y<836) {
-                if (where.x<200 && libraryPage_>0) --libraryPage_;
-                else if (where.x>895 && (libraryPage_+1)*11<filteredLibrary().size()) ++libraryPage_;
-                invalid(); return kMouseEventHandled;
-            }
-            if (where.y>=385 && where.y<781) {
-                const auto row=static_cast<std::size_t>((where.y-385)/36);
-                const auto filtered=filteredLibrary(); const auto i=libraryPage_*11+row;
-                if (i<filtered.size()) { selectedLibrary_=filtered[i]; invalid(); }
+            if(where.y>=area.bottom-36){const auto filtered=filteredLibrary();
+                if(where.x<area.left+180&&libraryPage_>0)--libraryPage_;
+                else if(where.x>right-180&&(libraryPage_+1)*static_cast<std::size_t>(layout_.libraryRows)<filtered.size())++libraryPage_;
+                invalid();return kMouseEventHandled;}
+            if(where.y>=area.top+88&&where.y<area.bottom-37) {
+                const auto row=static_cast<std::size_t>((where.y-area.top-88)/36);
+                const auto filtered=filteredLibrary();
+                const auto index=libraryPage_*static_cast<std::size_t>(layout_.libraryRows)+row;
+                if(index<filtered.size()){selectedLibrary_=filtered[index];selectedCandidate_.reset();selectedChord_.reset();inspectorScroll_=0;invalid();}
             }
             return kMouseEventHandled;
         }
-        if (selectedCandidate_) {
-            if (where.y>=290 && where.y<325 && where.x>=435 && where.x<480) { selectedCandidate_.reset(); invalid(); return kMouseEventHandled; }
-            if (where.y>=703 && where.y<751 && where.x>655) {
-                if (const auto* c=selectedCandidate()) {
-                    formMetadata_.name="My "+std::string(intentName(c->intent))+" Progression";
-                    formMetadata_.style=state_.style;
-                    if (!formMetadata_.style) for (auto s:{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional})
-                        if (c->styles&static_cast<StyleFlags>(s)) { formMetadata_.style=s; break; }
-                    formMetadata_.intent=c->intent;
-                    beginForm(Form::Save,formMetadata_.name);
+        for(std::size_t visual=0;visual<4;++visual) {
+            auto lane=layout_.lanes[visual];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
+            if(!lane.contains(where.x,where.y))continue;
+            const auto group=groupForVisual(visual,state_.intent);
+            if(where.y<lane.top+27) {
+                if(where.x>=lane.right-120&&recommendations_.groups[group].size()>3) {
+                    std::vector<std::string> options;
+                    for(const auto& c:recommendations_.groups[group]) {
+                        std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
+                        options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
+                    }
+                    const auto selected=popup(options,where);
+                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};selectedChord_.reset();inspectorScroll_=0;invalid();}
                 }
                 return kMouseEventHandled;
             }
-            if (where.x>=430 && where.y>=280 && where.y<751) return kMouseEventHandled;
-        }
-        if (where.y>=758 && where.y<793 && where.x>=250) {
-            const auto index=static_cast<std::size_t>((where.x-24)/350);
-            if (index<state_.pinnedCandidateIds.size() && where.x>=24+index*350+250) {
-                const auto id=state_.pinnedCandidateIds[index]; state_.unpin(id);
-                std::erase_if(pinnedSnapshots_,[&](const auto& candidate){return candidate.id==id;});
-                notifyState(); return kMouseEventHandled;
-            }
-        }
-        constexpr std::size_t chosenMap[]{4,1,0,2,3};
-        const std::size_t pref=chosenMap[state_.intent?static_cast<std::size_t>(*state_.intent):0];
-        for (std::size_t visual=0;visual<4;++visual) {
-            const auto group=visual==0 && pref<4?pref:(pref<4 && visual<=pref?visual-1:visual);
-            const auto top=292.0+visual*115.0;
-            if (where.y>=top && where.y<top+27 && where.x>900 && recommendations_.groups[group].size()>3) {
-                std::vector<std::string> options;
-                for (const auto& c:recommendations_.groups[group]) {
-                    std::string path; for (const auto& e:c.continuation) { if (!path.empty()) path+=" → "; path+=e.label; }
-                    options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
-                }
-                const auto selected=popup(options,where);
-                if (selected>=0) { selectedCandidate_={{group,static_cast<std::size_t>(selected)}}; invalid(); }
-                return kMouseEventHandled;
-            }
-            if (where.y<top+27 || where.y>=top+105) continue;
-            const auto row=static_cast<std::size_t>((where.y-top-27)/26);
+            const auto rowHeight=(lane.height()-30)/3;
+            const auto row=static_cast<std::size_t>((where.y-lane.top-27)/rowHeight);
             const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
-            if (row>=visible.size() || row>=3) return kMouseEventHandled;
-            const auto index=visible[row]; const auto& c=recommendations_.groups[group][index];
-            const bool exportControls=static_cast<bool>(actions_.exportMidi);
-            if (where.x>=(exportControls?900:930) && where.x<(exportControls?950:1000)) {
-                if (state_.unpin(c.id)) std::erase_if(pinnedSnapshots_,[&](const auto& candidate){return candidate.id==c.id;});
-                else {
-                    if (!state_.pin(c.id,session::continuationFingerprint(c))) actionStatus_="Compare holds at most 3 candidates";
-                    else pinnedSnapshots_.push_back(c);
-                }
+            if(row>=visible.size()||row>=3)return kMouseEventHandled;
+            const auto index=visible[row];const auto& c=recommendations_.groups[group][index];
+            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),static_cast<bool>(actions_.exportMidi));
+            if(geometry.pin.contains(where.x,where.y)){
+                if(state_.unpin(c.id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==c.id;});
+                else if(state_.pin(c.id,session::continuationFingerprint(c)))pinnedSnapshots_.push_back(c);
                 notifyState();
-            } else if (exportControls && where.x>=950 && where.x<982 && actions_.audition) {
-                actions_.audition(c);
-            } else if (exportControls && where.x>=982 && where.x<1028) {
-                actionStatus_=actions_.exportMidi(c); invalid();
-            } else if (exportControls && where.x>=1028 && where.x<1080 && actions_.saveSnapshot) {
-                actionStatus_=actions_.saveSnapshot(c); invalid();
-            } else if (where.x>=1000 && where.x<1037 && actions_.audition && !exportControls) {
-                actions_.audition(c);
-            } else { selectedCandidate_={{group,index}}; invalid(); }
+            } else if(geometry.audition.contains(where.x,where.y)&&actions_.audition)actions_.audition(c);
+            else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){actionStatus_=actions_.exportMidi(c);invalid();}
+            else if(geometry.snapshot.contains(where.x,where.y)&&actions_.saveSnapshot){actionStatus_=actions_.saveSnapshot(c);invalid();}
+            else {selectedCandidate_={{group,index}};selectedChord_.reset();inspectorScroll_=0;invalid();}
             return kMouseEventHandled;
         }
-    } catch (...) { actionStatus_="Action failed"; invalid(); }
+    } catch(...) {actionStatus_="Action failed";invalid();}
     return kMouseEventHandled;
+}
+void MainView::drawResponsiveLibrary(CDrawContext* dc) {
+    const auto area=layout_.content;
+    const double right=layout_.inspectorMode==InspectorMode::Side?layout_.inspector.left-10:area.right;
+    box(dc,viewRect(area),panel);
+    line(dc,"LIBRARY   Factory "+std::to_string(factory_.size())+" · User "+std::to_string(user_.size()),
+        CRect(area.left+10,area.top+6,right-10,area.top+32),accent);
+    const double filterY=area.top+36;
+    const double unit=(right-area.left-20)/4;
+    line(dc,"Style: "+(libraryStyle_?styleName(*libraryStyle_):"All"),CRect(area.left+10,filterY,area.left+10+unit,filterY+28),muted);
+    line(dc,"Intent: "+intentLabel(libraryIntent_),CRect(area.left+10+unit,filterY,area.left+10+unit*2,filterY+28),muted);
+    line(dc,std::string("Mode: ")+(libraryMode_?(*libraryMode_==Mode::Major?"Major":"Minor"):"All"),
+        CRect(area.left+10+unit*2,filterY,area.left+10+unit*3,filterY+28),muted);
+    line(dc,"Search: "+(librarySearch_.empty()?"Name / tag":librarySearch_),
+        CRect(area.left+10+unit*3,filterY,right-10,filterY+28),muted);
+    if(!libraryError_.empty())line(dc,"Library Error: "+libraryError_,CRect(area.left+10,area.top+67,right-10,area.top+89),
+        CColor(255,173,173,255));
+    const auto filtered=filteredLibrary();
+    const auto rows=static_cast<std::size_t>(layout_.libraryRows),offset=libraryPage_*rows;
+    const double listTop=area.top+88;
+    {
+    ConcatClip clip(*dc,CRect(area.left,listTop,right,area.bottom-37));
+    for(std::size_t row=0;row<rows&&offset+row<filtered.size();++row) {
+        const auto [factory,index]=filtered[offset+row];const auto& item=factory?factory_[index]:user_[index];
+        const double y=listTop+row*36;
+        box(dc,CRect(area.left+8,y,right-8,y+33),CColor(32,49,69,255));
+        const double nameEnd=right-(layout_.mode==LayoutMode::Compact?220:435);
+        line(dc,item.name,CRect(area.left+16,y+3,nameEnd,y+29),pale);
+        line(dc,primaryStyle(item.styles),CRect(nameEnd+8,y+3,nameEnd+115,y+29),muted);
+        line(dc,intentName(item.intent),CRect(nameEnd+120,y+3,nameEnd+220,y+29),muted);
+        if(layout_.mode!=LayoutMode::Compact) {
+            line(dc,item.mode==Mode::Major?"Major":"Minor",CRect(nameEnd+225,y+3,nameEnd+315,y+29),muted);
+            line(dc,factory?"Factory":"User",CRect(nameEnd+320,y+3,right-16,y+29),accent);
+        }
+    }
+    }
+    line(dc,"◀ Previous",CRect(area.left+10,area.bottom-32,area.left+175,area.bottom-4),muted);
+    line(dc,"Page "+std::to_string(libraryPage_+1)+" / "+
+        std::to_string(std::max<std::size_t>(1,(filtered.size()+rows-1)/rows)),
+        CRect(area.left+185,area.bottom-32,right-185,area.bottom-4),muted,kCenterText);
+    line(dc,"Next ▶",CRect(right-165,area.bottom-32,right-10,area.bottom-4),muted,kRightText);
+}
+
+void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
+    const auto area=layout_.content;
+    box(dc,viewRect(area),panel);
+    line(dc,"MATCH / DEBUG    [Refresh host]    [Clipboard]",CRect(area.left+10,area.top+7,area.right-10,area.top+34),accent);
+    line(dc,matchStatus_,CRect(area.left+10,area.top+39,area.right-10,area.top+65),pale);
+    line(dc,"Generation "+std::to_string(generation_)+"    Worker "+(workerBusy_?"busy":"idle")+
+        "    Last "+fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+70,area.right-10,area.top+96),muted);
+    if(!matches_.empty())line(dc,"Top match: "+matches_.front().templateName+" · "+fixed(matches_.front().similarity,2),
+        CRect(area.left+10,area.top+102,area.right-10,area.top+130),pale);
+    std::istringstream in(hostText_+"\n"+parseText_+"\n"+rawText_);std::string row;double y=area.top+140;
+    ConcatClip clip(*dc,viewRect(area));
+    while(y<area.bottom-20&&std::getline(in,row)) {line(dc,row.substr(0,165),CRect(area.left+10,y,area.right-10,y+18),muted);y+=18;}
+}
+
+void MainView::drawResponsiveInspector(CDrawContext* dc) {
+    if(layout_.inspectorMode==InspectorMode::None)return;
+    const auto area=layout_.inspector;
+    box(dc,viewRect(area),CColor(18,30,47,255));
+    line(dc,"×   INSPECTOR",CRect(area.left+12,area.top+8,area.right-12,area.top+34),accent);
+    double y=area.top+40-inspectorScroll_;
+    {
+    ConcatClip clip(*dc,CRect(area.left,area.top+38,area.right,area.bottom-45));
+    const auto add=[&](std::string text,CColor color=pale) {
+        line(dc,std::move(text),CRect(area.left+14,y,area.right-14,y+23),color);y+=27;
+    };
+    if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
+        const auto& c=*selectedCandidate();
+        add(std::string(intentName(c.intent))+" · "+formatKey(c.key)+" · score "+
+            std::to_string(static_cast<int>(std::round(c.rankingScore))));
+        add("Source  "+c.primaryTemplate,muted);
+        add("Match  "+fixed(c.matchSimilarity,2),muted);
+        add("Cadence  "+std::string(cadenceName(c.cadence)),muted);
+        add("Style  "+styleFlags(c.styles),muted);
+        add("Rhythm  "+fixed(c.subscores.rhythm,2)+"   Style  "+fixed(c.subscores.style,2),muted);
+        add("Intent  "+fixed(c.subscores.intent,2)+"   Prior  "+fixed(c.subscores.prior,2),muted);
+        add("Support  "+std::to_string(c.supportCount),muted);
+        add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):"fallback")+" QN",muted);
+        const auto path=session::continuationFingerprint(c);
+        add("Path  "+path,muted);
+        drawMiniTimeline(dc,c,CRect(area.left+14,y+2,area.right-14,y+27));y+=38;
+        const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
+        if(match!=matches_.end())add("Skeleton "+fixed(match->subScores.skeletonHarmony,2)+
+            "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
+        std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
+        add("Sources  "+sources,muted);
+        if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
+            const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:"gap";
+            const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:"gap";
+            add(user+"  ↔  "+templ,muted);
+        }
+    } else if(state_.tab==session::Tab::Library&&selectedLibrary_) {
+        const auto [factory,index]=*selectedLibrary_;
+        const auto* item=factory?(index<factory_.size()?&factory_[index]:nullptr):(index<user_.size()?&user_[index]:nullptr);
+        if(!item)return;
+        add(item->name);
+        add("ID  "+item->id,muted);
+        add("Style  "+styleFlags(item->styles),muted);
+        add("Intent  "+std::string(intentName(item->intent)),muted);
+        add(std::string("Mode  ")+(item->mode==Mode::Major?"Major":"Minor"),muted);
+        std::string path;for(const auto& e:item->full){if(!path.empty())path+=" → ";path+=formatMatchEvent(e);}
+        add("FULL  "+path,muted);
+        std::string skeleton;for(const auto skeletonIndex:item->skeletonIndices)if(skeletonIndex<item->full.size()){
+            if(!skeleton.empty())skeleton+=" → ";skeleton+=formatMatchEvent(item->full[skeletonIndex]);}
+        add("SKELETON  "+skeleton,muted);
+        std::string rhythm;for(const auto& e:item->full){if(!rhythm.empty())rhythm+=" · ";rhythm+=e.durationQN?fixed(*e.durationQN):"?";}
+        add("Rhythm QN  "+rhythm,muted);
+        add("Cadence  "+std::string(cadenceName(item->cadence)),muted);
+        add("Meter  "+std::to_string(item->meterNumerator)+"/"+std::to_string(item->meterDenominator),muted);
+        add("Prior  "+fixed(item->priorWeight,2),muted);
+        std::string tags;for(const auto& t:item->tags){if(!tags.empty())tags+=", ";tags+=t;}add("Tags  "+tags,muted);
+        std::size_t nearCount{};for(const auto& other:factory_)if(other.id!=item->id&&
+            other.fingerprint.skeletonDegrees==item->fingerprint.skeletonDegrees&&
+            other.fingerprint.rhythmShape==item->fingerprint.rhythmShape)++nearCount;
+        add("Near duplicate  "+std::to_string(nearCount),muted);
+    } else if(selectedChord_&&*selectedChord_<analysis_.full.size()) {
+        const auto& c=state_.imported.events[*selectedChord_];const auto& a=analysis_.full[*selectedChord_];
+        add(c.name+" · "+formatDegree(a));
+        add("Function  "+formatFunction(a.function));
+        add("Weight  "+fixed(a.structuralWeight,2));
+        add("Roles  "+roles(a.roles));
+        add("Target  "+(a.target?std::to_string(a.target->degree):"—"));
+        add("Confidence  "+fixed(a.analysisConfidence,2));
+        add("Timing  "+fixed(c.startQN)+" QN, "+(c.durationQN?fixed(*c.durationQN):"OPEN"));
+    }
+    inspectorScrollMax_=std::max(0.,y+inspectorScroll_-(area.bottom-45));
+    }
+    if(state_.tab==session::Tab::Recommend&&selectedCandidate())
+        line(dc,"Save as Custom Progression",CRect(area.left+14,area.bottom-39,area.right-14,area.bottom-8),accent,kRightText);
+    else if(state_.tab==session::Tab::Library&&selectedLibrary_) {
+        if(selectedLibrary_->first)line(dc,"Factory · read only",CRect(area.left+14,area.bottom-70,area.right-14,area.bottom-45),muted);
+        else line(dc,"Rename     Delete",CRect(area.left+14,area.bottom-70,area.right-14,area.bottom-45),accent);
+        if(actions_.exportLibraryMidi)line(dc,"Export MIDI",CRect(area.left+14,area.bottom-39,area.right-14,area.bottom-8),accent,kRightText);
+    }
+}
+
+void MainView::drawResponsiveForm(CDrawContext* dc) {
+    if(form_==Form::None)return;
+    const double w=std::min(590.,layout_.viewport.width()-48),h=300;
+    const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
+    box(dc,CRect(x,y,x+w,y+h),CColor(23,39,59,255));
+    line(dc,form_==Form::Save?"SAVE CUSTOM PROGRESSION":form_==Form::Rename?"EDIT USER PROGRESSION":"SEARCH LIBRARY",
+        CRect(x+22,y+12,x+w-22,y+43),accent);
+    line(dc,form_==Form::Search?"Name / tag":"Name",CRect(x+22,y+53,x+140,y+84),muted);
+    if(form_!=Form::Search) {
+        line(dc,"Style: "+(formMetadata_.style?styleName(*formMetadata_.style):"Auto"),CRect(x+22,y+115,x+w-22,y+142),pale);
+        line(dc,"Intent: "+std::string(intentName(formMetadata_.intent)),CRect(x+22,y+146,x+w-22,y+174),pale);
+        line(dc,"Tags (optional)",CRect(x+22,y+183,x+w-22,y+210),muted);
+    }
+    line(dc,"Cancel",CRect(x+150,y+h-39,x+270,y+h-7),muted);
+    line(dc,form_==Form::Search?"Apply":"Save",CRect(x+w-150,y+h-39,x+w-25,y+h-7),accent,kRightText);
 }
 } // namespace harmony::ui

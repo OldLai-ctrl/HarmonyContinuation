@@ -10,7 +10,7 @@
 namespace harmony::session {
 enum class Tab : std::uint8_t { Recommend, Library, Match, Diagnostics };
 struct PluginSessionState {
-    static constexpr std::uint32_t currentSchemaVersion = 2;
+    static constexpr std::uint32_t currentSchemaVersion = 3;
     std::uint32_t schemaVersion{currentSchemaVersion};
     ImportedProgressionSession imported;
     std::optional<KeySignature> forcedKey;
@@ -24,6 +24,8 @@ struct PluginSessionState {
     std::uint32_t factoryLibraryVersion{1};
     std::optional<int> meterNumerator;
     std::optional<int> meterDenominator;
+    std::uint32_t editorWidth{1100};  // logical VSTGUI units, never physical DPI pixels
+    std::uint32_t editorHeight{900};
 
     bool pin(const std::string& id, const std::string& fingerprint = {});
     bool unpin(const std::string& id);

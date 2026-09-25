@@ -100,9 +100,15 @@ int main() {
         session::PluginSessionState state; state.pin("old",session::continuationFingerprint(candidate));
         const auto bytes=session::serialize(state);
         auto decoded=session::deserialize(bytes);
-        check(decoded && decoded.state.schemaVersion==2 && decoded.state.pinnedFingerprints.size()==1,"state v2 roundtrip");
-        auto future=bytes; future[4]=3;
+        check(decoded && decoded.state.schemaVersion==3 && decoded.state.pinnedFingerprints.size()==1,"state v3 roundtrip");
+        auto future=bytes; future[4]=4;
         check(session::deserialize(future).error=="UnsupportedVersion","future version rejected");
+        auto old=bytes; old[3]='2'; old[4]=2; old.resize(old.size()-8);
+        const auto migrated=session::deserialize(old);
+        check(migrated&&migrated.state.editorWidth==1100&&migrated.state.editorHeight==900,"v2 size migration");
+        state.editorWidth=1500; state.editorHeight=850;
+        const auto sized=session::deserialize(session::serialize(state));
+        check(sized&&sized.state.editorWidth==1500&&sized.state.editorHeight==850,"editor size roundtrip");
         RecommendationSet set; candidate.id="new"; set.groups[0].push_back(candidate);
         decoded.state.resolvePins(set);
         check(decoded.state.pinnedCandidateIds.size()==1 && decoded.state.pinnedCandidateIds[0]=="new","pin stable match");

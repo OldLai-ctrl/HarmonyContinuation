@@ -4,6 +4,7 @@
 #include "preview/PreviewSynth.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "session/ProductServices.h"
+#include "ui/UILayout.h"
 #include <algorithm>
 #include <array>
 #include <filesystem>
@@ -115,6 +116,11 @@ int main() {
             check(midi::qnToTicks(preview.sequence.events[i].startQN,480)==labels[i],"preview and MIDI boundary agree");
         }
         check(midi::writeToMemory(clip.sequence).bytes==written.bytes,"deterministic bytes");
+        for(const auto width:{900.,1100.,1800.})for(const auto height:{640.,900.,1200.}) {
+            const auto layout=ui::computeLayout({width,height,1.5,session::Tab::Recommend,true,true});
+            check(layout.laneColumns>=1&&midi::writeToMemory(clip.sequence).bytes==written.bytes,
+                "resize leaves MIDI bytes unchanged");
+        }
         auto current=midi::buildClip(preview.sequence,midi::ArrangementMode::BlockChords,midi::ExportScope::CurrentOnly,{4,4});
         auto suffix=midi::buildClip(preview.sequence,midi::ArrangementMode::VoiceLed,midi::ExportScope::ContinuationOnly,{4,4});
         check(current && current.sequence.chordCount==3&&!current.sequence.boundaryQN,"current scope");
@@ -145,6 +151,10 @@ int main() {
         match.templateLabels={"C","Am"};match.alignmentTrace.push_back({0,0,AlignmentOp::Match});
         const auto snap=snapshot::capture(input,candidate,{match},120,4,4,candidate.key,Style::Pop,PhraseIntent::Resolve);
         const auto json=snapshot::serialize(snap);const auto decoded=snapshot::deserialize(json);
+        for(const auto width:{900.,1100.,1800.}) {
+            const auto ignoredLayout=ui::computeLayout({width,900,2,session::Tab::Recommend,true,true});
+            check(ignoredLayout.laneColumns>=1&&snapshot::serialize(snap)==json,"resize leaves snapshot unchanged");
+        }
         check(decoded && decoded.value.schemaVersion==1&&decoded.value.candidate.continuation.size()==2&&
             decoded.value.match&&decoded.value.match->alignmentTrace.size()==1,"snapshot round trip");
         auto future=json;const auto pos=future.find("\"schemaVersion\":1");check(pos!=std::string::npos,"version field present");

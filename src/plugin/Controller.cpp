@@ -217,6 +217,7 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
             view_->clearSessionDirty();
             view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);
         }
+        if (resizeRequest_) resizeRequest_(static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight));
         submitRecommendation();
         return kResultOk;
     } catch (...) { return kResultFalse; }
@@ -225,6 +226,13 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
 IPlugView* PLUGIN_API Controller::createView(FIDString name) {
     try { return name && std::strcmp(name, ViewType::kEditor) == 0 ? new PluginView(this) : nullptr; }
     catch (...) { return nullptr; }
+}
+
+void Controller::editorSizeChanged(int width,int height) noexcept {
+    if (width<900 || width>2200 || height<640 || height>1400) return;
+    sessionState_.editorWidth=static_cast<std::uint32_t>(width);
+    sessionState_.editorHeight=static_cast<std::uint32_t>(height);
+    if(view_)view_->setEditorSizeState(width,height);
 }
 
 tresult Controller::requestSnapshot() noexcept {
@@ -303,6 +311,8 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         const auto recompute=harmony::session::recomputeScope(old,next);
         const auto keyChanged=recompute==harmony::session::RecomputeScope::Analysis;
         sessionState_=next;
+        sessionState_.editorWidth=old.editorWidth;
+        sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
         if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={}; }
         if (view_) {

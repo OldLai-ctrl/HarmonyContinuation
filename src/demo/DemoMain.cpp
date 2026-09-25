@@ -15,7 +15,10 @@
 #include <commdlg.h>
 #include <chrono>
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -76,6 +79,15 @@ public:
         main_->setHostText("HarmonyContinuation Demo · 120 BPM · simulated transport");
         loadLibrary(); return true;
     }
+    void resize(int width,int height) {
+        if(width<1||height<1)return;
+        if(frame_)frame_->setSize(width,height);
+        if(main_)main_->resizeLayout(width,height);
+        state_.editorWidth=static_cast<std::uint32_t>(std::clamp(width,900,2200));
+        state_.editorHeight=static_cast<std::uint32_t>(std::clamp(height,640,1400));
+        if(main_)main_->setEditorSizeState(static_cast<int>(state_.editorWidth),static_cast<int>(state_.editorHeight));
+    }
+    void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
     bool load(char which) {
         stopAudition();
         snapshotLoaded_=false;
@@ -85,7 +97,9 @@ public:
         auto loaded=demo::loadScenario(path);
         if (!loaded) { if (main_) main_->setDropReport("Scenario error",loaded.error); return false; }
         scenario_=std::move(loaded.scenario);
-        state_={}; state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
+        const auto width=state_.editorWidth,height=state_.editorHeight;
+        state_={};state_.editorWidth=width;state_.editorHeight=height;
+        state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
         state_.meterNumerator=scenario_.meterNumerator; state_.meterDenominator=scenario_.meterDenominator;
         state_.imported.replace(std::move(scenario_.chords),TimelineCoordinateMode::RelativeToSelection);
         projectQN_=state_.imported.events.front().startQN; playing_=false;
@@ -134,7 +148,9 @@ public:
         if (!decoded) return "Snapshot load: "+decoded.error;
         stopAudition(); snapshotLoaded_=true; playing_=false;
         const auto& snap=decoded.value;
-        state_={}; state_.imported=snap.imported; state_.forcedKey=snap.key;
+        const auto width=state_.editorWidth,height=state_.editorHeight;
+        state_={};state_.editorWidth=width;state_.editorHeight=height;
+        state_.imported=snap.imported; state_.forcedKey=snap.key;
         state_.style=snap.style; state_.intent=snap.intent;
         state_.meterNumerator=snap.meterNumerator; state_.meterDenominator=snap.meterDenominator;
         scenario_.name=path->filename().string(); scenario_.tempo=snap.tempoBPM;
@@ -212,7 +228,8 @@ private:
     }
     void applyState(const session::PluginSessionState& next) {
         const auto recompute=session::recomputeScope(state_,next);
-        state_=next;
+        const auto width=state_.editorWidth,height=state_.editorHeight;
+        state_=next;state_.editorWidth=width;state_.editorHeight=height;
         if (main_) main_->setSessionState(state_);
         if (!snapshotLoaded_ && recompute!=session::RecomputeScope::None) submit(recompute==session::RecomputeScope::Ranking);
     }
@@ -289,9 +306,33 @@ private:
     }
 };
 std::unique_ptr<DemoApp> app;
-HWND slider{},playButton{};
+HWND slider{},playButton{},demoContent{},caseCombo{},currentButton{},snapshotButton{},statusLabel{};
 LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
     switch(message) {
+        case WM_GETMINMAXINFO: {
+            auto* limits=reinterpret_cast<MINMAXINFO*>(l);
+            RECT minimum{0,0,920,705},maximum{0,0,2220,1465};
+            AdjustWindowRectEx(&minimum,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
+            AdjustWindowRectEx(&maximum,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
+            limits->ptMinTrackSize={minimum.right-minimum.left,minimum.bottom-minimum.top};
+            limits->ptMaxTrackSize={maximum.right-maximum.left,maximum.bottom-maximum.top};
+            return 0;
+        }
+        case WM_SIZE: {
+            const int width=LOWORD(l),height=HIWORD(l);
+            if(width<1||height<1)return 0;
+            if(demoContent)MoveWindow(demoContent,10,55,std::max(1,width-20),std::max(1,height-65),TRUE);
+            const int comboWidth=std::min(285,std::max(180,width/4));
+            if(caseCombo)MoveWindow(caseCombo,12,8,comboWidth,300,TRUE);
+            if(playButton)MoveWindow(playButton,comboWidth+19,8,65,32,TRUE);
+            const int sliderX=comboWidth+92,sliderRight=width-248;
+            if(slider)MoveWindow(slider,sliderX,4,std::max(80,sliderRight-sliderX),40,TRUE);
+            if(currentButton)MoveWindow(currentButton,width-240,8,112,32,TRUE);
+            if(snapshotButton)MoveWindow(snapshotButton,width-122,8,112,32,TRUE);
+            if(statusLabel)ShowWindow(statusLabel,width>=1080?SW_SHOW:SW_HIDE);
+            if(app)app->resize(width-20,height-65);
+            return 0;
+        }
         case WM_COMMAND:
             if (LOWORD(w)==101 && HIWORD(w)==CBN_SELCHANGE) {
                 const auto index=SendMessageW(reinterpret_cast<HWND>(l),CB_GETCURSEL,0,0);
@@ -323,11 +364,12 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_BAR_CLASSES}; InitCommonControlsEx(&controls);
     WNDCLASSW wc{}; wc.lpfnWndProc=windowProc; wc.hInstance=instance; wc.lpszClassName=L"HarmonyContinuationDemoWindow";
     wc.hCursor=LoadCursorW(nullptr,IDC_ARROW); RegisterClassW(&wc);
-    auto hwnd=CreateWindowExW(0,wc.lpszClassName,L"HarmonyContinuation Demo · offline",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+    auto hwnd=CreateWindowExW(0,wc.lpszClassName,L"HarmonyContinuation Demo · offline",WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,CW_USEDEFAULT,1125,1000,nullptr,nullptr,instance,nullptr);
     if (!hwnd) return 1;
     auto combo=CreateWindowExW(0,L"COMBOBOX",nullptr,WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST|WS_VSCROLL,
         12,8,285,300,hwnd,reinterpret_cast<HMENU>(101),instance,nullptr);
+    caseCombo=combo;
     const wchar_t* cases[]{L"Case A · C → Am → Dm",L"Case B · C → Am → A7 → Dm",L"Case C · Dm7 → G7",
         L"Case D · C → F → Fm",L"Case E · C → G → Am → F",L"Case F · A minor",
         L"Case G · anomalous F#",L"Case H · ambiguous key"};
@@ -337,20 +379,60 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     slider=CreateWindowExW(0,TRACKBAR_CLASSW,L"Project QN",WS_CHILD|WS_VISIBLE|TBS_HORZ,380,4,305,40,hwnd,
         reinterpret_cast<HMENU>(103),instance,nullptr);
     SendMessageW(slider,TBM_SETRANGE,TRUE,MAKELPARAM(0,256));
-    CreateWindowExW(0,L"BUTTON",L"Current MIDI",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,690,8,112,32,hwnd,
+    currentButton=CreateWindowExW(0,L"BUTTON",L"Current MIDI",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,690,8,112,32,hwnd,
         reinterpret_cast<HMENU>(104),instance,nullptr);
-    CreateWindowExW(0,L"BUTTON",L"Open Snapshot",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,808,8,112,32,hwnd,
+    snapshotButton=CreateWindowExW(0,L"BUTTON",L"Open Snapshot",WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,808,8,112,32,hwnd,
         reinterpret_cast<HMENU>(105),instance,nullptr);
-    CreateWindowExW(0,L"STATIC",L"120 BPM · simulated",WS_CHILD|WS_VISIBLE,930,14,180,25,hwnd,nullptr,instance,nullptr);
+    statusLabel=CreateWindowExW(0,L"STATIC",L"120 BPM · simulated",WS_CHILD|WS_VISIBLE,930,14,180,25,hwnd,nullptr,instance,nullptr);
     auto content=CreateWindowExW(0,L"STATIC",nullptr,WS_CHILD|WS_VISIBLE,10,55,1100,900,hwnd,nullptr,instance,nullptr);
+    demoContent=content;
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
-    char initial='D'; for (int i=1;i+1<argc;++i) if (std::wstring_view(args[i])==L"--case" && wcslen(args[i+1])==1)
-        initial=static_cast<char>(args[i+1][0]);
+    char initial='D'; int requestedWidth=1100,requestedHeight=900; double scale=1;
+    std::filesystem::path resizeSmokeReport;
+    for (int i=1;i+1<argc;++i) {
+        const std::wstring_view key(args[i]);
+        if (key==L"--case" && wcslen(args[i+1])==1)initial=static_cast<char>(args[i+1][0]);
+        else if(key==L"--size") {
+            int width{},height{};
+            if(swscanf_s(args[i+1],L"%dx%d",&width,&height)==2) {
+                requestedWidth=std::clamp(width,900,2200);requestedHeight=std::clamp(height,640,1400);
+            }
+        } else if(key==L"--scale") {
+            double value{};if(swscanf_s(args[i+1],L"%lf",&value)==1&&std::isfinite(value))scale=std::clamp(value,1.,2.);
+        } else if(key==L"--resize-smoke")resizeSmokeReport=args[i+1];
+    }
     if (args) LocalFree(args);
     wchar_t executable[32768]{}; GetModuleFileNameW(nullptr,executable,32768);
     app=std::make_unique<DemoApp>(std::filesystem::path(executable));
     if (!app->open(content) || !app->load(initial)) { DestroyWindow(hwnd); VSTGUI::exitPlatform(); return 2; }
+    RECT requested{0,0,requestedWidth+20,requestedHeight+65};
+    AdjustWindowRectEx(&requested,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
+    SetWindowPos(hwnd,nullptr,0,0,requested.right-requested.left,requested.bottom-requested.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+    app->simulateScale(scale);
     SendMessageW(combo,CB_SETCURSEL,initial-'A',0);
+    if(!resizeSmokeReport.empty()) {
+        std::ofstream report(resizeSmokeReport,std::ios::trunc);
+        if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 3;}
+        int passed{};
+        for(char letter='A';letter<='H';++letter) {
+            if(!app->load(letter)){report<<"load failed "<<letter<<'\n';DestroyWindow(hwnd);VSTGUI::exitPlatform();return 4;}
+            for(const auto [width,height]:std::array<std::pair<int,int>,3>{{{900,640},{1100,900},{1800,1000}}}) {
+                RECT size{0,0,width+20,height+65};
+                AdjustWindowRectEx(&size,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
+                SetWindowPos(hwnd,nullptr,0,0,size.right-size.left,size.bottom-size.top,
+                    SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+                for(const double factor:{1.,1.25,1.5,2.}) {
+                    app->simulateScale(factor);app->tick();
+                    RECT client{};GetClientRect(demoContent,&client);
+                    if(client.right<900||client.bottom<640){report<<"size failed "<<letter<<' '<<width<<'x'<<height<<'\n';
+                        DestroyWindow(hwnd);VSTGUI::exitPlatform();return 5;}
+                    ++passed;
+                }
+            }
+        }
+        report<<"resize smoke "<<passed<<"/96 PASS\n";
+        DestroyWindow(hwnd);VSTGUI::exitPlatform();return 0;
+    }
     ShowWindow(hwnd,show); UpdateWindow(hwnd); SetTimer(hwnd,1,250,nullptr);
     MSG msg{}; while (GetMessageW(&msg,nullptr,0,0)>0) { TranslateMessage(&msg); DispatchMessageW(&msg); }
     VSTGUI::exitPlatform(); return static_cast<int>(msg.wParam);
