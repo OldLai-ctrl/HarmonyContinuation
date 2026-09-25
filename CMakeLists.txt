@@ -1,0 +1,129 @@
+cmake_minimum_required(VERSION 3.25)
+project(HarmonyContinuation VERSION 0.0.1 LANGUAGES C CXX)
+# On this Chinese MSVC installation Ninja records zero /showIncludes entries
+# (localized compiler output does not match CMake's generated prefix). Header
+# edits can then leave old object files using stale C++ class layouts. Keep
+# explicit dependencies for our small set of project sources until the SDK
+# toolchain supplies reliable localized dependency scanning.
+file(GLOB_RECURSE HC_LOCAL_HEADERS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.h")
+file(GLOB_RECURSE HC_LOCAL_CPP CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
+set_source_files_properties(${HC_LOCAL_CPP} PROPERTIES OBJECT_DEPENDS "${HC_LOCAL_HEADERS}")
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Single-configuration build type" FORCE)
+endif()
+
+option(HC_BUILD_PLUGIN "Build SDK-backed VST3" ON)
+set(VST3_SDK_ROOT "$ENV{VST3_SDK_ROOT}" CACHE PATH "Local complete VST3 SDK 3.8.x checkout with VSTGUI")
+if(NOT VST3_SDK_ROOT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../VST_SDK/vst3sdk/pluginterfaces/vst/ivstprocesscontext.h")
+    set(VST3_SDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../VST_SDK/vst3sdk" CACHE PATH "Local VST3 SDK root" FORCE)
+endif()
+if(HC_BUILD_PLUGIN)
+    if(NOT EXISTS "${VST3_SDK_ROOT}/pluginterfaces/vst/ivstprocesscontext.h")
+        message(FATAL_ERROR "Provide VST3_SDK_ROOT pointing to an offline SDK 3.8.x checkout. See docs/HOST_SPIKE.md.")
+    endif()
+    set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES ON CACHE BOOL "" FORCE)
+    set(SMTG_ENABLE_VSTGUI_SUPPORT ON CACHE BOOL "" FORCE)
+    set(SMTG_CREATE_PLUGIN_LINK OFF CACHE BOOL "" FORCE)
+    set(VSTGUI_STANDALONE OFF CACHE BOOL "" FORCE)
+    set(VSTGUI_TOOLS OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${VST3_SDK_ROOT}" sdk)
+endif()
+
+if(HC_BUILD_PLUGIN)
+    smtg_add_vst3plugin(HarmonyContinuation
+        src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
+        src/ui/MainView.cpp)
+    if(WIN32)
+        target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
+    endif()
+    # The SDK helper's source-dir variables are scoped to its subdirectory;
+    # supply the verified Windows module entry explicitly in this parent scope.
+    target_sources(HarmonyContinuation PRIVATE "${VST3_SDK_ROOT}/public.sdk/source/main/dllmain.cpp")
+    # The SDK's package helper assumes a multi-config IDE generator. Keep the
+    # bundle layout correct with single-config Ninja as well.
+    set_target_properties(HarmonyContinuation PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/x86_64-win")
+    target_link_libraries(HarmonyContinuation PRIVATE sdk vstgui_support harmony_xml harmony_core)
+    target_compile_features(HarmonyContinuation PRIVATE cxx_std_20)
+    target_compile_definitions(HarmonyContinuation PRIVATE NOMINMAX)
+    if(MSVC)
+        target_compile_options(HarmonyContinuation PRIVATE /utf-8 /W4)
+    endif()
+endif()
+
+add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAnalysis.cpp)
+target_include_directories(harmony_core PUBLIC src)
+target_compile_features(harmony_core PUBLIC cxx_std_20)
+if(MSVC)
+    target_compile_options(harmony_core PRIVATE /W4 /permissive- /utf-8)
+endif()
+
+add_library(harmony_dev_json STATIC tools/ProgressionJson.cpp)
+target_link_libraries(harmony_dev_json PUBLIC harmony_core)
+target_compile_features(harmony_dev_json PUBLIC cxx_std_20)
+target_include_directories(harmony_dev_json PUBLIC tools)
+add_executable(harmony_cli tools/harmony_cli.cpp)
+target_link_libraries(harmony_cli PRIVATE harmony_dev_json)
+
+if(HC_BUILD_PLUGIN)
+    # Only the Cubase adapter needs the local SDK's bundled Expat reader.
+    set(HC_EXPAT_SOURCE_DIR "${VST3_SDK_ROOT}/vstgui4/vstgui/thirdparty/expat")
+    if(NOT EXISTS "${HC_EXPAT_SOURCE_DIR}/xmlparse.c")
+        message(FATAL_ERROR "The configured local VSTGUI SDK does not provide its Expat sources.")
+    endif()
+    add_library(hc_embedded_expat STATIC
+        "${HC_EXPAT_SOURCE_DIR}/xmlparse.c"
+        "${HC_EXPAT_SOURCE_DIR}/xmlrole.c"
+        "${HC_EXPAT_SOURCE_DIR}/xmltok.c")
+    target_include_directories(hc_embedded_expat PUBLIC "${HC_EXPAT_SOURCE_DIR}")
+    target_compile_definitions(hc_embedded_expat PRIVATE XML_NS XML_DTD XML_CONTEXT_BYTES=1024 HAVE_MEMMOVE)
+    target_compile_definitions(hc_embedded_expat PUBLIC XML_STATIC)
+    if(WIN32)
+        target_compile_definitions(hc_embedded_expat PRIVATE COMPILED_FROM_DSP)
+    endif()
+    add_library(harmony_xml STATIC src/plugin/VstXmlDropAdapter.cpp src/plugin/VstXmlChordParser.cpp)
+    target_link_libraries(harmony_xml PUBLIC harmony_core hc_embedded_expat)
+    set_target_properties(harmony_xml PROPERTIES CXX_EXTENSIONS OFF)
+    if(MSVC)
+        target_compile_options(harmony_xml PRIVATE /W4 /permissive- /utf-8)
+    else()
+        target_compile_options(harmony_xml PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endif()
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(WeightBarGeometryTests tests/WeightBarGeometryTests.cpp)
+    target_include_directories(WeightBarGeometryTests PRIVATE src)
+    target_compile_features(WeightBarGeometryTests PRIVATE cxx_std_20)
+    add_test(NAME WeightBarGeometryTests COMMAND WeightBarGeometryTests)
+
+    add_executable(CoreTimelineTests tests/CoreTimelineTests.cpp)
+    target_link_libraries(CoreTimelineTests PRIVATE harmony_core)
+    add_test(NAME CoreTimelineTests COMMAND CoreTimelineTests)
+
+    add_executable(HarmonyAnalysisTests tests/HarmonyAnalysisTests.cpp)
+    target_link_libraries(HarmonyAnalysisTests PRIVATE harmony_dev_json)
+    target_compile_definitions(HarmonyAnalysisTests PRIVATE HC_HARMONY_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/harmony")
+    add_test(NAME HarmonyAnalysisTests COMMAND HarmonyAnalysisTests)
+
+    if(HC_BUILD_PLUGIN)
+        add_executable(VstXmlParserTests tests/VstXmlParserTests.cpp)
+        target_link_libraries(VstXmlParserTests PRIVATE harmony_xml)
+        target_compile_definitions(VstXmlParserTests PRIVATE HC_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+        add_test(NAME VstXmlParserTests COMMAND VstXmlParserTests)
+
+        add_executable(VstXmlChordParserTests tests/VstXmlChordParserTests.cpp)
+        target_link_libraries(VstXmlChordParserTests PRIVATE harmony_xml)
+        target_compile_definitions(VstXmlChordParserTests PRIVATE HC_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+        add_test(NAME VstXmlChordParserTests COMMAND VstXmlChordParserTests)
+    endif()
+endif()

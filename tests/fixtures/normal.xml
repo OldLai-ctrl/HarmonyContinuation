@@ -1,0 +1,6 @@
+<harmony-spike-fixture schema="synthetic-v1">
+  <chord name="Cmaj7" keyNote="0" bassNote="0" type="Maj7" pitches="0,4,7,11" mask="0x891"><projectTime domain="quarterNotes">0</projectTime></chord>
+  <chord name="Am7" keyNote="9" bassNote="9" type="m7"><projectTime domain="quarterNotes">4</projectTime></chord>
+  <chord name="A7" keyNote="9" bassNote="9" type="7"><projectTime domain="quarterNotes">6</projectTime></chord>
+  <chord name="Dm7" keyNote="2" bassNote="2" type="m7"><projectTime domain="quarterNotes">7</projectTime></chord>
+</harmony-spike-fixture>

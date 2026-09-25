@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<vst-xml version="1.3">
+  <sourceApp>ParserTestFixture</sourceApp>
+  <chord id="no-bass"><name>C</name><projectTime domain="quarterNotes">0</projectTime><pitches>C1;E2;G2;</pitches><keyNote>60</keyNote><mask>0x091</mask></chord>
+  <chord id="no-name"><projectTime domain="quarterNotes">4</projectTime><pitches>F1;A2;C3;</pitches><keyNote>65</keyNote><mask>0xF00FFF</mask></chord>
+</vst-xml>

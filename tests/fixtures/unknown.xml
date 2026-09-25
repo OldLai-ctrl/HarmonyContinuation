@@ -1,0 +1,3 @@
+<harmony-spike-fixture schema="synthetic-v1">
+  <chord name="Mystery" keyNote="1" type="future-type" mask="producer-defined" pitches="unverified"><projectTime domain="quarterNotes">1.5</projectTime></chord>
+</harmony-spike-fixture>
