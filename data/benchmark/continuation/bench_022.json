@@ -1,0 +1,36 @@
+{
+  "id": "bench_022",
+  "name": "Four chord C pop loop",
+  "category": "pop_loop",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 8.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 12.0
+    }
+  ],
+  "notes": "Familiar I-V-vi-IV loop with unfinished final bar.",
+  "expectedCharacteristics": [
+    "Loop should reconnect naturally to the opening."
+  ],
+  "style": "pop"
+}

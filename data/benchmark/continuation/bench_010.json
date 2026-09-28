@@ -1,0 +1,27 @@
+{
+  "id": "bench_010",
+  "name": "F sharp half diminished",
+  "category": "ii_v",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "F#m7b5",
+      "start": 0.0,
+      "duration": 2.0
+    },
+    {
+      "name": "B7",
+      "start": 2.0
+    }
+  ],
+  "notes": "Minor ii-V aiming at E minor.",
+  "expectedCharacteristics": [
+    "Half-diminished input should remain analyzable."
+  ],
+  "style": "jazz",
+  "forcedKey": "E:minor"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "bench_020",
+  "name": "A minor descending colors",
+  "category": "flat_vii_vi",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 8.0
+    }
+  ],
+  "notes": "Descending bVII-bVI in A minor.",
+  "expectedCharacteristics": [
+    "Minor and relative-major interpretations may compete."
+  ],
+  "style": "rock"
+}

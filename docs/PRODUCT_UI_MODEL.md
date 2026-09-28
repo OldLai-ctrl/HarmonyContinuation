@@ -1,4 +1,6 @@
-# Phase 3.5 product UI model
+# Phase 3.5 product UI model (historical)
+
+The paragraphs below describe the previous design. The current Phase 5 Continuation Mode is specified at the end of this file.
 
 The editor defaults to 1100 × 900 logical pixels and supports independent width and height resizing. Compact uses two top rows and one recommendation column; Standard uses two columns; Wide uses two or four columns according to card width. Details are in [RESPONSIVE_UI.md](RESPONSIVE_UI.md). The top controls contain Key, Style, Intent, View, RECOMMEND, and LIBRARY. Key defaults to Auto and displays the leading interpretation; forcing one of 24 major/minor keys reruns analysis, matching, and recommendation. Style is a ranking signal, never a template filter. Intent changes ranking and lane order without discarding the other three groups. FULL/SKELETON changes only the visible current chord blocks. A transport update redraws only the current timeline lane.
 
@@ -11,3 +13,13 @@ Save opens an inline form for name, style, intent, and optional comma-separated 
 Empty state: `Drag Chords From Cubase`. Work in progress: `Analyzing…`. A lane without a strong option: `No strong option`. Library load failure and invalid input have separate brief status labels; detailed diagnostics live on MATCH / DEBUG. No audio, MIDI, drag-back, chord-track mutation, networking, telemetry, or recommendation weight tuning is part of this phase.
 
 The presentation policy is in `src/session/ProductServices.*`: minimum score 60, no relative-to-best restriction, three visible per lane, and no extra presentation-level diversity filtering. All four values are configurable. The engine's original match/score thresholds and diversity behavior remain intact.
+
+## Current Phase 5 Continuation Mode
+
+The default editor asks: given this chord phrase, where can it go next as a complete phrase? Importing or loading a progression automatically starts analysis, matching, and recommendation. The initial screen shows the current phrase and Resolve, Develop, Loop, and Color lanes. Key, Style, and Intent remain short optional controls; Library and Advanced are secondary destinations.
+
+Each lane shows at most two reliable candidates by default. Show More opens retained alternatives. A card shows the existing/recommended boundary in its duration-scaled mini timeline, the full continuation path, proposed OPEN hold, ordinal score, intent, and Play/Pin/MIDI actions. The Demo also shows SNAP. Clicking a card or Why? opens the inspector with user phrase, structural skeleton, matched path, continuation path, key interpretation, cadence, supporting templates, score components, and alignment. Algorithm details are absent from the default card.
+
+The current phrase shows chord names, durations or OPEN, a subtle degree where space permits, the structural-weight bar, and the host playhead. Function, roles, confidence, and matching internals are in the chord inspector or Advanced Analysis. FULL/SKELETON is in Advanced rather than the primary toolbar. The Advanced view retains host/clipboard diagnostics. Empty input says “Drop a chord phrase to explore where it can go.” An empty lane says “No strong option.”
+
+Pin places up to three paths in Compare, which shows path, intent, OPEN hold, score, cadence, and Play/MIDI/remove actions. It does not save to the library. Library remains available as a secondary workflow. The editor retains the Compact, Standard, and Wide responsive modes described in [RESPONSIVE_UI.md](RESPONSIVE_UI.md). The score threshold remains 60, and the default visible count is now two. Ranking and matching weights are unchanged. The 42-case quality baseline and human rating flow are in [benchmark/PHASE5_BASELINE.md](benchmark/PHASE5_BASELINE.md).

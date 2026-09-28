@@ -78,6 +78,7 @@ std::size_t groupForVisual(std::size_t visual,std::optional<PhraseIntent> intent
 }
 }
 MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {
+    visibility_.maxPerGroup=2;
     layout_=computeLayout({rect.getWidth(),rect.getHeight(),1,session::Tab::Recommend,false,false});
 }
 void MainView::resizeLayout(int width,int height) {
@@ -253,13 +254,16 @@ void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
         else dc->setLineStyle(CLineStyle{});
         dc->drawRect(tile); dc->setLineWidth(1.0); dc->setLineStyle(CLineStyle{});
         const auto& event=state_.imported.events[block.eventIndex];
-        line(dc,event.name,CRect(tile.left+2,tile.top+2,tile.right-2,tile.top+20),pale,kCenterText);
+        line(dc,event.name,CRect(tile.left+2,tile.top+3,tile.right-2,tile.top+25),pale,kCenterText);
         if (block.eventIndex<analysis_.full.size()) {
             const auto& a=analysis_.full[block.eventIndex];
-            line(dc,formatDegree(a)+"  "+formatFunction(a.function),CRect(tile.left+1,tile.top+21,tile.right-1,tile.top+39),pale,kCenterText);
-            const auto role=(hasRole(a.roles,Role::SecondaryDominant) || hasRole(a.roles,Role::SecondaryLeadingTone))?
-                formatDegree(a):badge(a.roles);
-            if (!role.empty()) line(dc,role,CRect(tile.left+1,tile.top+39,tile.right-1,tile.top+57),CColor(255,233,180,255),kCenterText);
+            const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
+            line(dc,duration,CRect(tile.left+1,tile.top+25,tile.right-1,tile.top+43),pale,kCenterText);
+            if(state_.tab==session::Tab::Diagnostics) {
+                line(dc,formatDegree(a)+"  "+formatFunction(a.function),
+                    CRect(tile.left+1,tile.top+43,tile.right-1,tile.top+61),muted,kCenterText);
+            }else if(tile.getWidth()>=90)
+                line(dc,formatDegree(a),CRect(tile.left+1,tile.top+43,tile.right-1,tile.top+61),muted,kCenterText);
             const auto bar=weightBarRect(tile.left,tile.right,tile.bottom,a.structuralWeight,dc->getScaleFactor());
             if (bar.right>bar.left) box(dc,CRect(bar.left,bar.top,bar.right,bar.bottom),accent);
         }
@@ -271,11 +275,11 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
     box(dc,viewRect(layout_.topBar),CColor(25,40,58,255));
     const std::array<std::string,6> labels{
         keyLabel(state_,analysis_),"Style: "+(state_.style?styleName(*state_.style):"Auto"),
-        "Intent: "+intentLabel(state_.intent),state_.skeletonView?"View: SKELETON":"View: FULL",
+        "Intent: "+intentLabel(state_.intent),"ADVANCED",
         "RECOMMEND","LIBRARY"};
     for(std::size_t i=0;i<labels.size();++i)
         line(dc,labels[i],viewRect(layout_.topControls[i]),
-            i==0&&state_.forcedKey?accent:i==3?accent:
+            i==0&&state_.forcedKey?accent:i==3&&state_.tab==session::Tab::Diagnostics?accent:
             i==4&&state_.tab==session::Tab::Recommend?accent:
             i==5&&state_.tab==session::Tab::Library?accent:i>=4?muted:pale);
     const auto titleY=layout_.phrase.top-31;
@@ -291,21 +295,17 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
     (void)bounds;
     drawTimeline(dc,viewRect(layout_.timeline));
     const auto y=layout_.timeline.bottom+5;
-    line(dc,"FULL",CRect(24,y,76,y+24),state_.skeletonView?muted:accent);
-    line(dc,"SKELETON",CRect(86,y,190,y+24),state_.skeletonView?accent:muted);
+    line(dc,"Your phrase · "+std::to_string(state_.imported.events.size())+" chords",
+        CRect(24,y,layout_.timeline.right-220,y+24),pale);
     if (timelineContentWidth_>layout_.timeline.width()+1)
         line(dc,"Wheel to scroll phrase",CRect(layout_.timeline.right-215,y,layout_.timeline.right,y+24),muted,kRightText);
     if (state_.imported.events.empty()) return;
     if (selectedChord_ && *selectedChord_<analysis_.full.size()) {
-        const auto& event=state_.imported.events[*selectedChord_]; const auto& a=analysis_.full[*selectedChord_];
+        const auto& event=state_.imported.events[*selectedChord_];
         const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
-        const auto target=a.target?std::to_string(a.target->degree):"—";
-        line(dc,event.name+"    Degree "+formatDegree(a)+"    Function "+formatFunction(a.function)+
-                "    Weight "+fixed(a.structuralWeight,2)+"    Confidence "+fixed(a.analysisConfidence,2),
-             CRect(23,y+27,layout_.viewport.right-23,y+49),pale);
-        line(dc,"Roles "+roles(a.roles)+"    Target "+target+"    Duration "+duration+
-                "    Start "+fixed(event.startQN)+" QN",CRect(23,y+50,layout_.viewport.right-23,y+72),muted);
-    } else line(dc,"Click a chord for details",CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
+        line(dc,event.name+" · "+duration+" · starts "+fixed(event.startQN)+" QN",
+             CRect(23,y+28,layout_.viewport.right-23,y+55),pale);
+    } else line(dc,"Select a chord to inspect it",CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -339,7 +339,7 @@ void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,
 void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
     (void)bounds;
     if (state_.imported.events.empty()) {
-        line(dc,"Drag Chords From Cubase",viewRect(layout_.content),pale,kCenterText); return;
+        line(dc,"Drop a chord phrase to explore where it can go.",viewRect(layout_.content),pale,kCenterText); return;
     }
     constexpr const char* titles[]{"RESOLVE","DEVELOP","LOOP","COLOR"};
     {
@@ -350,23 +350,29 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         if(lane.bottom<layout_.content.top||lane.top>layout_.content.bottom)continue;
         box(dc,viewRect(lane),panel);
         line(dc,titles[group],CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
-        if (recommendations_.groups[group].size()>3)
+        if (recommendations_.groups[group].size()>2)
             line(dc,"Show More",CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
         const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
         if (visible.empty()) {
             line(dc,workerBusy_?"Analyzing…":"No strong option",CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
-        for (std::size_t row=0;row<visible.size()&&row<3;++row) {
+        for (std::size_t row=0;row<visible.size()&&row<2;++row) {
             const auto& c=recommendations_.groups[group][visible[row]];
             const bool exportControls=static_cast<bool>(actions_.exportMidi);
             const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),exportControls);
             box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             drawMiniTimeline(dc,c,viewRect(geometry.timeline));
+            std::string continuation;
+            for(const auto& chord:c.continuation){if(!continuation.empty())continuation+=" → ";continuation+=chord.label;}
+            line(dc,continuation,viewRect(geometry.summary),pale);
+            line(dc,"Why?",viewRect(geometry.why),muted,kCenterText);
             line(dc,std::to_string(static_cast<int>(std::round(c.rankingScore))),
                  viewRect(geometry.score),pale,kCenterText);
-            if(geometry.row.height()>44)line(dc,std::string(intentName(c.intent))+" · "+cadenceName(c.cadence),
-                viewRect(geometry.intent),muted);
+            std::string intent=intentName(c.intent);
+            if(state_.imported.events.back().openEnded&&c.suggestedCurrentChordDurationQN)
+                intent+=" · OPEN "+fixed(*c.suggestedCurrentChordDurationQN)+" QN";
+            line(dc,intent,viewRect(geometry.intent),muted);
             line(dc,"Pin",viewRect(geometry.pin),accent,kCenterText);
             if(exportControls) {
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
@@ -407,10 +413,21 @@ void MainView::drawCompare(CDrawContext* dc,const CRect& bounds) {
         if (c) {
             std::string path;
             for (const auto& event:c->continuation) { if (!path.empty()) path+=" → "; path+=event.label; }
-            line(dc,std::string(intentName(c->intent))+"   "+std::to_string(static_cast<int>(std::round(c->rankingScore)))+
-                    "  "+path,CRect(left,y,left+width-60,y+22),pale);
-        } else line(dc,"Pinned path unavailable",CRect(left,y,left+width-60,y+22),muted);
-        line(dc,"×",CRect(left+width-42,y,left+width-8,y+22),muted,kCenterText);
+            const auto hold=c->suggestedCurrentChordDurationQN?" · OPEN "+fixed(*c->suggestedCurrentChordDurationQN)+" QN":"";
+            if(stacked)line(dc,path+" · "+intentName(c->intent)+" · "+
+                std::to_string(static_cast<int>(std::round(c->rankingScore)))+hold+" · "+cadenceName(c->cadence),
+                CRect(left,y,left+width-128,y+22),pale);
+            else {
+                line(dc,path,CRect(left,y,left+width-8,y+20),pale);
+                line(dc,std::string(intentName(c->intent))+" · "+
+                    std::to_string(static_cast<int>(std::round(c->rankingScore)))+hold+" · "+cadenceName(c->cadence),
+                    CRect(left,y+20,left+width-128,y+43),muted);
+            }
+        } else line(dc,"Pinned path unavailable",CRect(left,y,left+width-128,y+22),muted);
+        const auto buttonY=stacked?y:y+20;
+        line(dc,"Play",CRect(left+width-122,buttonY,left+width-85,buttonY+22),accent,kCenterText);
+        line(dc,"MIDI",CRect(left+width-82,buttonY,left+width-44,buttonY+22),accent,kCenterText);
+        line(dc,"×",CRect(left+width-42,buttonY,left+width-8,buttonY+22),muted,kCenterText);
         ++shown;
     }
 }
@@ -551,7 +568,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(i==2) {
                 const auto choice=popup({"Auto","Develop","Resolve","Loop","Color"},where);
                 if(choice>=0){state_.intent=choice?std::optional<PhraseIntent>(static_cast<PhraseIntent>(choice)):std::nullopt;notifyState();}
-            } else if(i==3){state_.skeletonView=!state_.skeletonView;notifyState();}
+            } else if(i==3){state_.tab=session::Tab::Diagnostics;notifyState();}
             else if(i==4){state_.tab=session::Tab::Recommend;selectedLibrary_.reset();notifyState();}
             else {state_.tab=session::Tab::Library;selectedCandidate_.reset();notifyState();}
             return kMouseEventHandled;
@@ -568,9 +585,6 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();selectedLibrary_.reset();inspectorScroll_=0;invalid();break;}
             }
             return kMouseEventHandled;
-        }
-        if(where.y>=layout_.timeline.bottom&&where.y<layout_.timeline.bottom+30&&where.x<195) {
-            state_.skeletonView=where.x>=82;notifyState();return kMouseEventHandled;
         }
         if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(where.x,where.y)) {
             const auto area=layout_.inspector;
@@ -611,14 +625,23 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     static_cast<std::size_t>(std::max(0.,std::floor((where.x-layout_.compare.left-8)/cell)));
                 if(index<state_.pinnedCandidateIds.size()) {
                     const double left=stacked?layout_.compare.left+8:layout_.compare.left+8+index*cell;
-                    if(where.x>=left+cell-50){const auto id=state_.pinnedCandidateIds[index];state_.unpin(id);
+                    const auto id=state_.pinnedCandidateIds[index];
+                    const auto* candidate=findCandidate(id);
+                    const bool actionRow=stacked||where.y>=layout_.compare.top+47;
+                    if(actionRow&&where.x>=left+cell-43){state_.unpin(id);
                         std::erase_if(pinnedSnapshots_,[&](const auto& c){return c.id==id;});notifyState();}
+                    else if(actionRow&&candidate&&where.x>=left+cell-83&&actions_.exportMidi)
+                        {actionStatus_=actions_.exportMidi(*candidate);invalid();}
+                    else if(actionRow&&candidate&&where.x>=left+cell-123&&actions_.audition)actions_.audition(*candidate);
                 }
             }
             return kMouseEventHandled;
         }
         if(state_.tab==session::Tab::Diagnostics||state_.tab==session::Tab::Match) {
-            if(where.y<layout_.content.top+38) {
+            if(where.y>=layout_.content.top+36&&where.y<layout_.content.top+70) {
+                state_.skeletonView=where.x>=layout_.content.left+125&&where.x<layout_.content.left+280;
+                notifyState();
+            }else if(where.y<layout_.content.top+38) {
                 if(where.x<layout_.content.left+280&&actions_.refresh)actions_.refresh();
                 else if(actions_.clipboard)actions_.clipboard();
             }
@@ -658,23 +681,27 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(!lane.contains(where.x,where.y))continue;
             const auto group=groupForVisual(visual,state_.intent);
             if(where.y<lane.top+27) {
-                if(where.x>=lane.right-120&&recommendations_.groups[group].size()>3) {
+                if(where.x>=lane.right-120&&recommendations_.groups[group].size()>2) {
                     std::vector<std::string> options;
                     for(const auto& c:recommendations_.groups[group]) {
                         std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
                         options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
-                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};selectedChord_.reset();inspectorScroll_=0;invalid();}
+                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};selectedChord_.reset();
+                        inspectorScroll_=0;
+                        if(actions_.benchmarkSelect)actions_.benchmarkSelect(recommendations_.groups[group][selected]);
+                        invalid();}
                 }
                 return kMouseEventHandled;
             }
-            const auto rowHeight=(lane.height()-30)/3;
+            const auto rowHeight=(lane.height()-30)/2;
             const auto row=static_cast<std::size_t>((where.y-lane.top-27)/rowHeight);
             const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
-            if(row>=visible.size()||row>=3)return kMouseEventHandled;
+            if(row>=visible.size()||row>=2)return kMouseEventHandled;
             const auto index=visible[row];const auto& c=recommendations_.groups[group][index];
             const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),static_cast<bool>(actions_.exportMidi));
+            if(actions_.benchmarkSelect)actions_.benchmarkSelect(c);
             if(geometry.pin.contains(where.x,where.y)){
                 if(state_.unpin(c.id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==c.id;});
                 else if(state_.pin(c.id,session::continuationFingerprint(c)))pinnedSnapshots_.push_back(c);
@@ -733,13 +760,24 @@ void MainView::drawResponsiveLibrary(CDrawContext* dc) {
 void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
     const auto area=layout_.content;
     box(dc,viewRect(area),panel);
-    line(dc,"MATCH / DEBUG    [Refresh host]    [Clipboard]",CRect(area.left+10,area.top+7,area.right-10,area.top+34),accent);
-    line(dc,matchStatus_,CRect(area.left+10,area.top+39,area.right-10,area.top+65),pale);
+    line(dc,"ADVANCED ANALYSIS    [Refresh host]    [Clipboard]",CRect(area.left+10,area.top+7,area.right-10,area.top+34),accent);
+    line(dc,"FULL",CRect(area.left+12,area.top+39,area.left+120,area.top+66),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON",CRect(area.left+125,area.top+39,area.left+280,area.top+66),state_.skeletonView?accent:muted);
+    line(dc,matchStatus_,CRect(area.left+10,area.top+72,area.right-10,area.top+98),pale);
     line(dc,"Generation "+std::to_string(generation_)+"    Worker "+(workerBusy_?"busy":"idle")+
-        "    Last "+fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+70,area.right-10,area.top+96),muted);
-    if(!matches_.empty())line(dc,"Top match: "+matches_.front().templateName+" · "+fixed(matches_.front().similarity,2),
-        CRect(area.left+10,area.top+102,area.right-10,area.top+130),pale);
-    std::istringstream in(hostText_+"\n"+parseText_+"\n"+rawText_);std::string row;double y=area.top+140;
+        "    Last "+fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+102,area.right-10,area.top+128),muted);
+    double y=area.top+137;
+    if(selectedChord_&&*selectedChord_<analysis_.full.size()){
+        const auto& chord=analysis_.full[*selectedChord_];
+        line(dc,"Chord "+state_.imported.events[*selectedChord_].name+" · "+formatDegree(chord)+" · "+
+            formatFunction(chord.function)+" · weight "+fixed(chord.structuralWeight,2)+" · "+roles(chord.roles),
+            CRect(area.left+10,y,area.right-10,y+26),pale);y+=30;
+    }
+    if(!matches_.empty()){
+        line(dc,"Top match: "+matches_.front().templateName+" ["+matches_.front().templateId+"] · "+
+            fixed(matches_.front().similarity,2),CRect(area.left+10,y,area.right-10,y+26),pale);y+=30;
+    }
+    std::istringstream in(hostText_+"\n"+parseText_+"\n"+rawText_);std::string row;
     ConcatClip clip(*dc,viewRect(area));
     while(y<area.bottom-20&&std::getline(in,row)) {line(dc,row.substr(0,165),CRect(area.left+10,y,area.right-10,y+18),muted);y+=18;}
 }
@@ -755,10 +793,28 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     const auto add=[&](std::string text,CColor color=pale) {
         line(dc,std::move(text),CRect(area.left+14,y,area.right-14,y+23),color);y+=27;
     };
+    const auto addPath=[&](std::string title,const std::vector<std::string>& names){
+        const auto limit=static_cast<std::size_t>(std::max(18.,(area.width()-40)/8.));
+        std::string row=std::move(title);
+        for(const auto& name:names){const std::string part=(row.empty()?"":" → ")+name;
+            if(row.size()+part.size()>limit&&row.size()>10){add(row);row="    "+name;}
+            else row+=part;}
+        if(!row.empty())add(row);
+    };
     if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
+        add("WHY THIS PATH",accent);
         add(std::string(intentName(c.intent))+" · "+formatKey(c.key)+" · score "+
             std::to_string(static_cast<int>(std::round(c.rankingScore))));
+        std::vector<std::string> userNames,skeletonNames,continuationNames;
+        for(const auto& chord:state_.imported.events)userNames.push_back(chord.name);
+        for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())
+            skeletonNames.push_back(formatDegree(analysis_.full[index]));
+        for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
+        addPath("User",userNames);addPath("Skeleton",skeletonNames);
+        const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
+        if(match!=matches_.end())addPath("Matched",match->templateLabels);
+        addPath("Continue",continuationNames);
         add("Source  "+c.primaryTemplate,muted);
         add("Match  "+fixed(c.matchSimilarity,2),muted);
         add("Cadence  "+std::string(cadenceName(c.cadence)),muted);
@@ -767,10 +823,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         add("Intent  "+fixed(c.subscores.intent,2)+"   Prior  "+fixed(c.subscores.prior,2),muted);
         add("Support  "+std::to_string(c.supportCount),muted);
         add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):"fallback")+" QN",muted);
-        const auto path=session::continuationFingerprint(c);
-        add("Path  "+path,muted);
         drawMiniTimeline(dc,c,CRect(area.left+14,y+2,area.right-14,y+27));y+=38;
-        const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
         if(match!=matches_.end())add("Skeleton "+fixed(match->subScores.skeletonHarmony,2)+
             "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
         std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}

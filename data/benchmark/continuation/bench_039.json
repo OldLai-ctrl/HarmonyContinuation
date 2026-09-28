@@ -1,0 +1,30 @@
+{
+  "id": "bench_039",
+  "name": "Open A minor after C and G",
+  "category": "open_duration",
+  "tempo": 92,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Am",
+      "start": 6.0
+    }
+  ],
+  "notes": "Final hold is unspecified and must be proposed.",
+  "expectedCharacteristics": [
+    "Every displayed OPEN hold must be positive."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "bench_021",
+  "name": "G major flat six",
+  "category": "flat_vii_vi",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "G",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Eb",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 8.0
+    }
+  ],
+  "notes": "Chromatic bVI-bVII ascent.",
+  "expectedCharacteristics": [
+    "Color option should avoid generic tonic-only output."
+  ],
+  "style": "rock",
+  "forcedKey": "G:major"
+}

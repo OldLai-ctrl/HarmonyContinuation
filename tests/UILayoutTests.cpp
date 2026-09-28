@@ -27,13 +27,15 @@ int main(){
             check(l.laneColumns==1||l.laneColumns==2||l.laneColumns==4,"column count");
             check(l.lanes[0].width()>=410,"card minimum width");
             for(int a=0;a<4;++a)for(int b=a+1;b<4;++b)check(!overlap(l.lanes[a],l.lanes[b]),"lane separation");
-            for(const auto lane:l.lanes)for(int row=0;row<3;++row)for(bool exportControls:{false,true}) {
+            for(const auto lane:l.lanes)for(int row=0;row<2;++row)for(bool exportControls:{false,true}) {
                 const auto card=candidateRowGeometry(lane,row,exportControls);
-                check(inside(card.row,lane)&&inside(card.timeline,card.row)&&inside(card.score,card.row),"candidate row geometry");
+                check(inside(card.row,lane)&&inside(card.timeline,card.row)&&inside(card.score,card.row)&&
+                    inside(card.summary,card.row)&&inside(card.why,card.row),"candidate row geometry");
                 check(inside(card.pin,card.row)&&inside(card.audition,card.row)&&
                     !overlap(card.pin,card.audition)&&!overlap(card.timeline,card.score),"candidate action geometry");
-                check(card.row.height()>=48&&inside(card.intent,card.row)&&
-                    !overlap(card.timeline,card.intent)&&!overlap(card.timeline,card.pin),
+                check(card.row.height()>=70&&inside(card.intent,card.row)&&
+                    !overlap(card.timeline,card.intent)&&!overlap(card.timeline,card.pin)&&
+                    !overlap(card.summary,card.why)&&!overlap(card.summary,card.score),
                     "readable candidate rows");
                 if(exportControls)check(inside(card.midi,card.row)&&inside(card.snapshot,card.row)&&
                     !overlap(card.midi,card.snapshot),"candidate export geometry");

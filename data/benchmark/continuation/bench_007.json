@@ -1,0 +1,31 @@
+{
+  "id": "bench_007",
+  "name": "E minor dominant",
+  "category": "minor_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Em",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "B7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Compact E-minor cadence setup.",
+  "expectedCharacteristics": [
+    "A multi-chord continuation is preferable to a lone tonic."
+  ],
+  "forcedKey": "E:minor"
+}

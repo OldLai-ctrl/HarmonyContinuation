@@ -1,0 +1,35 @@
+{
+  "id": "bench_037",
+  "name": "Chromatic F sharp insertion",
+  "category": "anomalous",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F#",
+      "start": 8.0,
+      "duration": 2.0
+    },
+    {
+      "name": "G",
+      "start": 10.0
+    }
+  ],
+  "notes": "Unexpected chromatic chord before dominant.",
+  "expectedCharacteristics": [
+    "Flag bland normalization during listening; do not patch templates."
+  ]
+}

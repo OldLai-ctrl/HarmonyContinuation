@@ -1,0 +1,32 @@
+{
+  "id": "bench_012",
+  "name": "G minor seven to C seven",
+  "category": "ii_v",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Gm7",
+      "start": 0.0,
+      "duration": 2.0
+    },
+    {
+      "name": "C7",
+      "start": 2.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Fmaj7",
+      "start": 4.0
+    }
+  ],
+  "notes": "F-major ii-V with an open tonic.",
+  "expectedCharacteristics": [
+    "OPEN chord hold should be explainable."
+  ],
+  "style": "jazz",
+  "forcedKey": "F:major"
+}

@@ -123,13 +123,28 @@ target_compile_features(harmony_demo_scenarios PUBLIC cxx_std_20)
 if(MSVC)
     target_compile_options(harmony_demo_scenarios PRIVATE /utf-8)
 endif()
+add_library(harmony_benchmark STATIC src/benchmark/Benchmark.cpp)
+target_link_libraries(harmony_benchmark PUBLIC harmony_snapshot harmony_demo_scenarios)
+target_include_directories(harmony_benchmark PUBLIC src)
+target_compile_features(harmony_benchmark PUBLIC cxx_std_20)
+if(MSVC)
+    target_compile_options(harmony_benchmark PRIVATE /utf-8 /W4)
+endif()
+add_executable(continuation_benchmark_cli tools/continuation_benchmark_cli.cpp)
+target_link_libraries(continuation_benchmark_cli PRIVATE harmony_benchmark)
+target_compile_definitions(continuation_benchmark_cli PRIVATE
+    HC_BENCH_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/continuation")
+add_executable(benchmark_compare tools/benchmark_compare.cpp)
+target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
         src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp)
-    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_demo_scenarios harmony_preview harmony_midi harmony_snapshot vstgui_support comctl32 shell32 winmm comdlg32)
+    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
-        HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
+        HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo"
+        HC_BENCH_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/continuation"
+        HC_BENCH_RATING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/ratings")
     target_include_directories(HarmonyContinuationDemo PRIVATE "${VST3_SDK_ROOT}")
     add_dependencies(HarmonyContinuationDemo factory_database)
     if(MSVC)
@@ -149,6 +164,7 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON}
     VERBATIM)
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
+add_dependencies(continuation_benchmark_cli factory_database)
 add_executable(preview_cli tools/preview_cli.cpp)
 target_link_libraries(preview_cli PRIVATE harmony_preview harmony_demo_scenarios)
 target_compile_definitions(preview_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
@@ -202,6 +218,14 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(BenchmarkTests tests/BenchmarkTests.cpp)
+    target_link_libraries(BenchmarkTests PRIVATE harmony_benchmark)
+    target_compile_definitions(BenchmarkTests PRIVATE
+        HC_BENCH_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/continuation"
+        HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
+        HC_TEST_OUTPUT_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+    add_dependencies(BenchmarkTests factory_database)
+    add_test(NAME BenchmarkTests COMMAND BenchmarkTests)
     add_executable(UILayoutTests tests/UILayoutTests.cpp)
     target_link_libraries(UILayoutTests PRIVATE harmony_product)
     add_test(NAME UILayoutTests COMMAND UILayoutTests)

@@ -1,0 +1,35 @@
+{
+  "id": "bench_013",
+  "name": "A seven into D minor",
+  "category": "secondary_dominant",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "A7",
+      "start": 8.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Dm",
+      "start": 10.0
+    }
+  ],
+  "notes": "Secondary dominant V/ii in C.",
+  "expectedCharacteristics": [
+    "Secondary dominant should not break matching."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "bench_018",
+  "name": "F major borrowed minor iv",
+  "category": "borrowed_iv",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "F",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Bb",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Bbm",
+      "start": 8.0
+    }
+  ],
+  "notes": "Borrowed iv in F major.",
+  "expectedCharacteristics": [
+    "Color and resolve paths should be compared."
+  ],
+  "forcedKey": "F:major"
+}

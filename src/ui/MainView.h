@@ -28,6 +28,7 @@ public:
         std::function<std::string(const ContinuationCandidate&)> exportMidi;
         std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
         std::function<std::string(const ProgressionTemplate&)> exportLibraryMidi;
+        std::function<void(const ContinuationCandidate&)> benchmarkSelect;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;

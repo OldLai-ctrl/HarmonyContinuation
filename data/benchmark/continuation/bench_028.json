@@ -1,0 +1,36 @@
+{
+  "id": "bench_028",
+  "name": "City pop chromatic turnaround",
+  "category": "citypop_rnb",
+  "tempo": 104,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Cmaj7",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "E7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Am7",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "D7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Chromatic dominant chain in a city-pop setting.",
+  "expectedCharacteristics": [
+    "Style support should not force a single template."
+  ],
+  "style": "citypop"
+}

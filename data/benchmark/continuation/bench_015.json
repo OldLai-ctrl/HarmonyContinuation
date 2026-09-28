@@ -1,0 +1,36 @@
+{
+  "id": "bench_015",
+  "name": "B seven into E minor",
+  "category": "secondary_dominant",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "G",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "B7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Em",
+      "start": 6.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 10.0
+    }
+  ],
+  "notes": "Applied dominant in G-major surroundings.",
+  "expectedCharacteristics": [
+    "A full continuation should follow the applied resolution."
+  ],
+  "forcedKey": "G:major"
+}

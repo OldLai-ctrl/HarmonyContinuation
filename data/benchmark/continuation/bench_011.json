@@ -1,0 +1,32 @@
+{
+  "id": "bench_011",
+  "name": "A minor seven to D seven",
+  "category": "ii_v",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am7",
+      "start": 0.0,
+      "duration": 2.0
+    },
+    {
+      "name": "D7",
+      "start": 2.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Gmaj7",
+      "start": 4.0
+    }
+  ],
+  "notes": "G-major ii-V with tonic already supplied.",
+  "expectedCharacteristics": [
+    "Continuation may develop beyond the existing tonic."
+  ],
+  "style": "jazz",
+  "forcedKey": "G:major"
+}

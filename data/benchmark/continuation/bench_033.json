@@ -1,0 +1,46 @@
+{
+  "id": "bench_033",
+  "name": "Six chord major phrase",
+  "category": "long",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Em",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Am",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "F",
+      "start": 8.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Dm",
+      "start": 12.0,
+      "duration": 2.0
+    },
+    {
+      "name": "G",
+      "start": 14.0
+    }
+  ],
+  "notes": "Longer phrase reaches a clear dominant after varied durations.",
+  "expectedCharacteristics": [
+    "Matcher should still yield distinct full paths."
+  ],
+  "style": "pop"
+}

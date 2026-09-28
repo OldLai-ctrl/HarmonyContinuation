@@ -1,0 +1,26 @@
+{
+  "id": "bench_040",
+  "name": "Open G dominant after D minor",
+  "category": "open_duration",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Dm7",
+      "start": 0.0,
+      "duration": 2.0
+    },
+    {
+      "name": "G7",
+      "start": 2.0
+    }
+  ],
+  "notes": "Short ii-V with unknown current hold.",
+  "expectedCharacteristics": [
+    "Candidate duration changes should be visible in report."
+  ],
+  "style": "jazz"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "bench_001",
+  "name": "I IV V in C",
+  "category": "major_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 8.0
+    }
+  ],
+  "notes": "Plain pre-cadential major phrase.",
+  "expectedCharacteristics": [
+    "A complete resolution path should be available."
+  ]
+}

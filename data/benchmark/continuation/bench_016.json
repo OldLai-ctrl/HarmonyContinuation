@@ -1,0 +1,30 @@
+{
+  "id": "bench_016",
+  "name": "C major borrowed minor iv",
+  "category": "borrowed_iv",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Fm",
+      "start": 8.0
+    }
+  ],
+  "notes": "Parallel-minor iv invites a color cadence.",
+  "expectedCharacteristics": [
+    "Color option should be inspected for modal borrowing."
+  ]
+}

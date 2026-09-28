@@ -1,0 +1,31 @@
+{
+  "id": "bench_008",
+  "name": "D minor dominant",
+  "category": "minor_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Dm",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Gm",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "A7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Subdominant and dominant in D minor.",
+  "expectedCharacteristics": [
+    "Resolve intent should remain musically useful."
+  ],
+  "forcedKey": "D:minor"
+}

@@ -1,0 +1,36 @@
+{
+  "id": "bench_029",
+  "name": "R and B seventh color",
+  "category": "citypop_rnb",
+  "tempo": 88,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Fmaj7",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Em7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Am7",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Dm7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Smooth seventh-chord descent.",
+  "expectedCharacteristics": [
+    "Rhythm and usability need separate listening scores."
+  ],
+  "style": "rnb"
+}

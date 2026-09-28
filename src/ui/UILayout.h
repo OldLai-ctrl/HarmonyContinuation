@@ -28,15 +28,15 @@ struct UILayoutResult {
     double contentScaleFactor{1};
     UiRect viewport,topBar,phrase,timeline,content,inspector,compare,library;
     std::array<UiRect,4> lanes{};
-    std::array<UiRect,6> topControls{}; // key, style, intent, view, recommend, library
+    std::array<UiRect,6> topControls{}; // key, style, intent, advanced, recommend, library
     double laneHeight{}, laneScrollMax{};
 };
 struct CandidateRowGeometry {
-    UiRect row,timeline,score,intent,pin,audition,midi,snapshot;
+    UiRect row,timeline,summary,why,score,intent,pin,audition,midi,snapshot;
 };
 inline CandidateRowGeometry candidateRowGeometry(UiRect lane,int row,bool exportControls) {
     CandidateRowGeometry out;
-    const double rowHeight=(lane.height()-30)/3;
+    const double rowHeight=(lane.height()-30)/2;
     const double y=lane.top+27+row*rowHeight,right=lane.right-6;
     const double actionWidth=exportControls?148:77,pin=right-actionWidth;
     const bool roomy=rowHeight>44;
@@ -45,6 +45,8 @@ inline CandidateRowGeometry candidateRowGeometry(UiRect lane,int row,bool export
     out.row={lane.left+6,y,right,y+rowHeight-2};
     out.timeline={lane.left+11,y+5,roomy?right-8:std::max(lane.left+115,scoreLeft-4),
         y+std::min(25.,rowHeight-5)};
+    out.summary={lane.left+12,y+29,right-56,y+51};
+    out.why={right-53,y+29,right-5,y+51};
     out.score={scoreLeft,actionY,scoreLeft+33,actionY+22};
     out.intent={lane.left+12,actionY,scoreLeft-2,actionY+22};
     out.pin={pin,actionY,pin+35,actionY+22};
@@ -99,7 +101,7 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
         o.mode==LayoutMode::Standard?2:(laneWidth>=1670?4:2);
     const double gap=10;
     const double cardW=(laneWidth-gap*(o.laneColumns-1))/o.laneColumns;
-    // Keep all three candidate rows readable even in the narrow one-column mode.
+    // Keep both default candidate rows readable even in the narrow one-column mode.
     // The content viewport scrolls vertically when the lanes exceed its height.
     o.laneHeight=192;
     for(int i=0;i<4;++i) {

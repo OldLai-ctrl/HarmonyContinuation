@@ -5,6 +5,7 @@
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "snapshot/RecommendationSnapshot.h"
+#include "benchmark/Benchmark.h"
 #include "vstgui/lib/cframe.h"
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
@@ -20,6 +21,8 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
+#include <random>
 #include <string>
 #include <string_view>
 
@@ -73,6 +76,7 @@ public:
         actions.exportMidi=[this](const ContinuationCandidate& c) { return exportRecommendation(c); };
         actions.saveSnapshot=[this](const ContinuationCandidate& c) { return saveRecommendationSnapshot(c); };
         actions.exportLibraryMidi=[this](const ProgressionTemplate& t) { return exportLibrary(t); };
+        actions.benchmarkSelect=[this](const ContinuationCandidate& c) { ratingCandidate_=c; };
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
         if (!frame_->open(host,VSTGUI::PlatformType::kHWND)) { frame_=nullptr; main_=nullptr; return false; }
@@ -90,6 +94,7 @@ public:
     void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
     bool load(char which) {
         stopAudition();
+        benchmarkId_.clear();benchmarkDescription_.clear();ratingCandidate_.reset();
         snapshotLoaded_=false;
         if (main_) main_->setSnapshotMode(false);
         if (which<'A' || which>'H') return false;
@@ -108,10 +113,63 @@ public:
             main_->setHostText(scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM · simulated transport"); }
         submit(); return true;
     }
+    bool loadBenchmark(const std::filesystem::path& path) {
+        try {
+            const auto item=benchmark::loadCase(path);
+            stopAudition();snapshotLoaded_=false;ratingCandidate_.reset();benchmarkId_=item.id;
+            benchmarkDescription_=item.name+"\n"+item.notes+"\n";
+            if(main_)main_->setSnapshotMode(false);
+            scenario_=item.scenario;
+            const auto width=state_.editorWidth,height=state_.editorHeight;
+            state_={};state_.editorWidth=width;state_.editorHeight=height;
+            state_.forcedKey=scenario_.forcedKey;state_.style=scenario_.style;state_.intent=scenario_.intent;
+            state_.meterNumerator=scenario_.meterNumerator;state_.meterDenominator=scenario_.meterDenominator;
+            state_.imported.replace(scenario_.chords,TimelineCoordinateMode::RelativeToSelection);
+            projectQN_=state_.imported.events.front().startQN;playing_=false;
+            analysis_={};recommendations_={};
+            if(main_){main_->setSessionState(state_);main_->setPlaybackPosition(projectQN_,false);
+                main_->setAnalysis({});main_->setMatches({},"Analyzing…");main_->setRecommendations({});
+                main_->setHostText("BENCHMARK "+benchmarkId_+" · "+scenario_.name);}
+            submit();return true;
+        }catch(const std::exception& e){if(main_)main_->setActionStatus(std::string("Benchmark: ")+e.what());return false;}
+    }
+    std::string benchmarkId() const {return benchmarkId_;}
+    std::string benchmarkInput() const {
+        std::string out=benchmarkDescription_;for(const auto& c:state_.imported.events){out+=c.name;
+            out+="   ";out+=c.durationQN?std::to_string(*c.durationQN)+" QN":"OPEN";out+='\n';}
+        return out;
+    }
+    std::string selectedBenchmarkCandidate() const {
+        if(!ratingCandidate_)return "Select a recommendation";
+        std::string out=std::string(intentName(ratingCandidate_->intent))+" · ";
+        for(const auto& c:ratingCandidate_->continuation){if(out.back()!=' ')out+=" → ";out+=c.label;}
+        return out;
+    }
+    std::string saveBenchmarkRating(std::array<int,5> scores,std::string verdict,std::string issue,std::string note) {
+        try {
+        if(benchmarkId_.empty()||!ratingCandidate_)return "Select a benchmark candidate first";
+        benchmark::Rating rating;rating.benchmarkId=benchmarkId_;
+        rating.candidateFingerprint=session::continuationFingerprint(*ratingCandidate_);
+        rating.naturalness=scores[0];rating.intentFit=scores[1];rating.rhythmFit=scores[2];
+        rating.distinctiveness=scores[3];rating.usability=scores[4];
+        rating.verdict=std::move(verdict);rating.issueCategory=std::move(issue);rating.note=std::move(note);
+        rating.libraryVersion=static_cast<int>(state_.factoryLibraryVersion);
+        rating.recommendation=snapshot::capture(state_.imported,*ratingCandidate_,recommendations_.matches,
+            scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
+            state_.forcedKey?state_.forcedKey:std::optional(ratingCandidate_->key),state_.style,state_.intent);
+        std::string error;
+        if(!benchmark::saveRating(rating,HC_BENCH_RATING_DIR,error))return "Rating: "+error;
+        return "Rating saved: "+benchmark::ratingFilename(rating);
+        }catch(const std::exception& e){return std::string("Rating: ")+e.what();}
+    }
+    std::string exportSelectedSnapshot() {
+        return ratingCandidate_?saveRecommendationSnapshot(*ratingCandidate_):"Select a benchmark candidate first";
+    }
     void tick() {
         if (frame_) frame_->idle();
         if (auto result=worker_.takeLatest()) {
             if (!snapshotLoaded_) {
+            ratingCandidate_.reset();
             analysis_=std::move(result->analysis); recommendations_=std::move(result->recommendations);
             if (main_) { main_->setAnalysis(analysis_); main_->setMatches(recommendations_.matches,
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
@@ -188,6 +246,9 @@ private:
     RecommendationSet recommendations_;
     bool playing_{};
     bool snapshotLoaded_{};
+    std::string benchmarkId_;
+    std::string benchmarkDescription_;
+    std::optional<ContinuationCandidate> ratingCandidate_;
     double projectQN_{};
     std::chrono::steady_clock::time_point lastTick_{std::chrono::steady_clock::now()};
     void stopAudition() {
@@ -307,11 +368,42 @@ private:
 };
 std::unique_ptr<DemoApp> app;
 HWND slider{},playButton{},demoContent{},caseCombo{},currentButton{},snapshotButton{},statusLabel{};
+bool benchmarkMode{};
+std::vector<std::filesystem::path> benchmarkCases;
+std::size_t benchmarkIndex{};
+HWND benchmarkPanel{},benchmarkIdLabel{},benchmarkInputLabel{},benchmarkSelectedLabel{},benchmarkNote{};
+std::array<HWND,5> benchmarkScores{};
+HWND benchmarkVerdict{},benchmarkIssue{};
+std::wstring wide(std::string_view value){
+    if(value.empty())return {};
+    const auto count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.data(),static_cast<int>(value.size()),nullptr,0);
+    if(count<=0)return L"?";
+    std::wstring out(static_cast<std::size_t>(count),L'\0');
+    MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.data(),static_cast<int>(value.size()),out.data(),count);
+    return out;
+}
+std::string utf8(std::wstring_view value){
+    if(value.empty())return {};
+    const auto count=WideCharToMultiByte(CP_UTF8,0,value.data(),static_cast<int>(value.size()),nullptr,0,nullptr,nullptr);
+    std::string out(static_cast<std::size_t>(count),'\0');
+    WideCharToMultiByte(CP_UTF8,0,value.data(),static_cast<int>(value.size()),out.data(),count,nullptr,nullptr);
+    return out;
+}
+bool loadBenchmarkIndex(std::size_t index){
+    if(!app||index>=benchmarkCases.size()||!app->loadBenchmark(benchmarkCases[index]))return false;
+    benchmarkIndex=index;
+    if(benchmarkIdLabel)SetWindowTextW(benchmarkIdLabel,wide(app->benchmarkId()+"  "+
+        std::to_string(index+1)+" / "+std::to_string(benchmarkCases.size())).c_str());
+    if(benchmarkInputLabel)SetWindowTextW(benchmarkInputLabel,wide(app->benchmarkInput()).c_str());
+    if(benchmarkSelectedLabel)SetWindowTextW(benchmarkSelectedLabel,L"Select a recommendation");
+    return true;
+}
 LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
     switch(message) {
         case WM_GETMINMAXINFO: {
             auto* limits=reinterpret_cast<MINMAXINFO*>(l);
-            RECT minimum{0,0,920,705},maximum{0,0,2220,1465};
+            RECT minimum{0,0,benchmarkMode?1180:920,benchmarkMode?850:705};
+            RECT maximum{0,0,benchmarkMode?2500:2220,1465};
             AdjustWindowRectEx(&minimum,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
             AdjustWindowRectEx(&maximum,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
             limits->ptMinTrackSize={minimum.right-minimum.left,minimum.bottom-minimum.top};
@@ -321,16 +413,20 @@ LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
         case WM_SIZE: {
             const int width=LOWORD(l),height=HIWORD(l);
             if(width<1||height<1)return 0;
-            if(demoContent)MoveWindow(demoContent,10,55,std::max(1,width-20),std::max(1,height-65),TRUE);
+            if(benchmarkPanel)MoveWindow(benchmarkPanel,10,55,250,std::max(1,height-65),TRUE);
+            const int contentX=benchmarkMode?270:10;
+            const int contentWidth=std::max(1,width-(benchmarkMode?280:20));
+            if(demoContent)MoveWindow(demoContent,contentX,55,contentWidth,std::max(1,height-65),TRUE);
             const int comboWidth=std::min(285,std::max(180,width/4));
             if(caseCombo)MoveWindow(caseCombo,12,8,comboWidth,300,TRUE);
-            if(playButton)MoveWindow(playButton,comboWidth+19,8,65,32,TRUE);
-            const int sliderX=comboWidth+92,sliderRight=width-248;
+            if(playButton)MoveWindow(playButton,benchmarkMode?335:comboWidth+19,8,65,32,TRUE);
+            const int sliderX=benchmarkMode?410:comboWidth+92,sliderRight=benchmarkMode?width-24:width-248;
             if(slider)MoveWindow(slider,sliderX,4,std::max(80,sliderRight-sliderX),40,TRUE);
             if(currentButton)MoveWindow(currentButton,width-240,8,112,32,TRUE);
             if(snapshotButton)MoveWindow(snapshotButton,width-122,8,112,32,TRUE);
-            if(statusLabel)ShowWindow(statusLabel,width>=1080?SW_SHOW:SW_HIDE);
-            if(app)app->resize(width-20,height-65);
+            if(statusLabel){MoveWindow(statusLabel,benchmarkMode?12:930,14,benchmarkMode?300:180,25,TRUE);
+                ShowWindow(statusLabel,benchmarkMode||width>=1080?SW_SHOW:SW_HIDE);}
+            if(app)app->resize(contentWidth,height-65);
             return 0;
         }
         case WM_COMMAND:
@@ -346,13 +442,34 @@ LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
                 app->showStatus(app->exportCurrent());
             } else if (LOWORD(w)==105 && app) {
                 app->showStatus(app->openSnapshot());
+            } else if(benchmarkMode&&app&&LOWORD(w)>=201&&LOWORD(w)<=203&&!benchmarkCases.empty()){
+                std::size_t next=benchmarkIndex;
+                if(LOWORD(w)==201)next=(next+benchmarkCases.size()-1)%benchmarkCases.size();
+                else if(LOWORD(w)==202)next=(next+1)%benchmarkCases.size();
+                else {static std::mt19937 random{std::random_device{}()};
+                    next=std::uniform_int_distribution<std::size_t>(0,benchmarkCases.size()-1)(random);}
+                if(loadBenchmarkIndex(next)){SetWindowTextW(playButton,L"Play");SetTimer(hwnd,1,250,nullptr);}
+            } else if(benchmarkMode&&app&&LOWORD(w)==204){
+                std::array<int,5> scores{};
+                for(std::size_t i=0;i<scores.size();++i)scores[i]=static_cast<int>(SendMessageW(benchmarkScores[i],CB_GETCURSEL,0,0))+1;
+                constexpr const char* verdicts[]{"KEEP","QUESTIONABLE","BAD"};
+                constexpr const char* issues[]{"Harmony","Matching","Ranking","Intent","Rhythm","Diversity",
+                    "Voicing","Sound","UI","Other"};
+                const auto verdict=std::clamp<int>(static_cast<int>(SendMessageW(benchmarkVerdict,CB_GETCURSEL,0,0)),0,2);
+                const auto issue=std::clamp<int>(static_cast<int>(SendMessageW(benchmarkIssue,CB_GETCURSEL,0,0)),0,9);
+                wchar_t note[2049]{};GetWindowTextW(benchmarkNote,note,2049);
+                app->showStatus(app->saveBenchmarkRating(scores,verdicts[verdict],issues[issue],utf8(note)));
+            } else if(benchmarkMode&&app&&LOWORD(w)==205){
+                app->showStatus(app->exportSelectedSnapshot());
             }
             return 0;
         case WM_HSCROLL:
             if (reinterpret_cast<HWND>(l)==slider && app) app->seek(static_cast<double>(SendMessageW(slider,TBM_GETPOS,0,0))/4.0);
             return 0;
         case WM_TIMER:
-            if (app) { app->tick(); SendMessageW(slider,TBM_SETPOS,FALSE,static_cast<LPARAM>(app->projectQN()*4)); }
+            if (app) { app->tick(); SendMessageW(slider,TBM_SETPOS,FALSE,static_cast<LPARAM>(app->projectQN()*4));
+                if(benchmarkMode&&benchmarkSelectedLabel)SetWindowTextW(benchmarkSelectedLabel,
+                    wide(app->selectedBenchmarkCandidate()).c_str()); }
             return 0;
         case WM_DESTROY: KillTimer(hwnd,1); app.reset(); PostQuitMessage(0); return 0;
         default: return DefWindowProcW(hwnd,message,w,l);
@@ -388,28 +505,87 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     demoContent=content;
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
     char initial='D'; int requestedWidth=1100,requestedHeight=900; double scale=1;
-    std::filesystem::path resizeSmokeReport;
-    for (int i=1;i+1<argc;++i) {
+    std::filesystem::path resizeSmokeReport,benchmarkSmokeReport;
+    std::string initialBenchmarkId;
+    for (int i=1;i<argc;++i) {
         const std::wstring_view key(args[i]);
-        if (key==L"--case" && wcslen(args[i+1])==1)initial=static_cast<char>(args[i+1][0]);
-        else if(key==L"--size") {
+        if(key==L"--benchmark")benchmarkMode=true;
+        else if(key==L"--benchmark-case"&&i+1<argc){benchmarkMode=true;initialBenchmarkId=utf8(args[++i]);}
+        else if(key==L"--benchmark-smoke"&&i+1<argc){benchmarkMode=true;benchmarkSmokeReport=args[++i];}
+        else if (key==L"--case" && i+1<argc && wcslen(args[i+1])==1)initial=static_cast<char>(args[++i][0]);
+        else if(key==L"--size"&&i+1<argc) {
             int width{},height{};
-            if(swscanf_s(args[i+1],L"%dx%d",&width,&height)==2) {
+            if(swscanf_s(args[++i],L"%dx%d",&width,&height)==2) {
                 requestedWidth=std::clamp(width,900,2200);requestedHeight=std::clamp(height,640,1400);
             }
-        } else if(key==L"--scale") {
-            double value{};if(swscanf_s(args[i+1],L"%lf",&value)==1&&std::isfinite(value))scale=std::clamp(value,1.,2.);
-        } else if(key==L"--resize-smoke")resizeSmokeReport=args[i+1];
+        } else if(key==L"--scale"&&i+1<argc) {
+            double value{};if(swscanf_s(args[++i],L"%lf",&value)==1&&std::isfinite(value))scale=std::clamp(value,1.,2.);
+        } else if(key==L"--resize-smoke"&&i+1<argc)resizeSmokeReport=args[++i];
     }
     if (args) LocalFree(args);
+    if(benchmarkMode){
+        try{benchmarkCases=benchmark::caseFiles(HC_BENCH_CASE_DIR);}
+        catch(...){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 6;}
+        if(benchmarkCases.empty()){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 6;}
+        if(!initialBenchmarkId.empty()){
+            const auto found=std::find_if(benchmarkCases.begin(),benchmarkCases.end(),[&](const auto& path){
+                return path.stem().string()==initialBenchmarkId;});
+            if(found==benchmarkCases.end()){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 6;}
+            benchmarkIndex=static_cast<std::size_t>(found-benchmarkCases.begin());
+        }
+    }
     wchar_t executable[32768]{}; GetModuleFileNameW(nullptr,executable,32768);
     app=std::make_unique<DemoApp>(std::filesystem::path(executable));
-    if (!app->open(content) || !app->load(initial)) { DestroyWindow(hwnd); VSTGUI::exitPlatform(); return 2; }
-    RECT requested{0,0,requestedWidth+20,requestedHeight+65};
+    if (!app->open(content) || !(benchmarkMode?loadBenchmarkIndex(benchmarkIndex):app->load(initial))) {
+        DestroyWindow(hwnd); VSTGUI::exitPlatform(); return 2; }
+    RECT requested{0,0,requestedWidth+(benchmarkMode?280:20),
+        std::max(requestedHeight+65,benchmarkMode?850:705)};
     AdjustWindowRectEx(&requested,GetWindowLongW(hwnd,GWL_STYLE),FALSE,GetWindowLongW(hwnd,GWL_EXSTYLE));
     SetWindowPos(hwnd,nullptr,0,0,requested.right-requested.left,requested.bottom-requested.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
     app->simulateScale(scale);
-    SendMessageW(combo,CB_SETCURSEL,initial-'A',0);
+    if(benchmarkMode){
+        ShowWindow(combo,SW_HIDE);ShowWindow(currentButton,SW_HIDE);ShowWindow(snapshotButton,SW_HIDE);
+        SetWindowTextW(statusLabel,L"BENCHMARK · CONTINUATION");
+        benchmarkPanel=CreateWindowExW(0,L"STATIC",L"",WS_CHILD|WS_VISIBLE,10,55,250,800,hwnd,nullptr,instance,nullptr);
+        const auto label=[&](const wchar_t* text,int y,int height=25){return CreateWindowExW(0,L"STATIC",text,
+            WS_CHILD|WS_VISIBLE,20,y,230,height,hwnd,nullptr,instance,nullptr);};
+        benchmarkIdLabel=label(L"BENCHMARK",65);
+        CreateWindowExW(0,L"BUTTON",L"Previous",WS_CHILD|WS_VISIBLE,20,95,73,30,hwnd,reinterpret_cast<HMENU>(201),instance,nullptr);
+        CreateWindowExW(0,L"BUTTON",L"Next",WS_CHILD|WS_VISIBLE,97,95,73,30,hwnd,reinterpret_cast<HMENU>(202),instance,nullptr);
+        CreateWindowExW(0,L"BUTTON",L"Random",WS_CHILD|WS_VISIBLE,174,95,73,30,hwnd,reinterpret_cast<HMENU>(203),instance,nullptr);
+        label(L"INPUT PROGRESSION",137);
+        benchmarkInputLabel=label(L"",165,155);
+        label(L"SELECTED CONTINUATION",328);
+        benchmarkSelectedLabel=label(L"Select a recommendation",355,50);
+        constexpr const wchar_t* ratingNames[]{L"Naturalness",L"Intent fit",L"Rhythm fit",L"Distinctiveness",L"Usability"};
+        for(int i=0;i<5;++i){const int y=410+i*35;
+            label(ratingNames[i],y);
+            benchmarkScores[i]=CreateWindowExW(0,L"COMBOBOX",nullptr,WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST,
+                157,y-4,90,170,hwnd,reinterpret_cast<HMENU>(static_cast<INT_PTR>(301+i)),instance,nullptr);
+            for(const wchar_t* value:{L"1",L"2",L"3",L"4",L"5"})
+                SendMessageW(benchmarkScores[i],CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
+            SendMessageW(benchmarkScores[i],CB_SETCURSEL,2,0);
+        }
+        label(L"Verdict",587);
+        benchmarkVerdict=CreateWindowExW(0,L"COMBOBOX",nullptr,WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST,
+            125,585,122,170,hwnd,reinterpret_cast<HMENU>(306),instance,nullptr);
+        for(const wchar_t* value:{L"KEEP",L"QUESTIONABLE",L"BAD"})
+            SendMessageW(benchmarkVerdict,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
+        SendMessageW(benchmarkVerdict,CB_SETCURSEL,1,0);
+        label(L"Issue category",623);
+        benchmarkIssue=CreateWindowExW(0,L"COMBOBOX",nullptr,WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST,
+            125,620,122,240,hwnd,reinterpret_cast<HMENU>(307),instance,nullptr);
+        for(const wchar_t* value:{L"Harmony",L"Matching",L"Ranking",L"Intent",L"Rhythm",L"Diversity",
+                                  L"Voicing",L"Sound",L"UI",L"Other"})
+            SendMessageW(benchmarkIssue,CB_ADDSTRING,0,reinterpret_cast<LPARAM>(value));
+        SendMessageW(benchmarkIssue,CB_SETCURSEL,9,0);
+        label(L"Short note",660);
+        benchmarkNote=CreateWindowExW(WS_EX_CLIENTEDGE,L"EDIT",L"",WS_CHILD|WS_VISIBLE|ES_LEFT|ES_MULTILINE|WS_VSCROLL,
+            20,683,227,51,hwnd,reinterpret_cast<HMENU>(308),instance,nullptr);
+        CreateWindowExW(0,L"BUTTON",L"Save Rating",WS_CHILD|WS_VISIBLE,20,742,110,30,hwnd,reinterpret_cast<HMENU>(204),instance,nullptr);
+        CreateWindowExW(0,L"BUTTON",L"Snapshot",WS_CHILD|WS_VISIBLE,137,742,110,30,hwnd,reinterpret_cast<HMENU>(205),instance,nullptr);
+        loadBenchmarkIndex(benchmarkIndex);
+    }else SendMessageW(combo,CB_SETCURSEL,initial-'A',0);
     if(!resizeSmokeReport.empty()) {
         std::ofstream report(resizeSmokeReport,std::ios::trunc);
         if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 3;}
@@ -431,6 +607,19 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
             }
         }
         report<<"resize smoke "<<passed<<"/96 PASS\n";
+        DestroyWindow(hwnd);VSTGUI::exitPlatform();return 0;
+    }
+    if(!benchmarkSmokeReport.empty()) {
+        std::ofstream report(benchmarkSmokeReport,std::ios::trunc);
+        if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 7;}
+        std::size_t passed{};
+        for(std::size_t i=0;i<benchmarkCases.size();++i){
+            if(!loadBenchmarkIndex(i)){report<<"failed "<<i<<'\n';DestroyWindow(hwnd);VSTGUI::exitPlatform();return 8;}
+            app->tick();RECT size{};GetClientRect(demoContent,&size);
+            if(size.right<900||size.bottom<640){report<<"undersized "<<i<<'\n';DestroyWindow(hwnd);VSTGUI::exitPlatform();return 9;}
+            ++passed;
+        }
+        report<<"benchmark navigation "<<passed<<'/'<<benchmarkCases.size()<<" PASS\n";
         DestroyWindow(hwnd);VSTGUI::exitPlatform();return 0;
     }
     ShowWindow(hwnd,show); UpdateWindow(hwnd); SetTimer(hwnd,1,250,nullptr);
