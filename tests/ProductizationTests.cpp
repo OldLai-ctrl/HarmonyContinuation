@@ -142,6 +142,19 @@ int main() {
             listed.templates.front().tags==updated.tags && listed.templates.front().favorite &&
             listed.templates.front().note==updated.note && listed.templates.front().createdAt==updated.createdAt,
             "user metadata persists");
+        library::UserLibrary reopened(db);
+        const auto afterReopen=reopened.listProgressions();
+        check(afterReopen && afterReopen.templates.size()==1 &&
+            afterReopen.templates.front().name==updated.name &&
+            afterReopen.templates.front().styles==updated.styles &&
+            afterReopen.templates.front().intent==updated.intent &&
+            afterReopen.templates.front().tags==updated.tags &&
+            afterReopen.templates.front().favorite==updated.favorite &&
+            afterReopen.templates.front().note==updated.note,
+            "user metadata survives reopen");
+        check(library::loadFactory(HC_FACTORY_DB_PATH).templates.size()==161 &&
+            reopened.listProgressions().templates.size()==1,
+            "factory reload preserves separate user library");
         check(user.removeProgression(updated.id,error) && user.listProgressions().templates.empty(),"user delete");
         std::filesystem::remove(db);
         const auto legacyDb=std::filesystem::temp_directory_path()/"hc-v06-legacy-user.db";
