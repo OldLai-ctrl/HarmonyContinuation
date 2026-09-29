@@ -52,7 +52,7 @@ public:
     void setAnalysis(const HarmonicAnalysisResult&);
     void setMatches(const std::vector<MatchResult>&, std::string status);
     void setRecommendations(const RecommendationSet&);
-    void setEnrichments(const enrichment::EnrichmentResult& value) { enrichments_=value; invalid(); }
+    void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setSnapshotMode(bool enabled);
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
@@ -77,6 +77,7 @@ private:
     RecommendationSet recommendations_;
     enrichment::EnrichmentResult enrichments_;
     std::vector<ContinuationCandidate> pinnedSnapshots_;
+    std::vector<std::string> pinnedEnrichmentIds_;
     std::vector<ProgressionTemplate> factory_, user_;
     std::vector<TimelineBlock> timelineBlocks_;
     ChordLocation currentLocation_;
@@ -90,6 +91,7 @@ private:
     std::size_t factoryCount_{}, userCount_{};
     std::optional<std::size_t> selectedChord_;
     std::optional<std::pair<std::size_t,std::size_t>> selectedCandidate_;
+    std::optional<std::pair<std::size_t,std::size_t>> selectedEnrichment_;
     std::optional<std::pair<bool,std::size_t>> selectedLibrary_;
     std::size_t libraryPage_{};
     std::optional<Style> libraryStyle_;
@@ -138,6 +140,8 @@ private:
     void refreshLayout();
     const ContinuationCandidate* selectedCandidate() const;
     const ContinuationCandidate* findCandidate(const std::string&) const;
+    const enrichment::EnrichmentCandidate* selectedEnrichment() const;
+    const enrichment::EnrichmentCandidate* findEnrichment(const std::string&) const;
     void beginForm(Form, std::string initial);
     void endForm();
     void submitForm();

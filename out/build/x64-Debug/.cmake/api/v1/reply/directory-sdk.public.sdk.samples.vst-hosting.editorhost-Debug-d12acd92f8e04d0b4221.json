@@ -1,0 +1,19 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 10
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "sdk/public.sdk/samples/vst-hosting/editorhost",
+		"source" : "D:/VibeCoding/VST_SDK/vst3sdk/public.sdk/samples/vst-hosting/editorhost"
+	}
+}
