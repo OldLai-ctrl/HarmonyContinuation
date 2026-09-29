@@ -234,7 +234,15 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     for (auto& [key, candidate] : distinct) {
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
         candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
-        if (candidate.rankingScore >= w.minimumScore) result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        if (candidate.rankingScore >= w.minimumScore) {
+            if(const auto* selected=interpretationFor(query,candidate.key);selected&&!selected->full.empty()) {
+                const auto completion=evaluateIntentCompletion(candidate,selected->full.front().degree,
+                                                                selected->full.back().degree);
+                candidate.rankingScore=std::clamp(candidate.rankingScore+
+                    100.f*w.intentCompletionTieBreak*(completion.score-0.5f),0.f,100.f);
+            }
+            result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        }
     }
     for (auto& group : result.groups) {
         std::sort(group.begin(), group.end(), [](const auto& a, const auto& b) {

@@ -7,6 +7,7 @@
 #include "session/ProductServices.h"
 #include "ui/ProgressionTimeline.h"
 #include "ui/UILayout.h"
+#include "ui/OverlayPolicy.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -64,6 +65,7 @@ public:
                          std::size_t userCount);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
+    void onKeyboardEvent(VSTGUI::KeyboardEvent&) override;
     void onMouseWheelEvent(VSTGUI::MouseWheelEvent&) override;
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
@@ -137,6 +139,9 @@ private:
     void drawResponsiveInspector(VSTGUI::CDrawContext*);
     void drawResponsiveForm(VSTGUI::CDrawContext*);
     VSTGUI::CMouseEventResult onMouseDownResponsive(VSTGUI::CPoint&);
+    OverlayKind activeOverlayKind() const noexcept;
+    void dismissTransientOverlay();
+    void focusTransientOverlay();
     void refreshLayout();
     const ContinuationCandidate* selectedCandidate() const;
     const ContinuationCandidate* findCandidate(const std::string&) const;

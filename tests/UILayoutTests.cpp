@@ -1,4 +1,5 @@
 #include "ui/UILayout.h"
+#include "ui/OverlayPolicy.h"
 #include "ui/ProgressionTimeline.h"
 #include <array>
 #include <iostream>
@@ -13,6 +14,13 @@ bool overlap(UiRect a,UiRect b){return a.left<b.right&&a.right>b.left&&a.top<b.b
 }
 int main(){
     try {
+        const auto overlay=computeLayout({1100,900,1,harmony::session::Tab::Recommend,true,false}).inspector;
+        check(!dismissOnOutsideClick(OverlayKind::Transient,overlay,overlay.left+12,overlay.top+12),"inside overlay remains");
+        check(dismissOnOutsideClick(OverlayKind::Transient,overlay,overlay.left-12,overlay.top+12),"outside dismisses transient");
+        check(!dismissOnOutsideClick(OverlayKind::Persistent,overlay,overlay.left-12,overlay.top+12),"persistent remains");
+        check(!dismissOnOutsideClick(OverlayKind::Modal,overlay,overlay.left-12,overlay.top+12),"modal remains");
+        check(dismissOnEscape(OverlayKind::Transient)&&!dismissOnEscape(OverlayKind::Persistent)&&
+            !dismissOnEscape(OverlayKind::Modal),"escape policy");
         constexpr std::array<int,18> widths{900,901,1049,1050,1051,1099,1100,1599,1600,1601,
             1701,1702,1703,1800,2105,2106,2107,2200};
         constexpr std::array<int,6> heights{640,641,700,850,900,1400};

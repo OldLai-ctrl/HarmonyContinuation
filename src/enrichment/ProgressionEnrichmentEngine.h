@@ -35,6 +35,9 @@ struct EnrichmentConfig {
     std::array<int, 3> maxSubstitutions{0, 0, 1};
     double minimumSplitQN{0.5};
     float minimumSkeletonPreservation{0.75f};
+    float voiceLeadingWeight{0.03f}; // bounded quality tie-break, after harmony/style checks
+    int minimumBassImprovementSemitones{2};
+    float toleratedVoiceLeadingLoss{0.02f};
 };
 struct EnrichmentCandidate {
     std::string id;

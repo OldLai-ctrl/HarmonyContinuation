@@ -1,6 +1,7 @@
 #include "MainView.h"
 #include "WeightBarGeometry.h"
 #include "product/ProductVersion.h"
+#include "preview/VoiceLeadingMetrics.h"
 #include "vstgui/lib/cdrawcontext.h"
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/clinestyle.h"
@@ -26,6 +27,16 @@ void line(CDrawContext* dc, std::string text, CRect r, CColor color=pale, CHoriT
     dc->setFont(kNormalFont); dc->setFontColor(color); dc->drawString(text.c_str(),r,align);
 }
 std::string fixed(double value, int precision=1) { std::ostringstream out; out<<std::fixed<<std::setprecision(precision)<<value; return out.str(); }
+std::string bassLine(const std::vector<int>& bass) {
+    constexpr const char* notes[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+    std::string result;
+    for(std::size_t i=0;i<std::min<std::size_t>(bass.size(),6);++i) {
+        if(i)result+=" → ";
+        result+=notes[(bass[i]%12+12)%12];
+    }
+    if(bass.size()>6)result+=" → …";
+    return result;
+}
 std::string styleName(Style s) {
     switch(s) { case Style::Pop:return "Pop"; case Style::Rock:return "Rock"; case Style::Rnb:return "R&B";
         case Style::Jazz:return "Jazz"; case Style::CityPop:return "City Pop / J-pop"; default:return "Functional"; }
@@ -73,6 +84,7 @@ std::size_t groupForVisual(std::size_t visual,std::optional<PhraseIntent> intent
 }
 }
 MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {
+    setWantsFocus(true);
     visibility_.maxPerGroup=2;
     layout_=computeLayout({rect.getWidth(),rect.getHeight(),1,session::Tab::Recommend,false,false});
 }
@@ -107,6 +119,32 @@ void MainView::refreshLayout() {
         state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
     if (priorWidth!=layout_.timeline.width()) rebuildTimeline();
+}
+OverlayKind MainView::activeOverlayKind() const noexcept {
+    if (form_!=Form::None) return OverlayKind::Modal;
+    if (state_.tab==session::Tab::Recommend &&
+        (selectedChord_ || selectedCandidate_ || selectedEnrichment_)) return OverlayKind::Transient;
+    if (state_.tab==session::Tab::Library && selectedLibrary_) return OverlayKind::Persistent;
+    if (!state_.pinnedCandidateIds.empty() || !pinnedEnrichmentIds_.empty()) return OverlayKind::Persistent;
+    return OverlayKind::None;
+}
+void MainView::dismissTransientOverlay() {
+    if (activeOverlayKind()!=OverlayKind::Transient) return;
+    selectedChord_.reset(); selectedCandidate_.reset(); selectedEnrichment_.reset();
+    inspectorScroll_=0;
+    refreshLayout(); invalid();
+}
+void MainView::focusTransientOverlay() {
+    if (auto* frame=getFrame()) frame->setFocusView(this);
+}
+void MainView::onKeyboardEvent(KeyboardEvent& event) {
+    if (event.type==EventType::KeyDown && event.virt==VirtualKey::Escape &&
+        dismissOnEscape(activeOverlayKind())) {
+        dismissTransientOverlay();
+        event.consumed=true;
+        return;
+    }
+    CView::onKeyboardEvent(event);
 }
 void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
     const auto delta=event.deltaY*48.0;
@@ -359,6 +397,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         line(dc,t("phrase.empty"),viewRect(layout_.content),pale,kCenterText); return;
     }
     constexpr const char* titles[]{"group.resolve","group.develop","group.loop","group.color"};
+    const auto presentation=session::presentationIndices(recommendations_,visibility_);
     {
     ConcatClip clip(*dc,viewRect(layout_.content));
     for (std::size_t visual=0;visual<4;++visual) {
@@ -369,7 +408,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
         if (recommendations_.groups[group].size()>2)
             line(dc,t("candidate.more"),CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
-        const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
+        const auto& visible=presentation[group];
         if (visible.empty()) {
             line(dc,workerBusy_?t("status.analyzing"):t("candidate.none"),CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
@@ -691,6 +730,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             }
             return kMouseEventHandled;
         }
+        if (dismissOnOutsideClick(activeOverlayKind(),layout_.inspector,where.x,where.y))
+            dismissTransientOverlay();
         for(std::size_t i=0;i<layout_.topControls.size();++i)if(layout_.topControls[i].contains(where.x,where.y)) {
             if(i==0) {
                 std::vector<std::string> names{t("label.auto")};
@@ -739,7 +780,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             for(const auto& b:timelineBlocks_) {
                 const auto r=chordTileRect(b.eventIndex);
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();
-                    selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;invalid();break;}
+                    selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;refreshLayout();
+                    focusTransientOverlay();invalid();break;}
             }
             return kMouseEventHandled;
         }
@@ -804,6 +846,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                                     if(enrichments_.groups[group][row].id==candidate->id)
                                         selectedEnrichment_={{group,row}};
                             inspectorScroll_=0;refreshLayout();invalid();
+                            focusTransientOverlay();
                         }
                     }
                     return kMouseEventHandled;
@@ -901,18 +944,21 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     else if(pinnedEnrichmentIds_.size()<3)pinnedEnrichmentIds_.push_back(candidate.id);
                     refreshLayout();
                 } else if(where.y>=rowY+49 && where.x>=lane.right-169 && where.x<lane.right-125) {
-                    selectedEnrichment_={{group,row}};selectedChord_.reset();inspectorScroll_=0;refreshLayout();
+                    selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                    inspectorScroll_=0;refreshLayout();focusTransientOverlay();
                 } else if(where.y>=rowY+49 && where.x>=lane.right-52 && actions_.saveEnrichmentSnapshot)
                     actionStatus_=actions_.saveEnrichmentSnapshot(candidate);
                 else if(where.y>=rowY+49 && where.x>=lane.right-96 && actions_.exportEnrichmentMidi)
                     actionStatus_=actions_.exportEnrichmentMidi(candidate);
                 else if(where.y>=rowY+49 && where.x>=lane.right-124 && actions_.auditionEnrichment)
                     actions_.auditionEnrichment(candidate);
-                else {selectedEnrichment_={{group,row}};selectedChord_.reset();inspectorScroll_=0;refreshLayout();}
+                else {selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                    inspectorScroll_=0;refreshLayout();focusTransientOverlay();}
                 invalid();return kMouseEventHandled;
             }
             return kMouseEventHandled;
         }
+        const auto presentation=session::presentationIndices(recommendations_,visibility_);
         for(std::size_t visual=0;visual<4;++visual) {
             auto lane=layout_.lanes[visual];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
             if(!lane.contains(where.x,where.y))continue;
@@ -925,7 +971,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                         options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
-                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};selectedChord_.reset();
+                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};
+                        selectedChord_.reset();selectedEnrichment_.reset();refreshLayout();focusTransientOverlay();
                         inspectorScroll_=0;
                         if(actions_.benchmarkSelect)actions_.benchmarkSelect(recommendations_.groups[group][selected]);
                         invalid();}
@@ -934,7 +981,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             }
             const auto rowHeight=(lane.height()-30)/2;
             const auto row=static_cast<std::size_t>((where.y-lane.top-27)/rowHeight);
-            const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
+            const auto& visible=presentation[group];
             if(row>=visible.size()||row>=2)return kMouseEventHandled;
             const auto index=visible[row];const auto& c=recommendations_.groups[group][index];
             const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),static_cast<bool>(actions_.exportMidi));
@@ -946,7 +993,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(geometry.audition.contains(where.x,where.y)&&actions_.audition)actions_.audition(c);
             else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){actionStatus_=actions_.exportMidi(c);invalid();}
             else if(geometry.snapshot.contains(where.x,where.y)&&actions_.saveSnapshot){actionStatus_=actions_.saveSnapshot(c);invalid();}
-            else {selectedCandidate_={{group,index}};selectedChord_.reset();inspectorScroll_=0;invalid();}
+            else {selectedCandidate_={{group,index}};selectedChord_.reset();selectedEnrichment_.reset();
+                inspectorScroll_=0;refreshLayout();focusTransientOverlay();invalid();}
             return kMouseEventHandled;
         }
     } catch(...) {actionStatus_="Action failed";invalid();}
@@ -1057,6 +1105,21 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             t("inspector.preservation")+"  "+fixed(candidate.skeletonPreservation,2),muted);
         add(t("inspector.styleFit")+"  "+fixed(candidate.styleCompatibility,2)+" · "+
             t("inspector.complexity")+"  "+fixed(candidate.complexityScore,2),muted);
+        const auto sourceVoice=preview::measureVoiceLeading(state_.imported.events);
+        const auto enrichedVoice=preview::measureVoiceLeading(candidate.progression);
+        if(sourceVoice&&enrichedVoice) {
+            const bool inversion=std::any_of(candidate.techniques.begin(),candidate.techniques.end(),
+                [](auto technique){return technique==enrichment::TechniqueID::Inversion;});
+            if(inversion&&enrichedVoice->bassMotionSemitones<sourceVoice->bassMotionSemitones)
+                add(t("voice.inversionImprovesBass"),accent);
+            else if(enrichedVoice->score>sourceVoice->score+0.03f)
+                add(t("voice.smoother"),accent);
+            add(t("voice.commonTones")+"  "+std::to_string(enrichedVoice->commonToneCount),muted);
+            add(t("voice.bass")+"  "+bassLine(enrichedVoice->bassMidi),muted);
+            add(t("voice.upper")+"  "+(enrichedVoice->upperVoiceTotalMotion<=sourceVoice->upperVoiceTotalMotion?
+                t("voice.upperSmoother"):t("voice.upperVaried")),muted);
+            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(enrichedVoice->score,2),muted);
+        }
         for(const auto& operation:candidate.operations) {
             add(operation.before+" → "+operation.after,pale);
             add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
@@ -1067,6 +1130,26 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         add(t("inspector.why"),accent);
         add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+
             std::to_string(static_cast<int>(std::round(c.rankingScore))));
+        std::optional<ScaleDegree> phraseStart,current;
+        if(analysis_.selectedKey&&analysis_.selectedKey->key.tonic==c.key.tonic&&
+           analysis_.selectedKey->key.mode==c.key.mode&&!analysis_.full.empty()) {
+            phraseStart=analysis_.full.front().degree;
+            current=analysis_.full.back().degree;
+        }
+        const auto completion=evaluateIntentCompletion(c,phraseStart,current);
+        add(t(completionReasonKey(completion.reason)),accent);
+        if(state_.debugExpanded)
+            add(t("inspector.completion")+"  "+fixed(completion.score,2),muted);
+        Progression voiced=state_.imported.events;
+        for(const auto& event:c.continuation) {
+            ChordEvent next;next.name=event.label;next.quality=event.quality;
+            voiced.push_back(std::move(next));
+        }
+        if(const auto voice=preview::measureVoiceLeading(voiced)) {
+            add(t("voice.commonTones")+"  "+std::to_string(voice->commonToneCount)+" · "+
+                t("voice.bass")+"  "+bassLine(voice->bassMidi),muted);
+            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(voice->score,2),muted);
+        }
         std::vector<std::string> userNames,skeletonNames,continuationNames;
         for(const auto& chord:state_.imported.events)userNames.push_back(chord.name);
         for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())

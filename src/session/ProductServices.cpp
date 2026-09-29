@@ -57,6 +57,51 @@ std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const st
     }
     return visible;
 }
+namespace {
+bool sameContinuationPath(const ContinuationCandidate& a,const ContinuationCandidate& b) {
+    if(a.suggestedCurrentChordDurationQN!=b.suggestedCurrentChordDurationQN||
+       a.continuation.size()!=b.continuation.size())return false;
+    for(std::size_t i=0;i<a.continuation.size();++i) {
+        const auto& x=a.continuation[i];const auto& y=b.continuation[i];
+        if(x.label!=y.label||x.quality!=y.quality||x.durationQN!=y.durationQN)return false;
+    }
+    return true;
+}
+}
+RecommendationPresentation presentationIndices(const RecommendationSet& set,
+    const RecommendationVisibilityPolicy& policy) {
+    RecommendationPresentation shown;
+    std::array<std::size_t,4> order{0,1,2,3};
+    std::stable_sort(order.begin(),order.end(),[&](std::size_t a,std::size_t b) {
+        const auto score=[&](std::size_t group) {
+            return set.groups[group].empty()?-1.f:set.groups[group].front().rankingScore;
+        };
+        return score(a)>score(b);
+    });
+    auto all=policy;
+    all.maxPerGroup=100;
+    for(const auto group:order) {
+        const auto eligible=all.visibleIndices(set.groups[group]);
+        for(const auto index:eligible) {
+            const auto& candidate=set.groups[group][index];
+            const bool sameGroup=std::any_of(shown[group].begin(),shown[group].end(),[&](std::size_t chosen) {
+                return sameContinuationPath(candidate,set.groups[group][chosen]);
+            });
+            if(sameGroup)continue;
+            bool inOtherGroup{};
+            for(std::size_t other=0;other<shown.size();++other)if(other!=group)
+                for(const auto chosen:shown[other])
+                    if(sameContinuationPath(candidate,set.groups[other][chosen]))inOtherGroup=true;
+            if(inOtherGroup)continue;
+            shown[group].push_back(index);
+            if(shown[group].size()>=policy.maxPerGroup)break;
+        }
+        // Keep one valid result when a group has no distinct alternative.
+        if(shown[group].empty()&&!eligible.empty()&&policy.maxPerGroup>0)
+            shown[group].push_back(eligible.front());
+    }
+    return shown;
+}
 SaveResult makeUserProgression(const ImportedProgressionSession& session,
                                const ContinuationCandidate& candidate, const SaveMetadata& metadata) {
     SaveResult result;
