@@ -6,8 +6,12 @@
 #include "RecommendationWorker.h"
 #include "session/PluginSessionState.h"
 #include "session/ProductServices.h"
+#include "enrichment/ProgressionEnrichmentEngine.h"
+#include "preview/PreviewSequence.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include <cstdint>
+#include <chrono>
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <memory>
@@ -31,6 +35,16 @@ public:
     std::string saveRecommendation(const harmony::ContinuationCandidate&, const harmony::session::SaveMetadata&) noexcept;
     std::string updateUserProgression(const harmony::ProgressionTemplate&) noexcept;
     std::string deleteUserProgression(const std::string&) noexcept;
+    void audition(const harmony::ContinuationCandidate&) noexcept;
+    void auditionEnrichment(const harmony::enrichment::EnrichmentCandidate&) noexcept;
+    void pollPreview() noexcept;
+    void stopPreview() noexcept;
+    bool previewActive() const noexcept { return !previewCandidateId_.empty(); }
+    std::string exportMidi(const harmony::ContinuationCandidate&, void* owner) noexcept;
+    std::string exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
+    std::string exportLibraryMidi(const harmony::ProgressionTemplate&, void* owner) noexcept;
+    std::string saveSnapshot(const harmony::ContinuationCandidate&, void* owner) noexcept;
+    std::string saveEnrichmentSnapshot(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
     void receivedDrop(VSTGUI::IDataPackage*) noexcept;
     void inspectClipboard() noexcept;
     void attach(harmony::ui::MainView*, std::function<void(bool)> transportRateChanged = {}) noexcept;
@@ -52,6 +66,7 @@ private:
     std::uint64_t lastSnapshotGeneration_{};
     unsigned unchangedTransportPolls_{};
     std::optional<double> lastProjectQN_;
+    double lastTempoBPM_{120.0};
     std::optional<int> lastTimeSigNumerator_;
     std::optional<int> lastTimeSigDenominator_;
     bool lastPlaying_{};
@@ -60,6 +75,11 @@ private:
     std::uint64_t recommendationGeneration_{};
     double lastComputationMs_{};
     std::size_t factoryCount_{}, userCount_{};
+    std::filesystem::path previewFile_;
+    std::string previewCandidateId_;
+    double previewTotalQN_{}, previewSeconds_{};
+    std::chrono::steady_clock::time_point previewStarted_{};
+    void playPreview(std::string id, const harmony::preview::BuildResult&) noexcept;
     void submitRecommendation(bool rankingOnly = false);
     void reloadLibraries();
 };

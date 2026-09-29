@@ -867,6 +867,16 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(where.y>=area.bottom-36){const auto filtered=filteredLibrary();
                 if(where.x<area.left+180&&libraryPage_>0)--libraryPage_;
                 else if(where.x>right-180&&(libraryPage_+1)*static_cast<std::size_t>(layout_.libraryRows)<filtered.size())++libraryPage_;
+                else if(where.x>=area.left+180&&where.x<=right-180) {
+                    const auto rows=static_cast<std::size_t>(std::max(1,layout_.libraryRows));
+                    const auto count=std::max<std::size_t>(1,(filtered.size()+rows-1)/rows);
+                    std::vector<std::string> pages;
+                    pages.reserve(count);
+                    for(std::size_t page=0;page<count;++page)
+                        pages.push_back(t("library.page")+" "+std::to_string(page+1));
+                    const auto selected=popup(pages,where);
+                    if(selected>=0)libraryPage_=static_cast<std::size_t>(selected);
+                }
                 invalid();return kMouseEventHandled;}
             if(where.y>=area.top+88&&where.y<area.bottom-37) {
                 const auto row=static_cast<std::size_t>((where.y-area.top-88)/36);

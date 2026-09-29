@@ -93,6 +93,20 @@ bool PLUGIN_API PluginView::open(void* parent) {
             return pluginController->saveRecommendation(candidate,metadata); };
         actions.updateUser=[pluginController](const harmony::ProgressionTemplate& item) { return pluginController->updateUserProgression(item); };
         actions.deleteUser=[pluginController](const std::string& id) { return pluginController->deleteUserProgression(id); };
+        actions.audition=[pluginController](const harmony::ContinuationCandidate& candidate) {
+            pluginController->audition(candidate); };
+        actions.exportMidi=[pluginController,parent](const harmony::ContinuationCandidate& candidate) {
+            return pluginController->exportMidi(candidate,parent); };
+        actions.auditionEnrichment=[pluginController](const harmony::enrichment::EnrichmentCandidate& candidate) {
+            pluginController->auditionEnrichment(candidate); };
+        actions.exportEnrichmentMidi=[pluginController,parent](const harmony::enrichment::EnrichmentCandidate& candidate) {
+            return pluginController->exportEnrichmentMidi(candidate,parent); };
+        actions.exportLibraryMidi=[pluginController,parent](const harmony::ProgressionTemplate& item) {
+            return pluginController->exportLibraryMidi(item,parent); };
+        actions.saveSnapshot=[pluginController,parent](const harmony::ContinuationCandidate& candidate) {
+            return pluginController->saveSnapshot(candidate,parent); };
+        actions.saveEnrichmentSnapshot=[pluginController,parent](const harmony::enrichment::EnrichmentCandidate& candidate) {
+            return pluginController->saveEnrichmentSnapshot(candidate,parent); };
         impl_->main = new ui::MainView(CRect(0,0,width,height),std::move(actions));
         frame->addView(impl_->main);
         if (contentScale_!=1.0) frame->setZoom(contentScale_);
@@ -208,10 +222,11 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
             return result;
         }
 #endif
-        setIdleRate(transportPlaying_ ? 50 : 250);
+        setIdleRate(transportPlaying_ || (impl_ && impl_->controller && impl_->controller->previewActive()) ? 50 : 250);
         if (impl_ && impl_->controller) {
             impl_->controller->pollRecommendation();
             impl_->controller->pollTransport();
+            impl_->controller->pollPreview();
         }
         return result;
     }
@@ -220,7 +235,7 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
 
 void PluginView::setTransportPlaying(bool playing) {
     transportPlaying_ = playing;
-    setIdleRate(playing ? 50 : 250);
+    setIdleRate(playing || (impl_ && impl_->controller && impl_->controller->previewActive()) ? 50 : 250);
 }
 
 } // namespace harmony::plugin

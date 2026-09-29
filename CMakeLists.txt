@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.6.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "rc.1" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRERELEASE "rc.2" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -242,7 +242,10 @@ target_compile_definitions(midi_export_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACT
     HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
 add_dependencies(midi_export_cli factory_database)
 if(HC_BUILD_PLUGIN)
-    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment)
+    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment harmony_snapshot)
+    if(WIN32)
+        target_link_libraries(HarmonyContinuation PRIVATE winmm comdlg32)
+    endif()
     add_dependencies(HarmonyContinuation factory_database)
     add_custom_command(TARGET HarmonyContinuation POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources"
