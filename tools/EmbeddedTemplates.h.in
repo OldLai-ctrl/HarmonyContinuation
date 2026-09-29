@@ -1,0 +1,5 @@
+#pragma once
+#include <string_view>
+namespace harmony::dev {
+inline constexpr std::string_view kDevelopmentTemplatesJson = R"HC_FIXTURE(@HC_EMBEDDED_TEMPLATES@)HC_FIXTURE";
+}

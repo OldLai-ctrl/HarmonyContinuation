@@ -1,0 +1,31 @@
+{
+  "id": "bench_005",
+  "name": "A minor dominant",
+  "category": "minor_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Dm",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "E7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Raised leading tone before A-minor cadence.",
+  "expectedCharacteristics": [
+    "Minor-key interpretation should remain plausible."
+  ],
+  "forcedKey": "A:minor"
+}

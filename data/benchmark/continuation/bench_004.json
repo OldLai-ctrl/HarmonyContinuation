@@ -1,0 +1,31 @@
+{
+  "id": "bench_004",
+  "name": "F major cadence",
+  "category": "major_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "F",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Bb",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "C",
+      "start": 6.0
+    }
+  ],
+  "notes": "Short F-major phrase with compressed predominant.",
+  "expectedCharacteristics": [
+    "OPEN hold should remain positive."
+  ],
+  "forcedKey": "F:major"
+}

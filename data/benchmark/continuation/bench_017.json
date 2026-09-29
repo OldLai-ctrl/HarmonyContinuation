@@ -1,0 +1,31 @@
+{
+  "id": "bench_017",
+  "name": "G major borrowed minor iv",
+  "category": "borrowed_iv",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "G",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "C",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Cm",
+      "start": 8.0
+    }
+  ],
+  "notes": "Borrowed iv in G major.",
+  "expectedCharacteristics": [
+    "Borrowed chord should not be treated as a parsing error."
+  ],
+  "forcedKey": "G:major"
+}

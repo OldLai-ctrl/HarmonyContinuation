@@ -1,0 +1,41 @@
+{
+  "id": "bench_034",
+  "name": "Five chord minor phrase",
+  "category": "long",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "C",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Dm",
+      "start": 8.0,
+      "duration": 4.0
+    },
+    {
+      "name": "E7",
+      "start": 12.0
+    }
+  ],
+  "notes": "Longer A-minor phrase crosses the relative major before its dominant.",
+  "expectedCharacteristics": [
+    "Avoid a one-chord recommendation after a long input."
+  ],
+  "forcedKey": "A:minor"
+}

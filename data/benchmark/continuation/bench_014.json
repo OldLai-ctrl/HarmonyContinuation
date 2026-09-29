@@ -1,0 +1,35 @@
+{
+  "id": "bench_014",
+  "name": "E seven into A minor",
+  "category": "secondary_dominant",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "E7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Am",
+      "start": 6.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Dm",
+      "start": 10.0
+    }
+  ],
+  "notes": "Applied dominant lands on vi.",
+  "expectedCharacteristics": [
+    "Different intents should not return identical paths only."
+  ]
+}

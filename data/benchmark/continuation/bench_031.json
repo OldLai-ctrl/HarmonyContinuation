@@ -1,0 +1,25 @@
+{
+  "id": "bench_031",
+  "name": "Two chord C to G",
+  "category": "short",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 4.0
+    }
+  ],
+  "notes": "Very little context; exposes overconfidence.",
+  "expectedCharacteristics": [
+    "Several interpretations may be reasonable."
+  ]
+}

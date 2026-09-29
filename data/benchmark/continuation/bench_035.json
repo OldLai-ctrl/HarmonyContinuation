@@ -1,0 +1,35 @@
+{
+  "id": "bench_035",
+  "name": "Relative major or minor",
+  "category": "key_ambiguity",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "C",
+      "start": 8.0,
+      "duration": 4.0
+    },
+    {
+      "name": "G",
+      "start": 12.0
+    }
+  ],
+  "notes": "C-major and A-minor readings both plausible.",
+  "expectedCharacteristics": [
+    "Report multiple key candidates without treating one as certain."
+  ]
+}

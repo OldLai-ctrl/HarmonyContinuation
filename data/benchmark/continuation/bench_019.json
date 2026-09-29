@@ -1,0 +1,31 @@
+{
+  "id": "bench_019",
+  "name": "C major flat seven",
+  "category": "flat_vii_vi",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Bb",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 8.0
+    }
+  ],
+  "notes": "Rock-like bVII-IV motion.",
+  "expectedCharacteristics": [
+    "Loop intent should be assessed by ear."
+  ],
+  "style": "rock"
+}

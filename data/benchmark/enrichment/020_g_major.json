@@ -1,0 +1,31 @@
+{
+  "name": "g_major",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "G:major",
+  "style": "rock",
+  "chords": [
+    {
+      "name": "G",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "C",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "D",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "G",
+      "start": 12
+    }
+  ]
+}

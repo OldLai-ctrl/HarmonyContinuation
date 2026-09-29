@@ -1,0 +1,31 @@
+{
+  "name": "minor_chromatic",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:minor",
+  "style": "jazz",
+  "chords": [
+    {
+      "name": "Cm",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Ab",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "Fm",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "G",
+      "start": 12
+    }
+  ]
+}

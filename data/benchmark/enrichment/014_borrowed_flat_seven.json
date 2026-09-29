@@ -1,0 +1,31 @@
+{
+  "name": "borrowed_flat_seven",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:major",
+  "style": "rock",
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Bb",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "F",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "C",
+      "start": 12
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "bench_032",
+  "name": "Two chord minor dominant",
+  "category": "short",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "E7",
+      "start": 4.0
+    }
+  ],
+  "notes": "Short minor phrase with strong dominant.",
+  "expectedCharacteristics": [
+    "A useful continuation should include a phrase arc."
+  ],
+  "forcedKey": "A:minor"
+}

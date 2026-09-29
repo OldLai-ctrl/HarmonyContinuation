@@ -1,0 +1,166 @@
+{
+  "mode.continue": "Continue",
+  "mode.enrich": "Enrich",
+  "nav.more": "More",
+  "nav.library": "Library",
+  "nav.diagnostics": "Diagnostics",
+  "nav.language": "Language",
+  "nav.about": "About",
+  "phrase.title": "Current Phrase",
+  "phrase.count": "chords",
+  "phrase.empty": "Drop a chord phrase to explore where it can go.",
+  "phrase.select": "Select a chord to inspect it",
+  "group.resolve": "Resolve",
+  "group.develop": "Develop",
+  "group.loop": "Loop",
+  "group.color": "Color",
+  "group.polish": "Polish",
+  "group.rich": "Rich",
+  "group.advanced": "Advanced",
+  "candidate.more": "Show More",
+  "candidate.none": "No strong option",
+  "candidate.why": "Why?",
+  "candidate.pin": "Pin",
+  "candidate.play": "Play",
+  "candidate.compare": "Compare",
+  "candidate.midi": "Export MIDI",
+  "candidate.snapshot": "Save Snapshot",
+  "status.analyzing": "Analyzing…",
+  "status.libraryError": "Library error · see Library",
+  "status.noEnrichment": "No reliable enrichment here",
+  "opportunity.title": "Upgrade opportunity",
+  "label.key": "Key",
+  "label.style": "Style",
+  "label.intent": "Intent",
+  "label.auto": "Auto",
+  "label.debug": "Debug"
+  ,"tag.citypop-jpop": "City Pop"
+  ,"tag.common-major": "Major"
+  ,"tag.common-minor": "Minor"
+  ,"tag.functional": "Functional harmony"
+  ,"tag.jazz": "Jazz"
+  ,"tag.pop": "Pop"
+  ,"tag.rnb-soul": "R&B"
+  ,"tag.rock": "Rock"
+  ,"tag.resolve": "Resolve"
+  ,"tag.develop": "Develop"
+  ,"tag.loop": "Loop"
+  ,"tag.color": "Color"
+  ,"tag.secondary_dominant": "Secondary dominant"
+  ,"tag.secondary_leading_tone": "Secondary leading tone"
+  ,"tag.passing_diminished": "Passing diminished"
+  ,"tag.borrowed_chord": "Borrowed chord"
+  ,"tag.seventh_chord": "Seventh chord"
+  ,"tag.cadential_expansion": "Cadential expansion"
+  ,"nav.match": "Match"
+  ,"phrase.scroll": "Wheel to scroll phrase"
+  ,"phrase.starts": "starts"
+  ,"library.factory": "Factory"
+  ,"library.user": "User"
+  ,"library.all": "All"
+  ,"library.search": "Search"
+  ,"library.nameTag": "Name / tag"
+  ,"library.previous": "Previous"
+  ,"library.next": "Next"
+  ,"library.page": "Page"
+  ,"library.error": "Library error"
+  ,"library.filter": "Filter"
+  ,"library.readOnly": "Factory · read only"
+  ,"library.rename": "Rename"
+  ,"library.delete": "Delete"
+  ,"library.favorite": "Favorite"
+  ,"library.unfavorite": "Favorited · click to remove"
+  ,"form.save": "Save custom progression"
+  ,"form.edit": "Edit user progression"
+  ,"form.search": "Search library"
+  ,"form.name": "Name"
+  ,"form.tags": "Tags (optional)"
+  ,"form.note": "Note"
+  ,"form.cancel": "Cancel"
+  ,"form.apply": "Apply"
+  ,"form.invalidName": "Name must be 1–128 characters"
+  ,"inspector.title": "Inspector"
+  ,"candidate.pinnedUnavailable": "Pinned path unavailable"
+  ,"label.forced": "Forced"
+  ,"filter.allSources": "All sources"
+  ,"filter.factoryOnly": "Factory only"
+  ,"filter.userOnly": "User only"
+  ,"filter.allComplexity": "All complexity"
+  ,"filter.basic": "Basic"
+  ,"filter.rich": "Rich"
+  ,"filter.advanced": "Advanced"
+  ,"filter.allTechniques": "All techniques"
+  ,"filter.secondary": "Secondary dominant"
+  ,"filter.passing": "Passing diminished"
+  ,"filter.borrowed": "Borrowed chord"
+  ,"filter.allFavorites": "All favorites"
+  ,"filter.favoriteOnly": "Favorites only"
+  ,"about.build": "Build"
+  ,"about.commit": "Commit"
+  ,"about.factory": "Factory library"
+  ,"about.db": "DB schema"
+  ,"about.session": "Session schema"
+  ,"diagnostics.title": "Advanced analysis"
+  ,"diagnostics.refresh": "Refresh host"
+  ,"diagnostics.clipboard": "Clipboard"
+  ,"diagnostics.generation": "Generation"
+  ,"diagnostics.worker": "Worker"
+  ,"diagnostics.busy": "busy"
+  ,"diagnostics.idle": "idle"
+  ,"diagnostics.last": "Last"
+  ,"diagnostics.topMatch": "Top match"
+  ,"inspector.chord": "Chord"
+  ,"inspector.weight": "Weight"
+  ,"inspector.why": "Why this path"
+  ,"inspector.score": "score"
+  ,"inspector.user": "User"
+  ,"inspector.matched": "Matched"
+  ,"inspector.source": "Source"
+  ,"inspector.cadence": "Cadence"
+  ,"inspector.rhythm": "Rhythm"
+  ,"inspector.prior": "Prior"
+  ,"inspector.support": "Support"
+  ,"inspector.fallback": "fallback"
+  ,"inspector.sources": "Sources"
+  ,"inspector.gap": "gap"
+  ,"inspector.mode": "Mode"
+  ,"inspector.major": "Major"
+  ,"inspector.minor": "Minor"
+  ,"inspector.meter": "Meter"
+  ,"inspector.nearDuplicate": "Near duplicates"
+  ,"inspector.function": "Function"
+  ,"inspector.roles": "Roles"
+  ,"inspector.target": "Target"
+  ,"inspector.confidence": "Confidence"
+  ,"inspector.timing": "Timing"
+  ,"inspector.preservation": "Skeleton retained"
+  ,"inspector.styleFit": "Style fit"
+  ,"inspector.complexity": "Complexity"
+  ,"candidate.unpin": "Unpin"
+  ,"technique.ChordExtension": "Chord extension"
+  ,"technique.SeventhColor": "Seventh color"
+  ,"technique.NinthColor": "Ninth color"
+  ,"technique.Inversion": "Inversion"
+  ,"technique.BassConnection": "Bass connection"
+  ,"technique.SecondaryDominant": "Secondary dominant"
+  ,"technique.SecondaryLeadingTone": "Secondary leading tone"
+  ,"technique.PassingDiminished": "Passing diminished"
+  ,"technique.ChromaticApproach": "Chromatic approach"
+  ,"technique.BorrowedChord": "Borrowed chord"
+  ,"technique.PredominantSubstitution": "Predominant expansion"
+  ,"technique.CadentialExpansion": "Cadential expansion"
+  ,"technique.Turnaround": "Turnaround"
+  ,"reason.ChordExtension": "Add suitable color while keeping the original root and timing"
+  ,"reason.SeventhColor": "Add a seventh while retaining the original root"
+  ,"reason.NinthColor": "Add a ninth to an existing seventh chord"
+  ,"reason.Inversion": "Use an inversion to shorten neighboring bass movements"
+  ,"reason.BassConnection": "Improve the bass connection between neighboring chords"
+  ,"reason.SecondaryDominant": "Approach the target chord through its dominant seventh"
+  ,"reason.SecondaryLeadingTone": "Approach the target chord chromatically through its leading-tone seventh"
+  ,"reason.PassingDiminished": "Connect stepwise chords with a passing diminished seventh"
+  ,"reason.ChromaticApproach": "Connect neighboring chords chromatically"
+  ,"reason.BorrowedChord": "Borrow from the parallel key to add color"
+  ,"reason.PredominantSubstitution": "Expand predominant function before the dominant"
+  ,"reason.CadentialExpansion": "Add a predominant chord before the cadence"
+  ,"reason.Turnaround": "Connect phrase end and beginning with a turnaround"
+}

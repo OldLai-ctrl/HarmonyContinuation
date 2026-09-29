@@ -1,0 +1,37 @@
+{
+  "id": "bench_030",
+  "name": "A flat color progression",
+  "category": "citypop_rnb",
+  "tempo": 100,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Abmaj7",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Gm7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "C7",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Fm7",
+      "start": 8.0
+    }
+  ],
+  "notes": "Jazz-color phrase in A-flat surroundings.",
+  "expectedCharacteristics": [
+    "Check whether key interpretation stays coherent."
+  ],
+  "style": "citypop",
+  "forcedKey": "Ab:major"
+}

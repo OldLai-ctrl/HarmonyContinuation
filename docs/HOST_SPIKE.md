@@ -54,5 +54,6 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 2026-09-25：用户补充实测 C–G–G#dim–Am–Em 拖入正常，但调性候选接近平均、播放头经过后文字消失、权重黄条与和弦块边框重叠。对应修复与复测见 [真实三和弦与界面刷新](CUBASE_TRIAD_UI_FIX_20260925.md)。
 - 2026-09-25：用户再次提供 Cubase 截图，确认调性与文字已正常，仍觉得黄条边界不齐。截图显示黄条底边基本一致，但旧版用不同长度表示权重。后续改为全宽黄条，以粗细表示权重，并按 VSTGUI 实际缩放比对齐物理像素；本机构建、Validator 47/47、CTest 5/5、EditorHost 窗口响应、安装版哈希一致均已确认，Cubase 新版画面尚待实测。
 - 2026-09-25：用户第三次实测反馈全宽黄条的粗细差不醒目，要求恢复长度表达；播放线在和弦块上下方留下旧位置残影。已恢复长度表达但保留 DPI 像素对齐，同时使播放线旧、新位置的整条高度失效；构建、Validator 47/47、CTest 5/5、EditorHost 窗口响应通过。Cubase 关闭后已安装并核对哈希一致；用户随后报告同一段和弦在 Cubase 中重拖并播放，两项均正常。
+- 2026-09-25：Phase 3 加入 161 条种子曲库、SQLite 运行库、后台推荐与 RECOMMEND 开发视图。本轮插件构建、CTest 7/7、Validator 47/47、独立 EditorHost 打开响应正常；用户本轮无法操作 Cubase，因此 **Phase 2 新基线和 Phase 3 界面均未完成 Cubase 实机 smoke**，不能写为宿主 PASS。细节见 [Phase 3 验证记录](PHASE3_TESTS.md)。
 
 公开格式参考：Steinberg [Clipboard VST-XML 定义](https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Clipboard%2BVST-XML/Index.html)。

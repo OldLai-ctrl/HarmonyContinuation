@@ -1,0 +1,36 @@
+{
+  "id": "bench_006",
+  "name": "A minor diminished approach",
+  "category": "minor_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Bdim",
+      "start": 8.0,
+      "duration": 2.0
+    },
+    {
+      "name": "E7",
+      "start": 10.0
+    }
+  ],
+  "notes": "Diminished chord prepares dominant.",
+  "expectedCharacteristics": [
+    "The diminished approach should not collapse the match."
+  ],
+  "forcedKey": "A:minor"
+}

@@ -1,0 +1,37 @@
+{
+  "id": "bench_026",
+  "name": "F jazz turnaround",
+  "category": "jazz_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Fmaj7",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "D7",
+      "start": 4.0,
+      "duration": 2.0
+    },
+    {
+      "name": "Gm7",
+      "start": 6.0,
+      "duration": 2.0
+    },
+    {
+      "name": "C7",
+      "start": 8.0
+    }
+  ],
+  "notes": "F-major turnaround.",
+  "expectedCharacteristics": [
+    "Applied dominant should retain its function."
+  ],
+  "style": "jazz",
+  "forcedKey": "F:major"
+}

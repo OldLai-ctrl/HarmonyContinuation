@@ -1,0 +1,35 @@
+{
+  "id": "bench_002",
+  "name": "I vi ii V",
+  "category": "major_functional",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Dm",
+      "start": 8.0,
+      "duration": 2.0
+    },
+    {
+      "name": "G",
+      "start": 10.0
+    }
+  ],
+  "notes": "Classic turnaround with a short predominant.",
+  "expectedCharacteristics": [
+    "Resolve and develop should be meaningfully distinguishable."
+  ]
+}

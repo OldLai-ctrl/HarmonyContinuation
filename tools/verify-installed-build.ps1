@@ -1,7 +1,9 @@
 ﻿[CmdletBinding()]
 param(
     [string]$WorkspaceBinary,
-    [string]$InstalledBinary
+    [string]$InstalledBinary,
+    [string]$WorkspaceFactoryDb,
+    [string]$InstalledFactoryDb
 )
 
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -11,14 +13,24 @@ if ([string]::IsNullOrWhiteSpace($WorkspaceBinary)) {
 if ([string]::IsNullOrWhiteSpace($InstalledBinary)) {
     $InstalledBinary = Join-Path $env:ProgramFiles 'Common Files\VST3\HarmonyContinuation.vst3\Contents\x86_64-win\HarmonyContinuation.vst3'
 }
+if ([string]::IsNullOrWhiteSpace($WorkspaceFactoryDb)) {
+    $WorkspaceFactoryDb = Join-Path (Split-Path -Parent (Split-Path -Parent $WorkspaceBinary)) 'Resources\factory.db'
+}
+if ([string]::IsNullOrWhiteSpace($InstalledFactoryDb)) {
+    $InstalledFactoryDb = Join-Path (Split-Path -Parent (Split-Path -Parent $InstalledBinary)) 'Resources\factory.db'
+}
 
 $workspaceHash = $null
 $installedHash = $null
+$workspaceDbHash = $null
+$installedDbHash = $null
 $permissionIssue = $false
 
 foreach ($entry in @(
     [pscustomobject]@{ Label = '工作区构建'; Path = $WorkspaceBinary; Target = 'Workspace' },
-    [pscustomobject]@{ Label = 'Cubase 安装版'; Path = $InstalledBinary; Target = 'Installed' }
+    [pscustomobject]@{ Label = 'Cubase 安装版'; Path = $InstalledBinary; Target = 'Installed' },
+    [pscustomobject]@{ Label = '工作区曲库'; Path = $WorkspaceFactoryDb; Target = 'WorkspaceDb' },
+    [pscustomobject]@{ Label = '安装版曲库'; Path = $InstalledFactoryDb; Target = 'InstalledDb' }
 )) {
     if (-not (Test-Path -LiteralPath $entry.Path -PathType Leaf)) {
         Write-Host "$($entry.Label)：未找到文件 $($entry.Path)"
@@ -30,7 +42,9 @@ foreach ($entry in @(
         Write-Host "$($entry.Label)：$($entry.Path)"
         Write-Host "SHA256：$fileHash"
         if ($entry.Target -eq 'Workspace') { $workspaceHash = $fileHash }
-        else { $installedHash = $fileHash }
+        elseif ($entry.Target -eq 'Installed') { $installedHash = $fileHash }
+        elseif ($entry.Target -eq 'WorkspaceDb') { $workspaceDbHash = $fileHash }
+        else { $installedDbHash = $fileHash }
     }
     catch [System.UnauthorizedAccessException] {
         Write-Host "$($entry.Label)：无权读取 $($entry.Path)"
@@ -44,12 +58,12 @@ foreach ($entry in @(
     }
 }
 
-if ($workspaceHash -and $installedHash) {
-    if ($workspaceHash -eq $installedHash) {
-        Write-Host '结果：MATCH（Cubase 安装版与最新构建一致）' -ForegroundColor Green
+if ($workspaceHash -and $installedHash -and $workspaceDbHash -and $installedDbHash) {
+    if ($workspaceHash -eq $installedHash -and $workspaceDbHash -eq $installedDbHash) {
+        Write-Host '结果：MATCH（插件及曲库均与最新构建一致）' -ForegroundColor Green
         exit 0
     }
-    Write-Host '结果：MISMATCH（Cubase 安装版与最新构建不同）' -ForegroundColor Red
+    Write-Host '结果：MISMATCH（插件或曲库与最新构建不同）' -ForegroundColor Red
     exit 1
 }
 

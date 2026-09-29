@@ -1,0 +1,30 @@
+{
+  "id": "bench_036",
+  "name": "Sparse C and A minor",
+  "category": "key_ambiguity",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0.0,
+      "duration": 4.0
+    },
+    {
+      "name": "Am",
+      "start": 4.0,
+      "duration": 4.0
+    },
+    {
+      "name": "F",
+      "start": 8.0
+    }
+  ],
+  "notes": "Short context cannot fully settle tonal center.",
+  "expectedCharacteristics": [
+    "Different intents may diverge despite key uncertainty."
+  ]
+}
