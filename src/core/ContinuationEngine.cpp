@@ -235,12 +235,6 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
         candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
         if (candidate.rankingScore >= w.minimumScore) {
-            if(const auto* selected=interpretationFor(query,candidate.key);selected&&!selected->full.empty()) {
-                const auto completion=evaluateIntentCompletion(candidate,selected->full.front().degree,
-                                                                selected->full.back().degree);
-                candidate.rankingScore=std::clamp(candidate.rankingScore+
-                    100.f*w.intentCompletionTieBreak*(completion.score-0.5f),0.f,100.f);
-            }
             result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
         }
     }
@@ -265,6 +259,18 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         }
         std::sort(diverse.begin(), diverse.end(), [](const auto& a, const auto& b) { return a.rankingScore > b.rankingScore; });
         if (diverse.size() > w.perGroup) diverse.resize(w.perGroup);
+        // Score only the already accepted cards: a diagnostic tie-break cannot
+        // remove a valid option or pull a lower-quality option across the gate.
+        for(auto& candidate:diverse)
+            if(const auto* selected=interpretationFor(query,candidate.key);selected&&!selected->full.empty()) {
+                const auto completion=evaluateIntentCompletion(candidate,selected->full.front().degree,
+                                                                selected->full.back().degree);
+                candidate.rankingScore=std::clamp(candidate.rankingScore+
+                    100.f*w.intentCompletionTieBreak*(completion.score-0.5f),0.f,100.f);
+            }
+        std::stable_sort(diverse.begin(),diverse.end(),[](const auto& a,const auto& b) {
+            return a.rankingScore>b.rankingScore;
+        });
         group = std::move(diverse);
     }
     return result;

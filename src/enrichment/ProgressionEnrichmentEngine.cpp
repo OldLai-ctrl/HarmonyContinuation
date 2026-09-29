@@ -204,8 +204,7 @@ std::string fingerprint(const Progression& progression) {
     return out.str();
 }
 void finalize(EnrichmentCandidate& candidate, const Progression& source,
-              const HarmonicAnalysisResult& analysis, std::optional<Style> style,
-              const EnrichmentConfig& config) {
+              const HarmonicAnalysisResult& analysis, std::optional<Style> style) {
     int inserted = 0, replaced = 0;
     for (const auto& operation : candidate.operations) {
         inserted += operation.type == OperationType::InsertChord;
@@ -237,12 +236,6 @@ void finalize(EnrichmentCandidate& candidate, const Progression& source,
     candidate.score = 100.f * (0.55f * candidate.skeletonPreservation +
                                0.30f * candidate.styleCompatibility +
                                0.15f * candidate.complexityScore);
-    const auto sourceVoice=preview::measureVoiceLeading(source);
-    const auto candidateVoice=preview::measureVoiceLeading(candidate.progression);
-    if(sourceVoice&&candidateVoice) {
-        const auto delta=std::clamp(candidateVoice->score-sourceVoice->score,-0.5f,0.5f);
-        candidate.score=std::clamp(candidate.score+100.f*config.voiceLeadingWeight*delta,0.f,100.f);
-    }
     candidate.fingerprint = fingerprint(candidate.progression);
     candidate.id = std::string(groupName(candidate.group)) + "-" + candidate.fingerprint;
 }
@@ -296,7 +289,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     if (!polish(polishCandidate, analysis, style, config) && !improveInversion(polishCandidate,config))
         return result;
     if(static_cast<int>(polishCandidate.operations.size())>config.maxOperations[0])return result;
-    finalize(polishCandidate, source, analysis, style,config);
+    finalize(polishCandidate, source, analysis, style);
     result.groups[0].push_back(polishCandidate);
 
     std::unordered_set<std::string> fingerprints{polishCandidate.fingerprint};
@@ -305,7 +298,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     inversion.complexity=ComplexityLevel::Basic;
     inversion.progression=source;
     if (config.maxOperations[0]>0 && improveInversion(inversion,config)) {
-        finalize(inversion,source,analysis,style,config);
+        finalize(inversion,source,analysis,style);
         if (fingerprints.insert(inversion.fingerprint).second)
             result.groups[0].push_back(std::move(inversion));
     }
@@ -317,7 +310,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         if (static_cast<int>(rich.operations.size()) >= config.maxOperations[1] ||
             !insertBefore(rich, option.target, option.pitch, option.quality, option.technique,
                           option.reason, config)) continue;
-        finalize(rich, source, analysis, style,config);
+        finalize(rich, source, analysis, style);
         if (fingerprints.insert(rich.fingerprint).second)
             result.groups[1].push_back(std::move(rich));
         if (result.groups[1].size() == 3) break;
@@ -341,7 +334,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         }
         if (rich.operations.size() > polishCandidate.operations.size() &&
             static_cast<int>(rich.operations.size())<=config.maxOperations[1]) {
-            finalize(rich, source, analysis, style,config);
+            finalize(rich, source, analysis, style);
             if (fingerprints.insert(rich.fingerprint).second)
                 result.groups[1].push_back(std::move(rich));
         }
@@ -394,10 +387,25 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         }
     }
     if (advanced.operations.size() > baseOperationCount) {
-        finalize(advanced, source, analysis, style,config);
+        finalize(advanced, source, analysis, style);
         if (advanced.skeletonPreservation >= config.minimumSkeletonPreservation &&
             fingerprints.insert(advanced.fingerprint).second)
             result.groups[2].push_back(std::move(advanced));
+    }
+    // Score the completed set of paths. Scoring Rich earlier would also change
+    // which Rich path becomes the Advanced candidate.
+    const auto sourceVoice = preview::measureVoiceLeading(source);
+    if (sourceVoice) {
+        for (auto& group : result.groups) {
+            for (auto& candidate : group) {
+                if (const auto candidateVoice = preview::measureVoiceLeading(candidate.progression)) {
+                    const auto delta = std::clamp(candidateVoice->score - sourceVoice->score, -0.5f, 0.5f);
+                    candidate.score = std::clamp(candidate.score + 100.f * config.voiceLeadingWeight * delta, 0.f, 100.f);
+                }
+            }
+            std::stable_sort(group.begin(), group.end(),
+                [](const auto& a, const auto& b) { return a.score > b.score; });
+        }
     }
     return result;
 }
