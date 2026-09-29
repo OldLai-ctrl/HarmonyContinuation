@@ -16,6 +16,7 @@ struct SaveMetadata {
     std::optional<Style> style;
     PhraseIntent intent{PhraseIntent::Neutral};
     std::vector<std::string> tags;
+    std::string note;
 };
 struct SaveResult { ProgressionTemplate item; std::string error; explicit operator bool() const noexcept { return error.empty(); } };
 SaveResult makeUserProgression(const ImportedProgressionSession&, const ContinuationCandidate&, const SaveMetadata&);

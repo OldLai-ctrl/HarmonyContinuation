@@ -1,0 +1,31 @@
+{
+  "name": "rnb_cadence",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:major",
+  "style": "rnb",
+  "chords": [
+    {
+      "name": "F",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Dm",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "G",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "C",
+      "start": 12
+    }
+  ]
+}

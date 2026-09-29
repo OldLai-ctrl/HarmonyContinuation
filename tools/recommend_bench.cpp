@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "ProgressionJson.h"
 #include "library/ProgressionLibrary.h"
 #include "core/ContinuationEngine.h"
@@ -5,6 +6,7 @@
 #include <iostream>
 
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     if (argc != 2) { std::cerr << "usage: recommend_bench factory.db\n"; return 2; }
     auto library = harmony::library::loadFactory(argv[1]);
     if (!library) { std::cerr << library.error << '\n'; return 1; }

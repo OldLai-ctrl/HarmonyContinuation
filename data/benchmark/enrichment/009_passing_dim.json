@@ -1,0 +1,21 @@
+{
+  "name": "passing_dim",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:major",
+  "style": "rnb",
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Dm",
+      "start": 4
+    }
+  ]
+}

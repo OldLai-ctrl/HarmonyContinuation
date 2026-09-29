@@ -7,6 +7,11 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#if defined(_WIN32)
+#include <winsqlite/winsqlite3.h>
+#else
+#include <sqlite3.h>
+#endif
 
 namespace {
 using namespace harmony;
@@ -39,6 +44,11 @@ int main() {
         check(session::deserialize(session::serialize(intent)).state.intent==PhraseIntent::Resolve,"intent round trip");
         auto view=state; view.skeletonView=true; view.tab=session::Tab::Library;
         check(session::recomputeScope(state,view)==session::RecomputeScope::None,"view does not reanalyze");
+        view.locale=session::Locale::EnUS; view.productMode=session::ProductMode::Enrich;
+        check(session::recomputeScope(state,view)==session::RecomputeScope::None,"locale and mode do not recompute");
+        const auto preferenceRoundtrip=session::deserialize(session::serialize(view));
+        check(preferenceRoundtrip && preferenceRoundtrip.state.locale==session::Locale::EnUS &&
+              preferenceRoundtrip.state.productMode==session::ProductMode::Enrich,"preferences roundtrip");
         auto resized=state;resized.editorWidth=1800;resized.editorHeight=1000;
         check(session::recomputeScope(state,resized)==session::RecomputeScope::None,"resize does not reanalyze");
         check(view.pin("A") && view.pin("B") && view.pin("C") && !view.pin("D"),"pin max three");
@@ -124,11 +134,41 @@ int main() {
         check(listed && listed.templates.size()==1 && listed.templates.front().name=="Saved Test","user list");
         auto updated=listed.templates.front(); updated.name="Renamed"; updated.intent=PhraseIntent::Color;
         updated.styles=static_cast<StyleFlags>(Style::Jazz); updated.styleWeights={{Style::Jazz,1.f}};
+        updated.tags={"副歌","我的常用"}; updated.note="项目 A"; updated.favorite=true;
+        updated.createdAt="2026-09-29T00:00:00Z"; updated.updatedAt="2026-09-29T01:00:00Z";
         check(user.updateProgression(updated,error),"user rename metadata");
         listed=user.listProgressions();
-        check(listed && listed.templates.front().name=="Renamed" && listed.templates.front().intent==PhraseIntent::Color,"user metadata persists");
+        check(listed && listed.templates.front().name=="Renamed" && listed.templates.front().intent==PhraseIntent::Color &&
+            listed.templates.front().tags==updated.tags && listed.templates.front().favorite &&
+            listed.templates.front().note==updated.note && listed.templates.front().createdAt==updated.createdAt,
+            "user metadata persists");
         check(user.removeProgression(updated.id,error) && user.listProgressions().templates.empty(),"user delete");
         std::filesystem::remove(db);
+        const auto legacyDb=std::filesystem::temp_directory_path()/"hc-v06-legacy-user.db";
+        std::filesystem::remove(legacyDb);
+        sqlite3* raw{};
+        check(sqlite3_open(legacyDb.string().c_str(),&raw)==SQLITE_OK,"legacy SQLite create");
+        const char* legacySql=
+            "CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);"
+            "CREATE TABLE progressions(id TEXT PRIMARY KEY,payload TEXT NOT NULL);"
+            "INSERT INTO metadata VALUES('schema_version','1'),('library_version','1'),('library_type','user');"
+            "INSERT INTO progressions VALUES('USER_legacy',"
+            "'{\"id\":\"USER_legacy\",\"name\":\"Old saved phrase\",\"mode\":\"major\","
+            "\"sequence\":\"I V vi IV\",\"sourceType\":\"user\",\"tags\":\"chorus\"}');";
+        const auto legacyCode=sqlite3_exec(raw,legacySql,nullptr,nullptr,nullptr);
+        sqlite3_close(raw);
+        check(legacyCode==SQLITE_OK,"legacy v1 payload create");
+        library::UserLibrary legacyUser(legacyDb);
+        const auto oldItems=legacyUser.listProgressions();
+        check(oldItems && oldItems.templates.size()==1 && oldItems.templates.front().name=="Old saved phrase" &&
+            oldItems.templates.front().tags==std::vector<std::string>{"chorus"},"legacy v1 retained");
+        auto promoted=oldItems.templates.front();promoted.favorite=true;promoted.note="kept";
+        check(legacyUser.updateProgression(promoted,error),"legacy item update");
+        const auto newItems=legacyUser.listProgressions();
+        check(newItems && newItems.templates.size()==1 && newItems.templates.front().favorite &&
+            newItems.templates.front().note=="kept" && newItems.templates.front().full.size()==4,
+            "legacy update retains progression");
+        std::filesystem::remove(legacyDb);
         std::cout<<"ProductizationTests PASS "<<checks<<" checks\n";
         return 0;
     } catch (const std::exception& e) { std::cerr<<"ProductizationTests FAIL: "<<e.what()<<'\n'; return 1; }

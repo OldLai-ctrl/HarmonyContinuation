@@ -20,7 +20,7 @@ struct Rating {
     int schemaVersion{1};
     std::string benchmarkId,candidateFingerprint,verdict{"QUESTIONABLE"},issueCategory{"Other"},note;
     int naturalness{3},intentFit{3},rhythmFit{3},distinctiveness{3},usability{3};
-    int libraryVersion{1},sessionSchemaVersion{session::PluginSessionState::currentSchemaVersion};
+    int libraryVersion{2},sessionSchemaVersion{session::PluginSessionState::currentSchemaVersion};
     int matchingVersion{matchingConfigVersion},recommendationVersion{recommendationConfigVersion};
     snapshot::RecommendationSnapshot recommendation;
 };

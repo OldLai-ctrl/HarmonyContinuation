@@ -1,0 +1,31 @@
+{
+  "name": "sharp_key",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "E:major",
+  "style": "pop",
+  "chords": [
+    {
+      "name": "E",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "B",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "C#m",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "A",
+      "start": 12
+    }
+  ]
+}

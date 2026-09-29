@@ -15,7 +15,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–vi7–ii7–V7–Imaj7 收束",
+    "nameEn": "R&B Imaj7-vi7-ii7-V7-Imaj7 resolution",
+    "aliases": "Imaj7-vi7-ii7-V7-Imaj7,16251",
+    "builtInTags": "rnb-soul,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_002",
@@ -33,7 +39,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "R&B Imaj7–iii7–vi7–ii7–V7–Imaj7 收束",
+    "nameEn": "R&B Imaj7-iii7-vi7-ii7-V7-Imaj7 resolution",
+    "aliases": "Imaj7-iii7-vi7-ii7-V7-Imaj7,136251",
+    "builtInTags": "rnb-soul,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_003",
@@ -51,7 +63,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B Imaj7–IVmaj7–iv7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-IVmaj7-iv7-Imaj7 color",
+    "aliases": "Imaj7-IVmaj7-iv7-Imaj7,1441",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_004",
@@ -69,7 +87,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B Imaj7–vi7–IVmaj7–V7 循环",
+    "nameEn": "R&B Imaj7-vi7-IVmaj7-V7 loop",
+    "aliases": "Imaj7-vi7-IVmaj7-V7,1645",
+    "builtInTags": "rnb-soul,loop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_005",
@@ -87,7 +111,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B Imaj7–V7/vi–vi7–IVmaj7 发展 · 分拍",
+    "nameEn": "R&B Imaj7-V7/vi-vi7-IVmaj7 development · split rhythm",
+    "aliases": "Imaj7-V7/vi-vi7-IVmaj7",
+    "builtInTags": "rnb-soul,develop,secondary_dominant,seventh_chord",
+    "techniques": "SecondaryDominant,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_006",
@@ -105,7 +135,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "R&B Imaj7–IVmaj7–iii7–vi7–ii7–V7 发展",
+    "nameEn": "R&B Imaj7-IVmaj7-iii7-vi7-ii7-V7 development",
+    "aliases": "Imaj7-IVmaj7-iii7-vi7-ii7-V7,143625",
+    "builtInTags": "rnb-soul,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_007",
@@ -123,7 +159,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–#Idim7–ii7–V7–Imaj7 色彩 · 分拍",
+    "nameEn": "R&B Imaj7-#Idim7-ii7-V7-Imaj7 color · split rhythm",
+    "aliases": "Imaj7-#Idim7-ii7-V7-Imaj7,11251",
+    "builtInTags": "rnb-soul,color,passing_diminished,seventh_chord,cadential_expansion",
+    "techniques": "PassingDiminished,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_008",
@@ -141,7 +183,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–bVImaj7–ii7–V7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-bVImaj7-ii7-V7-Imaj7 color",
+    "aliases": "Imaj7-bVImaj7-ii7-V7-Imaj7,16251",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord,cadential_expansion",
+    "techniques": "BorrowedChord,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_009",
@@ -159,7 +207,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "R&B Imaj7–vi7–ii7–IVmaj7–iv7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-vi7-ii7-IVmaj7-iv7-Imaj7 color",
+    "aliases": "Imaj7-vi7-ii7-IVmaj7-iv7-Imaj7,162441",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord,cadential_expansion",
+    "techniques": "BorrowedChord,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_010",
@@ -177,7 +231,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–iii7–IVmaj7–iv7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-iii7-IVmaj7-iv7-Imaj7 color",
+    "aliases": "Imaj7-iii7-IVmaj7-iv7-Imaj7,13441",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord,cadential_expansion",
+    "techniques": "BorrowedChord,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_011",
@@ -195,7 +255,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B vi7–ii7–V7–Imaj7 收束",
+    "nameEn": "R&B vi7-ii7-V7-Imaj7 resolution",
+    "aliases": "vi7-ii7-V7-Imaj7,6251",
+    "builtInTags": "rnb-soul,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_012",
@@ -213,7 +279,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "R&B IVmaj7–iii7–vi7–ii7–V7–Imaj7 收束",
+    "nameEn": "R&B IVmaj7-iii7-vi7-ii7-V7-Imaj7 resolution",
+    "aliases": "IVmaj7-iii7-vi7-ii7-V7-Imaj7,436251",
+    "builtInTags": "rnb-soul,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_013",
@@ -231,7 +303,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–V7/ii–ii7–V7–Imaj7 收束 · 分拍",
+    "nameEn": "R&B Imaj7-V7/ii-ii7-V7-Imaj7 resolution · split rhythm",
+    "aliases": "Imaj7-V7/ii-ii7-V7-Imaj7",
+    "builtInTags": "rnb-soul,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_014",
@@ -249,7 +327,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B Imaj7–IVmaj7–bVII7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-IVmaj7-bVII7-Imaj7 color",
+    "aliases": "Imaj7-IVmaj7-bVII7-Imaj7,14611",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_015",
@@ -267,7 +351,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–vi7–bVImaj7–V7–Imaj7 色彩",
+    "nameEn": "R&B Imaj7-vi7-bVImaj7-V7-Imaj7 color",
+    "aliases": "Imaj7-vi7-bVImaj7-V7-Imaj7,16651",
+    "builtInTags": "rnb-soul,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_016",
@@ -285,7 +375,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–ii7–V7–iii7–vi7 发展",
+    "nameEn": "R&B Imaj7-ii7-V7-iii7-vi7 development",
+    "aliases": "Imaj7-ii7-V7-iii7-vi7,12536",
+    "builtInTags": "rnb-soul,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_017",
@@ -303,7 +399,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "R&B Imaj7–V7/vi–vi7–ii7–V7–Imaj7 收束 · 分拍",
+    "nameEn": "R&B Imaj7-V7/vi-vi7-ii7-V7-Imaj7 resolution · split rhythm",
+    "aliases": "Imaj7-V7/vi-vi7-ii7-V7-Imaj7",
+    "builtInTags": "rnb-soul,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_018",
@@ -321,7 +423,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–IVmaj7–V7–iii7–vi7 发展",
+    "nameEn": "R&B Imaj7-IVmaj7-V7-iii7-vi7 development",
+    "aliases": "Imaj7-IVmaj7-V7-iii7-vi7,14536",
+    "builtInTags": "rnb-soul,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "RNB_SOUL_019",
@@ -339,7 +447,13 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "R&B Imaj7–iii7–vi7–IVmaj7 循环",
+    "nameEn": "R&B Imaj7-iii7-vi7-IVmaj7 loop",
+    "aliases": "Imaj7-iii7-vi7-IVmaj7,1364",
+    "builtInTags": "rnb-soul,loop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "RNB_SOUL_020",
@@ -357,6 +471,12 @@
     "sourceType": "factory",
     "tags": "rnb,soul",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "R&B Imaj7–ii7–IVmaj7–V7–Imaj7 收束",
+    "nameEn": "R&B Imaj7-ii7-IVmaj7-V7-Imaj7 resolution",
+    "aliases": "Imaj7-ii7-IVmaj7-V7-Imaj7,12451",
+    "builtInTags": "rnb-soul,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   }
 ]

@@ -15,7 +15,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "City Pop IVmaj7–V7–iii7–vi7 循环",
+    "nameEn": "City Pop IVmaj7-V7-iii7-vi7 loop",
+    "aliases": "IVmaj7-V7-iii7-vi7,4536",
+    "builtInTags": "citypop-jpop,loop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "CITYPOP_JPOP_002",
@@ -33,7 +39,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop IVmaj7–V7–iii7–vi7–ii7–V7–Imaj7 收束",
+    "nameEn": "City Pop IVmaj7-V7-iii7-vi7-ii7-V7-Imaj7 resolution",
+    "aliases": "IVmaj7-V7-iii7-vi7-ii7-V7-Imaj7,4536251",
+    "builtInTags": "citypop-jpop,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_003",
@@ -51,7 +63,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "City Pop Imaj7–V7/vi–vi7–IVmaj7 循环 · 分拍",
+    "nameEn": "City Pop Imaj7-V7/vi-vi7-IVmaj7 loop · split rhythm",
+    "aliases": "Imaj7-V7/vi-vi7-IVmaj7",
+    "builtInTags": "citypop-jpop,loop,secondary_dominant,seventh_chord",
+    "techniques": "SecondaryDominant,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "CITYPOP_JPOP_004",
@@ -69,7 +87,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–iii7–vi7–IVmaj7–V7 发展",
+    "nameEn": "City Pop Imaj7-iii7-vi7-IVmaj7-V7 development",
+    "aliases": "Imaj7-iii7-vi7-IVmaj7-V7,13645",
+    "builtInTags": "citypop-jpop,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_005",
@@ -87,7 +111,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "City Pop Imaj7–#Idim7–ii7–V7–iii7–vi7 发展 · 分拍",
+    "nameEn": "City Pop Imaj7-#Idim7-ii7-V7-iii7-vi7 development · split rhythm",
+    "aliases": "Imaj7-#Idim7-ii7-V7-iii7-vi7,112536",
+    "builtInTags": "citypop-jpop,develop,passing_diminished,seventh_chord",
+    "techniques": "PassingDiminished,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_006",
@@ -105,7 +135,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–IVmaj7–iv7–iii7–vi7 色彩",
+    "nameEn": "City Pop Imaj7-IVmaj7-iv7-iii7-vi7 color",
+    "aliases": "Imaj7-IVmaj7-iv7-iii7-vi7,14436",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_007",
@@ -123,7 +159,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "City Pop Imaj7–bVImaj7–bVII7–Imaj7 色彩",
+    "nameEn": "City Pop Imaj7-bVImaj7-bVII7-Imaj7 color",
+    "aliases": "Imaj7-bVImaj7-bVII7-Imaj7,16611",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "CITYPOP_JPOP_008",
@@ -141,7 +183,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop Imaj7–IVmaj7–iii7–V7/ii–ii7–V7–Imaj7 收束",
+    "nameEn": "City Pop Imaj7-IVmaj7-iii7-V7/ii-ii7-V7-Imaj7 resolution",
+    "aliases": "Imaj7-IVmaj7-iii7-V7/ii-ii7-V7-Imaj7",
+    "builtInTags": "citypop-jpop,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_009",
@@ -159,7 +207,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop IVmaj7–iv7–iii7–vi7–ii7–V7–Imaj7 色彩",
+    "nameEn": "City Pop IVmaj7-iv7-iii7-vi7-ii7-V7-Imaj7 color",
+    "aliases": "IVmaj7-iv7-iii7-vi7-ii7-V7-Imaj7,4436251",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord,cadential_expansion",
+    "techniques": "BorrowedChord,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_010",
@@ -177,7 +231,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–V7/IV–IVmaj7–iv7–Imaj7 色彩 · 分拍",
+    "nameEn": "City Pop Imaj7-V7/IV-IVmaj7-iv7-Imaj7 color · split rhythm",
+    "aliases": "Imaj7-V7/IV-IVmaj7-iv7-Imaj7",
+    "builtInTags": "citypop-jpop,color,secondary_dominant,borrowed_chord,seventh_chord",
+    "techniques": "SecondaryDominant,BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_011",
@@ -195,7 +255,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop vi7–ii7–V7–Imaj7–IVmaj7 发展",
+    "nameEn": "City Pop vi7-ii7-V7-Imaj7-IVmaj7 development",
+    "aliases": "vi7-ii7-V7-Imaj7-IVmaj7,62514",
+    "builtInTags": "citypop-jpop,develop,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_012",
@@ -213,7 +279,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "City Pop Imaj7–iii7–IVmaj7–iv7 色彩",
+    "nameEn": "City Pop Imaj7-iii7-IVmaj7-iv7 color",
+    "aliases": "Imaj7-iii7-IVmaj7-iv7,1344",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "CITYPOP_JPOP_013",
@@ -231,7 +303,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop Imaj7–V7–iii7–vi7–IVmaj7–V7–Imaj7 收束",
+    "nameEn": "City Pop Imaj7-V7-iii7-vi7-IVmaj7-V7-Imaj7 resolution",
+    "aliases": "Imaj7-V7-iii7-vi7-IVmaj7-V7-Imaj7,1536451",
+    "builtInTags": "citypop-jpop,resolve,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_014",
@@ -249,7 +327,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "City Pop IVmaj7–iii7–vi7–ii7–V7–iii7 发展",
+    "nameEn": "City Pop IVmaj7-iii7-vi7-ii7-V7-iii7 development",
+    "aliases": "IVmaj7-iii7-vi7-ii7-V7-iii7,436253",
+    "builtInTags": "citypop-jpop,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_015",
@@ -267,7 +351,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 8
+    "phraseLength": 8,
+    "nameZh": "City Pop Imaj7–IVmaj7–V7–vi7–iii7–IVmaj7–V7–Imaj7 发展",
+    "nameEn": "City Pop Imaj7-IVmaj7-V7-vi7-iii7-IVmaj7-V7-Imaj7 development",
+    "aliases": "Imaj7-IVmaj7-V7-vi7-iii7-IVmaj7-V7-Imaj7,14563451",
+    "builtInTags": "citypop-jpop,develop,seventh_chord,cadential_expansion",
+    "techniques": "SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_016",
@@ -285,7 +375,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–bVII7–IVmaj7–iv7–Imaj7 色彩",
+    "nameEn": "City Pop Imaj7-bVII7-IVmaj7-iv7-Imaj7 color",
+    "aliases": "Imaj7-bVII7-IVmaj7-iv7-Imaj7,161441",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord",
+    "techniques": "BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_017",
@@ -303,7 +399,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–iii7–vi7–ii7–V7 发展",
+    "nameEn": "City Pop Imaj7-iii7-vi7-ii7-V7 development",
+    "aliases": "Imaj7-iii7-vi7-ii7-V7,13625",
+    "builtInTags": "citypop-jpop,develop,seventh_chord",
+    "techniques": "SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_018",
@@ -321,7 +423,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop Imaj7–IVmaj7–V7/vi–vi7–ii7–V7–Imaj7 收束 · 分拍",
+    "nameEn": "City Pop Imaj7-IVmaj7-V7/vi-vi7-ii7-V7-Imaj7 resolution · split rhythm",
+    "aliases": "Imaj7-IVmaj7-V7/vi-vi7-ii7-V7-Imaj7",
+    "builtInTags": "citypop-jpop,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "CITYPOP_JPOP_019",
@@ -339,7 +447,13 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "City Pop Imaj7–V7/ii–ii7–iv7–Imaj7 色彩",
+    "nameEn": "City Pop Imaj7-V7/ii-ii7-iv7-Imaj7 color",
+    "aliases": "Imaj7-V7/ii-ii7-iv7-Imaj7",
+    "builtInTags": "citypop-jpop,color,secondary_dominant,borrowed_chord,seventh_chord",
+    "techniques": "SecondaryDominant,BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "CITYPOP_JPOP_020",
@@ -357,6 +471,12 @@
     "sourceType": "factory",
     "tags": "citypop,jpop",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "City Pop Imaj7–IVmaj7–iii7–vi7–bVImaj7–V7–Imaj7 色彩",
+    "nameEn": "City Pop Imaj7-IVmaj7-iii7-vi7-bVImaj7-V7-Imaj7 color",
+    "aliases": "Imaj7-IVmaj7-iii7-vi7-bVImaj7-V7-Imaj7,1436651",
+    "builtInTags": "citypop-jpop,color,borrowed_chord,seventh_chord,cadential_expansion",
+    "techniques": "BorrowedChord,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   }
 ]

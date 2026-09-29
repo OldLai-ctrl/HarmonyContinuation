@@ -1,6 +1,8 @@
 #pragma once
 #include "core/CurrentChordLocator.h"
 #include "core/ContinuationEngine.h"
+#include "enrichment/ProgressionEnrichmentEngine.h"
+#include "localization/Localization.h"
 #include "session/PluginSessionState.h"
 #include "session/ProductServices.h"
 #include "ui/ProgressionTimeline.h"
@@ -29,6 +31,9 @@ public:
         std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
         std::function<std::string(const ProgressionTemplate&)> exportLibraryMidi;
         std::function<void(const ContinuationCandidate&)> benchmarkSelect;
+        std::function<void(const enrichment::EnrichmentCandidate&)> auditionEnrichment;
+        std::function<std::string(const enrichment::EnrichmentCandidate&)> exportEnrichmentMidi;
+        std::function<std::string(const enrichment::EnrichmentCandidate&)> saveEnrichmentSnapshot;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;
@@ -47,6 +52,7 @@ public:
     void setAnalysis(const HarmonicAnalysisResult&);
     void setMatches(const std::vector<MatchResult>&, std::string status);
     void setRecommendations(const RecommendationSet&);
+    void setEnrichments(const enrichment::EnrichmentResult& value) { enrichments_=value; invalid(); }
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setSnapshotMode(bool enabled);
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
@@ -69,6 +75,7 @@ private:
     HarmonicAnalysisResult analysis_;
     std::vector<MatchResult> matches_;
     RecommendationSet recommendations_;
+    enrichment::EnrichmentResult enrichments_;
     std::vector<ContinuationCandidate> pinnedSnapshots_;
     std::vector<ProgressionTemplate> factory_, user_;
     std::vector<TimelineBlock> timelineBlocks_;
@@ -88,6 +95,10 @@ private:
     std::optional<Style> libraryStyle_;
     std::optional<PhraseIntent> libraryIntent_;
     std::optional<Mode> libraryMode_;
+    int librarySource_{-1}; // -1 all, 0 factory, 1 user
+    std::optional<ComplexityLevel> libraryComplexity_;
+    std::string libraryTechnique_;
+    bool libraryFavoriteOnly_{};
     std::string librarySearch_;
     std::deque<std::string> recentReports_, recentHostSnapshots_;
     UILayoutResult layout_;
@@ -96,8 +107,19 @@ private:
     enum class Form { None, Save, Rename, Search } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
+    VSTGUI::CTextEdit* noteEdit_{};
     session::SaveMetadata formMetadata_;
     void notifyState();
+    std::string t(std::string_view key) const { return std::string(localization::text(state_.locale,key)); }
+    std::string tIntent(PhraseIntent intent) const {
+        switch(intent) {
+            case PhraseIntent::Resolve:return t("group.resolve");
+            case PhraseIntent::Develop:return t("group.develop");
+            case PhraseIntent::Loop:return t("group.loop");
+            case PhraseIntent::Color:return t("group.color");
+            default:return t("label.auto");
+        }
+    }
     void rebuildTimeline();
     VSTGUI::CRect chordTileRect(std::size_t) const;
     std::optional<VSTGUI::CCoord> projectQNToX(double) const;
@@ -105,6 +127,7 @@ private:
     void drawTop(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawPhrase(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawRecommendations(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
+    void drawEnrichments(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawCompare(VSTGUI::CDrawContext*, const VSTGUI::CRect&);
     void drawMiniTimeline(VSTGUI::CDrawContext*, const ContinuationCandidate&, VSTGUI::CRect);
     void drawResponsiveLibrary(VSTGUI::CDrawContext*);

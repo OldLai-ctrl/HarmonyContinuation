@@ -15,7 +15,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–bVII–IV–I 循环",
+    "nameEn": "Rock I-bVII-IV-I loop",
+    "aliases": "I-bVII-IV-I,16141",
+    "builtInTags": "rock,loop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_002",
@@ -33,7 +39,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–IV–bVII–IV 循环",
+    "nameEn": "Rock I-IV-bVII-IV loop",
+    "aliases": "I-IV-bVII-IV,14614",
+    "builtInTags": "rock,loop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_003",
@@ -51,7 +63,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–V–bVII–IV 循环",
+    "nameEn": "Rock I-V-bVII-IV loop",
+    "aliases": "I-V-bVII-IV,15614",
+    "builtInTags": "rock,loop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_004",
@@ -69,7 +87,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–bVI–bVII–I 收束",
+    "nameEn": "Rock I-bVI-bVII-I resolution",
+    "aliases": "I-bVI-bVII-I,16611",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_005",
@@ -87,7 +111,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–bVII–I–IV 循环",
+    "nameEn": "Rock I-bVII-I-IV loop",
+    "aliases": "I-bVII-I-IV,16114",
+    "builtInTags": "rock,loop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_006",
@@ -105,7 +135,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–IV–I–bVII 循环",
+    "nameEn": "Rock I-IV-I-bVII loop",
+    "aliases": "I-IV-I-bVII,14161",
+    "builtInTags": "rock,loop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_007",
@@ -123,7 +159,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–V–IV–I 收束 · 分拍",
+    "nameEn": "Rock I-V-IV-I resolution · split rhythm",
+    "aliases": "I-V-IV-I,1541",
+    "builtInTags": "rock,resolve",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_008",
@@ -141,7 +183,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–bVII–IV–V–I 收束",
+    "nameEn": "Rock I-bVII-IV-V-I resolution",
+    "aliases": "I-bVII-IV-V-I,161451",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_009",
@@ -159,7 +207,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–IV–bVII–V–I 收束",
+    "nameEn": "Rock I-IV-bVII-V-I resolution",
+    "aliases": "I-IV-bVII-V-I,146151",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_010",
@@ -177,7 +231,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–V–vi–bVII–IV 发展",
+    "nameEn": "Rock I-V-vi-bVII-IV development",
+    "aliases": "I-V-vi-bVII-IV,156614",
+    "builtInTags": "rock,develop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_011",
@@ -195,7 +255,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–IV–V–bVII 发展",
+    "nameEn": "Rock I-IV-V-bVII development",
+    "aliases": "I-IV-V-bVII,14561",
+    "builtInTags": "rock,develop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_012",
@@ -213,7 +279,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–bVI–bVII–IV–I 色彩",
+    "nameEn": "Rock I-bVI-bVII-IV-I color",
+    "aliases": "I-bVI-bVII-IV-I,166141",
+    "builtInTags": "rock,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_013",
@@ -231,7 +303,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–iv–bVII–I 色彩",
+    "nameEn": "Rock I-iv-bVII-I color",
+    "aliases": "I-iv-bVII-I,14611",
+    "builtInTags": "rock,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_014",
@@ -249,7 +327,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–bIII–bVII–IV–I 色彩",
+    "nameEn": "Rock I-bIII-bVII-IV-I color",
+    "aliases": "I-bIII-bVII-IV-I,136141",
+    "builtInTags": "rock,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_015",
@@ -267,7 +351,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–IV–#IVdim–V–I 色彩 · 分拍",
+    "nameEn": "Rock I-IV-#IVdim-V-I color · split rhythm",
+    "aliases": "I-IV-#IVdim-V-I,14451",
+    "builtInTags": "rock,color",
+    "techniques": "",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_016",
@@ -285,7 +375,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–V7/IV–IV–bVII–I 色彩 · 分拍",
+    "nameEn": "Rock I-V7/IV-IV-bVII-I color · split rhythm",
+    "aliases": "I-V7/IV-IV-bVII-I",
+    "builtInTags": "rock,color,secondary_dominant,borrowed_chord,seventh_chord",
+    "techniques": "SecondaryDominant,BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_017",
@@ -303,7 +399,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "摇滚 I–vi–bVII–IV 发展",
+    "nameEn": "Rock I-vi-bVII-IV development",
+    "aliases": "I-vi-bVII-IV,16614",
+    "builtInTags": "rock,develop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "ROCK_018",
@@ -321,7 +423,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "摇滚 I–bVII–IV–bVI–V–I 收束",
+    "nameEn": "Rock I-bVII-IV-bVI-V-I resolution",
+    "aliases": "I-bVII-IV-bVI-V-I,1614651",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_019",
@@ -339,7 +447,13 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "摇滚 I–IV–bVI–bVII–I 收束",
+    "nameEn": "Rock I-IV-bVI-bVII-I resolution",
+    "aliases": "I-IV-bVI-bVII-I,146611",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "ROCK_020",
@@ -357,6 +471,12 @@
     "sourceType": "factory",
     "tags": "rock",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "摇滚 I–V–vi–IV–bVII–I 收束",
+    "nameEn": "Rock I-V-vi-IV-bVII-I resolution",
+    "aliases": "I-V-vi-IV-bVII-I,1564611",
+    "builtInTags": "rock,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   }
 ]

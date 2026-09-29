@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "demo/DemoScenario.h"
 #include "library/ProgressionLibrary.h"
 #include "preview/OfflinePreviewRenderer.h"
@@ -62,6 +63,7 @@ void bench() {
 }
 }
 int main(int argc,char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     try {
         std::string letter,groupName="Resolve"; fs::path scenarioPath,outputPath,goldenDir;
         int candidateNumber=1; double rate=48000; bool runBench{};

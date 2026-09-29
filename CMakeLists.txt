@@ -1,5 +1,59 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.0.1 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.6.0 LANGUAGES C CXX)
+set(HC_PRERELEASE "dev.1" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
+if(HC_PRERELEASE)
+    string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
+endif()
+set(HC_GIT_COMMIT_OVERRIDE "" CACHE STRING "Commit hash for restricted/offline build environments")
+if(HC_GIT_COMMIT_OVERRIDE)
+    set(HC_GIT_COMMIT "${HC_GIT_COMMIT_OVERRIDE}")
+else()
+    execute_process(COMMAND git -c "safe.directory=${CMAKE_CURRENT_SOURCE_DIR}" rev-parse --short=7 HEAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        OUTPUT_VARIABLE HC_GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+endif()
+if(NOT HC_GIT_COMMIT)
+    set(HC_GIT_COMMIT "unknown")
+endif()
+if(CMAKE_CONFIGURATION_TYPES)
+    set(HC_BUILD_TYPE "MultiConfig")
+elseif(CMAKE_BUILD_TYPE)
+    set(HC_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
+else()
+    set(HC_BUILD_TYPE "Debug")
+endif()
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated")
+configure_file(src/product/ProductVersionGenerated.h.in
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/ProductVersionGenerated.h" @ONLY)
+set(HC_ZH_LOCALE "${CMAKE_CURRENT_SOURCE_DIR}/resources/locales/zh-CN.json")
+set(HC_EN_LOCALE "${CMAKE_CURRENT_SOURCE_DIR}/resources/locales/en-US.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${HC_ZH_LOCALE}" "${HC_EN_LOCALE}")
+file(READ "${HC_ZH_LOCALE}" HC_ZH_JSON)
+file(READ "${HC_EN_LOCALE}" HC_EN_JSON)
+string(JSON HC_LOCALE_COUNT LENGTH "${HC_ZH_JSON}")
+string(JSON HC_EN_LOCALE_COUNT LENGTH "${HC_EN_JSON}")
+if(NOT HC_LOCALE_COUNT EQUAL HC_EN_LOCALE_COUNT)
+    message(FATAL_ERROR "zh-CN and en-US localization key counts differ")
+endif()
+set(HC_LOCALE_HEADER "#pragma once\n#include <array>\n#include <string_view>\nnamespace harmony::localization::generated {\nstruct Entry { std::string_view key, zhCN, enUS; };\ninline constexpr std::array<Entry, ${HC_LOCALE_COUNT}> entries{{\n")
+math(EXPR HC_LOCALE_LAST "${HC_LOCALE_COUNT} - 1")
+foreach(HC_LOCALE_INDEX RANGE 0 ${HC_LOCALE_LAST})
+    string(JSON HC_LOCALE_KEY MEMBER "${HC_ZH_JSON}" ${HC_LOCALE_INDEX})
+    string(JSON HC_ZH_VALUE GET "${HC_ZH_JSON}" "${HC_LOCALE_KEY}")
+    string(JSON HC_EN_VALUE GET "${HC_EN_JSON}" "${HC_LOCALE_KEY}")
+    foreach(HC_FIELD HC_LOCALE_KEY HC_ZH_VALUE HC_EN_VALUE)
+        string(REPLACE "\\" "\\\\" ${HC_FIELD} "${${HC_FIELD}}")
+        string(REPLACE "\"" "\\\"" ${HC_FIELD} "${${HC_FIELD}}")
+    endforeach()
+    string(APPEND HC_LOCALE_HEADER "    Entry{\"${HC_LOCALE_KEY}\", \"${HC_ZH_VALUE}\", \"${HC_EN_VALUE}\"},\n")
+endforeach()
+string(APPEND HC_LOCALE_HEADER "}};\n}\n")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/LocalizationGenerated.h" "${HC_LOCALE_HEADER}")
+add_library(harmony_version INTERFACE)
+target_include_directories(harmony_version INTERFACE src "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_compile_features(harmony_version INTERFACE cxx_std_20)
 # On this Chinese MSVC installation Ninja records zero /showIncludes entries
 # (localized compiler output does not match CMake's generated prefix). Header
 # edits can then leave old object files using stale C++ class layouts. Keep
@@ -13,7 +67,8 @@ file(GLOB_RECURSE HC_LOCAL_CPP CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tools/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
-set_source_files_properties(${HC_LOCAL_CPP} PROPERTIES OBJECT_DEPENDS "${HC_LOCAL_HEADERS}")
+set_source_files_properties(${HC_LOCAL_CPP} PROPERTIES OBJECT_DEPENDS
+    "${HC_LOCAL_HEADERS};${CMAKE_CURRENT_BINARY_DIR}/generated/ProductVersionGenerated.h;${CMAKE_CURRENT_BINARY_DIR}/generated/LocalizationGenerated.h")
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Single-configuration build type" FORCE)
 endif()
@@ -37,6 +92,9 @@ if(HC_BUILD_PLUGIN)
 endif()
 
 if(HC_BUILD_PLUGIN)
+    # The SDK's moduleinfotool reads PROJECT_VERSION. Include the prerelease
+    # suffix there so the bundle header and class metadata agree.
+    set(PROJECT_VERSION "${HC_PRODUCT_VERSION}")
     smtg_add_vst3plugin(HarmonyContinuation
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
@@ -62,8 +120,16 @@ endif()
 
 add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAnalysis.cpp
     src/core/ProgressionMatcher.cpp src/core/ContinuationEngine.cpp)
+target_link_libraries(harmony_core PUBLIC harmony_version)
 target_include_directories(harmony_core PUBLIC src)
 target_compile_features(harmony_core PUBLIC cxx_std_20)
+add_library(harmony_enrichment STATIC src/enrichment/ProgressionEnrichmentEngine.cpp)
+target_link_libraries(harmony_enrichment PUBLIC harmony_core)
+target_include_directories(harmony_enrichment PUBLIC src)
+target_compile_features(harmony_enrichment PUBLIC cxx_std_20)
+if(MSVC)
+    target_compile_options(harmony_enrichment PRIVATE /utf-8 /W4)
+endif()
 if(MSVC)
     target_compile_options(harmony_core PRIVATE /W4 /permissive- /utf-8)
 endif()
@@ -108,8 +174,8 @@ add_library(harmony_midi STATIC src/midi/MidiClip.cpp src/midi/StandardMidiFileW
 target_link_libraries(harmony_midi PUBLIC harmony_preview)
 target_include_directories(harmony_midi PUBLIC src)
 target_compile_features(harmony_midi PUBLIC cxx_std_20)
-add_library(harmony_snapshot STATIC src/snapshot/RecommendationSnapshot.cpp)
-target_link_libraries(harmony_snapshot PUBLIC harmony_midi)
+add_library(harmony_snapshot STATIC src/snapshot/RecommendationSnapshot.cpp src/snapshot/EnrichmentSnapshot.cpp)
+target_link_libraries(harmony_snapshot PUBLIC harmony_midi harmony_enrichment)
 target_include_directories(harmony_snapshot PUBLIC src)
 target_compile_features(harmony_snapshot PUBLIC cxx_std_20)
 if(MSVC)
@@ -139,7 +205,7 @@ target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
         src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp)
-    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark vstgui_support comctl32 shell32 winmm comdlg32)
+    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
         HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo"
@@ -176,12 +242,14 @@ target_compile_definitions(midi_export_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACT
     HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
 add_dependencies(midi_export_cli factory_database)
 if(HC_BUILD_PLUGIN)
-    target_link_libraries(HarmonyContinuation PRIVATE harmony_product)
+    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment)
     add_dependencies(HarmonyContinuation factory_database)
     add_custom_command(TARGET HarmonyContinuation POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_DB}"
-            "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.db")
+            "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.db"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_ZH_LOCALE}" "${HC_EN_LOCALE}"
+            "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources")
 endif()
 add_executable(harmony_cli tools/harmony_cli.cpp)
 target_link_libraries(harmony_cli PRIVATE harmony_dev_json)
@@ -218,6 +286,11 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(EnrichmentTests tests/EnrichmentTests.cpp)
+    target_link_libraries(EnrichmentTests PRIVATE harmony_snapshot harmony_demo_scenarios)
+    target_compile_definitions(EnrichmentTests PRIVATE
+        HC_ENRICHMENT_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/enrichment")
+    add_test(NAME EnrichmentTests COMMAND EnrichmentTests)
     add_executable(BenchmarkTests tests/BenchmarkTests.cpp)
     target_link_libraries(BenchmarkTests PRIVATE harmony_benchmark)
     target_compile_definitions(BenchmarkTests PRIVATE
@@ -240,7 +313,7 @@ if(BUILD_TESTING)
     target_link_libraries(PreviewTests PRIVATE harmony_preview harmony_product)
     add_test(NAME PreviewTests COMMAND PreviewTests)
     add_executable(ProductizationTests tests/ProductizationTests.cpp src/plugin/RecommendationWorker.cpp)
-    target_link_libraries(ProductizationTests PRIVATE harmony_demo_scenarios)
+    target_link_libraries(ProductizationTests PRIVATE harmony_demo_scenarios harmony_enrichment)
     target_compile_definitions(ProductizationTests PRIVATE
         HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
         HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
@@ -269,7 +342,7 @@ if(BUILD_TESTING)
     add_test(NAME ProgressionMatcherTests COMMAND ProgressionMatcherTests)
 
     add_executable(ContinuationEngineTests tests/ContinuationEngineTests.cpp src/plugin/RecommendationWorker.cpp)
-    target_link_libraries(ContinuationEngineTests PRIVATE harmony_library)
+    target_link_libraries(ContinuationEngineTests PRIVATE harmony_library harmony_enrichment)
     target_compile_definitions(ContinuationEngineTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}")
     add_dependencies(ContinuationEngineTests factory_database)
     if(MSVC)

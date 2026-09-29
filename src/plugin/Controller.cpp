@@ -292,6 +292,7 @@ void Controller::pollRecommendation() noexcept {
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
+            view_->setEnrichments(latest->enrichments);
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
         }
     } catch (...) {}

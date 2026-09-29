@@ -1,4 +1,5 @@
 #include "RecommendationSnapshot.h"
+#include "product/ProductVersion.h"
 #include "preview/PreviewSequence.h"
 #include <algorithm>
 #include <charconv>
@@ -134,7 +135,8 @@ KeySignature keyIn(const Value& value) {
     return {static_cast<PitchClass>(pair[0].integer(0,11)),static_cast<Mode>(pair[1].integer(0,1))};
 }
 void validate(const RecommendationSnapshot& s) {
-    if (s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion) throw std::runtime_error("UnsupportedVersion");
+    if (s.schemaVersion!=1 && s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion)
+        throw std::runtime_error("UnsupportedVersion");
     if (s.imported.events.empty()||s.imported.events.size()>64||s.candidate.continuation.size()>64||
         s.candidate.id.empty()||s.imported.events.front().startQN!=0||
         s.meterNumerator<1||s.meterNumerator>32||s.meterDenominator<1||s.meterDenominator>32||
@@ -149,6 +151,7 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
     const std::vector<MatchResult>& matches,double tempo,int meterNumerator,int meterDenominator,
     std::optional<KeySignature> key,std::optional<Style> style,std::optional<PhraseIntent> intent) {
     RecommendationSnapshot s; s.imported=imported; s.candidate=candidate;
+    s.productVersion=std::string(product::version);
     s.tempoBPM=preview::sanitizeTempo(tempo); s.meterNumerator=meterNumerator; s.meterDenominator=meterDenominator;
     s.key=key?key:std::optional(candidate.key); s.style=style; s.intent=intent?intent:std::optional(candidate.intent);
     if (!s.imported.events.empty()) {
@@ -164,7 +167,9 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
 std::string serialize(const RecommendationSnapshot& s) {
     validate(s);
     std::ostringstream out; out.imbue(std::locale::classic()); out << std::setprecision(17);
-    out << "{\"schemaVersion\":1,\"tempoBPM\":" << s.tempoBPM << ",\"meter\":[" << s.meterNumerator << ',' << s.meterDenominator
+    out << "{\"schemaVersion\":" << s.schemaVersion << ",\"productVersion\":";
+    quoted(out,s.productVersion);
+    out << ",\"tempoBPM\":" << s.tempoBPM << ",\"meter\":[" << s.meterNumerator << ',' << s.meterDenominator
         << "],\"key\":";
     if (s.key) keyOut(out,*s.key); else out<<"null";
     out << ",\"style\":"; if (s.style) out<<static_cast<StyleFlags>(*s.style); else out<<"null";
@@ -232,7 +237,9 @@ DecodeResult deserialize(std::string_view input) {
         Parser p{input}; const auto top=p.read(); p.space(); if(p.at!=input.size()) throw std::runtime_error("trailing snapshot data");
         auto& s=result.value;
         s.schemaVersion=top.at("schemaVersion").integer(0,1000000);
-        if (s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion) throw std::runtime_error("UnsupportedVersion");
+        if (s.schemaVersion!=1 && s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion)
+            throw std::runtime_error("UnsupportedVersion");
+        if (s.schemaVersion>=2) s.productVersion=top.at("productVersion").text();
         s.tempoBPM=top.at("tempoBPM").finite();
         const auto& meter=top.at("meter").list(); if(meter.size()!=2)throw std::runtime_error("invalid meter");
         s.meterNumerator=meter[0].integer(1,32); s.meterDenominator=meter[1].integer(1,32);

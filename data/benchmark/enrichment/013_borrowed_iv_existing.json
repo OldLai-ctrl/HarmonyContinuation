@@ -1,0 +1,26 @@
+{
+  "name": "borrowed_iv_existing",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:major",
+  "style": "citypop",
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Fm",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "C",
+      "start": 8
+    }
+  ]
+}

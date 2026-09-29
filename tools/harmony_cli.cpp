@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "ProgressionJson.h"
 #include "core/HarmonyAnalysis.h"
 
@@ -21,6 +22,7 @@ std::optional<harmony::KeySignature> keyFromArg(std::string_view value) {
 }
 
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     if (argc < 2 || argc > 4) {
         std::cerr << "usage: harmony_cli progression.json [--key C:major]\n";
         return 2;

@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "ProgressionJson.h"
 #include "TemplateJson.h"
 #include "library/ProgressionLibrary.h"
@@ -102,6 +103,7 @@ void printGroup(const char* title, const std::vector<harmony::ContinuationCandid
 }
 }
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     try {
         if (argc < 2) {
             std::cerr << "usage: recommend_cli [save] progression.json [--factory factory.db] [--user user.db] [--key C:major] [--style pop] [--intent resolve] [--name name] [--id id] [--debug]\n";

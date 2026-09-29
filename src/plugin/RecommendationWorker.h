@@ -1,5 +1,6 @@
 #pragma once
 #include "core/ContinuationEngine.h"
+#include "enrichment/ProgressionEnrichmentEngine.h"
 #include "library/ProgressionLibrary.h"
 #include <condition_variable>
 #include <filesystem>
@@ -12,6 +13,7 @@ struct WorkerResult {
     std::uint64_t generation{};
     HarmonicAnalysisResult analysis;
     RecommendationSet recommendations;
+    enrichment::EnrichmentResult enrichments;
     std::string error;
     double computationMs{};
     std::size_t factoryCount{}, userCount{};

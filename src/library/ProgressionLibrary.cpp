@@ -7,12 +7,27 @@
 #endif
 #include <memory>
 #include <stdexcept>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #if defined(_WIN32)
 #include <windows.h>
 #endif
 
 namespace harmony::library {
 namespace {
+std::string utcNow() {
+    const auto now=std::chrono::system_clock::now();
+    const auto time=std::chrono::system_clock::to_time_t(now);
+    std::tm utc{};
+#if defined(_WIN32)
+    gmtime_s(&utc,&time);
+#else
+    gmtime_r(&time,&utc);
+#endif
+    std::ostringstream out;out<<std::put_time(&utc,"%Y-%m-%dT%H:%M:%SZ");return out.str();
+}
 struct Db {
     sqlite3* value{};
     Db(const std::filesystem::path& path, int flags) {
@@ -49,7 +64,8 @@ void initialize(Db& db, const char* kind) {
             throw std::runtime_error("unsupported schema_version; migration required");
     } else if (code == SQLITE_DONE) {
         db.exec("INSERT INTO metadata VALUES ('schema_version','1')");
-        db.exec("INSERT INTO metadata VALUES ('library_version','1')");
+        if (std::string_view(kind)=="factory") db.exec("INSERT INTO metadata VALUES ('library_version','2')");
+        else db.exec("INSERT INTO metadata VALUES ('library_version','1')");
         Statement type(db, "INSERT INTO metadata VALUES ('library_type',?)");
         sqlite3_bind_text(type.value, 1, kind, -1, SQLITE_TRANSIENT);
         if (sqlite3_step(type.value) != SQLITE_DONE) throw std::runtime_error(sqlite3_errmsg(db.value));
@@ -69,7 +85,8 @@ void validateReadOnly(Db& db, const char* kind) {
         else if (key == "library_type") type = value;
         else if (key == "library_version") version = value;
     }
-    if (schema != "1" || version.empty() || type != kind)
+    if (schema != "1" || version.empty() || type != kind ||
+        (std::string_view(kind)=="factory" && version!="2"))
         throw std::runtime_error("database version/type incompatible");
 }
 void bindTemplate(Statement& st, const ProgressionTemplate& input) {
@@ -137,19 +154,23 @@ LoadResult loadFactory(const std::filesystem::path& path) {
 }
 bool UserLibrary::addProgression(const ProgressionTemplate& input, std::string& error) {
     try {
-        checkTemplate(input, "user");
+        auto item=input;
+        if(item.createdAt.empty())item.createdAt=utcNow();
+        if(item.updatedAt.empty())item.updatedAt=item.createdAt;
+        checkTemplate(item, "user");
         Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initialize(db, "user");
-        Statement st(db, "INSERT INTO progressions VALUES (?,?)"); bindTemplate(st, input);
+        Statement st(db, "INSERT INTO progressions VALUES (?,?)"); bindTemplate(st, item);
         if (sqlite3_step(st.value) != SQLITE_DONE) throw std::runtime_error(sqlite3_errmsg(db.value));
         return true;
     } catch (const std::exception& e) { error = e.what(); return false; }
 }
 bool UserLibrary::updateProgression(const ProgressionTemplate& input, std::string& error) {
     try {
-        checkTemplate(input, "user");
+        auto item=input;item.updatedAt=utcNow();
+        checkTemplate(item, "user");
         Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initialize(db, "user");
         Statement st(db, "UPDATE progressions SET payload=? WHERE id=?");
-        const auto payload = dev::serializeTemplateJson(input);
+        const auto payload = dev::serializeTemplateJson(item);
         sqlite3_bind_text(st.value, 1, payload.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(st.value, 2, input.id.c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(st.value) != SQLITE_DONE || sqlite3_changes(db.value) != 1)

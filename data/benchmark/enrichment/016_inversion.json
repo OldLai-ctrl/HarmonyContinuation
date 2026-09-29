@@ -1,0 +1,26 @@
+{
+  "name": "inversion",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "forcedKey": "C:major",
+  "style": "pop",
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "G",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "Am",
+      "start": 8
+    }
+  ]
+}

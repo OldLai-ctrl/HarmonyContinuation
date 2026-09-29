@@ -69,6 +69,8 @@ void RecommendationWorker::run() {
                     cachedPhraseRevision=task.phraseRevision;
                 }
             }
+            if (task.progression.size() <= 64)
+                result.enrichments=enrichment::enrichProgression(task.progression,result.analysis,task.request.style);
             if (task.progression.size() <= 64) {
                 if (!index && loadError.empty()) {
                     auto factory = library::loadFactory(factoryPath_);

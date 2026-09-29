@@ -51,7 +51,7 @@ RecomputeScope recomputeScope(const PluginSessionState& old,const PluginSessionS
 }
 namespace {
 struct Writer {
-    std::string bytes{"HCS3"};
+    std::string bytes{"HCS4"};
     void u8(std::uint8_t n) { bytes.push_back(static_cast<char>(n)); }
     void u32(std::uint32_t n) { for (int i=0;i<4;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
     void u64(std::uint64_t n) { for (int i=0;i<8;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
@@ -102,6 +102,8 @@ std::string serialize(const PluginSessionState& state) {
         w.optionalString(chord.extensions.type); w.optionalString(chord.extensions.color);
     }
     w.u32(state.editorWidth); w.u32(state.editorHeight);
+    w.u8(static_cast<std::uint8_t>(state.productMode));
+    w.u8(static_cast<std::uint8_t>(state.locale));
     if (w.bytes.size()>1024*1024) throw std::runtime_error("session state too large");
     return w.bytes;
 }
@@ -110,12 +112,12 @@ DecodeResult deserialize(std::string_view bytes) {
     try {
         if (bytes.size()<4 || bytes.size()>1024*1024 || bytes.substr(0,3)!="HCS") throw std::runtime_error("unsupported session state");
         const bool legacy=bytes[3]=='1';
-        const bool version2=bytes[3]=='2', version3=bytes[3]=='3';
-        if (!legacy && !version2 && !version3) throw std::runtime_error("UnsupportedVersion");
+        const bool version2=bytes[3]=='2', version3=bytes[3]=='3', version4=bytes[3]=='4';
+        if (!legacy && !version2 && !version3 && !version4) throw std::runtime_error("UnsupportedVersion");
         Reader r{bytes,4}; auto& s=result.state;
         if (!legacy) {
             const auto version=r.u32();
-            if (version!=(version2?2u:3u)) throw std::runtime_error("UnsupportedVersion");
+            if (version!=(version2?2u:version3?3u:4u)) throw std::runtime_error("UnsupportedVersion");
         }
         s.schemaVersion=PluginSessionState::currentSchemaVersion;
         s.factoryLibraryVersion=r.u32();
@@ -143,10 +145,16 @@ DecodeResult deserialize(std::string_view bytes) {
             if (c.name.empty() || (c.durationQN && *c.durationQN<=0)) throw std::runtime_error("invalid chord data");
             s.imported.events.push_back(std::move(c));
         }
-        if (version3) {
+        if (version3 || version4) {
             s.editorWidth=r.u32(); s.editorHeight=r.u32();
             if (s.editorWidth<900 || s.editorWidth>2200 || s.editorHeight<640 || s.editorHeight>1400)
                 throw std::runtime_error("invalid editor size");
+        }
+        if (version4) {
+            const auto mode=r.u8(), locale=r.u8();
+            if (mode>1 || locale>1) throw std::runtime_error("invalid product preferences");
+            s.productMode=static_cast<ProductMode>(mode);
+            s.locale=static_cast<Locale>(locale);
         }
         if (r.at!=bytes.size() || (count && coordinate==0) || !std::is_sorted(s.imported.events.begin(),s.imported.events.end(),
             [](const auto& a,const auto& b){return a.startQN<b.startQN;})) throw std::runtime_error("invalid session order");

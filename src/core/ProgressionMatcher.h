@@ -20,6 +20,7 @@ enum class CadenceType : std::uint8_t {
 using StyleFlags = std::uint32_t;
 enum class Style : StyleFlags { Pop=1u<<0, Rock=1u<<1, Rnb=1u<<2, Jazz=1u<<3,
                                  CityPop=1u<<4, Functional=1u<<5 };
+enum class ComplexityLevel : std::uint8_t { Basic, Rich, Advanced };
 
 // No absolute pitch class is stored in a template. Durations are relative QN
 // values; the matcher normalizes them independently for each sequence.
@@ -49,6 +50,10 @@ struct ProgressionFingerprint {
 struct ProgressionTemplate {
     TemplateID id;
     std::string name;
+    std::string nameZh, nameEn, description, note, createdAt, updatedAt;
+    std::vector<std::string> aliases, builtInTags, techniques;
+    ComplexityLevel complexityLevel{ComplexityLevel::Basic};
+    bool favorite{};
     Mode mode{Mode::Major};
     std::vector<MatchEvent> full;
     std::vector<std::size_t> skeletonIndices;

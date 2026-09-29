@@ -1,4 +1,5 @@
 #include "benchmark/BenchJson.h"
+#include "product/ProductVersion.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -60,6 +61,7 @@ void compareCase(const Value& a,const Value& b,Value& changes){
 }
 } // namespace
 int main(int argc,char** argv){
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     try{
         if(argc!=5||std::string_view(argv[3])!="--output")
             throw std::runtime_error("usage: benchmark_compare OLD.json NEW.json --output changes.json");

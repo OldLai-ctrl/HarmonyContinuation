@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "ProgressionJson.h"
 #include "TemplateJson.h"
 #include <algorithm>
@@ -23,6 +24,7 @@ std::optional<std::string> readFile(const char* path) {
 }
 }
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     if (argc != 3 && argc != 5) {
         std::cerr << "usage: progression_match_cli query.json templates.json [--key C:major]\n";
         return 2;

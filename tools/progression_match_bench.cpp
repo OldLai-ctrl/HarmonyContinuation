@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "ProgressionJson.h"
 #include "TemplateJson.h"
 #include <chrono>
@@ -6,6 +7,7 @@
 #include <iterator>
 
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     if (argc != 2) { std::cerr << "usage: progression_match_bench query.json\n"; return 2; }
     std::ifstream file(argv[1], std::ios::binary);
     if (!file) { std::cerr << "cannot open query\n"; return 2; }

@@ -1,4 +1,5 @@
 #include "TemplateJson.h"
+#include "core/LibraryMetadata.h"
 #include "EmbeddedTemplates.h"
 #include <algorithm>
 #include <cctype>
@@ -222,7 +223,7 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             input.need('{');
             ProgressionTemplate item;
             std::string sequence, rhythmText, modeText, cadenceText, intentText, stylesText, tagsText, meterText,
-                        skeletonText;
+                        skeletonText, aliasesText, builtInTagsText, techniquesText, complexityLevelText;
             bool idSeen{}, sequenceSeen{}, nameSeen{}, modeSeen{}, intentSeen{}, cadenceSeen{},
                  loopSeen{}, meterSeen{}, stylesSeen{}, sourceSeen{}, priorSeen{}, complexitySeen{},
                  versionSeen{}, phraseSeen{};
@@ -232,6 +233,17 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
                 if (!seenFields.insert(key).second) throw std::runtime_error("duplicate JSON field: " + key);
                 if (key == "id") { item.id = input.string(); idSeen = true; }
                 else if (key == "name") { item.name = input.string(); nameSeen = true; }
+                else if (key == "nameZh") item.nameZh = input.string();
+                else if (key == "nameEn") item.nameEn = input.string();
+                else if (key == "description") item.description = input.string();
+                else if (key == "note") item.note = input.string();
+                else if (key == "createdAt") item.createdAt = input.string();
+                else if (key == "updatedAt") item.updatedAt = input.string();
+                else if (key == "favorite") item.favorite = input.boolean();
+                else if (key == "aliases") aliasesText = input.string();
+                else if (key == "builtInTags") builtInTagsText = input.string();
+                else if (key == "techniques") techniquesText = input.string();
+                else if (key == "complexityLevel") complexityLevelText = input.string();
                 else if (key == "mode") { modeText = input.string(); modeSeen = true; }
                 else if (key == "sequence") { sequence = input.string(); sequenceSeen = true; }
                 else if (key == "rhythm") rhythmText = input.string();
@@ -293,6 +305,15 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
                 item.styles |= static_cast<StyleFlags>(style); item.styleWeights.emplace_back(style, weight);
             }
             item.tags = split(tagsText, ',');
+            item.aliases = split(aliasesText, ',');
+            item.builtInTags = split(builtInTagsText, ',');
+            for (const auto& tag:item.builtInTags)
+                if (!parseTagID(tag)) throw std::runtime_error("unknown built-in TagID: " + tag);
+            item.techniques = split(techniquesText, ',');
+            if (complexityLevelText == "rich") item.complexityLevel = ComplexityLevel::Rich;
+            else if (complexityLevelText == "advanced") item.complexityLevel = ComplexityLevel::Advanced;
+            else if (!complexityLevelText.empty() && complexityLevelText != "basic")
+                throw std::runtime_error("invalid complexityLevel");
             if (item.priorWeight < 0.f || item.priorWeight > 1.f || item.complexity < 0.f || item.complexity > 1.f ||
                 item.version < 1 || (item.sourceType != "factory" && item.sourceType != "user"))
                 throw std::runtime_error("invalid metadata range");
@@ -372,12 +393,29 @@ std::string serializeTemplateJson(const ProgressionTemplate& item) {
         styles << styleName(item.styleWeights[i].first) << ':' << item.styleWeights[i].second;
     }
     for (std::size_t i = 0; i < item.tags.size(); ++i) { if (i) tags << ','; tags << item.tags[i]; }
+    auto joined = [](const std::vector<std::string>& values) {
+        std::string out;
+        for (const auto& value : values) { if (!out.empty()) out += ','; out += value; }
+        return out;
+    };
     for (std::size_t i = 0; i < item.skeletonIndices.size(); ++i) {
         if (i) skeleton << ',';
         skeleton << item.skeletonIndices[i];
     }
     std::ostringstream out;
     out << '{' << "\"id\":" << quoted(item.id) << ",\"name\":" << quoted(item.name)
+        << ",\"nameZh\":" << quoted(item.nameZh)
+        << ",\"nameEn\":" << quoted(item.nameEn)
+        << ",\"aliases\":" << quoted(joined(item.aliases))
+        << ",\"builtInTags\":" << quoted(joined(item.builtInTags))
+        << ",\"techniques\":" << quoted(joined(item.techniques))
+        << ",\"complexityLevel\":" << quoted(item.complexityLevel==ComplexityLevel::Advanced?"advanced":
+             item.complexityLevel==ComplexityLevel::Rich?"rich":"basic")
+        << ",\"description\":" << quoted(item.description)
+        << ",\"note\":" << quoted(item.note)
+        << ",\"favorite\":" << (item.favorite?"true":"false")
+        << ",\"createdAt\":" << quoted(item.createdAt)
+        << ",\"updatedAt\":" << quoted(item.updatedAt)
         << ",\"mode\":" << quoted(item.mode == Mode::Major ? "major" : "minor")
         << ",\"sequence\":" << quoted(sequence.str()) << ",\"rhythm\":" << quoted(rhythm.str())
         << ",\"cadence\":" << quoted(cadenceName(item.cadence))

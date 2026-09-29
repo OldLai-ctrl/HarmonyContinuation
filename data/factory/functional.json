@@ -15,7 +15,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–V7/ii–ii–V–I 收束 · 分拍",
+    "nameEn": "Functional I-V7/ii-ii-V-I resolution · split rhythm",
+    "aliases": "I-V7/ii-ii-V-I",
+    "builtInTags": "functional,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_002",
@@ -33,7 +39,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "功能和声 I–V7/iii–iii–vi–ii–V–I 发展 · 分拍",
+    "nameEn": "Functional I-V7/iii-iii-vi-ii-V-I development · split rhythm",
+    "aliases": "I-V7/iii-iii-vi-ii-V-I",
+    "builtInTags": "functional,develop,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "FUNCTIONAL_003",
@@ -51,7 +63,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "功能和声 I–V7/vi–vi–ii–V–I 收束 · 分拍",
+    "nameEn": "Functional I-V7/vi-vi-ii-V-I resolution · split rhythm",
+    "aliases": "I-V7/vi-vi-ii-V-I",
+    "builtInTags": "functional,resolve,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_004",
@@ -69,7 +87,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "功能和声 I–V7/V–V7–I 收束 · 分拍",
+    "nameEn": "Functional I-V7/V-V7-I resolution · split rhythm",
+    "aliases": "I-V7/V-V7-I",
+    "builtInTags": "functional,resolve,secondary_dominant,seventh_chord",
+    "techniques": "SecondaryDominant,SeventhColor",
+    "complexityLevel": "basic"
   },
   {
     "id": "FUNCTIONAL_005",
@@ -87,7 +111,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–viidim7/ii–ii–V–I 色彩 · 分拍",
+    "nameEn": "Functional I-viidim7/ii-ii-V-I color · split rhythm",
+    "aliases": "I-viidim7/ii-ii-V-I",
+    "builtInTags": "functional,color,secondary_leading_tone,cadential_expansion",
+    "techniques": "SecondaryLeadingTone,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_006",
@@ -105,7 +135,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–#Idim7–ii–V–I 色彩 · 分拍",
+    "nameEn": "Functional I-#Idim7-ii-V-I color · split rhythm",
+    "aliases": "I-#Idim7-ii-V-I,11251",
+    "builtInTags": "functional,color,passing_diminished,cadential_expansion",
+    "techniques": "PassingDiminished,CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_007",
@@ -123,7 +159,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–IV–iv–V–I 色彩",
+    "nameEn": "Functional I-IV-iv-V-I color",
+    "aliases": "I-IV-iv-V-I,14451",
+    "builtInTags": "functional,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_008",
@@ -141,7 +183,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "功能和声 I–bVI–V–I 色彩",
+    "nameEn": "Functional I-bVI-V-I color",
+    "aliases": "I-bVI-V-I,1651",
+    "builtInTags": "functional,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "FUNCTIONAL_009",
@@ -159,7 +207,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "功能和声 I–bVII–V–I 色彩",
+    "nameEn": "Functional I-bVII-V-I color",
+    "aliases": "I-bVII-V-I,16151",
+    "builtInTags": "functional,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "FUNCTIONAL_010",
@@ -177,7 +231,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "功能和声 I–ii–V–vi 发展",
+    "nameEn": "Functional I-ii-V-vi development",
+    "aliases": "I-ii-V-vi,1256",
+    "builtInTags": "functional,develop",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "FUNCTIONAL_011",
@@ -195,7 +255,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "功能和声 I–IV–V–vi–ii–V–I 发展",
+    "nameEn": "Functional I-IV-V-vi-ii-V-I development",
+    "aliases": "I-IV-V-vi-ii-V-I,1456251",
+    "builtInTags": "functional,develop,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "FUNCTIONAL_012",
@@ -213,7 +279,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "功能和声 I–iii–vi–ii–V–I 发展 · 分拍",
+    "nameEn": "Functional I-iii-vi-ii-V-I development · split rhythm",
+    "aliases": "I-iii-vi-ii-V-I,136251",
+    "builtInTags": "functional,develop,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_013",
@@ -231,7 +303,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "功能和声 I–vi–IV–ii–V–I 收束 · 分拍",
+    "nameEn": "Functional I-vi-IV-ii-V-I resolution · split rhythm",
+    "aliases": "I-vi-IV-ii-V-I,164251",
+    "builtInTags": "functional,resolve,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_014",
@@ -249,7 +327,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "功能和声 I–IV–V–I–IV–I 收束",
+    "nameEn": "Functional I-IV-V-I-IV-I resolution",
+    "aliases": "I-IV-V-I-IV-I,145141",
+    "builtInTags": "functional,resolve",
+    "techniques": "",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_015",
@@ -267,7 +351,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "功能和声 I–ii–V–I–IV–V–I 收束",
+    "nameEn": "Functional I-ii-V-I-IV-V-I resolution",
+    "aliases": "I-ii-V-I-IV-V-I,1251451",
+    "builtInTags": "functional,resolve,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "FUNCTIONAL_016",
@@ -285,7 +375,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "功能和声 I–V–vi–iii–IV–V–I 发展",
+    "nameEn": "Functional I-V-vi-iii-IV-V-I development",
+    "aliases": "I-V-vi-iii-IV-V-I,1563451",
+    "builtInTags": "functional,develop,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "FUNCTIONAL_017",
@@ -303,7 +399,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–IV–bVII–IV–I 色彩",
+    "nameEn": "Functional I-IV-bVII-IV-I color",
+    "aliases": "I-IV-bVII-IV-I,146141",
+    "builtInTags": "functional,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_018",
@@ -321,7 +423,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "功能和声 I–V7/IV–IV–V7/V–V–I 发展 · 分拍",
+    "nameEn": "Functional I-V7/IV-IV-V7/V-V-I development · split rhythm",
+    "aliases": "I-V7/IV-IV-V7/V-V-I",
+    "builtInTags": "functional,develop,secondary_dominant,seventh_chord",
+    "techniques": "SecondaryDominant,SeventhColor",
+    "complexityLevel": "rich"
   },
   {
     "id": "FUNCTIONAL_019",
@@ -339,7 +447,13 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 7
+    "phraseLength": 7,
+    "nameZh": "功能和声 I–vi–V7/ii–ii–V7/V–V–I 发展 · 分拍",
+    "nameEn": "Functional I-vi-V7/ii-ii-V7/V-V-I development · split rhythm",
+    "aliases": "I-vi-V7/ii-ii-V7/V-V-I",
+    "builtInTags": "functional,develop,secondary_dominant,seventh_chord,cadential_expansion",
+    "techniques": "SecondaryDominant,SeventhColor,CadentialExpansion",
+    "complexityLevel": "advanced"
   },
   {
     "id": "FUNCTIONAL_020",
@@ -357,6 +471,12 @@
     "sourceType": "factory",
     "tags": "functional",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "功能和声 I–ii–IV–V–I 收束 · 分拍",
+    "nameEn": "Functional I-ii-IV-V-I resolution · split rhythm",
+    "aliases": "I-ii-IV-V-I,12451",
+    "builtInTags": "functional,resolve,cadential_expansion",
+    "techniques": "CadentialExpansion",
+    "complexityLevel": "rich"
   }
 ]

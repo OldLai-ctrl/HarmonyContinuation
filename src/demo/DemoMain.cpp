@@ -5,6 +5,7 @@
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "snapshot/RecommendationSnapshot.h"
+#include "snapshot/EnrichmentSnapshot.h"
 #include "benchmark/Benchmark.h"
 #include "vstgui/lib/cframe.h"
 #include "vstgui/lib/platform/platformfactory.h"
@@ -77,6 +78,9 @@ public:
         actions.saveSnapshot=[this](const ContinuationCandidate& c) { return saveRecommendationSnapshot(c); };
         actions.exportLibraryMidi=[this](const ProgressionTemplate& t) { return exportLibrary(t); };
         actions.benchmarkSelect=[this](const ContinuationCandidate& c) { ratingCandidate_=c; };
+        actions.auditionEnrichment=[this](const enrichment::EnrichmentCandidate& c) { auditionEnrichment(c); };
+        actions.exportEnrichmentMidi=[this](const enrichment::EnrichmentCandidate& c) { return exportEnrichment(c); };
+        actions.saveEnrichmentSnapshot=[this](const enrichment::EnrichmentCandidate& c) { return saveEnrichment(c); };
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
         if (!frame_->open(host,VSTGUI::PlatformType::kHWND)) { frame_=nullptr; main_=nullptr; return false; }
@@ -173,6 +177,7 @@ public:
             analysis_=std::move(result->analysis); recommendations_=std::move(result->recommendations);
             if (main_) { main_->setAnalysis(analysis_); main_->setMatches(recommendations_.matches,
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
+                main_->setEnrichments(result->enrichments);
                 main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
             }
         }
@@ -260,8 +265,17 @@ private:
     }
     void audition(const ContinuationCandidate& candidate) {
         if (candidate.id==auditionId_) { stopAudition(); return; }
-        stopAudition();
         const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
+        playPreview(candidate.id,built);
+    }
+    void auditionEnrichment(const enrichment::EnrichmentCandidate& candidate) {
+        if (candidate.id==auditionId_) { stopAudition(); return; }
+        ImportedProgressionSession transformed;
+        if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection)) return;
+        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo));
+    }
+    void playPreview(const std::string& id,const preview::BuildResult& built) {
+        stopAudition();
         if (!built) { if (main_) main_->setDropReport("Preview",built.error,false); return; }
         const auto audio=preview::renderOffline(built.sequence,48000);
         if (audio.left.empty()) { if (main_) main_->setDropReport("Preview","Render failed",false); return; }
@@ -273,7 +287,7 @@ private:
             if (main_) main_->setDropReport("Preview",error.empty()?"Audio playback failed":error,false);
             stopAudition(); return;
         }
-        auditionId_=candidate.id; auditionQN_=built.sequence.totalQN;
+        auditionId_=id; auditionQN_=built.sequence.totalQN;
         auditionSeconds_=audio.left.size()/audio.sampleRate;
         auditionStart_=std::chrono::steady_clock::now();
         if (main_) main_->setPreviewPosition(auditionId_,0,auditionQN_);
@@ -313,6 +327,31 @@ private:
         const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
         if (!built) return "MIDI export: "+built.error;
         return exportSequence(built.sequence,&candidate,midi::ExportScope::FullPhrase,candidate.key);
+    }
+    std::string exportEnrichment(const enrichment::EnrichmentCandidate& candidate) {
+        ImportedProgressionSession transformed;
+        if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection))
+            return "MIDI export: invalid enrichment timeline";
+        const auto built=preview::buildSequence(transformed,nullptr,scenario_.tempo);
+        if (!built) return "MIDI export: "+built.error;
+        const auto key=state_.forcedKey?state_.forcedKey:
+            analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+        return exportSequence(built.sequence,nullptr,midi::ExportScope::FullPhrase,key);
+    }
+    std::string saveEnrichment(const enrichment::EnrichmentCandidate& candidate) {
+        try {
+            const auto key=state_.forcedKey?state_.forcedKey:
+                analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+            const auto snap=snapshot::captureEnrichment(state_.imported,candidate,scenario_.tempo,
+                scenario_.meterNumerator,scenario_.meterDenominator,key,state_.style);
+            const auto filename=candidate.id+".hcenrich.json";
+            const auto path=savePath(hostWindow_,std::wstring(filename.begin(),filename.end()),
+                L"Enrichment snapshot\0*.hcenrich.json\0JSON files\0*.json\0\0",L"json");
+            if (!path) return "Snapshot save cancelled";
+            std::string error;
+            if (!snapshot::saveFile(snap,*path,error)) return "Snapshot save: "+error;
+            return "Snapshot saved: "+path->filename().string();
+        } catch (const std::exception& e) {return std::string("Snapshot save: ")+e.what();}
     }
     std::string exportLibrary(const ProgressionTemplate& item) {
         const auto key=state_.forcedKey.value_or(analysis_.selectedKey?analysis_.selectedKey->key:

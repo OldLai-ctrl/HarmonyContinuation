@@ -93,6 +93,7 @@ SaveResult makeUserProgression(const ImportedProgressionSession& session,
         item.cadence=candidate.cadence; item.loopable=candidate.intent==PhraseIntent::Loop;
         if (metadata.style) { item.styles=static_cast<StyleFlags>(*metadata.style); item.styleWeights.emplace_back(*metadata.style,1.f); }
         item.tags=metadata.tags;
+        item.note=metadata.note;
         for (std::size_t i=0;i<item.full.size();++i) item.full[i].durationQN=phrase[i].durationQN;
         prepareTemplate(item);
     } catch (const std::exception& e) { result.error=e.what(); result.item={}; }

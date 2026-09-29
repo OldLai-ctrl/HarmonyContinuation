@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "TemplateJson.h"
 #include "library/ProgressionLibrary.h"
 #include <filesystem>
@@ -8,9 +9,10 @@
 #include <unordered_map>
 
 int main(int argc, char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     if (argc != 3) { std::cerr << "usage: db_compiler data/factory output/factory.db\n"; return 2; }
     std::vector<harmony::ProgressionTemplate> templates;
-    std::set<std::string> ids, exact;
+    std::set<std::string> ids, exact, namesZh, namesEn;
     std::unordered_map<std::string, int> skeletons;
     try {
         for (const auto& entry : std::filesystem::directory_iterator(argv[1])) {
@@ -23,6 +25,13 @@ int main(int argc, char** argv) {
             for (auto& item : parsed.templates) {
                 if (!ids.insert(item.id).second) throw std::runtime_error("duplicate id: " + item.id);
                 if (item.sourceType != "factory") throw std::runtime_error("factory sourceType required: " + item.id);
+                if (item.nameZh.empty() || item.nameEn.empty() || item.aliases.empty() ||
+                    item.builtInTags.empty())
+                    throw std::runtime_error("factory display metadata missing: " + item.id);
+                if (!namesZh.insert(item.nameZh).second)
+                    throw std::runtime_error("duplicate Chinese factory name: " + item.id);
+                if (!namesEn.insert(item.nameEn).second)
+                    throw std::runtime_error("duplicate English factory name: " + item.id);
                 if (item.intent == harmony::PhraseIntent::Loop && !item.loopable)
                     throw std::runtime_error("loop intent requires loopable: " + item.id);
                 if (item.loopable && item.cadence == harmony::CadenceType::Authentic)
@@ -48,7 +57,7 @@ int main(int argc, char** argv) {
                 templates.push_back(std::move(item));
             }
         }
-        if (templates.empty()) throw std::runtime_error("no JSON source found");
+        if (templates.size() < 161) throw std::runtime_error("factory corpus has fewer than 161 entries");
         std::size_t near{};
         for (const auto& [key, count] : skeletons) if (count > 1) near += static_cast<std::size_t>(count - 1);
         std::string error;

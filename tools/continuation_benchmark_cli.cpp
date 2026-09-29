@@ -1,5 +1,6 @@
 #include "benchmark/Benchmark.h"
 #include "benchmark/BenchJson.h"
+#include "product/ProductVersion.h"
 #include "core/HarmonyAnalysis.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/StandardMidiFileWriter.h"
@@ -227,6 +228,7 @@ std::string markdown(const Value& report) {
 }
 } // namespace
 int main(int argc,char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     try {
         std::filesystem::path caseDir=HC_BENCH_CASE_DIR;
         std::filesystem::path factoryPath=std::filesystem::path(argv[0]).parent_path()/"factory.db";
@@ -251,6 +253,7 @@ int main(int argc,char** argv) {
         else files={caseDir/(oneCase+".json")};
         if(files.empty())throw std::runtime_error("no benchmark cases");
         auto report=object();report.object["schemaVersion"]=1;
+        report.object["productVersion"]=std::string(product::version);
         report.object["sourceCommit"]=commit;
         report.object["factoryTemplateCount"]=static_cast<int>(loaded.templates.size());
         report.object["matchingConfigVersion"]=benchmark::matchingConfigVersion;

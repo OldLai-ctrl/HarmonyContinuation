@@ -1,3 +1,4 @@
+#include "product/ProductVersion.h"
 #include "demo/DemoScenario.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/StandardMidiFileWriter.h"
@@ -12,6 +13,7 @@ using namespace harmony;
 namespace fs=std::filesystem;
 }
 int main(int argc,char** argv) {
+    if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
     try {
         std::string letter,groupName="Resolve",modeName="voice-led",scopeName="full";
         fs::path scenarioPath,outputPath,snapshotIn,snapshotOut;

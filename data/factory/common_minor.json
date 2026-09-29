@@ -15,7 +15,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–iv–V–i 收束",
+    "nameEn": "Minor i-iv-V-i resolution",
+    "aliases": "i-iv-V-i,1451",
+    "builtInTags": "common-minor,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_002",
@@ -33,7 +39,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–iim7b5–V–i 收束",
+    "nameEn": "Minor i-iim7b5-V-i resolution",
+    "aliases": "i-iim7b5-V-i,1251",
+    "builtInTags": "common-minor,resolve",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_003",
@@ -51,7 +63,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–VI–iv–V–i 收束",
+    "nameEn": "Minor i-VI-iv-V-i resolution",
+    "aliases": "i-VI-iv-V-i,16451",
+    "builtInTags": "common-minor,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_004",
@@ -69,7 +87,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–III–VI–V–i 收束",
+    "nameEn": "Minor i-III-VI-V-i resolution",
+    "aliases": "i-III-VI-V-i,13651",
+    "builtInTags": "common-minor,resolve",
+    "techniques": "",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_005",
@@ -87,7 +111,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–VII–VI–V–i 收束",
+    "nameEn": "Minor i-VII-VI-V-i resolution",
+    "aliases": "i-VII-VI-V-i,161651",
+    "builtInTags": "common-minor,resolve",
+    "techniques": "",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_006",
@@ -105,7 +135,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–iv–VII–III 发展",
+    "nameEn": "Minor i-iv-VII-III development",
+    "aliases": "i-iv-VII-III,14613",
+    "builtInTags": "common-minor,develop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_007",
@@ -123,7 +159,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–VI–III–VII 循环",
+    "nameEn": "Minor i-VI-III-VII loop",
+    "aliases": "i-VI-III-VII,16361",
+    "builtInTags": "common-minor,loop",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_008",
@@ -141,7 +183,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–VII–VI–VII 循环",
+    "nameEn": "Minor i-VII-VI-VII loop",
+    "aliases": "i-VII-VI-VII,161661",
+    "builtInTags": "common-minor,loop",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_009",
@@ -159,7 +207,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 3
+    "phraseLength": 3,
+    "nameZh": "小调 i–V–VI 发展",
+    "nameEn": "Minor i-V-VI development",
+    "aliases": "i-V-VI,156",
+    "builtInTags": "common-minor,develop",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_010",
@@ -177,7 +231,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–iv–V–VI 发展",
+    "nameEn": "Minor i-iv-V-VI development",
+    "aliases": "i-iv-V-VI,1456",
+    "builtInTags": "common-minor,develop,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_011",
@@ -195,7 +255,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 3
+    "phraseLength": 3,
+    "nameZh": "小调 i–iim7b5–V 发展",
+    "nameEn": "Minor i-iim7b5-V development",
+    "aliases": "i-iim7b5-V,125",
+    "builtInTags": "common-minor,develop",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_012",
@@ -213,7 +279,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–III–iv–V–i 收束",
+    "nameEn": "Minor i-III-iv-V-i resolution",
+    "aliases": "i-III-iv-V-i,13451",
+    "builtInTags": "common-minor,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_013",
@@ -231,7 +303,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–VI–iim7b5–V–i 收束",
+    "nameEn": "Minor i-VI-iim7b5-V-i resolution",
+    "aliases": "i-VI-iim7b5-V-i,16251",
+    "builtInTags": "common-minor,resolve",
+    "techniques": "",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_014",
@@ -249,7 +327,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "小调 i–VII–III–iv–V–i 收束",
+    "nameEn": "Minor i-VII-III-iv-V-i resolution",
+    "aliases": "i-VII-III-iv-V-i,1613451",
+    "builtInTags": "common-minor,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_015",
@@ -267,7 +351,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–VI–VII–i 色彩",
+    "nameEn": "Minor i-VI-VII-i color",
+    "aliases": "i-VI-VII-i,16611",
+    "builtInTags": "common-minor,color",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_016",
@@ -285,7 +375,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 4
+    "phraseLength": 4,
+    "nameZh": "小调 i–bII–V–i 色彩",
+    "nameEn": "Minor i-bII-V-i color",
+    "aliases": "i-bII-V-i,1251",
+    "builtInTags": "common-minor,color",
+    "techniques": "",
+    "complexityLevel": "basic"
   },
   {
     "id": "COMMON_MINOR_017",
@@ -303,7 +399,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–iv–bII–V–i 色彩",
+    "nameEn": "Minor i-iv-bII-V-i color",
+    "aliases": "i-iv-bII-V-i,14251",
+    "builtInTags": "common-minor,color,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_018",
@@ -321,7 +423,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–#Idim7–iim7b5–V–i 色彩 · 分拍",
+    "nameEn": "Minor i-#Idim7-iim7b5-V-i color · split rhythm",
+    "aliases": "i-#Idim7-iim7b5-V-i,11251",
+    "builtInTags": "common-minor,color,passing_diminished",
+    "techniques": "PassingDiminished",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_019",
@@ -339,7 +447,13 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 6
+    "phraseLength": 6,
+    "nameZh": "小调 i–III–VII–iv–V–i 收束",
+    "nameEn": "Minor i-III-VII-iv-V-i resolution",
+    "aliases": "i-III-VII-iv-V-i,1361451",
+    "builtInTags": "common-minor,resolve,borrowed_chord",
+    "techniques": "BorrowedChord",
+    "complexityLevel": "rich"
   },
   {
     "id": "COMMON_MINOR_020",
@@ -357,6 +471,12 @@
     "sourceType": "factory",
     "tags": "common,minor",
     "version": 1,
-    "phraseLength": 5
+    "phraseLength": 5,
+    "nameZh": "小调 i–V7/iv–iv–V–i 收束 · 分拍",
+    "nameEn": "Minor i-V7/iv-iv-V-i resolution · split rhythm",
+    "aliases": "i-V7/iv-iv-V-i",
+    "builtInTags": "common-minor,resolve,secondary_dominant,borrowed_chord,seventh_chord",
+    "techniques": "SecondaryDominant,BorrowedChord,SeventhColor",
+    "complexityLevel": "rich"
   }
 ]
