@@ -1,6 +1,6 @@
-# HarmonyContinuation 0.8.0-rc.1
+# HarmonyContinuation 0.8.0
 
-本版为候选发布版。dev.2 的 Cubase 人工验收已由用户确认 **PASS**；RC1 是重新构建的安装包，尚未在 Cubase 中重新人工验收。
+按用户授权将已验收功能正式封版为 v0.8.0。dev.2 Cubase 人工验收 **PASS**，RC1 集中回归与最终包 Validator 均通过。正式封版只更新版本与文档；正式版新构建本身没有新增 Cubase 人工测试记录。
 
 ## 用户功能
 
