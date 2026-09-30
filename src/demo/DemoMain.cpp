@@ -1,6 +1,7 @@
 #include "DemoScenario.h"
 #include "plugin/RecommendationWorker.h"
 #include "session/ProductServices.h"
+#include "library/LibraryStore.h"
 #include "ui/MainView.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
@@ -57,12 +58,8 @@ class DemoApp {
 public:
     explicit DemoApp(std::filesystem::path executable)
         : factoryPath_(executable.parent_path()/"factory.db"),
-          userPath_(userPath()),worker_(factoryPath_,userPath_) {}
+          userPath_(library::userDatabasePath()),worker_(factoryPath_,userPath_) {}
     ~DemoApp() { stopAudition(); if (frame_) { frame_->close(); frame_=nullptr; main_=nullptr; } }
-    static std::filesystem::path userPath() {
-        wchar_t value[32768]{}; const auto n=GetEnvironmentVariableW(L"LOCALAPPDATA",value,32768);
-        return n && n<32768?std::filesystem::path(value)/"HarmonyContinuation"/"user.db":std::filesystem::path("user.db");
-    }
     bool open(HWND host) {
         hostWindow_=GetParent(host);
         auto* factory=VSTGUI::getPlatformFactory().asWin32Factory();
@@ -389,9 +386,12 @@ private:
         } catch (const std::exception& e) {return std::string("Snapshot save: ")+e.what();}
     }
     void loadLibrary() {
-        auto factory=library::loadFactory(factoryPath_); auto user=library::UserLibrary(userPath_).loadAll();
+        auto selected=library::loadAvailableFactory(factoryPath_); auto& factory=selected.library;
+        if(factory) state_.factoryLibraryVersion=factory.libraryVersion;
+        if(main_) main_->setSessionState(state_);
+        auto user=library::UserLibrary(userPath_).loadAll();
         if (main_) main_->setLibrary(std::move(factory.templates),std::move(user.templates),
-            !factory?factory.error:!user?user.error:std::string{});
+            !factory?factory.error:!user?user.error:selected.warning);
     }
     std::string save(const ContinuationCandidate& c,const session::SaveMetadata& meta) {
         if (!userPath_.parent_path().empty()) std::filesystem::create_directories(userPath_.parent_path());

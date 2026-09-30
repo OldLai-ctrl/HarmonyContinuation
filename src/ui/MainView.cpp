@@ -866,7 +866,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     popup({"HarmonyContinuation "+std::string(product::version),
                         t("about.build")+": "+std::string(product::buildType),
                         t("about.commit")+": "+std::string(product::commit),
-                        t("about.factory")+": "+std::to_string(product::factoryLibraryVersion),
+                        t("about.factory")+": "+std::to_string(state_.factoryLibraryVersion),
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
                         t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion)},where);
                 }

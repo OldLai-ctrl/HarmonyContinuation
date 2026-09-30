@@ -10,7 +10,7 @@
 
 int main(int argc, char** argv) {
     if (harmony::product::printVersionIfRequested(argc, argv)) return 0;
-    if (argc != 3) { std::cerr << "usage: db_compiler data/factory output/factory.db\n"; return 2; }
+    if (argc != 3 && argc != 4) { std::cerr << "usage: db_compiler data/factory output/factory.db [library-version]\n"; return 2; }
     std::vector<harmony::ProgressionTemplate> templates;
     std::set<std::string> ids, exact, namesZh, namesEn;
     std::unordered_map<std::string, int> skeletons;
@@ -61,7 +61,8 @@ int main(int argc, char** argv) {
         std::size_t near{};
         for (const auto& [key, count] : skeletons) if (count > 1) near += static_cast<std::size_t>(count - 1);
         std::string error;
-        if (!harmony::library::compileFactory(argv[2], templates, error)) throw std::runtime_error(error);
+        const int version=argc==4?std::stoi(argv[3]):2;
+        if (!harmony::library::compileFactory(argv[2], templates, error,version)) throw std::runtime_error(error);
         auto loaded = harmony::library::loadFactory(argv[2]);
         if (!loaded || loaded.templates.size() != templates.size()) throw std::runtime_error("database roundtrip failed: " + loaded.error);
         std::cout << "factory.db READY templates=" << templates.size() << " near_skeleton_variants=" << near << '\n';

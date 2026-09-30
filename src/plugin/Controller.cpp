@@ -12,6 +12,7 @@
 #include "public.sdk/source/vst/utility/stringconvert.h"
 #include "pluginterfaces/base/ibstream.h"
 #include "session/ProductServices.h"
+#include "library/LibraryStore.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "snapshot/RecommendationSnapshot.h"
@@ -50,12 +51,6 @@ std::filesystem::path factoryDatabasePath() {
     if (!length || length >= 32768) return {};
     return std::filesystem::path(path).parent_path().parent_path() / "Resources" / "factory.db";
 }
-std::filesystem::path userDatabasePath() {
-    wchar_t path[32768]{};
-    const auto length = GetEnvironmentVariableW(L"LOCALAPPDATA", path, 32768);
-    if (!length || length >= 32768) return {};
-    return std::filesystem::path(path) / "HarmonyContinuation" / "user.db";
-}
 std::optional<std::filesystem::path> savePath(void* owner, const std::string& suggestedName,
                                                const wchar_t* filter,const wchar_t* extension) {
     std::wstring filename(suggestedName.begin(),suggestedName.end());
@@ -74,7 +69,7 @@ std::optional<std::filesystem::path> savePath(void* owner, const std::string& su
 }
 #else
 std::filesystem::path factoryDatabasePath() { return "factory.db"; }
-std::filesystem::path userDatabasePath() { return "user.db"; }
+
 #endif
 const char* qualityName(harmony::ChordQuality q) {
     using Q = harmony::ChordQuality;
@@ -327,7 +322,7 @@ void Controller::pollRecommendation() noexcept {
 
 void Controller::submitRecommendation(bool rankingOnly) {
     if (importedProgression_.events.empty()) return;
-    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),userDatabasePath());
+    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,sessionState_.analysisContext(),
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
@@ -361,15 +356,18 @@ void Controller::setRecommendationPreferences(std::optional<harmony::Style> styl
 
 void Controller::reloadLibraries() {
     if (!view_) return;
-    auto factory=harmony::library::loadFactory(factoryDatabasePath());
-    auto user=harmony::library::UserLibrary(userDatabasePath()).loadAll();
+    auto selected=harmony::library::loadAvailableFactory(factoryDatabasePath());
+    auto& factory=selected.library;
+    if(factory) sessionState_.factoryLibraryVersion=factory.libraryVersion;
+    view_->setSessionState(sessionState_);
+    auto user=harmony::library::UserLibrary(harmony::library::userDatabasePath()).loadAll();
     factoryCount_=factory.templates.size(); userCount_=user.templates.size();
     view_->setLibrary(std::move(factory.templates),std::move(user.templates),
-        !factory?factory.error:!user?user.error:std::string{});
+        !factory?factory.error:!user?user.error:selected.warning);
 }
 std::string Controller::saveRecommendation(const harmony::ContinuationCandidate& c,const harmony::session::SaveMetadata& m) noexcept {
     try {
-        const auto path=userDatabasePath();
+        const auto path=harmony::library::userDatabasePath();
         if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
         harmony::library::UserLibrary library(path); std::string error;
         if (!harmony::session::saveRecommendation(library,importedProgression_,c,m,error)) return "Save failed: "+error;
@@ -380,7 +378,7 @@ std::string Controller::saveRecommendation(const harmony::ContinuationCandidate&
 std::string Controller::updateUserProgression(const harmony::ProgressionTemplate& item) noexcept {
     try {
         std::string error;
-        if (!harmony::library::UserLibrary(userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
         if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
         reloadLibraries(); submitRecommendation(); return "User progression updated";
     } catch (const std::exception& e) { return std::string("Update failed: ")+e.what(); }
@@ -388,7 +386,7 @@ std::string Controller::updateUserProgression(const harmony::ProgressionTemplate
 std::string Controller::deleteUserProgression(const std::string& id) noexcept {
     try {
         std::string error;
-        if (!harmony::library::UserLibrary(userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
         if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
         reloadLibraries(); submitRecommendation(); return "User progression deleted";
     } catch (const std::exception& e) { return std::string("Delete failed: ")+e.what(); }

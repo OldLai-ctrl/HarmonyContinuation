@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "library/LibraryStore.h"
 #include <memory>
 #include <iterator>
 #include <unordered_set>
@@ -76,7 +77,7 @@ void RecommendationWorker::run() {
             }
             if (task.progression.size() <= 64) {
                 if (!index && loadError.empty()) {
-                    auto factory = library::loadFactory(factoryPath_);
+                    auto factory = library::loadAvailableFactory(factoryPath_).library;
                     if (!factory) loadError = "Factory library: " + factory.error;
                     else {
                         auto user = library::UserLibrary(userPath_).loadAll();
