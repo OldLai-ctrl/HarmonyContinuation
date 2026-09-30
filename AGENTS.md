@@ -1,6 +1,6 @@
 # HarmonyContinuation
 
-- Current scope: v0.8 development, with continuation, enrichment, local libraries, preview/MIDI output, constraints, and Windows installers. Preserve established music behavior when changing storage or packaging. MIDI import and runtime network updates are not implemented.
+- Current scope: v0.8 development, including dev.2 standard MIDI file import/extraction, standard MIDI file drag-out, and full candidate detail actions. Preserve established musical algorithms. Cubase private MIDI Part recognition and runtime network updates are not implemented.
 - `core/` must compile without Steinberg or VSTGUI headers. Host integration and XML translation belong in `plugin/`. UI only renders state and handles interaction; no music logic.
 - Audio thread: no XML, file I/O, logging, mutexes, database queries, expensive allocation or GUI updates. Transfer a bounded lightweight snapshot through an SDK-verified realtime-safe mechanism.
 - The visible editor polls the transport snapshot at a bounded rate (about 20 Hz while playing, slower while stopped or hidden). Repaint only changed timeline regions; never call UI from the audio thread.

@@ -8,6 +8,7 @@
 #include "ui/ProgressionTimeline.h"
 #include "ui/UILayout.h"
 #include "ui/OverlayPolicy.h"
+#include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -35,6 +36,10 @@ public:
         std::function<void(const enrichment::EnrichmentCandidate&)> auditionEnrichment;
         std::function<std::string(const enrichment::EnrichmentCandidate&)> exportEnrichmentMidi;
         std::function<std::string(const enrichment::EnrichmentCandidate&)> saveEnrichmentSnapshot;
+        std::function<midi::PayloadResult(const ContinuationCandidate&)> midiPayload;
+        std::function<midi::PayloadResult(const enrichment::EnrichmentCandidate&)> enrichmentMidiPayload;
+        std::function<void(bool,const std::filesystem::path&)> importMidi;
+        std::function<std::string(const midi::MidiClipPayload&)> saveMidiPayload;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;
@@ -65,12 +70,15 @@ public:
                          std::size_t userCount);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
+    VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
+    VSTGUI::CMouseEventResult onMouseUp(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
     void onKeyboardEvent(VSTGUI::KeyboardEvent&) override;
     void onMouseWheelEvent(VSTGUI::MouseWheelEvent&) override;
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
     void setUserZoom(std::uint32_t percent);
     bool runZoomSmoke();
+    bool runMidiWorkflowSmoke();
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -116,6 +124,11 @@ private:
     VSTGUI::CTextEdit* noteEdit_{};
     session::SaveMetadata formMetadata_;
     MelodyConstraint formMelody_;
+    VSTGUI::CPoint midiMouseDown_;
+    std::function<void()> midiClick_;
+    std::optional<midi::MidiClipPayload> midiPending_;
+    bool armMidi(const ContinuationCandidate&,VSTGUI::CPoint);
+    bool armMidi(const enrichment::EnrichmentCandidate&,VSTGUI::CPoint);
     double userZoom() const noexcept { return state_.uiZoomPercent/100.0; }
     VSTGUI::CRect editRect(VSTGUI::CRect) const;
     void notifyState();

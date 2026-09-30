@@ -57,3 +57,10 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 2026-09-25：Phase 3 加入 161 条种子曲库、SQLite 运行库、后台推荐与 RECOMMEND 开发视图。本轮插件构建、CTest 7/7、Validator 47/47、独立 EditorHost 打开响应正常；用户本轮无法操作 Cubase，因此 **Phase 2 新基线和 Phase 3 界面均未完成 Cubase 实机 smoke**，不能写为宿主 PASS。细节见 [Phase 3 验证记录](PHASE3_TESTS.md)。
 
 公开格式参考：Steinberg [Clipboard VST-XML 定义](https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Clipboard%2BVST-XML/Index.html)。
+
+## 2026-09-30 · dev.2 MIDI 工作流
+
+- 用户决策端指令确认 dev.1 安装器 / 独立库 Cubase Gate PASS，依用户报告进入 dev.2。
+- 新增标准 SMF Format 0/1 PPQ 文件导入与和弦块提取；更多候选完整操作；标准 VSTGUI 文件路径 MIDI Drag-Out。SDK API 以本地 `vstgui/lib/dragging.h`、`cdropsource.h`、`idatapackage.h` 为依据。
+- 本机构建、定向测试及集中回归结果另见 `V0_8_DEV2_REPORT.md`；Demo 自动检查只能证明候选对应、回调及拖动准备，不能证明 Cubase 接受 drop、实际发声或工程重开。
+- dev.2 Cubase 人工验收待执行。Cubase 私有 MIDI Part 直接拖入未实现、未测试，不属于已支持输入。

@@ -95,6 +95,10 @@ bool PLUGIN_API PluginView::open(void* parent) {
         actions.deleteUser=[pluginController](const std::string& id) { return pluginController->deleteUserProgression(id); };
         actions.audition=[pluginController](const harmony::ContinuationCandidate& candidate) {
             pluginController->audition(candidate); };
+        actions.midiPayload=[pluginController](const harmony::ContinuationCandidate& c){return pluginController->midiPayload(c);};
+        actions.enrichmentMidiPayload=[pluginController](const harmony::enrichment::EnrichmentCandidate& c){return pluginController->midiPayload(c);};
+        actions.saveMidiPayload=[pluginController,parent](const harmony::midi::MidiClipPayload& p){return pluginController->saveMidiPayload(p,parent);};
+        actions.importMidi=[pluginController,parent](bool open,const std::filesystem::path& p){pluginController->importMidi(open,p,parent);};
         actions.exportMidi=[pluginController,parent](const harmony::ContinuationCandidate& candidate) {
             return pluginController->exportMidi(candidate,parent); };
         actions.auditionEnrichment=[pluginController](const harmony::enrichment::EnrichmentCandidate& candidate) {

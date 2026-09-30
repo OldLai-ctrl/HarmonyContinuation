@@ -15,6 +15,7 @@
 #include "library/LibraryStore.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiImportWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #if defined(_WIN32)
@@ -316,6 +317,10 @@ void Controller::pollRecommendation() noexcept {
             view_->setRecommendations(recommendations_);
             view_->setEnrichments(latest->enrichments);
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
+            if(!midiImportSummary_.empty()) {
+                view_->setActionStatus(midiImportSummary_+" · "+std::string(harmony::localization::text(sessionState_.locale,"midi.key"))+" "+
+                    (analysis_.selectedKey?harmony::formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();
+            }
         }
     } catch (...) {}
 }
@@ -512,33 +517,68 @@ std::string saveMidiSequence(const harmony::preview::Sequence& sequence,
 }
 }
 
+namespace {
+std::string saveCandidatePayload(const harmony::midi::PayloadResult& result,void* owner,harmony::session::Locale locale) {
+    const auto text=[locale](const char* key){return std::string(harmony::localization::text(locale,key));};
+    if(!result)return text("midi.saveFailed");
+#if defined(_WIN32)
+    const auto path=savePath(owner,result.payload.suggestedFilename,L"MIDI files\0*.mid\0\0",L"mid");
+    if(!path)return text("midi.cancelled");
+    std::string error;if(!harmony::midi::writeToFile(result.payload.smfBytes,*path,error))return text("midi.saveFailed");
+    return text("midi.saved");
+#else
+    (void)owner;return text("midi.saveFailed");
+#endif
+}
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::ContinuationCandidate& candidate) const {
+    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
+        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)}},candidate);
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::enrichment::EnrichmentCandidate& candidate) const {
+    const auto key=sessionState_.forcedKey?sessionState_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
+        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},key},candidate);
+}
 std::string Controller::exportMidi(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
-    try {
-        const auto built=harmony::preview::buildSequence(importedProgression_,&candidate,lastTempoBPM_);
-        if (!built) return "MIDI 导出失败："+built.error;
-        return saveMidiSequence(built.sequence,harmony::midi::ExportScope::FullPhrase,
-            {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},
-            candidate.key,candidate.intent,owner);
-    } catch (const std::exception& e) { return std::string("MIDI 导出失败：")+e.what(); }
-    catch (...) { return "MIDI 导出失败"; }
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
-
 std::string Controller::exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate& candidate,void* owner) noexcept {
-    try {
-        harmony::ImportedProgressionSession transformed;
-        if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection))
-            return "MIDI 导出失败：升级进行时间轴无效";
-        const auto built=harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_,candidate.constraints);
-        if (!built) return "MIDI 导出失败："+built.error;
-        const auto key=sessionState_.forcedKey?sessionState_.forcedKey:
-            analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
-        return saveMidiSequence(built.sequence,harmony::midi::ExportScope::FullPhrase,
-            {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},
-            key,std::nullopt,owner);
-    } catch (const std::exception& e) { return std::string("MIDI 导出失败：")+e.what(); }
-    catch (...) { return "MIDI 导出失败"; }
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
-
+void Controller::importMidi(bool openEnded,const std::filesystem::path& supplied,void* owner) noexcept {
+    try {
+        const auto path=supplied.empty()?harmony::midi::chooseMidiFile(owner):std::optional(supplied);
+        if(!path)return;
+        const auto loaded=harmony::midi::importFile(*path,openEnded);
+        const auto text=[&](const char* key){return std::string(harmony::localization::text(sessionState_.locale,key));};
+        if(!loaded){if(view_){view_->setDropReport(text("midi.failed"),loaded.midi.error+"\n"+loaded.extraction.error,false);view_->setActionStatus(text(loaded.midi.status==harmony::midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));}return;}
+        auto next=sessionState_;if(!harmony::midi::applyImport(loaded,next.imported))return;
+        next.tab=harmony::session::Tab::Recommend;
+        if(!loaded.midi.file.meters.empty()){const auto meter=loaded.midi.file.meters.front();
+            if(meter.numerator<=32&&meter.denominator<=32){next.meterNumerator=meter.numerator;next.meterDenominator=meter.denominator;}}
+        importedProgression_=next.imported;
+        if(view_)view_->setSnapshotMode(false);
+        applySessionState(next);
+        if(view_) {
+            std::string summary=text("midi.recognized")+" "+std::to_string(loaded.extraction.chords.size())+" · "+text("midi.track")+" "+loaded.extraction.selectedTrackName;
+            const auto warnings=loaded.midi.file.warnings.size()+loaded.extraction.warnings.size();
+            if(warnings)summary+=" · "+text("midi.uncertain")+" "+std::to_string(warnings);
+            std::ostringstream details;details<<"SMF "<<loaded.midi.file.format<<" PPQ "<<loaded.midi.file.ppq<<'\n';
+            for(const auto& t:loaded.extraction.tracks)details<<"Track "<<t.track<<" "<<t.name<<" score "<<t.chordLikeness<<'\n';
+            for(const auto& w:loaded.midi.file.warnings)details<<w<<'\n';
+            for(const auto& w:loaded.extraction.warnings)details<<w<<'\n';
+            for(std::size_t i=0;i<std::min<std::size_t>(256,loaded.extraction.slices.size());++i) {
+                const auto& slice=loaded.extraction.slices[i];details<<slice.startQN<<" "<<slice.chord<<" confidence="<<slice.confidence<<'\n';
+            }
+            midiImportSummary_=summary;
+            view_->setDropReport(summary,details.str(),false);view_->setActionStatus(summary);
+        }
+    } catch(...){if(view_)view_->setActionStatus(std::string(harmony::localization::text(sessionState_.locale,"midi.failed")));}
+}
+std::string Controller::saveMidiPayload(const harmony::midi::MidiClipPayload& payload,void* owner) noexcept {
+    try {return saveCandidatePayload({payload,{}},owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
+}
 std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& item,void* owner) noexcept {
     try {
         const auto key=sessionState_.forcedKey.value_or(analysis_.selectedKey?analysis_.selectedKey->key:

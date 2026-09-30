@@ -1,4 +1,5 @@
 #include "MainView.h"
+#include "session/ProductServices.h"
 #include "WeightBarGeometry.h"
 #include "product/ProductVersion.h"
 #include "preview/VoiceLeadingMetrics.h"
@@ -6,11 +7,13 @@
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/clinestyle.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/cdropsource.h"
 #include "vstgui/lib/cgraphicstransform.h"
 #include "vstgui/lib/events.h"
 #include "vstgui/lib/controls/ctextedit.h"
 #include "vstgui/lib/platform/iplatformframe.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -146,6 +149,77 @@ bool MainView::runZoomSmoke() {
     state_=saved;recommendations_=savedRecommendations;
     selectedChord_.reset();selectedCandidate_.reset();selectedLibrary_.reset();refreshLayout();invalid();return okay;
 }
+bool MainView::runMidiWorkflowSmoke() {
+    const auto savedState=state_;const auto savedActions=actions_;const auto savedRecommendations=recommendations_;
+    const auto savedEnrichments=enrichments_;const auto savedPreview=previewCandidateId_;
+    bool okay=true;
+    for(const auto zoom:{100u,125u,150u}) {
+        state_.uiZoomPercent=zoom;state_.tab=session::Tab::Recommend;state_.intent.reset();state_.pinnedCandidateIds.clear();pinnedEnrichmentIds_.clear();contentScroll_=0;
+        recommendations_={};enrichments_={};
+        for(int i=0;i<3;++i) {
+            ContinuationCandidate c;c.id="midi-test-"+std::to_string(i);c.intent=PhraseIntent::Resolve;c.key={PitchClass::C,Mode::Major};
+            c.suggestedCurrentChordDurationQN=2+i;c.rankingScore=90.f-i;
+            c.continuation.push_back({i==2?"Cmaj7":"C",2.+i,{1,0},i==2?ChordQuality::Major7:ChordQuality::Major,{}});
+            recommendations_.groups[0].push_back(c);
+            enrichment::EnrichmentCandidate e;e.id="enrich-test-"+std::to_string(i);e.score=90.f-i;e.fingerprint=e.id;
+            ChordEvent event;event.name=i==2?"Am7":"C";event.durationQN=4;event.openEnded=false;e.progression.push_back(event);
+            e.techniques.push_back(enrichment::TechniqueID::Inversion);enrichments_.groups[0].push_back(e);
+        }
+        for(const bool enrich:{false,true})for(const bool more:{false,true}) {
+            state_.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+            selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();selectedLibrary_.reset();
+            const std::size_t index=more?2:0;
+            if(more){if(enrich)selectedEnrichment_={{0,index}};else selectedCandidate_={{0,index}};}
+            refreshLayout();
+            const auto expected=enrich?enrichments_.groups[0][index].fingerprint:session::continuationFingerprint(recommendations_.groups[0][index]);
+            std::string heard,exported,snapshot;int saved{};
+            actions_={};
+            actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
+            actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
+            actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
+            actions_.exportEnrichmentMidi=[](const enrichment::EnrichmentCandidate&){return std::string{};};
+            const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}};
+            actions_.midiPayload=[&](const ContinuationCandidate& c){exported=session::continuationFingerprint(c);return midi::PayloadResult{fake,{}};};
+            actions_.enrichmentMidiPayload=[&](const enrichment::EnrichmentCandidate& c){exported=c.fingerprint;return midi::PayloadResult{fake,{}};};
+            actions_.saveMidiPayload=[&](const midi::MidiClipPayload& p){++saved;okay=okay&&p.smfBytes==fake.smfBytes;return std::string{};};
+            actions_.saveSnapshot=[&](const ContinuationCandidate& c){snapshot=session::continuationFingerprint(c);return std::string{};};
+            actions_.saveEnrichmentSnapshot=[&](const enrichment::EnrichmentCandidate& c){snapshot=c.fingerprint;return std::string{};};
+            const auto actionRect=[&](int action) {
+                if(more){const auto a=layout_.inspector;const auto width=(a.width()-28)/(enrich?3:4);
+                    return UiRect{a.left+14+action*width,a.bottom-39,a.left+14+(action+1)*width,a.bottom-8};}
+                const auto lane=layout_.lanes[0];
+                if(enrich){const double x=action==0?lane.right-122:action==1?lane.right-94:lane.right-51;
+                    return UiRect{x,lane.top+77,x+(action==0?24:39),lane.top+101};}
+                const auto g=candidateRowGeometry(lane,0,true);return action==0?g.audition:action==1?g.midi:g.snapshot;
+            };
+            const auto point=[&](UiRect r){return CPoint{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};};
+            auto p=point(actionRect(0));onMouseDown(p,CButtonState{kLButton});okay=okay&&heard==expected;
+            p=point(actionRect(1));onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&exported==expected&&saved==0&&midiPending_.has_value();
+            auto moved=p;moved.x+=1;onMouseMoved(moved,CButtonState{kLButton});okay=okay&&saved==0&&midiPending_.has_value();
+            okay=okay&&!shouldStartDrag(p,moved)&&shouldStartDrag(p,CPoint{p.x+8,p.y});
+            onMouseUp(p,CButtonState{kLButton});okay=okay&&saved==1&&!midiPending_;
+            p=point(actionRect(2));onMouseDown(p,CButtonState{kLButton});okay=okay&&snapshot==expected;
+            if(more){previewCandidateId_="playing";CPoint outside{0,0};onMouseDown(outside,CButtonState{kLButton});
+                okay=okay&&!selectedCandidate_&&!selectedEnrichment_&&previewCandidateId_=="playing";
+                if(enrich){selectedEnrichment_={{0,index}};auto changed=enrichments_;changed.groups[0][index].fingerprint="changed";setEnrichments(changed);okay=okay&&!selectedEnrichment_;}
+                else {selectedCandidate_={{0,index}};auto changed=recommendations_;changed.groups[0][index].suggestedCurrentChordDurationQN=8.;setRecommendations(changed);okay=okay&&!selectedCandidate_;}
+            }
+            std::string importedPath;bool importOpen=true;
+            actions_.importMidi=[&](bool open,const std::filesystem::path& path){importOpen=open;importedPath=path.generic_string();};
+            const char filePath[]="D:/fixture.mid";
+            const auto package=CDropSource::create(filePath,sizeof(filePath),IDataPackage::kFilePath);
+            const void* received{};IDataPackage::Type type{};
+            okay=okay&&package->getCount()==1&&package->getData(0,received,type)==sizeof(filePath)&&type==IDataPackage::kFilePath&&std::string(static_cast<const char*>(received))==filePath;
+            const auto center=point(layout_.timeline);
+            okay=okay&&onDrop({package,center,{}})&&importedPath==filePath&&!importOpen;
+            const auto privateData=CDropSource::create("private",8,IDataPackage::kBinary);
+            okay=okay&&!onDrop({privateData,center,{}});
+        }
+    }
+    state_=savedState;actions_=savedActions;recommendations_=savedRecommendations;enrichments_=savedEnrichments;previewCandidateId_=savedPreview;
+    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();return okay;
+}
 void MainView::refreshLayout() {
     const auto priorWidth=layout_.timeline.width();
     layout_=computeLayout({getViewSize().getWidth(),getViewSize().getHeight(),contentScale_,state_.tab,
@@ -204,7 +278,21 @@ SharedPointer<IDropTarget> MainView::getDropTarget() { return this; }
 DragOperation MainView::onDragEnter(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
 DragOperation MainView::onDragMove(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
 void MainView::onDragLeave(DragEventData) {}
-bool MainView::onDrop(DragEventData e) { try { if (!e.drag || !actions_.drop) return false; actions_.drop(e.drag); return true; } catch (...) { return false; } }
+bool MainView::onDrop(DragEventData e) {
+    try {
+        if(!e.drag)return false;
+        auto point=e.pos;point.x/=userZoom();point.y/=userZoom();
+        if(actions_.importMidi&&layout_.timeline.contains(point.x,point.y))for(std::uint32_t i=0;i<e.drag->getCount();++i) {
+            const void* bytes{};IDataPackage::Type type{};const auto size=e.drag->getData(i,bytes,type);
+            if(type!=IDataPackage::kFilePath||!bytes||!size||size>32768)continue;
+            std::string name(static_cast<const char*>(bytes),size);const auto end=name.find('\0');if(end!=std::string::npos)name.resize(end);
+            const auto path=std::filesystem::path(std::u8string(name.begin(),name.end()));auto extension=path.extension().string();
+            std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+            if(extension==".mid"||extension==".midi"){actions_.importMidi(false,path);return true;}
+        }
+        if(!actions_.drop)return false;actions_.drop(e.drag);return true;
+    } catch (...) {return false;}
+}
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
 void MainView::setSessionState(const session::PluginSessionState& s) {
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
@@ -233,8 +321,10 @@ void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a; inval
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
 void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
+    const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
     recommendations_=r;
-    if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected)) selectedCandidate_.reset();
+    if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
+        session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
     const bool resolved=std::any_of(recommendations_.groups.begin(),recommendations_.groups.end(),
         [](const auto& group){return !group.empty();});
     const auto oldPins=state_.pinnedCandidateIds;
@@ -250,8 +340,9 @@ void MainView::setRecommendations(const RecommendationSet& r) {
 }
 void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
+    const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
     enrichments_=value;
-    if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected))
+    if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected || selectedEnrichment()->fingerprint!=oldFingerprint))
         selectedEnrichment_.reset();
     std::erase_if(pinnedEnrichmentIds_,[&](const std::string& id) { return !findEnrichment(id); });
     refreshLayout(); invalid();
@@ -408,7 +499,7 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
         const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
         line(dc,event.name+" · "+duration+" · "+t("phrase.starts")+" "+fixed(event.startQN)+" QN",
              CRect(23,y+28,layout_.viewport.right-23,y+55),pale);
-    } else line(dc,t("phrase.select"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
+    } else line(dc,t("phrase.select")+" · "+t("midi.help"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -480,7 +571,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             line(dc,t("candidate.pin"),viewRect(geometry.pin),accent,kCenterText);
             if(exportControls) {
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
-                line(dc,"MIDI",viewRect(geometry.midi),accent,kCenterText);
+                line(dc,t("midi.button"),viewRect(geometry.midi),accent,kCenterText);
                 line(dc,"SNAP",viewRect(geometry.snapshot),muted,kCenterText);
             } else if(actions_.audition)
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
@@ -501,8 +592,9 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
         auto lane=layout_.lanes[group]; lane.top-=contentScroll_; lane.bottom-=contentScroll_;
         if (lane.bottom<layout_.content.top || lane.top>layout_.content.bottom) continue;
         box(dc,viewRect(lane),panel);
-        line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.right-8,lane.top+27),accent);
+        line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.right-120,lane.top+27),accent);
         const auto& candidates=enrichments_.groups[group];
+        if(candidates.size()>2)line(dc,t("candidate.more"),CRect(lane.right-120,lane.top+3,lane.right-8,lane.top+27),accent,kRightText);
         if (candidates.empty()) {
             line(dc,workerBusy_?t("status.analyzing"):t("status.noEnrichment"),
                  CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
@@ -533,7 +625,7 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
             if (actions_.auditionEnrichment)
                 line(dc,"▶",CRect(lane.right-122,y+49,lane.right-98,y+73),accent,kCenterText);
             if (actions_.exportEnrichmentMidi)
-                line(dc,"MIDI",CRect(lane.right-94,y+49,lane.right-55,y+73),accent,kCenterText);
+                line(dc,t("midi.button"),CRect(lane.right-94,y+49,lane.right-55,y+73),accent,kCenterText);
             if (actions_.saveEnrichmentSnapshot)
                 line(dc,"SNAP",CRect(lane.right-51,y+49,lane.right-8,y+73),muted,kCenterText);
         }
@@ -783,8 +875,47 @@ void MainView::submitForm() {
     endForm();
 }
 CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
+    midiPending_.reset();midiClick_={};
     CPoint logical{where.x/userZoom(),where.y/userZoom()};
     return onMouseDownResponsive(logical);
+}
+bool MainView::armMidi(const ContinuationCandidate& candidate,CPoint where) {
+    if(!actions_.midiPayload)return false;
+    const auto result=actions_.midiPayload(candidate);
+    if(!result){actionStatus_=t("midi.failed");invalid();return true;}
+    midiPending_=result.payload;midiMouseDown_=where;
+    midiClick_=[this,payload=result.payload,candidate]{actionStatus_=actions_.saveMidiPayload?
+        actions_.saveMidiPayload(payload):actions_.exportMidi?actions_.exportMidi(candidate):t("midi.failed");invalid();};return true;
+}
+bool MainView::armMidi(const enrichment::EnrichmentCandidate& candidate,CPoint where) {
+    if(!actions_.enrichmentMidiPayload)return false;
+    const auto result=actions_.enrichmentMidiPayload(candidate);
+    if(!result){actionStatus_=t("midi.failed");invalid();return true;}
+    midiPending_=result.payload;midiMouseDown_=where;
+    midiClick_=[this,payload=result.payload,candidate]{actionStatus_=actions_.saveMidiPayload?
+        actions_.saveMidiPayload(payload):actions_.exportEnrichmentMidi?actions_.exportEnrichmentMidi(candidate):t("midi.failed");invalid();};return true;
+}
+CMouseEventResult MainView::onMouseMoved(CPoint& where,const CButtonState& buttons) {
+    try {
+    if(!midiPending_)return kMouseEventNotHandled;
+    if(!buttons.isLeftButton()){midiPending_.reset();midiClick_={};return kMouseEventHandled;}
+    if(!shouldStartDrag(CPoint(midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()),where))return kMouseEventHandled;
+    auto payload=std::move(*midiPending_);midiPending_.reset();midiClick_={};
+    const auto file=midi::createDragFile(payload);
+    if(!file){actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
+    const auto utf8=file.path.u8string();std::string path(utf8.begin(),utf8.end());
+    const auto package=CDropSource::create(path.c_str(),static_cast<std::uint32_t>(path.size()+1),IDataPackage::kFilePath);
+    auto callback=owned(new DragCallbackFunctions);
+    const SharedPointer<MainView> keepAlive(this);
+    callback->endedFunc=[keepAlive](IDraggingSession*,CPoint,DragOperation result){keepAlive->setActionStatus(keepAlive->t(result==DragOperation::None?"midi.dragFailed":"midi.dragged"));};
+    if(!doDrag(DragDescription(package),callback)){actionStatus_=t("midi.dragFailed");invalid();}
+    return kMouseEventHandled;
+    } catch(...){midiPending_.reset();midiClick_={};actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
+}
+CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
+    try {auto click=std::move(midiClick_);midiClick_={};midiPending_.reset();
+        if(click&&!shouldStartDrag(CPoint{midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()},where))click();
+    } catch(...){actionStatus_=t("midi.saveFailed");invalid();}return kMouseEventHandled;
 }
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
@@ -857,7 +988,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(i==3) {
                 const auto choice=popup({t("nav.library"),t("nav.diagnostics"),
                     state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about"),
-                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%"},where);
+                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import")},where);
                 if(choice==0) state_.tab=session::Tab::Library;
                 else if(choice==1) state_.tab=session::Tab::Diagnostics;
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
@@ -873,6 +1004,10 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 else if(choice==4) {
                     const auto zoom=popup({"100%","125%","150%"},where);
                     if(zoom>=0)setUserZoom(std::array<std::uint32_t,3>{100,125,150}[zoom]);
+                }
+                else if(choice==5&&actions_.importMidi) {
+                    const auto option=popup({t("midi.complete"),t("midi.open")},where);
+                    if(option>=0)actions_.importMidi(option==1,{});
                 }
                 if(choice>=0) notifyState();
             }
@@ -902,6 +1037,22 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(where.y<area.top+39) {selectedCandidate_.reset();selectedEnrichment_.reset();
                 selectedChord_.reset();selectedLibrary_.reset();invalid();return kMouseEventHandled;}
             if(where.y>=area.bottom-43) {
+                if(state_.tab==session::Tab::Recommend&&(selectedCandidate()||selectedEnrichment())) {
+                    const int columns=state_.productMode==session::ProductMode::Enrich?3:4;
+                    const auto column=std::clamp(static_cast<int>((where.x-area.left-14)/((area.width()-28)/columns)),0,columns-1);
+                    if(const auto* c=selectedEnrichment();c&&state_.productMode==session::ProductMode::Enrich) {
+                        if(column==0&&actions_.auditionEnrichment)actions_.auditionEnrichment(*c);
+                        else if(column==1)armMidi(*c,where);
+                        else if(column==2&&actions_.saveEnrichmentSnapshot)actionStatus_=actions_.saveEnrichmentSnapshot(*c);
+                    } else if(const auto* continuation=selectedCandidate()) {
+                        if(column==0&&actions_.audition)actions_.audition(*continuation);
+                        else if(column==1)armMidi(*continuation,where);
+                        else if(column==2&&actions_.saveSnapshot)actionStatus_=actions_.saveSnapshot(*continuation);
+                        else if(column==3){formMetadata_.name="My "+std::string(intentName(continuation->intent))+" Progression";formMetadata_.note.clear();
+                            formMetadata_.style=state_.style;formMetadata_.intent=continuation->intent;beginForm(Form::Save,formMetadata_.name);}
+                    }
+                    invalid();return kMouseEventHandled;
+                }
                 if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
                    selectedEnrichment()&&actions_.saveEnrichmentSnapshot) {
                     actionStatus_=actions_.saveEnrichmentSnapshot(*selectedEnrichment());invalid();
@@ -1046,6 +1197,21 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             for(std::size_t group=0;group<3;++group) {
                 auto lane=layout_.lanes[group];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
                 if(!lane.contains(where.x,where.y))continue;
+                if(where.y<lane.top+27&&where.x>=lane.right-120&&enrichments_.groups[group].size()>2) {
+                    const auto listed=enrichments_.groups[group];const auto revision=state_.imported.revision;
+                    std::vector<std::string> options;
+                    for(const auto& c:listed) {
+                        std::string path;for(const auto& chord:c.progression){if(!path.empty())path+=" → ";path+=chord.name;}
+                        options.push_back(fixed(c.score,0)+" · "+path);
+                    }
+                    const auto index=popup(options,where);
+                    if(index>=0&&static_cast<std::size_t>(index)<listed.size()&&revision==state_.imported.revision) {
+                        const auto& original=listed[index];const auto& current=enrichments_.groups[group];
+                        const auto found=std::find_if(current.begin(),current.end(),[&](const auto& c){return c.id==original.id&&c.fingerprint==original.fingerprint;});
+                        if(found!=current.end()){selectedEnrichment_={{group,static_cast<std::size_t>(found-current.begin())}};selectedCandidate_.reset();selectedChord_.reset();inspectorScroll_=0;refreshLayout();focusTransientOverlay();invalid();}
+                    }
+                    return kMouseEventHandled;
+                }
                 const auto row=static_cast<std::size_t>(std::max(0.,std::floor((where.y-lane.top-28)/80)));
                 if(row>=std::min<std::size_t>(2,enrichments_.groups[group].size()))return kMouseEventHandled;
                 const auto& candidate=enrichments_.groups[group][row];
@@ -1061,7 +1227,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 } else if(where.y>=rowY+49 && where.x>=lane.right-52 && actions_.saveEnrichmentSnapshot)
                     actionStatus_=actions_.saveEnrichmentSnapshot(candidate);
                 else if(where.y>=rowY+49 && where.x>=lane.right-96 && actions_.exportEnrichmentMidi)
-                    actionStatus_=actions_.exportEnrichmentMidi(candidate);
+                    armMidi(candidate,where);
                 else if(where.y>=rowY+49 && where.x>=lane.right-124 && actions_.auditionEnrichment)
                     actions_.auditionEnrichment(candidate);
                 else {selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
@@ -1077,17 +1243,20 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             const auto group=groupForVisual(visual,state_.intent);
             if(where.y<lane.top+27) {
                 if(where.x>=lane.right-120&&recommendations_.groups[group].size()>2) {
+                    const auto listed=recommendations_.groups[group];const auto revision=state_.imported.revision;
                     std::vector<std::string> options;
-                    for(const auto& c:recommendations_.groups[group]) {
+                    for(const auto& c:listed) {
                         std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
                         options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
-                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};
-                        selectedChord_.reset();selectedEnrichment_.reset();refreshLayout();focusTransientOverlay();
-                        inspectorScroll_=0;
-                        if(actions_.benchmarkSelect)actions_.benchmarkSelect(recommendations_.groups[group][selected]);
-                        invalid();}
+                    if(selected>=0&&static_cast<std::size_t>(selected)<listed.size()&&revision==state_.imported.revision) {
+                        const auto& original=listed[selected];const auto fingerprint=session::continuationFingerprint(original);const auto& current=recommendations_.groups[group];
+                        const auto found=std::find_if(current.begin(),current.end(),[&](const auto& c){return c.id==original.id&&session::continuationFingerprint(c)==fingerprint;});
+                        if(found!=current.end()){selectedCandidate_={{group,static_cast<std::size_t>(found-current.begin())}};
+                            selectedChord_.reset();selectedEnrichment_.reset();refreshLayout();focusTransientOverlay();inspectorScroll_=0;
+                            if(actions_.benchmarkSelect)actions_.benchmarkSelect(*found);invalid();}
+                    }
                 }
                 return kMouseEventHandled;
             }
@@ -1103,7 +1272,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 else if(state_.pin(c.id,session::continuationFingerprint(c)))pinnedSnapshots_.push_back(c);
                 notifyState();
             } else if(geometry.audition.contains(where.x,where.y)&&actions_.audition)actions_.audition(c);
-            else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){actionStatus_=actions_.exportMidi(c);invalid();}
+            else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){if(!armMidi(c,where))actionStatus_=actions_.exportMidi(c);invalid();}
             else if(geometry.snapshot.contains(where.x,where.y)&&actions_.saveSnapshot){actionStatus_=actions_.saveSnapshot(c);invalid();}
             else {selectedCandidate_={{group,index}};selectedChord_.reset();selectedEnrichment_.reset();
                 inspectorScroll_=0;refreshLayout();focusTransientOverlay();invalid();}
@@ -1222,6 +1391,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()) {
         const auto& candidate=*selectedEnrichment();
         add(t("inspector.why"),accent);
+        if(state_.debugExpanded)add("Fingerprint: "+candidate.fingerprint,muted);
         std::vector<std::string> sourceNames,transformedNames;
         for(const auto& chord:state_.imported.events)sourceNames.push_back(chord.name);
         for(const auto& chord:candidate.progression)transformedNames.push_back(chord.name);
@@ -1255,6 +1425,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);
+        if(state_.debugExpanded)add("Fingerprint: "+session::continuationFingerprint(c),muted);
         addMelody(c.melodyCompatibility);
         add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+
             std::to_string(static_cast<int>(std::round(c.rankingScore))));
@@ -1343,7 +1514,13 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     }
     inspectorScrollMax_=std::max(0.,y+inspectorScroll_-(area.bottom-45));
     }
-    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
+    if(state_.tab==session::Tab::Recommend&&(selectedCandidate()||selectedEnrichment())) {
+        const std::size_t count=state_.productMode==session::ProductMode::Enrich?3:4;
+        const double cell=(area.width()-28)/count;
+        const std::array<std::string,4> titles{t("candidate.play"),t("midi.button"),t("candidate.snapshot"),
+            state_.productMode==session::ProductMode::Continue?t("form.save"):t("candidate.why")};
+        for(std::size_t i=0;i<count;++i)line(dc,titles[i],CRect(area.left+14+i*cell,area.bottom-39,area.left+14+(i+1)*cell,area.bottom-8),accent,kCenterText);
+    } else if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
        selectedEnrichment()&&actions_.saveEnrichmentSnapshot)
         line(dc,t("candidate.snapshot"),CRect(area.left+14,area.bottom-39,area.right-14,area.bottom-8),accent,kRightText);
     else if(state_.tab==session::Tab::Recommend&&selectedCandidate())
