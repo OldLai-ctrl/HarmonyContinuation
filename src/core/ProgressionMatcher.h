@@ -86,6 +86,7 @@ struct MatchQuery {
     std::optional<int> timeSigDenominator;
     std::optional<StyleFlags> styleHint;
     bool forcedKey{};
+    Progression source;
 };
 
 // All score-affecting constants live here. Values are dimensionless costs.

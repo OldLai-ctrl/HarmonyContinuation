@@ -69,6 +69,8 @@ public:
     void onMouseWheelEvent(VSTGUI::MouseWheelEvent&) override;
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
+    void setUserZoom(std::uint32_t percent);
+    bool runZoomSmoke();
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -108,11 +110,14 @@ private:
     UILayoutResult layout_;
     double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
     std::uint64_t paintGeneration_{};
-    enum class Form { None, Save, Rename, Search } form_{Form::None};
+    enum class Form { None, Save, Rename, Search, Melody } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
     VSTGUI::CTextEdit* noteEdit_{};
     session::SaveMetadata formMetadata_;
+    MelodyConstraint formMelody_;
+    double userZoom() const noexcept { return state_.uiZoomPercent/100.0; }
+    VSTGUI::CRect editRect(VSTGUI::CRect) const;
     void notifyState();
     std::string t(std::string_view key) const { return std::string(localization::text(state_.locale,key)); }
     std::string tIntent(PhraseIntent intent) const {

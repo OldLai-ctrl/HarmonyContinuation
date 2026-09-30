@@ -1,5 +1,6 @@
 #pragma once
 #include "preview/ChordVoicer.h"
+#include "preview/PreviewSequence.h"
 #include <filesystem>
 #include <optional>
 #include <string>

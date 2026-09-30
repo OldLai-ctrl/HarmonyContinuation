@@ -1,5 +1,6 @@
 #include "DemoScenario.h"
 #include "ProgressionJson.h"
+#include "benchmark/BenchJson.h"
 #include <fstream>
 #include <iterator>
 #include <regex>
@@ -57,6 +58,31 @@ ScenarioResult loadScenario(const std::filesystem::path& path) {
                 {"develop",PhraseIntent::Develop},{"resolve",PhraseIntent::Resolve},{"loop",PhraseIntent::Loop},{"color",PhraseIntent::Color}})
                 if (*value==name) result.scenario.intent=intent;
             if (!result.scenario.intent) throw std::runtime_error("invalid intent");
+        }
+        if(auto tendency=field("tendency")) {
+            if(*tendency=="conservative")result.scenario.tendency=HarmonicTendency::Conservative;
+            else if(*tendency=="bold")result.scenario.tendency=HarmonicTendency::Bold;
+            else if(*tendency!="balanced")throw std::runtime_error("invalid tendency");
+        }
+        if(data.find("\"melody\"")!=std::string::npos) {
+            const auto json=benchmark::json::parse(data);
+            for(const auto& item:json.at("melody").items()) {
+                auto event=parseMelodyNote(item.at("note").text());
+                if(!event)throw std::runtime_error("invalid melody note");
+                event->startQN=item.at("startQN").finite();event->durationQN=item.at("durationQN").finite();
+                if(item.object.contains("role")) {
+                    const auto& role=item.at("role").text();
+                    if(role=="top")event->role=ConstraintRole::TopVoice;
+                    else if(role!="present")throw std::runtime_error("invalid melody role");
+                }
+                if(item.object.contains("strictness")) {
+                    const auto& strictness=item.at("strictness").text();
+                    if(strictness=="hard")event->strictness=ConstraintStrictness::Hard;
+                    else if(strictness!="soft")throw std::runtime_error("invalid melody strictness");
+                }
+                result.scenario.constraints.melody.push_back(*event);
+            }
+            if(!validConstraints(result.scenario.constraints))throw std::runtime_error("invalid melody constraints");
         }
     } catch (const std::exception& e) { result.scenario={}; result.error=e.what(); }
     return result;

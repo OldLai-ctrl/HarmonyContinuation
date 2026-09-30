@@ -12,7 +12,7 @@ enum class Tab : std::uint8_t { Recommend, Library, Match, Diagnostics };
 enum class ProductMode : std::uint8_t { Continue, Enrich };
 enum class Locale : std::uint8_t { ZhCN, EnUS };
 struct PluginSessionState {
-    static constexpr std::uint32_t currentSchemaVersion = 4;
+    static constexpr std::uint32_t currentSchemaVersion = 5;
     std::uint32_t schemaVersion{currentSchemaVersion};
     ImportedProgressionSession imported;
     std::optional<KeySignature> forcedKey;
@@ -30,6 +30,9 @@ struct PluginSessionState {
     std::optional<int> meterDenominator;
     std::uint32_t editorWidth{1100};  // logical VSTGUI units, never physical DPI pixels
     std::uint32_t editorHeight{900};
+    HarmonyConstraintSet constraints;
+    HarmonicTendency tendency{HarmonicTendency::Balanced};
+    std::uint32_t uiZoomPercent{100};
 
     bool pin(const std::string& id, const std::string& fingerprint = {});
     bool unpin(const std::string& id);

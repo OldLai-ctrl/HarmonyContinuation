@@ -96,6 +96,7 @@ public:
         if(main_)main_->setEditorSizeState(static_cast<int>(state_.editorWidth),static_cast<int>(state_.editorHeight));
     }
     void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
+    bool zoomSmoke(std::uint32_t percent) {if(!main_)return false;main_->setUserZoom(percent);return main_->runZoomSmoke();}
     bool load(char which) {
         stopAudition();
         benchmarkId_.clear();benchmarkDescription_.clear();ratingCandidate_.reset();
@@ -109,6 +110,7 @@ public:
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
+        state_.constraints=scenario_.constraints;state_.tendency=scenario_.tendency;
         state_.meterNumerator=scenario_.meterNumerator; state_.meterDenominator=scenario_.meterDenominator;
         state_.imported.replace(std::move(scenario_.chords),TimelineCoordinateMode::RelativeToSelection);
         projectQN_=state_.imported.events.front().startQN; playing_=false;
@@ -215,6 +217,7 @@ public:
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.imported=snap.imported; state_.forcedKey=snap.key;
         state_.style=snap.style; state_.intent=snap.intent;
+        state_.constraints=snap.candidate.constraints;
         state_.meterNumerator=snap.meterNumerator; state_.meterDenominator=snap.meterDenominator;
         scenario_.name=path->filename().string(); scenario_.tempo=snap.tempoBPM;
         scenario_.meterNumerator=snap.meterNumerator; scenario_.meterDenominator=snap.meterDenominator;
@@ -272,7 +275,7 @@ private:
         if (candidate.id==auditionId_) { stopAudition(); return; }
         ImportedProgressionSession transformed;
         if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection)) return;
-        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo));
+        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo,candidate.constraints));
     }
     void playPreview(const std::string& id,const preview::BuildResult& built) {
         stopAudition();
@@ -296,7 +299,7 @@ private:
     void submit(bool rankingOnly=false) {
         if (snapshotLoaded_) return;
         if (state_.imported.events.empty()) return;
-        RecommendationRequest request{state_.style,state_.intent};
+        RecommendationRequest request{state_.style,state_.intent,state_.constraints,state_.tendency};
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
             rankingOnly,state_.imported.revision);
         if (main_) main_->setWorkerStatus(generation,0,true,0,0);
@@ -332,7 +335,7 @@ private:
         ImportedProgressionSession transformed;
         if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection))
             return "MIDI export: invalid enrichment timeline";
-        const auto built=preview::buildSequence(transformed,nullptr,scenario_.tempo);
+        const auto built=preview::buildSequence(transformed,nullptr,scenario_.tempo,candidate.constraints);
         if (!built) return "MIDI export: "+built.error;
         const auto key=state_.forcedKey?state_.forcedKey:
             analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
@@ -544,13 +547,14 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     demoContent=content;
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
     char initial='D'; int requestedWidth=1100,requestedHeight=900; double scale=1;
-    std::filesystem::path resizeSmokeReport,benchmarkSmokeReport;
+    std::filesystem::path resizeSmokeReport,benchmarkSmokeReport,zoomSmokeReport;
     std::string initialBenchmarkId;
     for (int i=1;i<argc;++i) {
         const std::wstring_view key(args[i]);
         if(key==L"--benchmark")benchmarkMode=true;
         else if(key==L"--benchmark-case"&&i+1<argc){benchmarkMode=true;initialBenchmarkId=utf8(args[++i]);}
         else if(key==L"--benchmark-smoke"&&i+1<argc){benchmarkMode=true;benchmarkSmokeReport=args[++i];}
+        else if(key==L"--zoom-smoke"&&i+1<argc)zoomSmokeReport=args[++i];
         else if (key==L"--case" && i+1<argc && wcslen(args[i+1])==1)initial=static_cast<char>(args[++i][0]);
         else if(key==L"--size"&&i+1<argc) {
             int width{},height{};
@@ -625,6 +629,21 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
         CreateWindowExW(0,L"BUTTON",L"Snapshot",WS_CHILD|WS_VISIBLE,137,742,110,30,hwnd,reinterpret_cast<HMENU>(205),instance,nullptr);
         loadBenchmarkIndex(benchmarkIndex);
     }else SendMessageW(combo,CB_SETCURSEL,initial-'A',0);
+    if(!zoomSmokeReport.empty()) {
+        std::ofstream report(zoomSmokeReport,std::ios::trunc);
+        if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 10;}
+        int passed{};
+        for(const auto [width,height]:std::array<std::pair<int,int>,3>{{{900,640},{1100,900},{1800,1000}}}) {
+            app->resize(width,height);
+            for(const std::uint32_t zoom:{100u,125u,150u}) {
+                if(!app->zoomSmoke(zoom)){report<<"failed "<<width<<'x'<<height<<" zoom "<<zoom<<'\n';
+                    DestroyWindow(hwnd);VSTGUI::exitPlatform();return 11;}
+                app->tick();++passed;
+            }
+        }
+        report<<"zoom smoke "<<passed<<"/9 PASS (modes, card hitbox, overlay, library)\n";
+        DestroyWindow(hwnd);VSTGUI::exitPlatform();return 0;
+    }
     if(!resizeSmokeReport.empty()) {
         std::ofstream report(resizeSmokeReport,std::ios::trunc);
         if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 3;}

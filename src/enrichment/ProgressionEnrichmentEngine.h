@@ -1,5 +1,7 @@
 #pragma once
 #include "core/ProgressionMatcher.h"
+#include "core/HarmonyConstraints.h"
+#include "core/HarmonicTendency.h"
 #include <array>
 #include <optional>
 #include <string>
@@ -38,6 +40,8 @@ struct EnrichmentConfig {
     float voiceLeadingWeight{0.03f}; // bounded quality tie-break, after harmony/style checks
     int minimumBassImprovementSemitones{2};
     float toleratedVoiceLeadingLoss{0.02f};
+    HarmonyConstraintSet constraints;
+    HarmonicTendency tendency{HarmonicTendency::Balanced};
 };
 struct EnrichmentCandidate {
     std::string id;
@@ -48,6 +52,8 @@ struct EnrichmentCandidate {
     std::vector<TechniqueID> techniques;
     float score{}, skeletonPreservation{}, styleCompatibility{}, complexityScore{};
     std::string fingerprint;
+    HarmonyConstraintSet constraints;
+    MelodyCompatibility melodyCompatibility;
 };
 struct EnrichmentResult {
     std::array<std::vector<EnrichmentCandidate>, 3> groups;

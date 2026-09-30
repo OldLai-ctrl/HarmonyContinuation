@@ -268,8 +268,15 @@ const char* groupName(Group group) noexcept {
     return "Unknown";
 }
 EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnalysisResult& analysis,
-                                   std::optional<Style> style, const EnrichmentConfig& config) {
+                                   std::optional<Style> style, const EnrichmentConfig& inputConfig) {
+    auto config=inputConfig;
+    const auto& profile=tendencyProfile(config.tendency);
+    if(config.tendency!=HarmonicTendency::Balanced) {
+        config.maxOperations=profile.operations;config.maxInsertions=profile.insertions;
+        config.maxSubstitutions=profile.substitutions;config.minimumSkeletonPreservation=profile.skeletonMinimum;
+    }
     EnrichmentResult result;
+    if(!validConstraints(config.constraints)){result.error="invalid melody constraints";return result;}
     if (source.empty() || source.size() > 64) { result.error = "invalid progression length"; return result; }
     for (std::size_t i = 0; i < source.size(); ++i) {
         if (!std::isfinite(source[i].startQN) || (i && source[i].startQN <= source[i - 1].startQN)) {
@@ -406,6 +413,27 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
             std::stable_sort(group.begin(), group.end(),
                 [](const auto& a, const auto& b) { return a.score > b.score; });
         }
+    }
+    for(auto& group:result.groups) {
+        for(auto& candidate:group) {
+            if(!config.constraints.melody.empty()) {
+                candidate.constraints=config.constraints;
+                candidate.melodyCompatibility=evaluateMelody(candidate.progression,config.constraints);
+                candidate.score-=melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
+            }
+            if(config.tendency!=HarmonicTendency::Balanced) {
+                const auto chromatic=std::count_if(candidate.techniques.begin(),candidate.techniques.end(),[](auto t) {
+                    return t==TechniqueID::BorrowedChord||t==TechniqueID::SecondaryDominant||
+                        t==TechniqueID::SecondaryLeadingTone||t==TechniqueID::PassingDiminished||
+                        t==TechniqueID::ChromaticApproach;
+                });
+                candidate.score=std::clamp(candidate.score+profile.chromaticBias*static_cast<float>(chromatic),0.f,100.f);
+            }
+        }
+        std::erase_if(group,[&](const auto& c) { return !c.melodyCompatibility.hardSatisfied||
+            (config.tendency!=HarmonicTendency::Balanced&&c.skeletonPreservation<config.minimumSkeletonPreservation); });
+        if(!config.constraints.melody.empty()||config.tendency!=HarmonicTendency::Balanced)
+            std::stable_sort(group.begin(),group.end(),[](const auto& a,const auto& b){return a.score>b.score;});
     }
     return result;
 }

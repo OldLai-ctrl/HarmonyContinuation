@@ -6,6 +6,7 @@
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/clinestyle.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/cgraphicstransform.h"
 #include "vstgui/lib/events.h"
 #include "vstgui/lib/controls/ctextedit.h"
 #include "vstgui/lib/platform/iplatformframe.h"
@@ -94,16 +95,16 @@ void MainView::resizeLayout(int width,int height) {
     layout_=computeLayout({static_cast<double>(width),static_cast<double>(height),contentScale_,state_.tab,
         state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()||selectedEnrichment_.has_value()):
             state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
-        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty()});
+        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty(),userZoom()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
     rebuildTimeline();
     playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
     if(nameEdit_) {
         const double w=std::min(590.,layout_.viewport.width()-48),h=360;
         const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
-        nameEdit_->setViewSize(CRect(x+140,y+53,x+w-22,y+91));
-        if(tagsEdit_)tagsEdit_->setViewSize(CRect(x+140,y+201,x+w-22,y+239));
-        if(noteEdit_)noteEdit_->setViewSize(CRect(x+140,y+261,x+w-22,y+299));
+        nameEdit_->setViewSize(editRect(CRect(x+140,y+53,x+w-22,y+91)),true);
+        if(tagsEdit_)tagsEdit_->setViewSize(editRect(CRect(x+140,y+201,x+w-22,y+239)),true);
+        if(noteEdit_)noteEdit_->setViewSize(editRect(CRect(x+140,y+261,x+w-22,y+299)),true);
     }
     invalid();
 }
@@ -111,12 +112,46 @@ void MainView::setSimulatedContentScale(double scale) {
     contentScale_=std::isfinite(scale)&&scale>0?scale:1;
     resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
 }
+CRect MainView::editRect(CRect rect) const {
+    const auto z=userZoom();return {rect.left*z,rect.top*z,rect.right*z,rect.bottom*z};
+}
+void MainView::setUserZoom(std::uint32_t percent) {
+    if(percent!=100&&percent!=125&&percent!=150)return;
+    endForm();state_.uiZoomPercent=percent;resizeLayout(static_cast<int>(getViewSize().getWidth()),
+        static_cast<int>(getViewSize().getHeight()));notifyState();
+}
+bool MainView::runZoomSmoke() {
+    const auto saved=state_;const auto savedRecommendations=recommendations_;
+    bool okay=true;
+    const auto click=[&](UiRect r) {CPoint point{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};
+        onMouseDown(point,CButtonState{kLButton});};
+    state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;state_.intent.reset();
+    selectedChord_.reset();selectedCandidate_.reset();selectedEnrichment_.reset();selectedLibrary_.reset();
+    refreshLayout();click(layout_.topControls[5]);okay=okay&&state_.productMode==session::ProductMode::Enrich;
+    click(layout_.topControls[4]);okay=okay&&state_.productMode==session::ProductMode::Continue;
+    ContinuationCandidate candidate;candidate.id="zoom-smoke";candidate.rankingScore=90;
+    candidate.intent=PhraseIntent::Resolve;candidate.continuation.push_back({"C",4,{1,0},ChordQuality::Major,{}});
+    recommendations_={};recommendations_.groups[0].push_back(candidate);contentScroll_=0;refreshLayout();
+    click(candidateRowGeometry(layout_.lanes[0],0,true).why);okay=okay&&selectedCandidate_.has_value();
+    click(layout_.topControls[4]);okay=okay&&activeOverlayKind()!=OverlayKind::Transient;
+    if(!timelineBlocks_.empty()) {
+        const auto tile=chordTileRect(0);click({tile.left,tile.top,tile.right,tile.bottom});
+        okay=okay&&selectedChord_==0;
+        click(layout_.topControls[4]);okay=okay&&!selectedChord_;
+    }
+    state_.tab=session::Tab::Library;refreshLayout();
+    okay=okay&&layout_.libraryRows>=1&&layout_.content.height()>=165;
+    if(!factory_.empty()) {click({layout_.content.left+12,layout_.content.top+89,
+        layout_.content.right-12,layout_.content.top+120});okay=okay&&selectedLibrary_.has_value();}
+    state_=saved;recommendations_=savedRecommendations;
+    selectedChord_.reset();selectedCandidate_.reset();selectedLibrary_.reset();refreshLayout();invalid();return okay;
+}
 void MainView::refreshLayout() {
     const auto priorWidth=layout_.timeline.width();
     layout_=computeLayout({getViewSize().getWidth(),getViewSize().getHeight(),contentScale_,state_.tab,
         state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()||selectedEnrichment_.has_value()):
             state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
-        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty()});
+        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty(),userZoom()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
     if (priorWidth!=layout_.timeline.width()) rebuildTimeline();
 }
@@ -147,18 +182,19 @@ void MainView::onKeyboardEvent(KeyboardEvent& event) {
     CView::onKeyboardEvent(event);
 }
 void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
+    auto point=event.mousePosition;point.x/=userZoom();point.y/=userZoom();
     const auto delta=event.deltaY*48.0;
-    if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(event.mousePosition.x,event.mousePosition.y)) {
+    if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(point.x,point.y)) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
     }
-    if (layout_.timeline.contains(event.mousePosition.x,event.mousePosition.y)) {
+    if (layout_.timeline.contains(point.x,point.y)) {
         timelineScroll_=std::clamp(timelineScroll_-delta,0.,
             std::max(0.,timelineContentWidth_-layout_.timeline.width()));
         playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
         invalid(); event.consumed=true; return;
     }
-    if (layout_.content.contains(event.mousePosition.x,event.mousePosition.y)) {
+    if (layout_.content.contains(point.x,point.y)) {
         contentScroll_=std::clamp(contentScroll_-delta,0.,layout_.laneScrollMax);
         invalid(); event.consumed=true; return;
     }
@@ -172,7 +208,9 @@ bool MainView::onDrop(DragEventData e) { try { if (!e.drag || !actions_.drop) re
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
 void MainView::setSessionState(const session::PluginSessionState& s) {
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
+    const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
     state_=s;
+    if(zoomChanged)resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
     if (timelineChanged) {
         pinnedSnapshots_.clear(); pinnedEnrichmentIds_.clear(); selectedChord_.reset();
         selectedCandidate_.reset(); selectedEnrichment_.reset(); rebuildTimeline();
@@ -246,7 +284,7 @@ void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t f
         if (actions_.stateChanged) actions_.stateChanged(state_);
     }
     if (fc) factoryCount_=fc; if (uc || !userCount_) userCount_=uc;
-    invalidRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top));
+    invalidRect(editRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top)));
 }
 void MainView::rebuildTimeline() {
     auto timeline=layoutScrollableTimeline(state_.imported.events,layout_.timeline.width());
@@ -272,10 +310,10 @@ void MainView::setPlaybackPosition(std::optional<double> qn,bool playing) {
     const auto oldLocation=currentLocation_; const auto oldX=playheadX_;
     projectQN_=qn && std::isfinite(*qn)?qn:std::nullopt; playing_=playing;
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
-    if (oldLocation.activeIndex) invalidRect(chordTileRect(*oldLocation.activeIndex));
-    if (currentLocation_.activeIndex) invalidRect(chordTileRect(*currentLocation_.activeIndex));
-    if (oldX) invalidRect(CRect(*oldX-3,layout_.timeline.top,*oldX+3,layout_.timeline.bottom));
-    if (playheadX_) invalidRect(CRect(*playheadX_-3,layout_.timeline.top,*playheadX_+3,layout_.timeline.bottom));
+    if (oldLocation.activeIndex) invalidRect(editRect(chordTileRect(*oldLocation.activeIndex)));
+    if (currentLocation_.activeIndex) invalidRect(editRect(chordTileRect(*currentLocation_.activeIndex)));
+    if (oldX) invalidRect(editRect(CRect(*oldX-3,layout_.timeline.top,*oldX+3,layout_.timeline.bottom)));
+    if (playheadX_) invalidRect(editRect(CRect(*playheadX_-3,layout_.timeline.top,*playheadX_+3,layout_.timeline.bottom)));
 }
 void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
     const CRect lane=viewRect(layout_.timeline);
@@ -337,6 +375,16 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
                 state_.productMode==session::ProductMode::Continue?accent:
             i==5&&state_.tab==session::Tab::Recommend&&
                 state_.productMode==session::ProductMode::Enrich?accent:i>=4?muted:pale);
+    const auto role=state_.constraints.melody.empty()?t("melody.off"):
+        state_.constraints.melody.front().role==ConstraintRole::TopVoice?t("melody.top"):t("melody.present");
+    const std::array<std::string,3> constraints{t("melody.label")+": "+role,
+        state_.constraints.melody.empty()?t("melody.note"):melodyNoteName(state_.constraints.melody.front())+
+            (state_.constraints.melody.size()>1?" +":""),
+        t("tendency.label")+": "+t(state_.tendency==HarmonicTendency::Conservative?"tendency.conservative":
+            state_.tendency==HarmonicTendency::Bold?"tendency.bold":"tendency.balanced")};
+    for(std::size_t i=0;i<constraints.size();++i)line(dc,constraints[i],viewRect(layout_.constraintControls[i]),
+        i==0&&!state_.constraints.melody.empty()?accent:pale);
+    if(state_.tab!=session::Tab::Recommend)return;
     const auto titleY=layout_.phrase.top-31;
     line(dc,t("phrase.title"),CRect(20,titleY,235,titleY+27),pale);
     const auto status=workerBusy_?t("status.analyzing"):!actionStatus_.empty()?actionStatus_:
@@ -619,11 +667,12 @@ std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
 }
 void MainView::drawRect(CDrawContext* dc,const CRect& update) {
     refreshLayout();
+    CDrawContext::Transform zoomTransform(*dc,CGraphicsTransform().scale(userZoom(),userZoom()));
     ++paintGeneration_;
-    const auto bounds=getViewSize();
-    if (update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
+    const auto bounds=viewRect(layout_.viewport);
+    if (userZoom()==1&&state_.tab==session::Tab::Recommend&&update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
     box(dc,bounds,background);
-    drawTop(dc,bounds); drawPhrase(dc,bounds);
+    drawTop(dc,bounds); if(state_.tab==session::Tab::Recommend)drawPhrase(dc,bounds);
     switch(state_.tab) {
         case session::Tab::Recommend:
             if (state_.productMode==session::ProductMode::Enrich) drawEnrichments(dc,bounds);
@@ -656,7 +705,8 @@ int MainView::popup(const std::vector<std::string>& items,CPoint point) {
         MultiByteToWideChar(CP_UTF8,0,items[i].c_str(),-1,wide.data(),len);
         AppendMenuW(menu,MF_STRING,static_cast<UINT_PTR>(i+1),wide.c_str());
     }
-    POINT at{static_cast<LONG>(point.x),static_cast<LONG>(point.y)}; ClientToScreen(window,&at);
+    const auto factor=userZoom()*(getFrame()?getFrame()->getZoom():1.);
+    POINT at{static_cast<LONG>(point.x*factor),static_cast<LONG>(point.y*factor)}; ClientToScreen(window,&at);
     const auto result=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_LEFTALIGN|TPM_TOPALIGN,at.x,at.y,0,window,nullptr);
     DestroyMenu(menu); return result?static_cast<int>(result-1):-1;
 #else
@@ -667,16 +717,22 @@ void MainView::beginForm(Form kind,std::string initial) {
     if (!getFrame()) return; endForm(); form_=kind;
     const double w=std::min(590.,layout_.viewport.width()-48),h=360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
-    nameEdit_=new CTextEdit(CRect(x+140,y+53,x+w-22,y+91),nullptr,0,initial.c_str());
+    nameEdit_=new CTextEdit(editRect(CRect(x+140,y+53,x+w-22,y+91)),nullptr,0,initial.c_str());
     nameEdit_->setBackColor(CColor(242,247,252,255)); nameEdit_->setFontColor(CColor(20,30,45,255));
     getFrame()->addView(nameEdit_);
     if (kind!=Form::Search) {
-        tagsEdit_=new CTextEdit(CRect(x+140,y+201,x+w-22,y+239),nullptr,0,"");
+        tagsEdit_=new CTextEdit(editRect(CRect(x+140,y+201,x+w-22,y+239)),nullptr,0,"");
         tagsEdit_->setBackColor(CColor(242,247,252,255)); tagsEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(tagsEdit_);
-        noteEdit_=new CTextEdit(CRect(x+140,y+261,x+w-22,y+299),nullptr,0,formMetadata_.note.c_str());
+        noteEdit_=new CTextEdit(editRect(CRect(x+140,y+261,x+w-22,y+299)),nullptr,0,formMetadata_.note.c_str());
         noteEdit_->setBackColor(CColor(242,247,252,255)); noteEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(noteEdit_);
+    }
+    const auto font=owned(new CFontDesc(kNormalFont->getName(),kNormalFont->getSize()*userZoom(),kNormalFont->getStyle()));
+    for(auto* edit:{nameEdit_,tagsEdit_,noteEdit_})if(edit)edit->setFont(font);
+    if(kind==Form::Melody) {
+        tagsEdit_->setText(fixed(formMelody_.startQN,3).c_str());
+        noteEdit_->setText(fixed(formMelody_.durationQN,3).c_str());
     }
     getFrame()->setFocusView(nameEdit_); invalid();
 }
@@ -689,6 +745,24 @@ void MainView::submitForm() {
     if (!nameEdit_) return;
     const auto text=nameEdit_->getText().getString();
     if (form_==Form::Search) { librarySearch_=text; libraryPage_=0; endForm(); return; }
+    if(form_==Form::Melody) {
+        const auto parsed=parseMelodyNote(text);
+        if(!parsed){actionStatus_=t("melody.invalid");invalid();return;}
+        auto melody=*parsed;melody.role=formMelody_.role;melody.strictness=formMelody_.strictness;
+        const auto parseTime=[](const std::string& text) {
+            std::istringstream in(text);in.imbue(std::locale::classic());double value{};
+            if(!(in>>value))throw std::runtime_error("invalid melody time");
+            in>>std::ws;if(!in.eof())throw std::runtime_error("invalid melody time");return value;
+        };
+        try {
+            melody.startQN=parseTime(tagsEdit_->getText().getString());
+            melody.durationQN=parseTime(noteEdit_->getText().getString());
+            HarmonyConstraintSet constraints{{melody}};
+            if(!validConstraints(constraints))throw std::runtime_error("invalid melody time");
+            state_.constraints=std::move(constraints);actionStatus_.clear();endForm();notifyState();
+        } catch(...) {actionStatus_=t("melody.invalid");invalid();}
+        return;
+    }
     if (text.empty() || text.size()>128) { actionStatus_=t("form.invalidName"); invalid(); return; }
     formMetadata_.name=text; formMetadata_.tags.clear();
     if (tagsEdit_) {
@@ -709,7 +783,8 @@ void MainView::submitForm() {
     endForm();
 }
 CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
-    return onMouseDownResponsive(where);
+    CPoint logical{where.x/userZoom(),where.y/userZoom()};
+    return onMouseDownResponsive(logical);
 }
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
@@ -720,6 +795,12 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(where.y>=y+h-45&&where.y<=y+h) {
                 if(where.x>=x+140&&where.x<x+290)endForm();
                 else if(where.x>=x+w-170&&where.x<=x+w)submitForm();
+            } else if(form_==Form::Melody&&where.y>=y+110&&where.y<y+144) {
+                const auto choice=popup({t("melody.present"),t("melody.top")},where);
+                if(choice>=0)formMelody_.role=static_cast<ConstraintRole>(choice);invalid();
+            } else if(form_==Form::Melody&&where.y>=y+144&&where.y<y+180) {
+                const auto choice=popup({t("melody.soft"),t("melody.hard")},where);
+                if(choice>=0)formMelody_.strictness=static_cast<ConstraintStrictness>(choice);invalid();
             } else if(form_!=Form::Search&&where.y>=y+110&&where.y<y+144) {
                 const auto choice=popup({t("label.auto"),"Pop","Rock","R&B","Jazz","City Pop / J-pop",t("tag.functional")},where);
                 constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
@@ -732,6 +813,32 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
         }
         if (dismissOnOutsideClick(activeOverlayKind(),layout_.inspector,where.x,where.y))
             dismissTransientOverlay();
+        for(std::size_t i=0;i<layout_.constraintControls.size();++i)
+            if(layout_.constraintControls[i].contains(where.x,where.y)) {
+                if(i==2) {
+                    const auto choice=popup({t("tendency.conservative"),t("tendency.balanced"),t("tendency.bold")},where);
+                    if(choice>=0){state_.tendency=static_cast<HarmonicTendency>(choice);notifyState();}
+                } else {
+                    if(state_.constraints.melody.empty()) {
+                        formMelody_=*parseMelodyNote("E4");
+                        if(!state_.imported.events.empty()) {
+                            const auto index=state_.productMode==session::ProductMode::Continue?
+                                state_.imported.events.size()-1:selectedChord_.value_or(0);
+                            const auto& chord=state_.imported.events[std::min(index,state_.imported.events.size()-1)];
+                            formMelody_.durationQN=chord.durationQN.value_or(4);
+                            formMelody_.startQN=chord.startQN+(state_.productMode==session::ProductMode::Continue?
+                                formMelody_.durationQN:0);
+                        }
+                    } else formMelody_=state_.constraints.melody.front();
+                    if(i==0) {
+                        const auto choice=popup({t("melody.off"),t("melody.present"),t("melody.top")},where);
+                        if(choice==0){state_.constraints.melody.clear();notifyState();}
+                        else if(choice>0){formMelody_.role=static_cast<ConstraintRole>(choice-1);
+                            beginForm(Form::Melody,melodyNoteName(formMelody_));}
+                    } else beginForm(Form::Melody,melodyNoteName(formMelody_));
+                }
+                return kMouseEventHandled;
+            }
         for(std::size_t i=0;i<layout_.topControls.size();++i)if(layout_.topControls[i].contains(where.x,where.y)) {
             if(i==0) {
                 std::vector<std::string> names{t("label.auto")};
@@ -749,7 +856,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 if(choice>=0){state_.intent=choice?std::optional<PhraseIntent>(static_cast<PhraseIntent>(choice)):std::nullopt;notifyState();}
             } else if(i==3) {
                 const auto choice=popup({t("nav.library"),t("nav.diagnostics"),
-                    state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about")},where);
+                    state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about"),
+                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%"},where);
                 if(choice==0) state_.tab=session::Tab::Library;
                 else if(choice==1) state_.tab=session::Tab::Diagnostics;
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
@@ -762,6 +870,10 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
                         t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion)},where);
                 }
+                else if(choice==4) {
+                    const auto zoom=popup({"100%","125%","150%"},where);
+                    if(zoom>=0)setUserZoom(std::array<std::uint32_t,3>{100,125,150}[zoom]);
+                }
                 if(choice>=0) notifyState();
             }
             else if(i==4){state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;
@@ -771,7 +883,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             return kMouseEventHandled;
         }
         const auto titleY=layout_.phrase.top-31;
-        if(where.y>=titleY&&where.y<titleY+30&&where.x>layout_.viewport.right-160) {
+        if(state_.tab==session::Tab::Recommend&&where.y>=titleY&&where.y<titleY+30&&where.x>layout_.viewport.right-160) {
             if(where.x<layout_.viewport.right-88)state_.tab=session::Tab::Diagnostics;
             else state_.debugExpanded=!state_.debugExpanded;
             notifyState();return kMouseEventHandled;
@@ -1093,6 +1205,20 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             else row+=part;}
         if(!row.empty())add(row);
     };
+    const auto addMelody=[&](const MelodyCompatibility& compatibility) {
+        constexpr const char* intervals[]{"1","b9","9","b3","3","11","#11","5","b13","13","b7","7"};
+        for(std::size_t i=0;i<std::min<std::size_t>(4,compatibility.observations.size());++i) {
+            const auto& observation=compatibility.observations[i];MelodyConstraint note;note.pitchClass=observation.pitchClass;
+            const auto relation=observation.relation==MelodyRelation::ChordTone?"melody.chordTone":
+                observation.relation==MelodyRelation::AvailableTension?"melody.tension":
+                observation.relation==MelodyRelation::Conflict?"melody.conflict":"melody.uncertain";
+            add(melodyNoteName(note)+" · "+observation.chord+" · "+t(relation)+" ("+
+                intervals[std::clamp(observation.interval,0,11)]+")",
+                observation.relation==MelodyRelation::Conflict?accent:muted);
+            if(!observation.topVoiceSatisfied)add(t("melody.topConflict"),accent);
+        }
+        if(state_.debugExpanded&&!compatibility.observations.empty())add(t("melody.score")+" "+fixed(compatibility.score,2),muted);
+    };
     if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()) {
         const auto& candidate=*selectedEnrichment();
         add(t("inspector.why"),accent);
@@ -1105,6 +1231,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             t("inspector.preservation")+"  "+fixed(candidate.skeletonPreservation,2),muted);
         add(t("inspector.styleFit")+"  "+fixed(candidate.styleCompatibility,2)+" · "+
             t("inspector.complexity")+"  "+fixed(candidate.complexityScore,2),muted);
+        addMelody(candidate.melodyCompatibility);
         const auto sourceVoice=preview::measureVoiceLeading(state_.imported.events);
         const auto enrichedVoice=preview::measureVoiceLeading(candidate.progression);
         if(sourceVoice&&enrichedVoice) {
@@ -1128,6 +1255,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);
+        addMelody(c.melodyCompatibility);
         add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+
             std::to_string(static_cast<int>(std::round(c.rankingScore))));
         std::optional<ScaleDegree> phraseStart,current;
@@ -1234,10 +1362,15 @@ void MainView::drawResponsiveForm(CDrawContext* dc) {
     const double w=std::min(590.,layout_.viewport.width()-48),h=360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
     box(dc,CRect(x,y,x+w,y+h),CColor(23,39,59,255));
-    line(dc,form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
+    line(dc,form_==Form::Melody?t("melody.label"):form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
         CRect(x+22,y+12,x+w-22,y+43),accent);
-    line(dc,form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
-    if(form_!=Form::Search) {
+    line(dc,form_==Form::Melody?t("melody.note"):form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
+    if(form_==Form::Melody) {
+        line(dc,t("melody.role")+": "+t(formMelody_.role==ConstraintRole::TopVoice?"melody.top":"melody.present"),CRect(x+22,y+115,x+w-22,y+142),pale);
+        line(dc,t("melody.strictness")+": "+t(formMelody_.strictness==ConstraintStrictness::Hard?"melody.hard":"melody.soft"),CRect(x+22,y+146,x+w-22,y+174),pale);
+        line(dc,t("melody.start"),CRect(x+22,y+183,x+w-22,y+210),muted);
+        line(dc,t("melody.duration"),CRect(x+22,y+244,x+w-22,y+269),muted);
+    } else if(form_!=Form::Search) {
         line(dc,t("label.style")+": "+(formMetadata_.style?styleName(*formMetadata_.style):t("label.auto")),CRect(x+22,y+115,x+w-22,y+142),pale);
         line(dc,t("label.intent")+": "+tIntent(formMetadata_.intent),CRect(x+22,y+146,x+w-22,y+174),pale);
         line(dc,t("form.tags"),CRect(x+22,y+183,x+w-22,y+210),muted);

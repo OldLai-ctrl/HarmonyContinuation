@@ -56,7 +56,7 @@ void validate(const EnrichmentSnapshot& snap) {
     ImportedProgressionSession transformed;
     if(!transformed.replace(snap.candidate.progression,TimelineCoordinateMode::RelativeToSelection))
         throw std::runtime_error("invalid transformed progression");
-    const auto preview=preview::buildSequence(transformed,nullptr,snap.tempoBPM);
+    const auto preview=preview::buildSequence(transformed,nullptr,snap.tempoBPM,snap.candidate.constraints);
     if(!preview)throw std::runtime_error(preview.error);
 }
 }
@@ -74,6 +74,7 @@ EnrichmentSnapshot captureEnrichment(const ImportedProgressionSession& imported,
         const auto anchor=snap.original.events.front().startQN;
         for(auto& chord:snap.original.events)chord.startQN-=anchor;
         for(auto& chord:snap.candidate.progression)chord.startQN-=anchor;
+        for(auto& melody:snap.candidate.constraints.melody)melody.startQN-=anchor;
         snap.original.coordinateMode=TimelineCoordinateMode::RelativeToSelection;
     }
     validate(snap);
@@ -103,6 +104,7 @@ std::string serialize(const EnrichmentSnapshot& snap) {
     candidate.object["complexityScore"]=snap.candidate.complexityScore;
     candidate.object["fingerprint"]=snap.candidate.fingerprint;
     candidate.object["progression"]=chordsOut(snap.candidate.progression);
+    candidate.object["melodyConstraints"]=encodeConstraints(snap.candidate.constraints);
     auto operations=Value::list();
     for(const auto& op:snap.candidate.operations){auto v=Value::map();
         v.object["type"]=static_cast<int>(op.type);
@@ -143,6 +145,8 @@ EnrichmentDecodeResult deserializeEnrichment(std::string_view input) {
         c.complexityScore=static_cast<float>(value.at("complexityScore").finite());
         c.fingerprint=value.at("fingerprint").text();
         c.progression=chordsIn(value.at("progression"));
+        if(value.object.contains("melodyConstraints"))c.constraints=decodeConstraints(value.at("melodyConstraints").text());
+        c.melodyCompatibility=evaluateMelody(c.progression,c.constraints);
         for(const auto& operation:value.at("operations").items()){
             enrichment::EnrichmentOperation op;
             op.type=static_cast<enrichment::OperationType>(operation.at("type").integer(0,5));

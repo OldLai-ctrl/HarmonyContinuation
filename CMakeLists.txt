@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.7.0 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.8.0 LANGUAGES C CXX)
 set(HC_PRERELEASE "dev.1" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
@@ -120,7 +120,8 @@ endif()
 
 add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAnalysis.cpp
     src/core/ProgressionMatcher.cpp src/core/ContinuationEngine.cpp
-    src/core/IntentCompletionEvaluator.cpp)
+    src/core/IntentCompletionEvaluator.cpp src/core/ChordPitchSet.cpp
+    src/core/HarmonyConstraints.cpp src/core/HarmonicTendency.cpp src/preview/ChordVoicer.cpp)
 target_link_libraries(harmony_core PUBLIC harmony_version)
 target_include_directories(harmony_core PUBLIC src)
 target_compile_features(harmony_core PUBLIC cxx_std_20)
@@ -163,7 +164,7 @@ target_compile_features(harmony_product PUBLIC cxx_std_20)
 if(MSVC)
     target_compile_options(harmony_product PRIVATE /W4 /permissive- /utf-8)
 endif()
-add_library(harmony_preview STATIC src/preview/PreviewSequence.cpp src/preview/ChordVoicer.cpp
+add_library(harmony_preview STATIC src/preview/PreviewSequence.cpp
     src/preview/PreviewSynth.cpp src/preview/OfflinePreviewRenderer.cpp
     src/preview/VoiceLeadingMetrics.cpp)
 target_link_libraries(harmony_preview PUBLIC harmony_core)
@@ -193,6 +194,18 @@ if(MSVC)
     target_compile_options(harmony_demo_scenarios PRIVATE /utf-8)
 endif()
 add_executable(enrichment_benchmark_cli tools/enrichment_benchmark_cli.cpp)
+add_executable(constraint_benchmark tests/ConstraintBenchmark.cpp)
+target_link_libraries(constraint_benchmark PRIVATE harmony_snapshot harmony_product harmony_demo_scenarios)
+target_compile_definitions(constraint_benchmark PRIVATE HC_FACTORY_DB_PATH="${CMAKE_CURRENT_BINARY_DIR}/factory.db"
+    HC_CONSTRAINT_CASE="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/constraint/multiple_events.json")
+add_executable(TendencyTests tests/TendencyTests.cpp)
+target_link_libraries(TendencyTests PRIVATE harmony_enrichment harmony_demo_scenarios harmony_library)
+target_compile_definitions(TendencyTests PRIVATE HC_ENRICHMENT_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/enrichment"
+    HC_FACTORY_DB_PATH="${CMAKE_CURRENT_BINARY_DIR}/factory.db")
+if(MSVC)
+    target_compile_options(constraint_benchmark PRIVATE /utf-8)
+    target_compile_options(TendencyTests PRIVATE /utf-8)
+endif()
 target_link_libraries(enrichment_benchmark_cli PRIVATE harmony_enrichment harmony_preview harmony_demo_scenarios)
 target_compile_definitions(enrichment_benchmark_cli PRIVATE
     HC_ENRICHMENT_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/enrichment")
@@ -241,6 +254,8 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     VERBATIM)
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 add_dependencies(continuation_benchmark_cli factory_database)
+add_dependencies(constraint_benchmark factory_database)
+add_dependencies(TendencyTests factory_database)
 add_executable(preview_cli tools/preview_cli.cpp)
 target_link_libraries(preview_cli PRIVATE harmony_preview harmony_demo_scenarios)
 target_compile_definitions(preview_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
@@ -299,6 +314,8 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_test(NAME ConstraintBenchmark COMMAND constraint_benchmark)
+    add_test(NAME TendencyTests COMMAND TendencyTests)
     add_executable(EnrichmentTests tests/EnrichmentTests.cpp)
     target_link_libraries(EnrichmentTests PRIVATE harmony_snapshot harmony_demo_scenarios)
     target_compile_definitions(EnrichmentTests PRIVATE

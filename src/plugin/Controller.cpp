@@ -236,6 +236,8 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         importedProgression_=sessionState_.imported;
         recommendationRequest_.style=sessionState_.style;
         recommendationRequest_.preferredIntent=sessionState_.intent;
+        recommendationRequest_.constraints=sessionState_.constraints;
+        recommendationRequest_.tendency=sessionState_.tendency;
         analysis_={}; matches_.clear(); recommendations_={};
         if (view_) {
             view_->setSessionState(sessionState_);
@@ -341,6 +343,7 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         sessionState_.editorWidth=old.editorWidth;
         sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
+        recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
         if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={}; }
         if (view_) {
             view_->setSessionState(sessionState_);
@@ -472,7 +475,7 @@ void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandida
             if (view_) view_->setActionStatus("试听失败：升级进行时间轴无效");
             return;
         }
-        playPreview(candidate.id,harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_));
+        playPreview(candidate.id,harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_,candidate.constraints));
     } catch (const std::exception& e) {
         if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
     } catch (...) {
@@ -527,7 +530,7 @@ std::string Controller::exportEnrichmentMidi(const harmony::enrichment::Enrichme
         harmony::ImportedProgressionSession transformed;
         if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection))
             return "MIDI 导出失败：升级进行时间轴无效";
-        const auto built=harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_);
+        const auto built=harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_,candidate.constraints);
         if (!built) return "MIDI 导出失败："+built.error;
         const auto key=sessionState_.forcedKey?sessionState_.forcedKey:
             analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;

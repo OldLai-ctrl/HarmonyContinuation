@@ -11,6 +11,8 @@ struct Scenario {
     std::optional<KeySignature> forcedKey;
     std::optional<Style> style;
     std::optional<PhraseIntent> intent;
+    HarmonyConstraintSet constraints;
+    HarmonicTendency tendency{HarmonicTendency::Balanced};
 };
 struct ScenarioResult { Scenario scenario; std::string error; explicit operator bool() const noexcept { return error.empty(); } };
 ScenarioResult loadScenario(const std::filesystem::path&);
