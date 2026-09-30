@@ -24,6 +24,8 @@ Progression progression(std::string_view text) {
 std::vector<ProgressionTemplate> templates(std::string_view text) {
     auto parsed = dev::parseTemplateJson(text);
     if (!parsed) throw std::runtime_error(parsed.error);
+    // Synthetic factory fixtures must satisfy the current bilingual library contract.
+    for(auto& item:parsed.templates){if(item.nameZh.empty())item.nameZh="测试 "+item.id;if(item.nameEn.empty())item.nameEn="Fixture "+item.id;}
     return std::move(parsed.templates);
 }
 MatchQuery query(const Progression& input, KeySignature key = {PitchClass::C, Mode::Major}) {
@@ -107,7 +109,8 @@ int main() {
     const auto minorQuery = makeMatchQuery(a, forced);
     check(minorQuery.interpretations.size() == 1 && minorQuery.interpretations.front().key.key.mode == Mode::Minor,
           "Q forced key");
-    const auto temp = std::filesystem::temp_directory_path() / "HarmonyContinuationPhase3Tests";
+    const auto temp = std::filesystem::temp_directory_path() / ("HarmonyContinuationPhase3Tests-"+
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     std::filesystem::create_directories(temp);
     const auto factoryPath = temp / "factory.db", userPath = temp / "user.db";
     std::string error;
@@ -144,5 +147,6 @@ int main() {
     }
     check(user.removeProgression(custom.id, error) && user.loadAll().templates.empty(), "user delete");
     std::filesystem::remove(factoryPath); std::filesystem::remove(userPath);
+    std::filesystem::remove(temp);
     std::cout << checks << '/' << checks << " PASS\n";
 }
