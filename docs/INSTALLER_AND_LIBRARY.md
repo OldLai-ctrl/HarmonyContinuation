@@ -8,6 +8,7 @@
 - 独立库安装包：`HarmonyContinuation-Library-2-Setup.exe`。以后更新进行内容只需分发新版库安装包，无需重新构建或替换插件。
 - 已安装的应用中可以卸载；完整安装还提供开始菜单的库更新和卸载入口。
 - 更新插件前关闭使用插件的宿主。安装器拒绝替换被占用的插件，不主动关闭宿主。
+- 完整安装会将标准 VST3 目录内旧的 `HarmonyContinuation*-backup-*` 插件备份移到 `%ProgramData%\HarmonyContinuation\Backups\Plugins`，保留文件并避免 Cubase 同时扫描新旧版本。备份被占用或无法安全移动时停止安装并提示。
 - 所有包离线可用。这里的“更新”是运行新版安装包，尚无联网检查或自动下载。
 - 安装器要求管理员权限，安装到 Windows 标准 VST3 目录；隔离测试包使用独立路径，不登记系统安装项。
 - 未签名的开发包可能出现 Windows 的发布者提示。尚未做本轮 Cubase 人工验收。

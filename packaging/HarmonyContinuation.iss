@@ -114,6 +114,15 @@ begin
 #endif
 end;
 
+function BackupFolder: String;
+begin
+#ifdef TestRoot
+  Result := '{#TestRoot}\Data\Backups\Plugins';
+#else
+  Result := ExpandConstant('{commonappdata}\HarmonyContinuation\Backups\Plugins');
+#endif
+end;
+
 function WantsLibrary: Boolean;
 begin
 #ifdef LibraryOnly
@@ -138,6 +147,52 @@ begin
   Log('Library manager: ' + Params + '; exit=' + IntToStr(ExitCode));
 end;
 
+function MoveLegacyBackups: String;
+var
+  Found: TFindRec;
+  Source, Destination, BinaryPath: String;
+  Suffix: Integer;
+begin
+  Result := '';
+  if FindFirst(AddBackslash(ExtractFileDir(PluginFolder(''))) + 'HarmonyContinuation*-backup-*', Found) then begin
+    try
+      repeat
+        if (Found.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then begin
+          Source := AddBackslash(ExtractFileDir(PluginFolder(''))) + Found.Name;
+          BinaryPath := AddBackslash(Source) + 'Contents\x86_64-win\HarmonyContinuation.vst3';
+          if FileExists(BinaryPath) then begin
+            if (Found.Attributes and $400) <> 0 then begin
+              Result := '旧插件备份目录是链接，请先将其移出 VST3 扫描目录：' + Source;
+              Exit;
+            end;
+            if not RunManager('check-plugin "' + BinaryPath + '"') then begin
+              Result := '旧插件备份仍被宿主使用，请关闭宿主后重试：' + Source;
+              Exit;
+            end;
+            if not ForceDirectories(BackupFolder) then begin
+              Result := '无法建立旧插件备份目录，未删除旧文件。';
+              Exit;
+            end;
+            Destination := AddBackslash(BackupFolder) + Found.Name;
+            Suffix := 0;
+            while DirExists(Destination) or FileExists(Destination) do begin
+              Suffix := Suffix + 1;
+              Destination := AddBackslash(BackupFolder) + Found.Name + '-' + IntToStr(Suffix);
+            end;
+            if not RenameFile(Source, Destination) then begin
+              Result := '无法移走旧插件备份，请手动将其移出 VST3 扫描目录：' + Source;
+              Exit;
+            end;
+            Log('Preserved legacy plugin backup outside scan directory: ' + Source + ' -> ' + Destination);
+          end;
+        end;
+      until not FindNext(Found);
+    finally
+      FindClose(Found);
+    end;
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
@@ -148,6 +203,8 @@ begin
       Result := '请先关闭 Cubase 或其他正在使用插件的宿主，再重新安装。';
       Exit;
     end;
+    Result := MoveLegacyBackups;
+    if Result <> '' then Exit;
   end;
 #endif
   if WantsLibrary then begin
