@@ -140,7 +140,7 @@ bool MainView::runZoomSmoke() {
         click(layout_.topControls[4]);okay=okay&&!selectedChord_;
     }
     state_.tab=session::Tab::Library;refreshLayout();
-    okay=okay&&layout_.libraryRows>=1&&layout_.content.height()>=165;
+    okay=okay&&layout_.libraryRows>=1&&layout_.content.height()>=165&&!factory_.empty();
     if(!factory_.empty()) {click({layout_.content.left+12,layout_.content.top+89,
         layout_.content.right-12,layout_.content.top+120});okay=okay&&selectedLibrary_.has_value();}
     state_=saved;recommendations_=savedRecommendations;
