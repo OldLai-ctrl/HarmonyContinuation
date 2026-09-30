@@ -49,7 +49,11 @@ std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const st
     for (const auto& candidate:group) best=std::max(best,candidate.rankingScore);
     for (std::size_t i=0;i<group.size() && visible.size()<maxPerGroup;++i) {
         const auto& c=group[i];
-        if (!std::isfinite(c.rankingScore) || c.rankingScore<absoluteMinimumScore ||
+        // Constraint penalties describe melody fit, not the underlying harmony
+        // gate. Soft conflicts must remain visible rather than becoming empty UI.
+        const float harmonyScore=c.rankingScore+(c.constraints.melody.empty()?0.f:
+            melodySoftPenaltyPoints*(1.f-c.melodyCompatibility.score));
+        if (!std::isfinite(c.rankingScore) || harmonyScore<absoluteMinimumScore ||
             (relativeToGroupBest>0 && c.rankingScore<best-relativeToGroupBest)) continue;
         if (minimumDiversityDistance>0 && std::any_of(visible.begin(),visible.end(),[&](std::size_t chosen){
             return pathDistance(c,group[chosen])<minimumDiversityDistance; })) continue;

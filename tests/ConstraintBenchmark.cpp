@@ -6,6 +6,7 @@
 #include "snapshot/RecommendationSnapshot.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #include "session/PluginSessionState.h"
+#include "session/ProductServices.h"
 #include "benchmark/BenchJson.h"
 #include "demo/DemoScenario.h"
 #include <algorithm>
@@ -79,7 +80,9 @@ int main(int argc,char** argv) {
         run("continuation_soft",[&]{RecommendationRequest request;request.constraints={{note("Db4",12,4)}};
             auto constrained=recommendContinuations(query,index,request);check(count(constrained)==count(baseline),"soft preserves choices");
             bool penalty=false;for(const auto& group:constrained.groups)for(const auto& c:group)
-                if(c.melodyCompatibility.score<1)penalty=true;check(penalty,"soft penalty available");});
+                if(c.melodyCompatibility.score<1)penalty=true;check(penalty,"soft penalty available");
+            auto c=baseline.groups[0].front();c.constraints=request.constraints;c.melodyCompatibility.score=0;c.rankingScore=55;
+            check(session::RecommendationVisibilityPolicy{}.visibleIndices({c}).size()==1,"soft conflict remains visible below ranking gate");});
         run("enrichment_hard_jazz",[]{auto p=progression({"C","Dm","G","C"});auto analysis=analyzeHarmony(p);
             enrichment::EnrichmentConfig config;config.constraints={{note("Db4",0,4,ConstraintRole::Present,ConstraintStrictness::Hard)}};
             auto r=enrichment::enrichProgression(p,analysis,Style::Jazz,config);

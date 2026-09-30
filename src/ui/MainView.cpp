@@ -188,7 +188,7 @@ void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
     }
-    if (layout_.timeline.contains(point.x,point.y)) {
+    if (state_.tab==session::Tab::Recommend&&layout_.timeline.contains(point.x,point.y)) {
         timelineScroll_=std::clamp(timelineScroll_-delta,0.,
             std::max(0.,timelineContentWidth_-layout_.timeline.width()));
         playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
@@ -888,7 +888,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             else state_.debugExpanded=!state_.debugExpanded;
             notifyState();return kMouseEventHandled;
         }
-        if(layout_.timeline.contains(where.x,where.y)) {
+        if(state_.tab==session::Tab::Recommend&&layout_.timeline.contains(where.x,where.y)) {
             for(const auto& b:timelineBlocks_) {
                 const auto r=chordTileRect(b.eventIndex);
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();
