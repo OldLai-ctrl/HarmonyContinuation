@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.8.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for a release)")
+project(HarmonyContinuation VERSION 0.9.0 LANGUAGES C CXX)
+set(HC_PRERELEASE "dev.1" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -98,7 +98,7 @@ if(HC_BUILD_PLUGIN)
     smtg_add_vst3plugin(HarmonyContinuation
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
-        src/plugin/RecommendationWorker.cpp
+        src/plugin/RecommendationWorker.cpp src/plugin/HostAdapters.cpp
         src/ui/MainView.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
@@ -236,7 +236,7 @@ target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
         src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp)
-    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment vstgui_support comctl32 shell32 winmm comdlg32)
+    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment harmony_host harmony_io vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
         HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo"
@@ -280,7 +280,7 @@ target_compile_definitions(midi_export_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACT
     HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
 add_dependencies(midi_export_cli factory_database)
 if(HC_BUILD_PLUGIN)
-    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment harmony_snapshot)
+    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment harmony_snapshot harmony_host harmony_io)
     if(WIN32)
         target_link_libraries(HarmonyContinuation PRIVATE winmm comdlg32)
     endif()
@@ -430,4 +430,65 @@ if(BUILD_TESTING)
         target_compile_definitions(VstXmlChordParserTests PRIVATE HC_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
         add_test(NAME VstXmlChordParserTests COMMAND VstXmlChordParserTests)
     endif()
+endif()
+
+add_library(harmony_host STATIC src/host/HostEnvironment.cpp)
+target_link_libraries(harmony_host PUBLIC harmony_version)
+add_library(harmony_io STATIC src/io/AsyncMidiImport.cpp src/io/FileDropRouter.cpp)
+target_link_libraries(harmony_io PUBLIC harmony_midi)
+if(MSVC)
+    target_compile_options(harmony_host PRIVATE /utf-8 /W4)
+    target_compile_options(harmony_io PRIVATE /utf-8 /W4)
+endif()
+
+if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
+    # SDK hosting loader is C++17 (u8string uses std::string in this SDK).
+    add_library(hc_sdk_host_loader STATIC
+        "${VST3_SDK_ROOT}/public.sdk/source/vst/hosting/plugprovider.cpp"
+        "${VST3_SDK_ROOT}/public.sdk/source/vst/hosting/module_win32.cpp"
+        "${VST3_SDK_ROOT}/public.sdk/source/common/memorystream.cpp")
+    target_link_libraries(hc_sdk_host_loader PUBLIC sdk_hosting)
+    target_compile_features(hc_sdk_host_loader PRIVATE cxx_std_17)
+    add_executable(HostContractHarness tests/HostContractHarness.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp
+)
+    target_link_libraries(HostContractHarness PRIVATE harmony_host harmony_io harmony_product harmony_xml harmony_snapshot hc_sdk_host_loader vstgui_support winmm)
+    target_include_directories(HostContractHarness PRIVATE "${VST3_SDK_ROOT}")
+    target_compile_definitions(HostContractHarness PRIVATE NOMINMAX
+        HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
+        HC_MIDI_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/manual-tests/dev2-midi"
+        HC_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+        HC_TEST_OUTPUT_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+    target_compile_options(HostContractHarness PRIVATE /utf-8 /W4)
+    add_dependencies(HostContractHarness HarmonyContinuation factory_database)
+    foreach(HC_HOST_PROFILE FLStudio Generic Cubase)
+        if(HC_HOST_PROFILE STREQUAL "FLStudio")
+            set(HC_HOST_NAME "FL Studio")
+        else()
+            set(HC_HOST_NAME "${HC_HOST_PROFILE}")
+        endif()
+        add_test(NAME HostContract${HC_HOST_PROFILE} COMMAND HostContractHarness
+            "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3" "${HC_HOST_NAME}"
+            "${CMAKE_BINARY_DIR}/host-${HC_HOST_PROFILE}.txt")
+        set_tests_properties(HostContract${HC_HOST_PROFILE} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+    endforeach()
+endif()
+
+if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
+    add_executable(EditorHostSmoke tests/EditorHostSmoke.cpp)
+    target_compile_features(EditorHostSmoke PRIVATE cxx_std_17)
+    target_compile_definitions(EditorHostSmoke PRIVATE NOMINMAX)
+    add_dependencies(EditorHostSmoke editorhost HarmonyContinuation)
+    add_test(NAME EditorHostSmoke COMMAND EditorHostSmoke $<TARGET_FILE:editorhost>
+        "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3" "${CMAKE_BINARY_DIR}/editorhost-smoke.txt")
+    set_tests_properties(EditorHostSmoke PROPERTIES TIMEOUT 40 RUN_SERIAL TRUE)
+endif()
+
+set(HC_TESTHOST_EXECUTABLE "" CACHE FILEPATH "Optional official Windows VST3PluginTestHost executable")
+if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32 AND EXISTS "${HC_TESTHOST_EXECUTABLE}")
+    add_test(NAME VST3PluginTestHostSmoke COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass
+        -File "${CMAKE_CURRENT_SOURCE_DIR}/tools/testhost-smoke.ps1"
+        -Executable "${HC_TESTHOST_EXECUTABLE}" -PluginDirectory "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>"
+        -Report "${CMAKE_BINARY_DIR}/testhost-smoke.json")
+    set_tests_properties(VST3PluginTestHostSmoke PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
 endif()

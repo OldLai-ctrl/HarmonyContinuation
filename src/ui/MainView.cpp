@@ -1,3 +1,6 @@
+#include "io/FileDropRouter.h"
+#include "io/MidiDragService.h"
+#include "ui/EffectiveScale.h"
 #include "MainView.h"
 #include "session/ProductServices.h"
 #include "WeightBarGeometry.h"
@@ -209,6 +212,13 @@ bool MainView::runCandidateScrollSmoke() {
             p=point(why);onMouseDown(p,CButtonState{kLButton});
             okay=okay&&(enrich?(selectedEnrichment_&&selectedEnrichment_->first==group&&selectedEnrichment_->second==index):
                 (selectedCandidate_&&selectedCandidate_->first==group&&selectedCandidate_->second==index));
+            if(count==6&&group==0){
+                const auto saved=captureEditorUiState();auto recreated=owned(new MainView(getViewSize(),{}));
+                recreated->setSessionState(state_);recreated->setRecommendations(recommendations_);recreated->setEnrichments(enrichments_);
+                recreated->restoreEditorUiState(saved);const auto restored=recreated->captureEditorUiState();
+                okay=okay&&restored.continuationId==saved.continuationId&&restored.continuationFingerprint==saved.continuationFingerprint&&
+                    restored.enrichmentId==saved.enrichmentId&&restored.enrichmentFingerprint==saved.enrichmentFingerprint;
+            }
             dismissTransientOverlay();
             wheel.deltaY=100;wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&offset==0&&contentScroll_==parent;
             // A pinned comparison is persistent, and must not disable group scrolling.
@@ -324,6 +334,22 @@ void MainView::dismissTransientOverlay() {
 void MainView::focusTransientOverlay() {
     if (auto* frame=getFrame()) frame->setFocusView(this);
 }
+bool MainView::runHostInteractionSmoke(){
+    const auto saved=captureEditorUiState();const auto state=state_;
+    bool okay=true;
+    state_.tab=session::Tab::Recommend;
+    if(state_.imported.events.empty()){ChordEvent c;c.name="C";c.durationQN=4;state_.imported.replace({c},TimelineCoordinateMode::RelativeToSelection);}
+    selectedChord_=0;refreshLayout();focusTransientOverlay();
+    KeyboardEvent key;key.type=EventType::KeyDown;key.virt=VirtualKey::Space;onKeyboardEvent(key);okay=okay&&!key.consumed;
+    key.virt=VirtualKey::Escape;onKeyboardEvent(key);okay=okay&&key.consumed&&!selectedChord_;
+    key.consumed=false;onKeyboardEvent(key);okay=okay&&!key.consumed;
+    state_.pinnedCandidateIds={"persistent"};key.consumed=false;onKeyboardEvent(key);
+    okay=okay&&!key.consumed&&state_.pinnedCandidateIds.size()==1;
+    beginForm(Form::Search,"typing");
+    if(auto* frame=getFrame())okay=okay&&frame->getFocusView()==nameEdit_;
+    endForm();
+    state_=state;restoreEditorUiState(saved);refreshLayout();return okay;
+}
 void MainView::onKeyboardEvent(KeyboardEvent& event) {
     if (event.type==EventType::KeyDown && event.virt==VirtualKey::Escape &&
         dismissOnEscape(activeOverlayKind())) {
@@ -368,24 +394,67 @@ void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
     }
     CView::onMouseWheelEvent(event);
 }
+namespace {
+io::FileDropRoute fileRoute(IDataPackage* package){
+    std::vector<std::string> names;if(!package)return {};
+    bool invalidFile=false;
+    for(std::uint32_t i=0;i<std::min<std::uint32_t>(32,package->getCount());++i){
+        const void* bytes{};IDataPackage::Type type{};const auto size=package->getData(i,bytes,type);
+        if(type!=IDataPackage::kFilePath)continue;
+        if(!bytes||size==0||size>32768){invalidFile=true;continue;}
+        names.emplace_back(static_cast<const char*>(bytes),size);
+    }
+    auto route=io::routeFiles(names);route.hasFiles=route.hasFiles||invalidFile;return route;
+}
+}
 SharedPointer<IDropTarget> MainView::getDropTarget() { return this; }
-DragOperation MainView::onDragEnter(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
-DragOperation MainView::onDragMove(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
+DragOperation MainView::onDragEnter(DragEventData e) {
+    try{if(!e.drag)return DragOperation::None;
+        const auto route=fileRoute(e.drag);auto point=e.pos;point.x/=userZoom();point.y/=userZoom();
+        if(route.hasFiles)return !route.midiFiles.empty()&&layout_.timeline.contains(point.x,point.y)?DragOperation::Copy:DragOperation::None;
+        return actions_.drop?DragOperation::Copy:DragOperation::None;
+    }catch(...){return DragOperation::None;}
+}
+DragOperation MainView::onDragMove(DragEventData e) {return onDragEnter(e);}
 void MainView::onDragLeave(DragEventData) {}
 bool MainView::onDrop(DragEventData e) {
     try {
         if(!e.drag)return false;
-        auto point=e.pos;point.x/=userZoom();point.y/=userZoom();
-        if(actions_.importMidi&&layout_.timeline.contains(point.x,point.y))for(std::uint32_t i=0;i<e.drag->getCount();++i) {
-            const void* bytes{};IDataPackage::Type type{};const auto size=e.drag->getData(i,bytes,type);
-            if(type!=IDataPackage::kFilePath||!bytes||!size||size>32768)continue;
-            std::string name(static_cast<const char*>(bytes),size);const auto end=name.find('\0');if(end!=std::string::npos)name.resize(end);
-            const auto path=std::filesystem::path(std::u8string(name.begin(),name.end()));auto extension=path.extension().string();
-            std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
-            if(extension==".mid"||extension==".midi"){actions_.importMidi(false,path);return true;}
+        auto point=e.pos;point.x/=userZoom();point.y/=userZoom();const auto route=fileRoute(e.drag);
+        if(actions_.observeDrop)actions_.observeDrop(route.hasFiles,!route.midiFiles.empty());
+        if(route.hasFiles){
+            if(route.midiFiles.empty()||!layout_.timeline.contains(point.x,point.y))return false;
+            if(actions_.importMidiFiles){actions_.importMidiFiles(route.midiFiles);return true;}
+            if(actions_.importMidi){actions_.importMidi(false,route.midiFiles.front());return true;}
+            return false;
         }
         if(!actions_.drop)return false;actions_.drop(e.drag);return true;
     } catch (...) {return false;}
+}
+MainView::EditorUiState MainView::captureEditorUiState() const {
+    EditorUiState out;
+    if(const auto* c=selectedCandidate()){out.continuationId=c->id;out.continuationFingerprint=session::continuationFingerprint(*c);}
+    if(const auto* c=selectedEnrichment()){out.enrichmentId=c->id;out.enrichmentFingerprint=c->fingerprint;}
+    out.chord=selectedChord_;out.continuationScroll=continuationScroll_;out.enrichmentScroll=enrichmentScroll_;
+    out.contentScroll=contentScroll_;out.timelineScroll=timelineScroll_;out.inspectorScroll=inspectorScroll_;
+    out.pinnedEnrichmentIds=pinnedEnrichmentIds_;return out;
+}
+void MainView::restoreEditorUiState(const EditorUiState& s){
+    if(s.chord&&*s.chord<state_.imported.events.size())selectedChord_=s.chord;
+    for(std::size_t g=0;g<recommendations_.groups.size();++g)for(std::size_t i=0;i<recommendations_.groups[g].size();++i){
+        const auto& c=recommendations_.groups[g][i];if(c.id==s.continuationId&&session::continuationFingerprint(c)==s.continuationFingerprint)selectedCandidate_={{g,i}};
+    }
+    for(std::size_t g=0;g<enrichments_.groups.size();++g)for(std::size_t i=0;i<enrichments_.groups[g].size();++i){
+        const auto& c=enrichments_.groups[g][i];if(c.id==s.enrichmentId&&c.fingerprint==s.enrichmentFingerprint)selectedEnrichment_={{g,i}};
+    }
+    continuationScroll_=s.continuationScroll;enrichmentScroll_=s.enrichmentScroll;
+    for(auto& v:continuationScroll_)if(!std::isfinite(v)||v<0)v=0;
+    for(auto& v:enrichmentScroll_)if(!std::isfinite(v)||v<0)v=0;
+    contentScroll_=std::isfinite(s.contentScroll)?std::max(0.,s.contentScroll):0.;
+    timelineScroll_=std::isfinite(s.timelineScroll)?std::max(0.,s.timelineScroll):0.;
+    inspectorScroll_=std::isfinite(s.inspectorScroll)?std::max(0.,s.inspectorScroll):0.;
+    pinnedEnrichmentIds_.clear();for(const auto& id:s.pinnedEnrichmentIds)if(findEnrichment(id))pinnedEnrichmentIds_.push_back(id);
+    refreshLayout();invalid();
 }
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
 void MainView::setSessionState(const session::PluginSessionState& s) {
@@ -1011,13 +1080,14 @@ CMouseEventResult MainView::onMouseMoved(CPoint& where,const CButtonState& butto
     if(!buttons.isLeftButton()){midiPending_.reset();midiClick_={};return kMouseEventHandled;}
     if(!shouldStartDrag(CPoint(midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()),where))return kMouseEventHandled;
     auto payload=std::move(*midiPending_);midiPending_.reset();midiClick_={};
-    const auto file=midi::createDragFile(payload);
+    const auto file=io::MidiDragService{}.prepare(payload);
+    if(actions_.observeMidiDrag)actions_.observeMidiDrag(static_cast<bool>(file),false);
     if(!file){actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
     const auto utf8=file.path.u8string();std::string path(utf8.begin(),utf8.end());
     const auto package=CDropSource::create(path.c_str(),static_cast<std::uint32_t>(path.size()+1),IDataPackage::kFilePath);
     auto callback=owned(new DragCallbackFunctions);
     const SharedPointer<MainView> keepAlive(this);
-    callback->endedFunc=[keepAlive](IDraggingSession*,CPoint,DragOperation result){keepAlive->setActionStatus(keepAlive->t(result==DragOperation::None?"midi.dragFailed":"midi.dragged"));};
+    callback->endedFunc=[keepAlive](IDraggingSession*,CPoint,DragOperation result){if(keepAlive->actions_.observeMidiDrag)keepAlive->actions_.observeMidiDrag(true,result!=DragOperation::None);keepAlive->setActionStatus(keepAlive->t(result==DragOperation::None?"midi.dragFailed":"midi.dragged"));};
     if(!doDrag(DragDescription(package),callback)){actionStatus_=t("midi.dragFailed");invalid();}
     return kMouseEventHandled;
     } catch(...){midiPending_.reset();midiClick_={};actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
@@ -1098,7 +1168,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(i==3) {
                 const auto choice=popup({t("nav.library"),t("nav.diagnostics"),
                     state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about"),
-                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import")},where);
+                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import"),t("nav.hostDiagnostics"),t("nav.exportHostDiagnostics")},where);
                 if(choice==0) state_.tab=session::Tab::Library;
                 else if(choice==1) state_.tab=session::Tab::Diagnostics;
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
@@ -1119,6 +1189,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     const auto option=popup({t("midi.complete"),t("midi.open")},where);
                     if(option>=0)actions_.importMidi(option==1,{});
                 }
+                else if(choice==6&&actions_.hostDiagnostics){setHostText(actions_.hostDiagnostics());state_.tab=session::Tab::Diagnostics;}
+                else if(choice==7&&actions_.exportHostDiagnostics){actionStatus_=actions_.exportHostDiagnostics();}
                 if(choice>=0) notifyState();
             }
             else if(i==4){state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;

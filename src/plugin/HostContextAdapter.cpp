@@ -1,10 +1,11 @@
 #include "HostContextAdapter.h"
 #include <bit>
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 namespace harmony::plugin {
 using Steinberg::Vst::ProcessContext;
-void HostContextAdapter::capture(const ProcessContext* c) noexcept {
+void HostContextAdapter::capture(const ProcessContext* c,bool midiEventsAvailable) noexcept {
     HostSnapshot s;
     if (c) {
         s.words[0] = 1; s.words[1] = c->state;
@@ -15,6 +16,7 @@ void HostContextAdapter::capture(const ProcessContext* c) noexcept {
         if (c->state & ProcessContext::kChordValid) { s.words[7] = c->chord.keyNote; s.words[8] = c->chord.rootNote; s.words[9] = static_cast<std::uint16_t>(c->chord.chordMask); }
         s.words[10] = std::bit_cast<std::uint64_t>(c->sampleRate);
     }
+    s.words[11]=midiEventsAvailable;
     revision_.fetch_add(1, std::memory_order_acq_rel);
     for (std::size_t i = 0; i < words_.size(); ++i) words_[i].store(s.words[i]);
     s.generation = generation_.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -29,6 +31,19 @@ bool HostContextAdapter::read(HostSnapshot& s) const noexcept {
         if (revision_.load(std::memory_order_acquire) == before) return true;
     }
     return false;
+}
+host::HostTimelineContext HostContextAdapter::timeline(const HostSnapshot& s) noexcept {
+    host::HostTimelineContext out;out.available=s.words[0]!=0;out.hostMidiEvents=s.words[11]!=0;
+    if(!out.available)return out;
+    const auto flags=s.words[1];
+    const auto qn=std::bit_cast<double>(s.words[4]),tempo=std::bit_cast<double>(s.words[3]);
+    if((flags&ProcessContext::kProjectTimeMusicValid)&&std::isfinite(qn))out.projectTimeMusic=qn;
+    if((flags&ProcessContext::kTempoValid)&&std::isfinite(tempo)&&tempo>=20&&tempo<=400)out.tempo=tempo;
+    const auto n=s.words[5],d=s.words[6];
+    if((flags&ProcessContext::kTimeSigValid)&&n>0&&n<=64&&d>0&&d<=64&&(d&(d-1))==0)
+        out.timeSignature=std::pair(static_cast<int>(n),static_cast<int>(d));
+    out.playing=(flags&ProcessContext::kPlaying)!=0;
+    return out;
 }
 std::string HostContextAdapter::describe(const HostSnapshot& s) {
     if (!s.words[0])

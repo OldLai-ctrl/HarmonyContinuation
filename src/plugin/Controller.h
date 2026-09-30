@@ -4,6 +4,9 @@
 #include "core/ProgressionMatcher.h"
 #include "core/ContinuationEngine.h"
 #include "RecommendationWorker.h"
+#include "HostAdapters.h"
+#include "io/AsyncMidiImport.h"
+#include "ui/MainView.h"
 #include "session/PluginSessionState.h"
 #include "session/ProductServices.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
@@ -24,6 +27,7 @@ class Controller final : public Steinberg::Vst::EditController {
 public:
     static Steinberg::FUnknown* create(void*) { return static_cast<Steinberg::Vst::IEditController*>(new Controller); }
     Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown*) override;
+    Steinberg::tresult PLUGIN_API terminate() override;
     Steinberg::tresult PLUGIN_API notify(Steinberg::Vst::IMessage*) override;
     Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream*) override;
     Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream*) override;
@@ -45,6 +49,12 @@ public:
     std::string exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
     harmony::midi::PayloadResult midiPayload(const harmony::ContinuationCandidate&) const;
     harmony::midi::PayloadResult midiPayload(const harmony::enrichment::EnrichmentCandidate&) const;
+    void importMidiFiles(std::vector<std::filesystem::path>,bool openEnded=false) noexcept;
+    std::string hostDiagnostics() const;
+    std::string exportHostDiagnostics(void* owner) noexcept;
+    void observeEditor(double scale, bool resizeAccepted,bool scaleObserved=false) noexcept;
+    void observeDrop(bool file, bool supported) noexcept;
+    void observeMidiDrag(bool generated, bool accepted) noexcept;
     void importMidi(bool openEnded,const std::filesystem::path&,void* owner) noexcept;
     std::string saveMidiPayload(const harmony::midi::MidiClipPayload&,void* owner) noexcept;
     std::string exportLibraryMidi(const harmony::ProgressionTemplate&, void* owner) noexcept;
@@ -58,6 +68,14 @@ public:
     void editorSizeChanged(int width,int height) noexcept;
     void setResizeRequest(std::function<void(int,int)> request) { resizeRequest_=std::move(request); }
 private:
+    host::HostEnvironment hostEnvironment_;
+    std::unique_ptr<HostAdapter> hostAdapter_{makeHostAdapter(host::HostFamily::GenericVst3)};
+    std::unique_ptr<io::AsyncMidiImport> midiImportWorker_;
+    host::PreviewOwnership previewOwnership_;
+    harmony::enrichment::EnrichmentResult enrichments_;
+    std::optional<harmony::ui::MainView::EditorUiState> editorUiState_;
+    void pollMidiImport();
+    void applyMidiImport(const harmony::midi::ImportResult&);
     std::string hostName_{"宿主不可用"};
     harmony::ui::MainView* view_{};
     harmony::ImportedProgressionSession importedProgression_;

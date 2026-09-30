@@ -8,8 +8,7 @@
 
 namespace harmony::plugin {
 RecommendationWorker::RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath)
-    : factoryPath_(std::move(factoryPath)), userPath_(std::move(userPath)),
-      thread_([this] { run(); }) {}
+    : factoryPath_(std::move(factoryPath)), userPath_(std::move(userPath)) { thread_=std::thread([this] { run(); }); }
 RecommendationWorker::~RecommendationWorker() {
     { std::lock_guard lock(mutex_); stop_ = true; pending_.reset(); }
     wake_.notify_one();
@@ -31,6 +30,9 @@ std::optional<WorkerResult> RecommendationWorker::takeLatest() {
     auto result = std::move(ready_);
     ready_.reset();
     return result;
+}
+void RecommendationWorker::cancel(){
+    std::lock_guard lock(mutex_);++generation_;pending_.reset();ready_.reset();
 }
 void RecommendationWorker::invalidateLibrary() {
     std::lock_guard lock(mutex_);

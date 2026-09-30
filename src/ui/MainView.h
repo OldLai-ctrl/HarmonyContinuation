@@ -9,6 +9,7 @@
 #include "ui/UILayout.h"
 #include "ui/ScrollableCandidateList.h"
 #include "ui/OverlayPolicy.h"
+#include "ui/EffectiveScale.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
@@ -21,6 +22,16 @@ namespace VSTGUI { class CTextEdit; }
 namespace harmony::ui {
 class MainView final : public VSTGUI::CView, public VSTGUI::IDropTarget {
 public:
+    struct EditorUiState {
+        std::string continuationId,continuationFingerprint,enrichmentId,enrichmentFingerprint;
+        std::optional<std::size_t> chord;
+        std::array<double,4> continuationScroll{};std::array<double,3> enrichmentScroll{};
+        double contentScroll{},timelineScroll{},inspectorScroll{};
+        std::vector<std::string> pinnedEnrichmentIds;
+    };
+    void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
+    EditorUiState captureEditorUiState() const;
+    void restoreEditorUiState(const EditorUiState&);
     struct Actions {
         std::function<void(VSTGUI::IDataPackage*)> drop;
         std::function<void()> refresh;
@@ -40,6 +51,10 @@ public:
         std::function<midi::PayloadResult(const ContinuationCandidate&)> midiPayload;
         std::function<midi::PayloadResult(const enrichment::EnrichmentCandidate&)> enrichmentMidiPayload;
         std::function<void(bool,const std::filesystem::path&)> importMidi;
+        std::function<void(std::vector<std::filesystem::path>)> importMidiFiles;
+        std::function<std::string()> hostDiagnostics;
+        std::function<std::string()> exportHostDiagnostics;
+        std::function<void(bool,bool)> observeDrop,observeMidiDrag;
         std::function<std::string(const midi::MidiClipPayload&)> saveMidiPayload;
     };
     MainView(const VSTGUI::CRect&, Actions);
@@ -78,6 +93,7 @@ public:
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
     void setUserZoom(std::uint32_t percent);
+    bool runHostInteractionSmoke();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
@@ -133,7 +149,7 @@ private:
     std::optional<midi::MidiClipPayload> midiPending_;
     bool armMidi(const ContinuationCandidate&,VSTGUI::CPoint);
     bool armMidi(const enrichment::EnrichmentCandidate&,VSTGUI::CPoint);
-    double userZoom() const noexcept { return state_.uiZoomPercent/100.0; }
+    double userZoom() const noexcept { return EffectiveScale(contentScale_,state_.uiZoomPercent/100.0).user; }
     VSTGUI::CRect editRect(VSTGUI::CRect) const;
     void notifyState();
     std::string t(std::string_view key) const { return std::string(localization::text(state_.locale,key)); }

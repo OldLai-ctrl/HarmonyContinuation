@@ -1,6 +1,6 @@
 # HarmonyContinuation
 
-- Current scope: v0.8 development, including dev.2 standard MIDI file import/extraction, standard MIDI file drag-out, and full candidate detail actions. Preserve established musical algorithms. Cubase private MIDI Part recognition and runtime network updates are not implemented.
+- Current scope: v0.9.0-dev.1 Windows VST3 host compatibility (Cubase, Generic, FL Studio 20+ candidate). Capability observations take precedence over host names. Real FL verification is pending and is not a development dependency. Preserve established musical algorithms; no private host protocols, live note capture, audio detection or network features.
 - `core/` must compile without Steinberg or VSTGUI headers. Host integration and XML translation belong in `plugin/`. UI only renders state and handles interaction; no music logic.
 - Audio thread: no XML, file I/O, logging, mutexes, database queries, expensive allocation or GUI updates. Transfer a bounded lightweight snapshot through an SDK-verified realtime-safe mechanism.
 - The visible editor polls the transport snapshot at a bounded rate (about 20 Hz while playing, slower while stopped or hidden). Repaint only changed timeline regions; never call UI from the audio thread.

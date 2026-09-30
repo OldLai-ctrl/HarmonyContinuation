@@ -219,5 +219,7 @@
   ,"midi.saveFailed": "MIDI 保存失败，请查看高级信息"
   ,"midi.track": "使用轨道"
   ,"midi.uncertain": "识别提示"
-  ,"midi.unsupported": "仅支持 Format 0/1、PPQ 的 MIDI 文件；暂不支持 SMPTE"
+  ,"midi.unsupported": "仅支持 Format 0/1、PPQ 的 MIDI 文件；暂不支持 SMPTE",
+  "nav.hostDiagnostics": "宿主诊断",
+  "nav.exportHostDiagnostics": "导出宿主诊断"
 }

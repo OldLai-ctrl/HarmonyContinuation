@@ -11,3 +11,13 @@ HarmonyContinuation 本地安装与更新
 更新插件前请关闭 Cubase 及其他正在使用此插件的宿主。
 标准插件目录中的旧版 HarmonyContinuation 备份会移到 ProgramData 下的备份目录，避免宿主同时加载新旧版本；旧文件会保留。
 验收记录请参阅对应版本说明；安装成功本身不等于完成宿主人工验收。
+
+FL Studio 20+：当前为兼容候选，尚待真实 FL Studio 验收。
+安装后在 Options → Manage plugins 中扫描并启用 Verify plugins。
+文件拖入插件需要 Wrapper 的 Accept dropped files 设置；安装器不会修改它。
+如 MIDI 拖出目标不接受，可点击保存 MIDI 后使用宿主的标准文件导入。
+
+FL Studio 20+: compatibility candidate, real FL testing pending.
+After installation, scan in Options → Manage plugins with Verify plugins enabled.
+Check Wrapper Accept dropped files if files do not reach the editor. Setup does not change FL settings.
+Use Save MIDI and standard host file import if a MIDI drag target rejects the file.

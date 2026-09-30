@@ -219,5 +219,7 @@
   ,"midi.saveFailed": "MIDI save failed. See Advanced for details."
   ,"midi.track": "Selected track"
   ,"midi.uncertain": "Recognition notices"
-  ,"midi.unsupported": "Only Format 0/1 PPQ MIDI files are supported; SMPTE is not supported."
+  ,"midi.unsupported": "Only Format 0/1 PPQ MIDI files are supported; SMPTE is not supported.",
+  "nav.hostDiagnostics": "Host Diagnostics",
+  "nav.exportHostDiagnostics": "Export Host Diagnostics"
 }

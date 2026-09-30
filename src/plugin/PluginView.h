@@ -28,5 +28,7 @@ private:
     std::unique_ptr<Impl> impl_;
     bool transportPlaying_{};
     double contentScale_{1};
+    bool resizing_{};
+    void* attachedParent_{};
 };
 }

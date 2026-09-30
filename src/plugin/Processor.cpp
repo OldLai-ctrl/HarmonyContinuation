@@ -25,7 +25,7 @@ tresult PLUGIN_API Processor::setBusArrangements(SpeakerArrangement* in, int32 n
 }
 tresult PLUGIN_API Processor::canProcessSampleSize(int32 size) { return size == kSample32 || size == kSample64 ? kResultTrue : kResultFalse; }
 tresult PLUGIN_API Processor::process(ProcessData& data) {
-    context_.capture(data.processContext);
+    context_.capture(data.processContext,data.inputEvents!=nullptr);
     if (!data.numOutputs || data.numSamples <= 0) return kResultOk;
     if (!data.outputs) return kResultFalse;
     for (int32 bus = 0; bus < data.numOutputs; ++bus) {
