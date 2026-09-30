@@ -97,7 +97,7 @@ int main(int argc,char** argv) {
         AnalysisContext context; context.forcedKey=loaded.scenario.forcedKey;
         context.timeSigNumerator=loaded.scenario.meterNumerator; context.timeSigDenominator=loaded.scenario.meterDenominator;
         const auto set=recommendContinuations(makeMatchQuery(imported.events,context),index,
-            {loaded.scenario.style,loaded.scenario.intent});
+            {loaded.scenario.style,loaded.scenario.intent,loaded.scenario.constraints,loaded.scenario.tendency});
         int group=-1;
         for (int i=0;i<4;++i) if (groupName==std::array<const char*,4>{"Resolve","Develop","Loop","Color"}[i]) group=i;
         if (group<0||candidateNumber<1||static_cast<std::size_t>(candidateNumber)>set.groups[group].size())

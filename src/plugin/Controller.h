@@ -8,6 +8,7 @@
 #include "session/ProductServices.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "preview/PreviewSequence.h"
+#include "midi/MidiWorkflow.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include <cstdint>
 #include <chrono>
@@ -42,6 +43,10 @@ public:
     bool previewActive() const noexcept { return !previewCandidateId_.empty(); }
     std::string exportMidi(const harmony::ContinuationCandidate&, void* owner) noexcept;
     std::string exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
+    harmony::midi::PayloadResult midiPayload(const harmony::ContinuationCandidate&) const;
+    harmony::midi::PayloadResult midiPayload(const harmony::enrichment::EnrichmentCandidate&) const;
+    void importMidi(bool openEnded,const std::filesystem::path&,void* owner) noexcept;
+    std::string saveMidiPayload(const harmony::midi::MidiClipPayload&,void* owner) noexcept;
     std::string exportLibraryMidi(const harmony::ProgressionTemplate&, void* owner) noexcept;
     std::string saveSnapshot(const harmony::ContinuationCandidate&, void* owner) noexcept;
     std::string saveEnrichmentSnapshot(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
@@ -63,6 +68,7 @@ private:
     harmony::RecommendationRequest recommendationRequest_;
     std::unique_ptr<RecommendationWorker> recommendationWorker_;
     std::string matchStatus_{"拖入和弦后显示匹配结果"};
+    std::string midiImportSummary_;
     std::uint64_t lastSnapshotGeneration_{};
     unsigned unchangedTransportPolls_{};
     std::optional<double> lastProjectQN_;

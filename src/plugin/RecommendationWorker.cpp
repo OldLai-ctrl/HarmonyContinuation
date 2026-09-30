@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "library/LibraryStore.h"
 #include <memory>
 #include <iterator>
 #include <unordered_set>
@@ -69,11 +70,14 @@ void RecommendationWorker::run() {
                     cachedPhraseRevision=task.phraseRevision;
                 }
             }
-            if (task.progression.size() <= 64)
-                result.enrichments=enrichment::enrichProgression(task.progression,result.analysis,task.request.style);
+            if (task.progression.size() <= 64) {
+                enrichment::EnrichmentConfig config;
+                config.constraints=task.request.constraints;config.tendency=task.request.tendency;
+                result.enrichments=enrichment::enrichProgression(task.progression,result.analysis,task.request.style,config);
+            }
             if (task.progression.size() <= 64) {
                 if (!index && loadError.empty()) {
-                    auto factory = library::loadFactory(factoryPath_);
+                    auto factory = library::loadAvailableFactory(factoryPath_).library;
                     if (!factory) loadError = "Factory library: " + factory.error;
                     else {
                         auto user = library::UserLibrary(userPath_).loadAll();

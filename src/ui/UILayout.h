@@ -17,6 +17,7 @@ struct UILayoutInput {
     double width{1100}, height{900}, contentScaleFactor{1};
     session::Tab tab{session::Tab::Recommend};
     bool inspectorOpen{}, compareOpen{};
+    double userZoom{1};
 };
 struct UILayoutResult {
     static constexpr int minimumWidth=900, minimumHeight=640;
@@ -29,6 +30,7 @@ struct UILayoutResult {
     UiRect viewport,topBar,phrase,timeline,content,inspector,compare,library;
     std::array<UiRect,4> lanes{};
     std::array<UiRect,6> topControls{}; // key, style, intent, advanced, recommend, library
+    std::array<UiRect,3> constraintControls{};
     double laneHeight{}, laneScrollMax{};
 };
 struct CandidateRowGeometry {
@@ -60,13 +62,15 @@ inline CandidateRowGeometry candidateRowGeometry(UiRect lane,int row,bool export
 
 inline UILayoutResult computeLayout(UILayoutInput input) {
     UILayoutResult o;
-    const double w=std::clamp(std::isfinite(input.width)?input.width:1100.,900.,2200.);
-    const double h=std::clamp(std::isfinite(input.height)?input.height:900.,640.,1400.);
+    const double zoom=std::clamp(std::isfinite(input.userZoom)?input.userZoom:1.,1.,1.5);
+    const double w=std::clamp(std::isfinite(input.width)?input.width:1100.,900.,2200.)/zoom;
+    const double h=std::clamp(std::isfinite(input.height)?input.height:900.,640.,1400.)/zoom;
     o.contentScaleFactor=std::isfinite(input.contentScaleFactor)&&input.contentScaleFactor>0?
         std::clamp(input.contentScaleFactor,0.5,4.0):1.0;
     o.viewport={0,0,w,h};
     o.mode=w<1050?LayoutMode::Compact:w<1600?LayoutMode::Standard:LayoutMode::Wide;
-    const double topH=o.mode==LayoutMode::Compact?78:56;
+    const double controlsH=o.mode==LayoutMode::Compact?78:56;
+    const double topH=controlsH+34;
     o.topBar={0,0,w,topH};
     if(o.mode==LayoutMode::Compact) {
         o.topControls={UiRect{16,5,w*0.43,35},UiRect{w*0.44,5,w-16,35},
@@ -76,11 +80,13 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
         const double unit=(w-32)/6;
         for(int i=0;i<6;++i)o.topControls[i]={16+i*unit,8,16+(i+1)*unit-4,46};
     }
+    o.constraintControls={UiRect{16,controlsH,w*0.42,topH-3},
+        UiRect{w*0.43,controlsH,w*0.62,topH-3},UiRect{w*0.63,controlsH,w-16,topH-3}};
     const double phraseTop=topH+34;
     o.phrase={16,phraseTop,w-16,phraseTop+160};
     o.timeline={24,phraseTop+20,w-24,phraseTop+89};
-    const double contentTop=o.phrase.bottom+16;
-    const double compareH=input.compareOpen?(o.mode==LayoutMode::Compact?108:76):0;
+    const double contentTop=input.tab==session::Tab::Recommend?o.phrase.bottom+16:topH+16;
+    const double compareH=input.compareOpen?(o.mode==LayoutMode::Compact&&h>=600?108:76):0;
     o.compare=input.compareOpen?UiRect{16,h-compareH-12,w-16,h-12}:UiRect{};
     const double contentBottom=input.compareOpen?o.compare.top-10:h-16;
     o.content={16,contentTop,w-16,std::max(contentTop+1,contentBottom)};
@@ -92,7 +98,8 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
             o.inspector={w-408,contentTop,w-16,contentBottom};
         } else {
             const double panelW=std::min(650.,w-48);
-            o.inspector={(w-panelW)/2,contentTop+8,(w+panelW)/2,contentBottom-8};
+            const auto top=std::max(topH+8,std::min(contentTop+8,contentBottom-250));
+            o.inspector={(w-panelW)/2,top,(w+panelW)/2,contentBottom-8};
         }
     }
     const double laneRight=o.inspectorMode==InspectorMode::Side?o.inspector.left-12:o.content.right;

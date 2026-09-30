@@ -1,14 +1,19 @@
 #include "MainView.h"
+#include "session/ProductServices.h"
 #include "WeightBarGeometry.h"
 #include "product/ProductVersion.h"
+#include "preview/VoiceLeadingMetrics.h"
 #include "vstgui/lib/cdrawcontext.h"
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/clinestyle.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/cdropsource.h"
+#include "vstgui/lib/cgraphicstransform.h"
 #include "vstgui/lib/events.h"
 #include "vstgui/lib/controls/ctextedit.h"
 #include "vstgui/lib/platform/iplatformframe.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -26,6 +31,16 @@ void line(CDrawContext* dc, std::string text, CRect r, CColor color=pale, CHoriT
     dc->setFont(kNormalFont); dc->setFontColor(color); dc->drawString(text.c_str(),r,align);
 }
 std::string fixed(double value, int precision=1) { std::ostringstream out; out<<std::fixed<<std::setprecision(precision)<<value; return out.str(); }
+std::string bassLine(const std::vector<int>& bass) {
+    constexpr const char* notes[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+    std::string result;
+    for(std::size_t i=0;i<std::min<std::size_t>(bass.size(),6);++i) {
+        if(i)result+=" → ";
+        result+=notes[(bass[i]%12+12)%12];
+    }
+    if(bass.size()>6)result+=" → …";
+    return result;
+}
 std::string styleName(Style s) {
     switch(s) { case Style::Pop:return "Pop"; case Style::Rock:return "Rock"; case Style::Rnb:return "R&B";
         case Style::Jazz:return "Jazz"; case Style::CityPop:return "City Pop / J-pop"; default:return "Functional"; }
@@ -73,7 +88,8 @@ std::size_t groupForVisual(std::size_t visual,std::optional<PhraseIntent> intent
 }
 }
 MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {
-    visibility_.maxPerGroup=2;
+    setWantsFocus(true);
+    // Keep the existing policy default (3); two rows describe only viewport height.
     layout_=computeLayout({rect.getWidth(),rect.getHeight(),1,session::Tab::Recommend,false,false});
 }
 void MainView::resizeLayout(int width,int height) {
@@ -82,16 +98,16 @@ void MainView::resizeLayout(int width,int height) {
     layout_=computeLayout({static_cast<double>(width),static_cast<double>(height),contentScale_,state_.tab,
         state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()||selectedEnrichment_.has_value()):
             state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
-        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty()});
+        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty(),userZoom()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
     rebuildTimeline();
     playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
     if(nameEdit_) {
         const double w=std::min(590.,layout_.viewport.width()-48),h=360;
         const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
-        nameEdit_->setViewSize(CRect(x+140,y+53,x+w-22,y+91));
-        if(tagsEdit_)tagsEdit_->setViewSize(CRect(x+140,y+201,x+w-22,y+239));
-        if(noteEdit_)noteEdit_->setViewSize(CRect(x+140,y+261,x+w-22,y+299));
+        nameEdit_->setViewSize(editRect(CRect(x+140,y+53,x+w-22,y+91)),true);
+        if(tagsEdit_)tagsEdit_->setViewSize(editRect(CRect(x+140,y+201,x+w-22,y+239)),true);
+        if(noteEdit_)noteEdit_->setViewSize(editRect(CRect(x+140,y+261,x+w-22,y+299)),true);
     }
     invalid();
 }
@@ -99,28 +115,254 @@ void MainView::setSimulatedContentScale(double scale) {
     contentScale_=std::isfinite(scale)&&scale>0?scale:1;
     resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
 }
+CRect MainView::editRect(CRect rect) const {
+    const auto z=userZoom();return {rect.left*z,rect.top*z,rect.right*z,rect.bottom*z};
+}
+void MainView::setUserZoom(std::uint32_t percent) {
+    if(percent!=100&&percent!=125&&percent!=150)return;
+    endForm();state_.uiZoomPercent=percent;resizeLayout(static_cast<int>(getViewSize().getWidth()),
+        static_cast<int>(getViewSize().getHeight()));notifyState();
+}
+bool MainView::runZoomSmoke() {
+    const auto saved=state_;const auto savedRecommendations=recommendations_;
+    bool okay=true;
+    const auto click=[&](UiRect r) {CPoint point{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};
+        onMouseDown(point,CButtonState{kLButton});};
+    state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;state_.intent.reset();
+    selectedChord_.reset();selectedCandidate_.reset();selectedEnrichment_.reset();selectedLibrary_.reset();
+    refreshLayout();click(layout_.topControls[5]);okay=okay&&state_.productMode==session::ProductMode::Enrich;
+    click(layout_.topControls[4]);okay=okay&&state_.productMode==session::ProductMode::Continue;
+    ContinuationCandidate candidate;candidate.id="zoom-smoke";candidate.rankingScore=90;
+    candidate.intent=PhraseIntent::Resolve;candidate.continuation.push_back({"C",4,{1,0},ChordQuality::Major,{}});
+    recommendations_={};recommendations_.groups[0].push_back(candidate);contentScroll_=0;refreshLayout();
+    click(candidateRowGeometry(layout_.lanes[0],0,true).why);okay=okay&&selectedCandidate_.has_value();
+    click(layout_.topControls[4]);okay=okay&&activeOverlayKind()!=OverlayKind::Transient;
+    if(!timelineBlocks_.empty()) {
+        const auto tile=chordTileRect(0);click({tile.left,tile.top,tile.right,tile.bottom});
+        okay=okay&&selectedChord_==0;
+        click(layout_.topControls[4]);okay=okay&&!selectedChord_;
+    }
+    state_.tab=session::Tab::Library;refreshLayout();
+    okay=okay&&layout_.libraryRows>=1&&layout_.content.height()>=165&&!factory_.empty();
+    if(!factory_.empty()) {click({layout_.content.left+12,layout_.content.top+89,
+        layout_.content.right-12,layout_.content.top+120});okay=okay&&selectedLibrary_.has_value();}
+    state_=saved;recommendations_=savedRecommendations;
+    selectedChord_.reset();selectedCandidate_.reset();selectedLibrary_.reset();refreshLayout();invalid();return okay;
+}
+bool MainView::runCandidateScrollSmoke() {
+    const auto savedState=state_;const auto savedActions=actions_;const auto savedPolicy=visibility_;
+    const auto savedRecommendations=recommendations_;const auto savedEnrichments=enrichments_;
+    const auto savedContinueScroll=continuationScroll_;const auto savedEnrichScroll=enrichmentScroll_;
+    const auto savedContentScroll=contentScroll_;
+    bool okay=true;
+    const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}, {'D','A','W'}};
+    constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};
+    for(const auto zoom:{100u,125u,150u})for(const bool enrich:{false,true})
+    for(const std::size_t count:{0u,1u,2u,3u,6u}) {
+        state_.uiZoomPercent=zoom;state_.tab=session::Tab::Recommend;state_.intent.reset();state_.pinnedCandidateIds.clear();
+        state_.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+        selectedChord_.reset();selectedCandidate_.reset();selectedEnrichment_.reset();pinnedEnrichmentIds_.clear();
+        recommendations_={};enrichments_={};continuationScroll_.fill(0.);enrichmentScroll_.fill(0.);
+        // Synthetic 6-row coverage exercises reusable geometry without changing production policy.
+        visibility_=savedPolicy;visibility_.maxPerGroup=6;
+        for(std::size_t group=0;group<(enrich?3u:4u);++group)for(std::size_t index=0;index<count;++index) {
+            const auto id="scroll-"+std::to_string(group)+"-"+std::to_string(index);
+            if(enrich){enrichment::EnrichmentCandidate c;c.id=id;c.fingerprint=id;c.score=90.f-static_cast<float>(index);
+                ChordEvent event;event.name="C";event.durationQN=2.+index;event.openEnded=false;c.progression.push_back(event);
+                enrichments_.groups[group].push_back(c);
+            } else {ContinuationCandidate c;c.id=id;c.intent=intents[group];c.key={PitchClass::C,Mode::Major};
+                c.rankingScore=90.f-static_cast<float>(index);c.suggestedCurrentChordDurationQN=2.+index;
+                c.continuation.push_back({"C",2.+index+group*.1,{1,0},ChordQuality::Major,{}});
+                recommendations_.groups[group].push_back(c);}
+        }
+        actions_={};std::string heard,exported,snapshot;
+        actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
+        actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
+        actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
+        actions_.exportEnrichmentMidi=[](const enrichment::EnrichmentCandidate&){return std::string{};};
+        actions_.midiPayload=[&](const ContinuationCandidate& c){exported=session::continuationFingerprint(c);return midi::PayloadResult{fake,{}};};
+        actions_.enrichmentMidiPayload=[&](const enrichment::EnrichmentCandidate& c){exported=c.fingerprint;return midi::PayloadResult{fake,{}};};
+        actions_.saveSnapshot=[&](const ContinuationCandidate& c){snapshot=session::continuationFingerprint(c);return std::string{};};
+        actions_.saveEnrichmentSnapshot=[&](const enrichment::EnrichmentCandidate& c){snapshot=c.fingerprint;return std::string{};};
+        refreshLayout();
+        for(std::size_t group=0;group<(enrich?3u:4u);++group) {
+            auto lane=layout_.lanes[group];contentScroll_=std::clamp(lane.bottom-layout_.content.bottom,0.,layout_.laneScrollMax);
+            lane.top-=contentScroll_;lane.bottom-=contentScroll_;
+            auto& offset=enrich?enrichmentScroll_[group]:continuationScroll_[group];
+            ScrollableCandidateList before(lane,count,offset);const auto parent=contentScroll_;
+            MouseWheelEvent wheel;wheel.mousePosition={(lane.left+lane.right)/2*userZoom(),(before.viewport.top+20)*userZoom()};wheel.deltaY=-100;
+            onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&contentScroll_==parent;
+            ScrollableCandidateList list(lane,count,offset);okay=okay&&offset==list.maximum;
+            wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&offset==list.maximum&&contentScroll_==parent;
+            if(count==0){okay=okay&&!list.hit(lane.left+20,list.viewport.top+10);continue;}
+            const std::size_t index=count-1;
+            const auto expected=enrich?enrichments_.groups[group][index].fingerprint:session::continuationFingerprint(recommendations_.groups[group][index]);
+            const auto point=[&](UiRect r){return CPoint{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};};
+            UiRect play,midiRect,why,snap;
+            if(enrich){const auto g=enrichmentRowGeometry(lane,list,index);play=g.audition;midiRect=g.midi;why=g.why;snap=g.snapshot;}
+            else {const auto g=list.continuationRow(lane,index,true);play=g.audition;midiRect=g.midi;why=g.why;snap=g.snapshot;}
+            auto p=point(play);onMouseDown(p,CButtonState{kLButton});okay=okay&&heard==expected;
+            p=point(midiRect);onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&exported==expected&&midiPending_&&midiPending_->dawClipBytes==fake.dawClipBytes;
+            okay=okay&&shouldStartDrag(p,{p.x+8,p.y});midiPending_.reset();midiClick_={};
+            p=point(snap);onMouseDown(p,CButtonState{kLButton});okay=okay&&snapshot==expected;
+            p=point(why);onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&(enrich?(selectedEnrichment_&&selectedEnrichment_->first==group&&selectedEnrichment_->second==index):
+                (selectedCandidate_&&selectedCandidate_->first==group&&selectedCandidate_->second==index));
+            dismissTransientOverlay();
+            wheel.deltaY=100;wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&offset==0&&contentScroll_==parent;
+            // A pinned comparison is persistent, and must not disable group scrolling.
+            if(enrich)pinnedEnrichmentIds_.push_back(enrichments_.groups[group][index].id);
+            else state_.pinnedCandidateIds.push_back(recommendations_.groups[group][index].id);
+            wheel.deltaY=-100;wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&offset==list.maximum&&contentScroll_==parent;
+            pinnedEnrichmentIds_.clear();state_.pinnedCandidateIds.clear();
+        }
+        if(!enrich){const auto original=session::presentationIndices(recommendations_,savedPolicy);
+            for(const auto& group:original)okay=okay&&group.size()<=savedPolicy.maxPerGroup;}
+        MouseWheelEvent outside;outside.mousePosition={(layout_.content.left+10)*userZoom(),(layout_.lanes[0].bottom+4)*userZoom()};outside.deltaY=-1;
+        contentScroll_=0;onMouseWheelEvent(outside);okay=okay&&outside.consumed&&contentScroll_==std::min(48.,layout_.laneScrollMax);
+    }
+    state_=savedState;actions_=savedActions;visibility_=savedPolicy;recommendations_=savedRecommendations;enrichments_=savedEnrichments;
+    continuationScroll_=savedContinueScroll;enrichmentScroll_=savedEnrichScroll;contentScroll_=savedContentScroll;
+    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();
+    return okay;
+}
+bool MainView::runMidiWorkflowSmoke() {
+    const auto savedState=state_;const auto savedActions=actions_;const auto savedRecommendations=recommendations_;
+    const auto savedEnrichments=enrichments_;const auto savedPreview=previewCandidateId_;
+    bool okay=true;
+    for(const auto zoom:{100u,125u,150u}) {
+        state_.uiZoomPercent=zoom;state_.tab=session::Tab::Recommend;state_.intent.reset();state_.pinnedCandidateIds.clear();pinnedEnrichmentIds_.clear();contentScroll_=0;
+        recommendations_={};enrichments_={};
+        for(int i=0;i<3;++i) {
+            ContinuationCandidate c;c.id="midi-test-"+std::to_string(i);c.intent=PhraseIntent::Resolve;c.key={PitchClass::C,Mode::Major};
+            c.suggestedCurrentChordDurationQN=2+i;c.rankingScore=90.f-i;
+            c.continuation.push_back({i==2?"Cmaj7":"C",2.+i,{1,0},i==2?ChordQuality::Major7:ChordQuality::Major,{}});
+            recommendations_.groups[0].push_back(c);
+            enrichment::EnrichmentCandidate e;e.id="enrich-test-"+std::to_string(i);e.score=90.f-i;e.fingerprint=e.id;
+            ChordEvent event;event.name=i==2?"Am7":"C";event.durationQN=4;event.openEnded=false;e.progression.push_back(event);
+            e.techniques.push_back(enrichment::TechniqueID::Inversion);enrichments_.groups[0].push_back(e);
+        }
+        for(const bool enrich:{false,true})for(const bool more:{false,true}) {
+            state_.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+            selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();selectedLibrary_.reset();
+            const std::size_t index=more?2:0;
+            if(more){if(enrich)selectedEnrichment_={{0,index}};else selectedCandidate_={{0,index}};}
+            refreshLayout();
+            const auto expected=enrich?enrichments_.groups[0][index].fingerprint:session::continuationFingerprint(recommendations_.groups[0][index]);
+            std::string heard,exported,snapshot;int saved{};
+            actions_={};
+            actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
+            actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
+            actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
+            actions_.exportEnrichmentMidi=[](const enrichment::EnrichmentCandidate&){return std::string{};};
+            const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}, {'D','A','W'}};
+            actions_.midiPayload=[&](const ContinuationCandidate& c){exported=session::continuationFingerprint(c);return midi::PayloadResult{fake,{}};};
+            actions_.enrichmentMidiPayload=[&](const enrichment::EnrichmentCandidate& c){exported=c.fingerprint;return midi::PayloadResult{fake,{}};};
+            actions_.saveMidiPayload=[&](const midi::MidiClipPayload& p){++saved;okay=okay&&p.smfBytes==fake.smfBytes;return std::string{};};
+            actions_.saveSnapshot=[&](const ContinuationCandidate& c){snapshot=session::continuationFingerprint(c);return std::string{};};
+            actions_.saveEnrichmentSnapshot=[&](const enrichment::EnrichmentCandidate& c){snapshot=c.fingerprint;return std::string{};};
+            const auto actionRect=[&](int action) {
+                if(more){const auto a=layout_.inspector;const auto width=(a.width()-28)/(enrich?3:4);
+                    return UiRect{a.left+14+action*width,a.bottom-39,a.left+14+(action+1)*width,a.bottom-8};}
+                const auto lane=layout_.lanes[0];
+                if(enrich){const ScrollableCandidateList list(lane,enrichments_.groups[0].size(),0.);
+                    const auto g=enrichmentRowGeometry(lane,list,0);return action==0?g.audition:action==1?g.midi:g.snapshot;}
+                const auto g=candidateRowGeometry(lane,0,true);return action==0?g.audition:action==1?g.midi:g.snapshot;
+            };
+            const auto point=[&](UiRect r){return CPoint{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};};
+            auto p=point(actionRect(0));onMouseDown(p,CButtonState{kLButton});okay=okay&&heard==expected;
+            p=point(actionRect(1));onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&exported==expected&&saved==0&&midiPending_.has_value();
+            auto moved=p;moved.x+=1;onMouseMoved(moved,CButtonState{kLButton});okay=okay&&saved==0&&midiPending_.has_value();
+            okay=okay&&!shouldStartDrag(p,moved)&&shouldStartDrag(p,CPoint{p.x+8,p.y});
+            onMouseUp(p,CButtonState{kLButton});okay=okay&&saved==1&&!midiPending_;
+            p=point(actionRect(2));onMouseDown(p,CButtonState{kLButton});okay=okay&&snapshot==expected;
+            if(more){previewCandidateId_="playing";CPoint outside{0,0};onMouseDown(outside,CButtonState{kLButton});
+                okay=okay&&!selectedCandidate_&&!selectedEnrichment_&&previewCandidateId_=="playing";
+                if(enrich){selectedEnrichment_={{0,index}};auto changed=enrichments_;changed.groups[0][index].fingerprint="changed";setEnrichments(changed);okay=okay&&!selectedEnrichment_;}
+                else {selectedCandidate_={{0,index}};auto changed=recommendations_;changed.groups[0][index].suggestedCurrentChordDurationQN=8.;setRecommendations(changed);okay=okay&&!selectedCandidate_;}
+            }
+            std::string importedPath;bool importOpen=true;
+            actions_.importMidi=[&](bool open,const std::filesystem::path& path){importOpen=open;importedPath=path.generic_string();};
+            const char filePath[]="D:/fixture.mid";
+            const auto package=CDropSource::create(filePath,sizeof(filePath),IDataPackage::kFilePath);
+            const void* received{};IDataPackage::Type type{};
+            okay=okay&&package->getCount()==1&&package->getData(0,received,type)==sizeof(filePath)&&type==IDataPackage::kFilePath&&std::string(static_cast<const char*>(received))==filePath;
+            const auto center=point(layout_.timeline);
+            okay=okay&&onDrop({package,center,{}})&&importedPath==filePath&&!importOpen;
+            const auto privateData=CDropSource::create("private",8,IDataPackage::kBinary);
+            okay=okay&&!onDrop({privateData,center,{}});
+        }
+    }
+    state_=savedState;actions_=savedActions;recommendations_=savedRecommendations;enrichments_=savedEnrichments;previewCandidateId_=savedPreview;
+    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();return runCandidateScrollSmoke()&&okay;
+}
 void MainView::refreshLayout() {
     const auto priorWidth=layout_.timeline.width();
     layout_=computeLayout({getViewSize().getWidth(),getViewSize().getHeight(),contentScale_,state_.tab,
         state_.tab==session::Tab::Recommend?(selectedChord_.has_value()||selectedCandidate_.has_value()||selectedEnrichment_.has_value()):
             state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
-        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty()});
+        state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty(),userZoom()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
     if (priorWidth!=layout_.timeline.width()) rebuildTimeline();
 }
+OverlayKind MainView::activeOverlayKind() const noexcept {
+    if (form_!=Form::None) return OverlayKind::Modal;
+    if (state_.tab==session::Tab::Recommend &&
+        (selectedChord_ || selectedCandidate_ || selectedEnrichment_)) return OverlayKind::Transient;
+    if (state_.tab==session::Tab::Library && selectedLibrary_) return OverlayKind::Persistent;
+    if (!state_.pinnedCandidateIds.empty() || !pinnedEnrichmentIds_.empty()) return OverlayKind::Persistent;
+    return OverlayKind::None;
+}
+void MainView::dismissTransientOverlay() {
+    if (activeOverlayKind()!=OverlayKind::Transient) return;
+    selectedChord_.reset(); selectedCandidate_.reset(); selectedEnrichment_.reset();
+    inspectorScroll_=0;
+    refreshLayout(); invalid();
+}
+void MainView::focusTransientOverlay() {
+    if (auto* frame=getFrame()) frame->setFocusView(this);
+}
+void MainView::onKeyboardEvent(KeyboardEvent& event) {
+    if (event.type==EventType::KeyDown && event.virt==VirtualKey::Escape &&
+        dismissOnEscape(activeOverlayKind())) {
+        dismissTransientOverlay();
+        event.consumed=true;
+        return;
+    }
+    CView::onKeyboardEvent(event);
+}
 void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
+    auto point=event.mousePosition;point.x/=userZoom();point.y/=userZoom();
     const auto delta=event.deltaY*48.0;
-    if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(event.mousePosition.x,event.mousePosition.y)) {
+    if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(point.x,point.y)) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
     }
-    if (layout_.timeline.contains(event.mousePosition.x,event.mousePosition.y)) {
+    try {
+    if(state_.tab==session::Tab::Recommend&&activeOverlayKind()!=OverlayKind::Modal&&
+       (activeOverlayKind()!=OverlayKind::Transient||layout_.inspectorMode==InspectorMode::Side)&&layout_.content.contains(point.x,point.y)) {
+        const auto presentation=session::presentationIndices(recommendations_,visibility_);
+        const bool enrich=state_.productMode==session::ProductMode::Enrich;
+        for(std::size_t visual=0;visual<(enrich?3u:4u);++visual) {
+            auto lane=layout_.lanes[visual];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
+            if(!lane.contains(point.x,point.y))continue;
+            const auto group=enrich?visual:groupForVisual(visual,state_.intent);
+            auto& scroll=enrich?enrichmentScroll_[group]:continuationScroll_[group];
+            const ScrollableCandidateList list(lane,enrich?enrichments_.groups[group].size():presentation[group].size(),scroll);
+            // Deliberately consume at group boundaries too: never double-scroll the parent.
+            scroll=list.scroll(delta);invalid();event.consumed=true;return;
+        }
+    }
+    } catch(...) {event.consumed=true;return;}
+    if (state_.tab==session::Tab::Recommend&&layout_.timeline.contains(point.x,point.y)) {
         timelineScroll_=std::clamp(timelineScroll_-delta,0.,
             std::max(0.,timelineContentWidth_-layout_.timeline.width()));
         playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
         invalid(); event.consumed=true; return;
     }
-    if (layout_.content.contains(event.mousePosition.x,event.mousePosition.y)) {
+    if (layout_.content.contains(point.x,point.y)) {
         contentScroll_=std::clamp(contentScroll_-delta,0.,layout_.laneScrollMax);
         invalid(); event.consumed=true; return;
     }
@@ -130,11 +372,27 @@ SharedPointer<IDropTarget> MainView::getDropTarget() { return this; }
 DragOperation MainView::onDragEnter(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
 DragOperation MainView::onDragMove(DragEventData e) { return e.drag?DragOperation::Copy:DragOperation::None; }
 void MainView::onDragLeave(DragEventData) {}
-bool MainView::onDrop(DragEventData e) { try { if (!e.drag || !actions_.drop) return false; actions_.drop(e.drag); return true; } catch (...) { return false; } }
+bool MainView::onDrop(DragEventData e) {
+    try {
+        if(!e.drag)return false;
+        auto point=e.pos;point.x/=userZoom();point.y/=userZoom();
+        if(actions_.importMidi&&layout_.timeline.contains(point.x,point.y))for(std::uint32_t i=0;i<e.drag->getCount();++i) {
+            const void* bytes{};IDataPackage::Type type{};const auto size=e.drag->getData(i,bytes,type);
+            if(type!=IDataPackage::kFilePath||!bytes||!size||size>32768)continue;
+            std::string name(static_cast<const char*>(bytes),size);const auto end=name.find('\0');if(end!=std::string::npos)name.resize(end);
+            const auto path=std::filesystem::path(std::u8string(name.begin(),name.end()));auto extension=path.extension().string();
+            std::transform(extension.begin(),extension.end(),extension.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+            if(extension==".mid"||extension==".midi"){actions_.importMidi(false,path);return true;}
+        }
+        if(!actions_.drop)return false;actions_.drop(e.drag);return true;
+    } catch (...) {return false;}
+}
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
 void MainView::setSessionState(const session::PluginSessionState& s) {
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
+    const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
     state_=s;
+    if(zoomChanged)resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
     if (timelineChanged) {
         pinnedSnapshots_.clear(); pinnedEnrichmentIds_.clear(); selectedChord_.reset();
         selectedCandidate_.reset(); selectedEnrichment_.reset(); rebuildTimeline();
@@ -157,8 +415,11 @@ void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a; inval
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
 void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
+    const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
     recommendations_=r;
-    if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected)) selectedCandidate_.reset();
+    continuationScroll_.fill(0.);
+    if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
+        session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
     const bool resolved=std::any_of(recommendations_.groups.begin(),recommendations_.groups.end(),
         [](const auto& group){return !group.empty();});
     const auto oldPins=state_.pinnedCandidateIds;
@@ -173,9 +434,11 @@ void MainView::setRecommendations(const RecommendationSet& r) {
     invalid();
 }
 void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
+    enrichmentScroll_.fill(0.);
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
+    const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
     enrichments_=value;
-    if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected))
+    if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected || selectedEnrichment()->fingerprint!=oldFingerprint))
         selectedEnrichment_.reset();
     std::erase_if(pinnedEnrichmentIds_,[&](const std::string& id) { return !findEnrichment(id); });
     refreshLayout(); invalid();
@@ -208,7 +471,7 @@ void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t f
         if (actions_.stateChanged) actions_.stateChanged(state_);
     }
     if (fc) factoryCount_=fc; if (uc || !userCount_) userCount_=uc;
-    invalidRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top));
+    invalidRect(editRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top)));
 }
 void MainView::rebuildTimeline() {
     auto timeline=layoutScrollableTimeline(state_.imported.events,layout_.timeline.width());
@@ -234,10 +497,10 @@ void MainView::setPlaybackPosition(std::optional<double> qn,bool playing) {
     const auto oldLocation=currentLocation_; const auto oldX=playheadX_;
     projectQN_=qn && std::isfinite(*qn)?qn:std::nullopt; playing_=playing;
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
-    if (oldLocation.activeIndex) invalidRect(chordTileRect(*oldLocation.activeIndex));
-    if (currentLocation_.activeIndex) invalidRect(chordTileRect(*currentLocation_.activeIndex));
-    if (oldX) invalidRect(CRect(*oldX-3,layout_.timeline.top,*oldX+3,layout_.timeline.bottom));
-    if (playheadX_) invalidRect(CRect(*playheadX_-3,layout_.timeline.top,*playheadX_+3,layout_.timeline.bottom));
+    if (oldLocation.activeIndex) invalidRect(editRect(chordTileRect(*oldLocation.activeIndex)));
+    if (currentLocation_.activeIndex) invalidRect(editRect(chordTileRect(*currentLocation_.activeIndex)));
+    if (oldX) invalidRect(editRect(CRect(*oldX-3,layout_.timeline.top,*oldX+3,layout_.timeline.bottom)));
+    if (playheadX_) invalidRect(editRect(CRect(*playheadX_-3,layout_.timeline.top,*playheadX_+3,layout_.timeline.bottom)));
 }
 void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
     const CRect lane=viewRect(layout_.timeline);
@@ -299,6 +562,16 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
                 state_.productMode==session::ProductMode::Continue?accent:
             i==5&&state_.tab==session::Tab::Recommend&&
                 state_.productMode==session::ProductMode::Enrich?accent:i>=4?muted:pale);
+    const auto role=state_.constraints.melody.empty()?t("melody.off"):
+        state_.constraints.melody.front().role==ConstraintRole::TopVoice?t("melody.top"):t("melody.present");
+    const std::array<std::string,3> constraints{t("melody.label")+": "+role,
+        state_.constraints.melody.empty()?t("melody.note"):melodyNoteName(state_.constraints.melody.front())+
+            (state_.constraints.melody.size()>1?" +":""),
+        t("tendency.label")+": "+t(state_.tendency==HarmonicTendency::Conservative?"tendency.conservative":
+            state_.tendency==HarmonicTendency::Bold?"tendency.bold":"tendency.balanced")};
+    for(std::size_t i=0;i<constraints.size();++i)line(dc,constraints[i],viewRect(layout_.constraintControls[i]),
+        i==0&&!state_.constraints.melody.empty()?accent:pale);
+    if(state_.tab!=session::Tab::Recommend)return;
     const auto titleY=layout_.phrase.top-31;
     line(dc,t("phrase.title"),CRect(20,titleY,235,titleY+27),pale);
     const auto status=workerBusy_?t("status.analyzing"):!actionStatus_.empty()?actionStatus_:
@@ -322,7 +595,7 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
         const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
         line(dc,event.name+" · "+duration+" · "+t("phrase.starts")+" "+fixed(event.startQN)+" QN",
              CRect(23,y+28,layout_.viewport.right-23,y+55),pale);
-    } else line(dc,t("phrase.select"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
+    } else line(dc,t("phrase.select")+" · "+t("midi.help"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -359,6 +632,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         line(dc,t("phrase.empty"),viewRect(layout_.content),pale,kCenterText); return;
     }
     constexpr const char* titles[]{"group.resolve","group.develop","group.loop","group.color"};
+    const auto presentation=session::presentationIndices(recommendations_,visibility_);
     {
     ConcatClip clip(*dc,viewRect(layout_.content));
     for (std::size_t visual=0;visual<4;++visual) {
@@ -369,15 +643,20 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
         if (recommendations_.groups[group].size()>2)
             line(dc,t("candidate.more"),CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
-        const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
+        const auto& visible=presentation[group];
         if (visible.empty()) {
             line(dc,workerBusy_?t("status.analyzing"):t("candidate.none"),CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
-        for (std::size_t row=0;row<visible.size()&&row<2;++row) {
+        const ScrollableCandidateList list(lane,visible.size(),continuationScroll_[group]);
+        continuationScroll_[group]=list.offset;
+        {
+        ConcatClip rowsClip(*dc,viewRect(list.viewport));
+        for (std::size_t row=0;row<visible.size();++row) {
+            if(!list.visible(row))continue;
             const auto& c=recommendations_.groups[group][visible[row]];
             const bool exportControls=static_cast<bool>(actions_.exportMidi);
-            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),exportControls);
+            const auto geometry=list.continuationRow(lane,row,exportControls);
             box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             drawMiniTimeline(dc,c,viewRect(geometry.timeline));
             std::string continuation;
@@ -393,11 +672,13 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             line(dc,t("candidate.pin"),viewRect(geometry.pin),accent,kCenterText);
             if(exportControls) {
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
-                line(dc,"MIDI",viewRect(geometry.midi),accent,kCenterText);
+                line(dc,t("midi.button"),viewRect(geometry.midi),accent,kCenterText);
                 line(dc,"SNAP",viewRect(geometry.snapshot),muted,kCenterText);
             } else if(actions_.audition)
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
         }
+        }
+        if(list.maximum>0)box(dc,viewRect(list.thumb()),muted);
     }
     }
     drawCompare(dc,bounds);
@@ -414,42 +695,50 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
         auto lane=layout_.lanes[group]; lane.top-=contentScroll_; lane.bottom-=contentScroll_;
         if (lane.bottom<layout_.content.top || lane.top>layout_.content.bottom) continue;
         box(dc,viewRect(lane),panel);
-        line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.right-8,lane.top+27),accent);
+        line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.right-120,lane.top+27),accent);
         const auto& candidates=enrichments_.groups[group];
+        if(candidates.size()>2)line(dc,t("candidate.more"),CRect(lane.right-120,lane.top+3,lane.right-8,lane.top+27),accent,kRightText);
         if (candidates.empty()) {
             line(dc,workerBusy_?t("status.analyzing"):t("status.noEnrichment"),
                  CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
-        for (std::size_t row=0;row<std::min<std::size_t>(2,candidates.size());++row) {
+        const ScrollableCandidateList list(lane,candidates.size(),enrichmentScroll_[group]);
+        enrichmentScroll_[group]=list.offset;
+        {
+        ConcatClip rowsClip(*dc,viewRect(list.viewport));
+        for (std::size_t row=0;row<candidates.size();++row) {
+            if(!list.visible(row))continue;
             const auto& candidate=candidates[row];
-            const double y=lane.top+28+row*80;
-            box(dc,CRect(lane.left+6,y,lane.right-6,y+76),CColor(33,49,69,255));
+            const auto geometry=enrichmentRowGeometry(lane,list,row);
+            box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             std::string progression;
             for (const auto& event:candidate.progression) {
                 if (!progression.empty()) progression+=" → ";
                 progression+=event.name;
             }
-            line(dc,progression,CRect(lane.left+12,y+3,lane.right-48,y+25),pale);
+            line(dc,progression,viewRect(geometry.summary),pale);
             line(dc,std::to_string(static_cast<int>(std::round(candidate.score))),
-                 CRect(lane.right-46,y+3,lane.right-10,y+25),accent,kRightText);
+                 viewRect(geometry.score),accent,kRightText);
             std::string badges;
             for (std::size_t i=0;i<std::min<std::size_t>(3,candidate.techniques.size());++i) {
                 if (!badges.empty()) badges+=" · ";
                 badges+=t("technique."+std::string(enrichment::techniqueName(candidate.techniques[i])));
             }
-            line(dc,badges,CRect(lane.left+12,y+26,lane.right-12,y+48),muted);
+            line(dc,badges,viewRect(geometry.badges),muted);
             line(dc,std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id)!=
                 pinnedEnrichmentIds_.end()?t("candidate.unpin"):t("candidate.pin"),
-                CRect(lane.right-213,y+49,lane.right-170,y+73),accent,kCenterText);
-            line(dc,t("candidate.why"),CRect(lane.right-169,y+49,lane.right-126,y+73),accent,kCenterText);
+                viewRect(geometry.pin),accent,kCenterText);
+            line(dc,t("candidate.why"),viewRect(geometry.why),accent,kCenterText);
             if (actions_.auditionEnrichment)
-                line(dc,"▶",CRect(lane.right-122,y+49,lane.right-98,y+73),accent,kCenterText);
+                line(dc,"▶",viewRect(geometry.audition),accent,kCenterText);
             if (actions_.exportEnrichmentMidi)
-                line(dc,"MIDI",CRect(lane.right-94,y+49,lane.right-55,y+73),accent,kCenterText);
+                line(dc,t("midi.button"),viewRect(geometry.midi),accent,kCenterText);
             if (actions_.saveEnrichmentSnapshot)
-                line(dc,"SNAP",CRect(lane.right-51,y+49,lane.right-8,y+73),muted,kCenterText);
+                line(dc,"SNAP",viewRect(geometry.snapshot),muted,kCenterText);
         }
+        }
+        if(list.maximum>0)box(dc,viewRect(list.thumb()),muted);
     }
     if (!enrichments_.opportunities.empty()) {
         const auto& opportunity=enrichments_.opportunities.front();
@@ -580,11 +869,12 @@ std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
 }
 void MainView::drawRect(CDrawContext* dc,const CRect& update) {
     refreshLayout();
+    CDrawContext::Transform zoomTransform(*dc,CGraphicsTransform().scale(userZoom(),userZoom()));
     ++paintGeneration_;
-    const auto bounds=getViewSize();
-    if (update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
+    const auto bounds=viewRect(layout_.viewport);
+    if (userZoom()==1&&state_.tab==session::Tab::Recommend&&update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
     box(dc,bounds,background);
-    drawTop(dc,bounds); drawPhrase(dc,bounds);
+    drawTop(dc,bounds); if(state_.tab==session::Tab::Recommend)drawPhrase(dc,bounds);
     switch(state_.tab) {
         case session::Tab::Recommend:
             if (state_.productMode==session::ProductMode::Enrich) drawEnrichments(dc,bounds);
@@ -617,7 +907,8 @@ int MainView::popup(const std::vector<std::string>& items,CPoint point) {
         MultiByteToWideChar(CP_UTF8,0,items[i].c_str(),-1,wide.data(),len);
         AppendMenuW(menu,MF_STRING,static_cast<UINT_PTR>(i+1),wide.c_str());
     }
-    POINT at{static_cast<LONG>(point.x),static_cast<LONG>(point.y)}; ClientToScreen(window,&at);
+    const auto factor=userZoom()*(getFrame()?getFrame()->getZoom():1.);
+    POINT at{static_cast<LONG>(point.x*factor),static_cast<LONG>(point.y*factor)}; ClientToScreen(window,&at);
     const auto result=TrackPopupMenu(menu,TPM_RETURNCMD|TPM_LEFTALIGN|TPM_TOPALIGN,at.x,at.y,0,window,nullptr);
     DestroyMenu(menu); return result?static_cast<int>(result-1):-1;
 #else
@@ -628,16 +919,22 @@ void MainView::beginForm(Form kind,std::string initial) {
     if (!getFrame()) return; endForm(); form_=kind;
     const double w=std::min(590.,layout_.viewport.width()-48),h=360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
-    nameEdit_=new CTextEdit(CRect(x+140,y+53,x+w-22,y+91),nullptr,0,initial.c_str());
+    nameEdit_=new CTextEdit(editRect(CRect(x+140,y+53,x+w-22,y+91)),nullptr,0,initial.c_str());
     nameEdit_->setBackColor(CColor(242,247,252,255)); nameEdit_->setFontColor(CColor(20,30,45,255));
     getFrame()->addView(nameEdit_);
     if (kind!=Form::Search) {
-        tagsEdit_=new CTextEdit(CRect(x+140,y+201,x+w-22,y+239),nullptr,0,"");
+        tagsEdit_=new CTextEdit(editRect(CRect(x+140,y+201,x+w-22,y+239)),nullptr,0,"");
         tagsEdit_->setBackColor(CColor(242,247,252,255)); tagsEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(tagsEdit_);
-        noteEdit_=new CTextEdit(CRect(x+140,y+261,x+w-22,y+299),nullptr,0,formMetadata_.note.c_str());
+        noteEdit_=new CTextEdit(editRect(CRect(x+140,y+261,x+w-22,y+299)),nullptr,0,formMetadata_.note.c_str());
         noteEdit_->setBackColor(CColor(242,247,252,255)); noteEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(noteEdit_);
+    }
+    const auto font=owned(new CFontDesc(kNormalFont->getName(),kNormalFont->getSize()*userZoom(),kNormalFont->getStyle()));
+    for(auto* edit:{nameEdit_,tagsEdit_,noteEdit_})if(edit)edit->setFont(font);
+    if(kind==Form::Melody) {
+        tagsEdit_->setText(fixed(formMelody_.startQN,3).c_str());
+        noteEdit_->setText(fixed(formMelody_.durationQN,3).c_str());
     }
     getFrame()->setFocusView(nameEdit_); invalid();
 }
@@ -650,6 +947,24 @@ void MainView::submitForm() {
     if (!nameEdit_) return;
     const auto text=nameEdit_->getText().getString();
     if (form_==Form::Search) { librarySearch_=text; libraryPage_=0; endForm(); return; }
+    if(form_==Form::Melody) {
+        const auto parsed=parseMelodyNote(text);
+        if(!parsed){actionStatus_=t("melody.invalid");invalid();return;}
+        auto melody=*parsed;melody.role=formMelody_.role;melody.strictness=formMelody_.strictness;
+        const auto parseTime=[](const std::string& text) {
+            std::istringstream in(text);in.imbue(std::locale::classic());double value{};
+            if(!(in>>value))throw std::runtime_error("invalid melody time");
+            in>>std::ws;if(!in.eof())throw std::runtime_error("invalid melody time");return value;
+        };
+        try {
+            melody.startQN=parseTime(tagsEdit_->getText().getString());
+            melody.durationQN=parseTime(noteEdit_->getText().getString());
+            HarmonyConstraintSet constraints{{melody}};
+            if(!validConstraints(constraints))throw std::runtime_error("invalid melody time");
+            state_.constraints=std::move(constraints);actionStatus_.clear();endForm();notifyState();
+        } catch(...) {actionStatus_=t("melody.invalid");invalid();}
+        return;
+    }
     if (text.empty() || text.size()>128) { actionStatus_=t("form.invalidName"); invalid(); return; }
     formMetadata_.name=text; formMetadata_.tags.clear();
     if (tagsEdit_) {
@@ -670,7 +985,47 @@ void MainView::submitForm() {
     endForm();
 }
 CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
-    return onMouseDownResponsive(where);
+    midiPending_.reset();midiClick_={};
+    CPoint logical{where.x/userZoom(),where.y/userZoom()};
+    return onMouseDownResponsive(logical);
+}
+bool MainView::armMidi(const ContinuationCandidate& candidate,CPoint where) {
+    if(!actions_.midiPayload)return false;
+    const auto result=actions_.midiPayload(candidate);
+    if(!result){actionStatus_=t("midi.failed");invalid();return true;}
+    midiPending_=result.payload;midiMouseDown_=where;
+    midiClick_=[this,payload=result.payload,candidate]{actionStatus_=actions_.saveMidiPayload?
+        actions_.saveMidiPayload(payload):actions_.exportMidi?actions_.exportMidi(candidate):t("midi.failed");invalid();};return true;
+}
+bool MainView::armMidi(const enrichment::EnrichmentCandidate& candidate,CPoint where) {
+    if(!actions_.enrichmentMidiPayload)return false;
+    const auto result=actions_.enrichmentMidiPayload(candidate);
+    if(!result){actionStatus_=t("midi.failed");invalid();return true;}
+    midiPending_=result.payload;midiMouseDown_=where;
+    midiClick_=[this,payload=result.payload,candidate]{actionStatus_=actions_.saveMidiPayload?
+        actions_.saveMidiPayload(payload):actions_.exportEnrichmentMidi?actions_.exportEnrichmentMidi(candidate):t("midi.failed");invalid();};return true;
+}
+CMouseEventResult MainView::onMouseMoved(CPoint& where,const CButtonState& buttons) {
+    try {
+    if(!midiPending_)return kMouseEventNotHandled;
+    if(!buttons.isLeftButton()){midiPending_.reset();midiClick_={};return kMouseEventHandled;}
+    if(!shouldStartDrag(CPoint(midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()),where))return kMouseEventHandled;
+    auto payload=std::move(*midiPending_);midiPending_.reset();midiClick_={};
+    const auto file=midi::createDragFile(payload);
+    if(!file){actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
+    const auto utf8=file.path.u8string();std::string path(utf8.begin(),utf8.end());
+    const auto package=CDropSource::create(path.c_str(),static_cast<std::uint32_t>(path.size()+1),IDataPackage::kFilePath);
+    auto callback=owned(new DragCallbackFunctions);
+    const SharedPointer<MainView> keepAlive(this);
+    callback->endedFunc=[keepAlive](IDraggingSession*,CPoint,DragOperation result){keepAlive->setActionStatus(keepAlive->t(result==DragOperation::None?"midi.dragFailed":"midi.dragged"));};
+    if(!doDrag(DragDescription(package),callback)){actionStatus_=t("midi.dragFailed");invalid();}
+    return kMouseEventHandled;
+    } catch(...){midiPending_.reset();midiClick_={};actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
+}
+CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
+    try {auto click=std::move(midiClick_);midiClick_={};midiPending_.reset();
+        if(click&&!shouldStartDrag(CPoint{midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()},where))click();
+    } catch(...){actionStatus_=t("midi.saveFailed");invalid();}return kMouseEventHandled;
 }
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
@@ -681,6 +1036,12 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(where.y>=y+h-45&&where.y<=y+h) {
                 if(where.x>=x+140&&where.x<x+290)endForm();
                 else if(where.x>=x+w-170&&where.x<=x+w)submitForm();
+            } else if(form_==Form::Melody&&where.y>=y+110&&where.y<y+144) {
+                const auto choice=popup({t("melody.present"),t("melody.top")},where);
+                if(choice>=0)formMelody_.role=static_cast<ConstraintRole>(choice);invalid();
+            } else if(form_==Form::Melody&&where.y>=y+144&&where.y<y+180) {
+                const auto choice=popup({t("melody.soft"),t("melody.hard")},where);
+                if(choice>=0)formMelody_.strictness=static_cast<ConstraintStrictness>(choice);invalid();
             } else if(form_!=Form::Search&&where.y>=y+110&&where.y<y+144) {
                 const auto choice=popup({t("label.auto"),"Pop","Rock","R&B","Jazz","City Pop / J-pop",t("tag.functional")},where);
                 constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
@@ -691,6 +1052,34 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             }
             return kMouseEventHandled;
         }
+        if (dismissOnOutsideClick(activeOverlayKind(),layout_.inspector,where.x,where.y))
+            dismissTransientOverlay();
+        for(std::size_t i=0;i<layout_.constraintControls.size();++i)
+            if(layout_.constraintControls[i].contains(where.x,where.y)) {
+                if(i==2) {
+                    const auto choice=popup({t("tendency.conservative"),t("tendency.balanced"),t("tendency.bold")},where);
+                    if(choice>=0){state_.tendency=static_cast<HarmonicTendency>(choice);notifyState();}
+                } else {
+                    if(state_.constraints.melody.empty()) {
+                        formMelody_=*parseMelodyNote("E4");
+                        if(!state_.imported.events.empty()) {
+                            const auto index=state_.productMode==session::ProductMode::Continue?
+                                state_.imported.events.size()-1:selectedChord_.value_or(0);
+                            const auto& chord=state_.imported.events[std::min(index,state_.imported.events.size()-1)];
+                            formMelody_.durationQN=chord.durationQN.value_or(4);
+                            formMelody_.startQN=chord.startQN+(state_.productMode==session::ProductMode::Continue?
+                                formMelody_.durationQN:0);
+                        }
+                    } else formMelody_=state_.constraints.melody.front();
+                    if(i==0) {
+                        const auto choice=popup({t("melody.off"),t("melody.present"),t("melody.top")},where);
+                        if(choice==0){state_.constraints.melody.clear();notifyState();}
+                        else if(choice>0){formMelody_.role=static_cast<ConstraintRole>(choice-1);
+                            beginForm(Form::Melody,melodyNoteName(formMelody_));}
+                    } else beginForm(Form::Melody,melodyNoteName(formMelody_));
+                }
+                return kMouseEventHandled;
+            }
         for(std::size_t i=0;i<layout_.topControls.size();++i)if(layout_.topControls[i].contains(where.x,where.y)) {
             if(i==0) {
                 std::vector<std::string> names{t("label.auto")};
@@ -708,7 +1097,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 if(choice>=0){state_.intent=choice?std::optional<PhraseIntent>(static_cast<PhraseIntent>(choice)):std::nullopt;notifyState();}
             } else if(i==3) {
                 const auto choice=popup({t("nav.library"),t("nav.diagnostics"),
-                    state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about")},where);
+                    state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about"),
+                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import")},where);
                 if(choice==0) state_.tab=session::Tab::Library;
                 else if(choice==1) state_.tab=session::Tab::Diagnostics;
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
@@ -717,9 +1107,17 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     popup({"HarmonyContinuation "+std::string(product::version),
                         t("about.build")+": "+std::string(product::buildType),
                         t("about.commit")+": "+std::string(product::commit),
-                        t("about.factory")+": "+std::to_string(product::factoryLibraryVersion),
+                        t("about.factory")+": "+std::to_string(state_.factoryLibraryVersion),
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
                         t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion)},where);
+                }
+                else if(choice==4) {
+                    const auto zoom=popup({"100%","125%","150%"},where);
+                    if(zoom>=0)setUserZoom(std::array<std::uint32_t,3>{100,125,150}[zoom]);
+                }
+                else if(choice==5&&actions_.importMidi) {
+                    const auto option=popup({t("midi.complete"),t("midi.open")},where);
+                    if(option>=0)actions_.importMidi(option==1,{});
                 }
                 if(choice>=0) notifyState();
             }
@@ -730,16 +1128,17 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             return kMouseEventHandled;
         }
         const auto titleY=layout_.phrase.top-31;
-        if(where.y>=titleY&&where.y<titleY+30&&where.x>layout_.viewport.right-160) {
+        if(state_.tab==session::Tab::Recommend&&where.y>=titleY&&where.y<titleY+30&&where.x>layout_.viewport.right-160) {
             if(where.x<layout_.viewport.right-88)state_.tab=session::Tab::Diagnostics;
             else state_.debugExpanded=!state_.debugExpanded;
             notifyState();return kMouseEventHandled;
         }
-        if(layout_.timeline.contains(where.x,where.y)) {
+        if(state_.tab==session::Tab::Recommend&&layout_.timeline.contains(where.x,where.y)) {
             for(const auto& b:timelineBlocks_) {
                 const auto r=chordTileRect(b.eventIndex);
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();
-                    selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;invalid();break;}
+                    selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;refreshLayout();
+                    focusTransientOverlay();invalid();break;}
             }
             return kMouseEventHandled;
         }
@@ -748,6 +1147,22 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(where.y<area.top+39) {selectedCandidate_.reset();selectedEnrichment_.reset();
                 selectedChord_.reset();selectedLibrary_.reset();invalid();return kMouseEventHandled;}
             if(where.y>=area.bottom-43) {
+                if(state_.tab==session::Tab::Recommend&&(selectedCandidate()||selectedEnrichment())) {
+                    const int columns=state_.productMode==session::ProductMode::Enrich?3:4;
+                    const auto column=std::clamp(static_cast<int>((where.x-area.left-14)/((area.width()-28)/columns)),0,columns-1);
+                    if(const auto* c=selectedEnrichment();c&&state_.productMode==session::ProductMode::Enrich) {
+                        if(column==0&&actions_.auditionEnrichment)actions_.auditionEnrichment(*c);
+                        else if(column==1)armMidi(*c,where);
+                        else if(column==2&&actions_.saveEnrichmentSnapshot)actionStatus_=actions_.saveEnrichmentSnapshot(*c);
+                    } else if(const auto* continuation=selectedCandidate()) {
+                        if(column==0&&actions_.audition)actions_.audition(*continuation);
+                        else if(column==1)armMidi(*continuation,where);
+                        else if(column==2&&actions_.saveSnapshot)actionStatus_=actions_.saveSnapshot(*continuation);
+                        else if(column==3){formMetadata_.name="My "+std::string(intentName(continuation->intent))+" Progression";formMetadata_.note.clear();
+                            formMetadata_.style=state_.style;formMetadata_.intent=continuation->intent;beginForm(Form::Save,formMetadata_.name);}
+                    }
+                    invalid();return kMouseEventHandled;
+                }
                 if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
                    selectedEnrichment()&&actions_.saveEnrichmentSnapshot) {
                     actionStatus_=actions_.saveEnrichmentSnapshot(*selectedEnrichment());invalid();
@@ -804,6 +1219,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                                     if(enrichments_.groups[group][row].id==candidate->id)
                                         selectedEnrichment_={{group,row}};
                             inspectorScroll_=0;refreshLayout();invalid();
+                            focusTransientOverlay();
                         }
                     }
                     return kMouseEventHandled;
@@ -891,62 +1307,88 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             for(std::size_t group=0;group<3;++group) {
                 auto lane=layout_.lanes[group];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
                 if(!lane.contains(where.x,where.y))continue;
-                const auto row=static_cast<std::size_t>(std::max(0.,std::floor((where.y-lane.top-28)/80)));
-                if(row>=std::min<std::size_t>(2,enrichments_.groups[group].size()))return kMouseEventHandled;
+                if(where.y<lane.top+27&&where.x>=lane.right-120&&enrichments_.groups[group].size()>2) {
+                    const auto listed=enrichments_.groups[group];const auto revision=state_.imported.revision;
+                    std::vector<std::string> options;
+                    for(const auto& c:listed) {
+                        std::string path;for(const auto& chord:c.progression){if(!path.empty())path+=" → ";path+=chord.name;}
+                        options.push_back(fixed(c.score,0)+" · "+path);
+                    }
+                    const auto index=popup(options,where);
+                    if(index>=0&&static_cast<std::size_t>(index)<listed.size()&&revision==state_.imported.revision) {
+                        const auto& original=listed[index];const auto& current=enrichments_.groups[group];
+                        const auto found=std::find_if(current.begin(),current.end(),[&](const auto& c){return c.id==original.id&&c.fingerprint==original.fingerprint;});
+                        if(found!=current.end()){selectedEnrichment_={{group,static_cast<std::size_t>(found-current.begin())}};selectedCandidate_.reset();selectedChord_.reset();inspectorScroll_=0;refreshLayout();focusTransientOverlay();invalid();}
+                    }
+                    return kMouseEventHandled;
+                }
+                const ScrollableCandidateList list(lane,enrichments_.groups[group].size(),enrichmentScroll_[group]);
+                const auto hit=list.hit(where.x,where.y);
+                if(!hit)return kMouseEventHandled;
+                const auto row=*hit;
                 const auto& candidate=enrichments_.groups[group][row];
-                const auto rowY=lane.top+28+row*80;
-                if(where.y>=rowY+49 && where.x>=lane.right-214 && where.x<lane.right-169) {
+                const auto geometry=enrichmentRowGeometry(lane,list,row);
+                if(geometry.pin.contains(where.x,where.y)) {
                     const auto found=std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id);
                     if(found!=pinnedEnrichmentIds_.end())pinnedEnrichmentIds_.erase(found);
                     else if(pinnedEnrichmentIds_.size()<3)pinnedEnrichmentIds_.push_back(candidate.id);
                     refreshLayout();
-                } else if(where.y>=rowY+49 && where.x>=lane.right-169 && where.x<lane.right-125) {
-                    selectedEnrichment_={{group,row}};selectedChord_.reset();inspectorScroll_=0;refreshLayout();
-                } else if(where.y>=rowY+49 && where.x>=lane.right-52 && actions_.saveEnrichmentSnapshot)
+                } else if(geometry.why.contains(where.x,where.y)) {
+                    selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                    inspectorScroll_=0;refreshLayout();focusTransientOverlay();
+                } else if(geometry.snapshot.contains(where.x,where.y) && actions_.saveEnrichmentSnapshot)
                     actionStatus_=actions_.saveEnrichmentSnapshot(candidate);
-                else if(where.y>=rowY+49 && where.x>=lane.right-96 && actions_.exportEnrichmentMidi)
-                    actionStatus_=actions_.exportEnrichmentMidi(candidate);
-                else if(where.y>=rowY+49 && where.x>=lane.right-124 && actions_.auditionEnrichment)
+                else if(geometry.midi.contains(where.x,where.y) && actions_.exportEnrichmentMidi)
+                    armMidi(candidate,where);
+                else if(geometry.audition.contains(where.x,where.y) && actions_.auditionEnrichment)
                     actions_.auditionEnrichment(candidate);
-                else {selectedEnrichment_={{group,row}};selectedChord_.reset();inspectorScroll_=0;refreshLayout();}
+                else {selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                    inspectorScroll_=0;refreshLayout();focusTransientOverlay();}
                 invalid();return kMouseEventHandled;
             }
             return kMouseEventHandled;
         }
+        const auto presentation=session::presentationIndices(recommendations_,visibility_);
         for(std::size_t visual=0;visual<4;++visual) {
             auto lane=layout_.lanes[visual];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
             if(!lane.contains(where.x,where.y))continue;
             const auto group=groupForVisual(visual,state_.intent);
             if(where.y<lane.top+27) {
                 if(where.x>=lane.right-120&&recommendations_.groups[group].size()>2) {
+                    const auto listed=recommendations_.groups[group];const auto revision=state_.imported.revision;
                     std::vector<std::string> options;
-                    for(const auto& c:recommendations_.groups[group]) {
+                    for(const auto& c:listed) {
                         std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
                         options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
-                    if(selected>=0){selectedCandidate_={{group,static_cast<std::size_t>(selected)}};selectedChord_.reset();
-                        inspectorScroll_=0;
-                        if(actions_.benchmarkSelect)actions_.benchmarkSelect(recommendations_.groups[group][selected]);
-                        invalid();}
+                    if(selected>=0&&static_cast<std::size_t>(selected)<listed.size()&&revision==state_.imported.revision) {
+                        const auto& original=listed[selected];const auto fingerprint=session::continuationFingerprint(original);const auto& current=recommendations_.groups[group];
+                        const auto found=std::find_if(current.begin(),current.end(),[&](const auto& c){return c.id==original.id&&session::continuationFingerprint(c)==fingerprint;});
+                        if(found!=current.end()){selectedCandidate_={{group,static_cast<std::size_t>(found-current.begin())}};
+                            selectedChord_.reset();selectedEnrichment_.reset();refreshLayout();focusTransientOverlay();inspectorScroll_=0;
+                            if(actions_.benchmarkSelect)actions_.benchmarkSelect(*found);invalid();}
+                    }
                 }
                 return kMouseEventHandled;
             }
-            const auto rowHeight=(lane.height()-30)/2;
-            const auto row=static_cast<std::size_t>((where.y-lane.top-27)/rowHeight);
-            const auto visible=visibility_.visibleIndices(recommendations_.groups[group]);
-            if(row>=visible.size()||row>=2)return kMouseEventHandled;
+            const auto& visible=presentation[group];
+            const ScrollableCandidateList list(lane,visible.size(),continuationScroll_[group]);
+            const auto hit=list.hit(where.x,where.y);
+            if(!hit)return kMouseEventHandled;
+            const auto row=*hit;
             const auto index=visible[row];const auto& c=recommendations_.groups[group][index];
-            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),static_cast<bool>(actions_.exportMidi));
+            const auto geometry=list.continuationRow(lane,row,static_cast<bool>(actions_.exportMidi));
             if(actions_.benchmarkSelect)actions_.benchmarkSelect(c);
             if(geometry.pin.contains(where.x,where.y)){
                 if(state_.unpin(c.id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==c.id;});
                 else if(state_.pin(c.id,session::continuationFingerprint(c)))pinnedSnapshots_.push_back(c);
                 notifyState();
             } else if(geometry.audition.contains(where.x,where.y)&&actions_.audition)actions_.audition(c);
-            else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){actionStatus_=actions_.exportMidi(c);invalid();}
+            else if(geometry.midi.contains(where.x,where.y)&&actions_.exportMidi){if(!armMidi(c,where))actionStatus_=actions_.exportMidi(c);invalid();}
             else if(geometry.snapshot.contains(where.x,where.y)&&actions_.saveSnapshot){actionStatus_=actions_.saveSnapshot(c);invalid();}
-            else {selectedCandidate_={{group,index}};selectedChord_.reset();inspectorScroll_=0;invalid();}
+            else {selectedCandidate_={{group,index}};selectedChord_.reset();selectedEnrichment_.reset();
+                inspectorScroll_=0;refreshLayout();focusTransientOverlay();invalid();}
             return kMouseEventHandled;
         }
     } catch(...) {actionStatus_="Action failed";invalid();}
@@ -1045,9 +1487,24 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             else row+=part;}
         if(!row.empty())add(row);
     };
+    const auto addMelody=[&](const MelodyCompatibility& compatibility) {
+        constexpr const char* intervals[]{"1","b9","9","b3","3","11","#11","5","b13","13","b7","7"};
+        for(std::size_t i=0;i<std::min<std::size_t>(4,compatibility.observations.size());++i) {
+            const auto& observation=compatibility.observations[i];MelodyConstraint note;note.pitchClass=observation.pitchClass;
+            const auto relation=observation.relation==MelodyRelation::ChordTone?"melody.chordTone":
+                observation.relation==MelodyRelation::AvailableTension?"melody.tension":
+                observation.relation==MelodyRelation::Conflict?"melody.conflict":"melody.uncertain";
+            add(melodyNoteName(note)+" · "+observation.chord+" · "+t(relation)+" ("+
+                intervals[std::clamp(observation.interval,0,11)]+")",
+                observation.relation==MelodyRelation::Conflict?accent:muted);
+            if(!observation.topVoiceSatisfied)add(t("melody.topConflict"),accent);
+        }
+        if(state_.debugExpanded&&!compatibility.observations.empty())add(t("melody.score")+" "+fixed(compatibility.score,2),muted);
+    };
     if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()) {
         const auto& candidate=*selectedEnrichment();
         add(t("inspector.why"),accent);
+        if(state_.debugExpanded)add("Fingerprint: "+candidate.fingerprint,muted);
         std::vector<std::string> sourceNames,transformedNames;
         for(const auto& chord:state_.imported.events)sourceNames.push_back(chord.name);
         for(const auto& chord:candidate.progression)transformedNames.push_back(chord.name);
@@ -1057,6 +1514,22 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             t("inspector.preservation")+"  "+fixed(candidate.skeletonPreservation,2),muted);
         add(t("inspector.styleFit")+"  "+fixed(candidate.styleCompatibility,2)+" · "+
             t("inspector.complexity")+"  "+fixed(candidate.complexityScore,2),muted);
+        addMelody(candidate.melodyCompatibility);
+        const auto sourceVoice=preview::measureVoiceLeading(state_.imported.events);
+        const auto enrichedVoice=preview::measureVoiceLeading(candidate.progression);
+        if(sourceVoice&&enrichedVoice) {
+            const bool inversion=std::any_of(candidate.techniques.begin(),candidate.techniques.end(),
+                [](auto technique){return technique==enrichment::TechniqueID::Inversion;});
+            if(inversion&&enrichedVoice->bassMotionSemitones<sourceVoice->bassMotionSemitones)
+                add(t("voice.inversionImprovesBass"),accent);
+            else if(enrichedVoice->score>sourceVoice->score+0.03f)
+                add(t("voice.smoother"),accent);
+            add(t("voice.commonTones")+"  "+std::to_string(enrichedVoice->commonToneCount),muted);
+            add(t("voice.bass")+"  "+bassLine(enrichedVoice->bassMidi),muted);
+            add(t("voice.upper")+"  "+(enrichedVoice->upperVoiceTotalMotion<=sourceVoice->upperVoiceTotalMotion?
+                t("voice.upperSmoother"):t("voice.upperVaried")),muted);
+            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(enrichedVoice->score,2),muted);
+        }
         for(const auto& operation:candidate.operations) {
             add(operation.before+" → "+operation.after,pale);
             add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
@@ -1065,8 +1538,30 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);
+        if(state_.debugExpanded)add("Fingerprint: "+session::continuationFingerprint(c),muted);
+        addMelody(c.melodyCompatibility);
         add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+
             std::to_string(static_cast<int>(std::round(c.rankingScore))));
+        std::optional<ScaleDegree> phraseStart,current;
+        if(analysis_.selectedKey&&analysis_.selectedKey->key.tonic==c.key.tonic&&
+           analysis_.selectedKey->key.mode==c.key.mode&&!analysis_.full.empty()) {
+            phraseStart=analysis_.full.front().degree;
+            current=analysis_.full.back().degree;
+        }
+        const auto completion=evaluateIntentCompletion(c,phraseStart,current);
+        add(t(completionReasonKey(completion.reason)),accent);
+        if(state_.debugExpanded)
+            add(t("inspector.completion")+"  "+fixed(completion.score,2),muted);
+        Progression voiced=state_.imported.events;
+        for(const auto& event:c.continuation) {
+            ChordEvent next;next.name=event.label;next.quality=event.quality;
+            voiced.push_back(std::move(next));
+        }
+        if(const auto voice=preview::measureVoiceLeading(voiced)) {
+            add(t("voice.commonTones")+"  "+std::to_string(voice->commonToneCount)+" · "+
+                t("voice.bass")+"  "+bassLine(voice->bassMidi),muted);
+            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(voice->score,2),muted);
+        }
         std::vector<std::string> userNames,skeletonNames,continuationNames;
         for(const auto& chord:state_.imported.events)userNames.push_back(chord.name);
         for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())
@@ -1132,7 +1627,13 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     }
     inspectorScrollMax_=std::max(0.,y+inspectorScroll_-(area.bottom-45));
     }
-    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
+    if(state_.tab==session::Tab::Recommend&&(selectedCandidate()||selectedEnrichment())) {
+        const std::size_t count=state_.productMode==session::ProductMode::Enrich?3:4;
+        const double cell=(area.width()-28)/count;
+        const std::array<std::string,4> titles{t("candidate.play"),t("midi.button"),t("candidate.snapshot"),
+            state_.productMode==session::ProductMode::Continue?t("form.save"):t("candidate.why")};
+        for(std::size_t i=0;i<count;++i)line(dc,titles[i],CRect(area.left+14+i*cell,area.bottom-39,area.left+14+(i+1)*cell,area.bottom-8),accent,kCenterText);
+    } else if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
        selectedEnrichment()&&actions_.saveEnrichmentSnapshot)
         line(dc,t("candidate.snapshot"),CRect(area.left+14,area.bottom-39,area.right-14,area.bottom-8),accent,kRightText);
     else if(state_.tab==session::Tab::Recommend&&selectedCandidate())
@@ -1151,10 +1652,15 @@ void MainView::drawResponsiveForm(CDrawContext* dc) {
     const double w=std::min(590.,layout_.viewport.width()-48),h=360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
     box(dc,CRect(x,y,x+w,y+h),CColor(23,39,59,255));
-    line(dc,form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
+    line(dc,form_==Form::Melody?t("melody.label"):form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
         CRect(x+22,y+12,x+w-22,y+43),accent);
-    line(dc,form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
-    if(form_!=Form::Search) {
+    line(dc,form_==Form::Melody?t("melody.note"):form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
+    if(form_==Form::Melody) {
+        line(dc,t("melody.role")+": "+t(formMelody_.role==ConstraintRole::TopVoice?"melody.top":"melody.present"),CRect(x+22,y+115,x+w-22,y+142),pale);
+        line(dc,t("melody.strictness")+": "+t(formMelody_.strictness==ConstraintStrictness::Hard?"melody.hard":"melody.soft"),CRect(x+22,y+146,x+w-22,y+174),pale);
+        line(dc,t("melody.start"),CRect(x+22,y+183,x+w-22,y+210),muted);
+        line(dc,t("melody.duration"),CRect(x+22,y+244,x+w-22,y+269),muted);
+    } else if(form_!=Form::Search) {
         line(dc,t("label.style")+": "+(formMetadata_.style?styleName(*formMetadata_.style):t("label.auto")),CRect(x+22,y+115,x+w-22,y+142),pale);
         line(dc,t("label.intent")+": "+tIntent(formMetadata_.intent),CRect(x+22,y+146,x+w-22,y+174),pale);
         line(dc,t("form.tags"),CRect(x+22,y+183,x+w-22,y+210),muted);

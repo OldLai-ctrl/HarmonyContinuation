@@ -1,10 +1,10 @@
-#include "ChordVoicer.h"
+#include "core/ChordVoicer.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <vector>
 
-namespace harmony::preview {
+namespace harmony {
 namespace {
 int closestBass(int pc) {
     int best=36, distance=100;
@@ -14,7 +14,7 @@ int closestBass(int pc) {
     }
     return best;
 }
-std::vector<int> priorityIntervals(const Chord& c) {
+std::vector<int> priorityIntervals(const ChordPitchSet& c) {
     std::vector<int> result;
     auto add=[&](int n) { if ((c.intervals&(1u<<n)) && std::find(result.begin(),result.end(),n)==result.end()) result.push_back(n); };
     // Core identity is selected before optional colors or fifths.
@@ -39,7 +39,7 @@ std::vector<int> priorityIntervals(const Chord& c) {
     return result;
 }
 }
-Voicing ChordVoicer::voice(const Chord& chord) {
+Voicing ChordVoicer::voice(const ChordPitchSet& chord,std::optional<int> topVoice) {
     const auto intervals=priorityIntervals(chord);
     Voicing best; best.bass=closestBass(chord.bass); best.upperCount=static_cast<int>(intervals.size());
     double bestCost=std::numeric_limits<double>::infinity();
@@ -67,7 +67,30 @@ Voicing ChordVoicer::voice(const Chord& chord) {
         for (int i=0;i<v.upperCount;++i) cost+=std::abs(v.upper[i]-65)*0.015;
         if (cost<bestCost) { bestCost=cost; best=v; }
     }
+    if(topVoice) {
+        const int target=*topVoice;
+        if(target<12||target>127)best.melodySatisfied=false;
+        else {
+            auto constrained=best;
+            constrained.upperCount=0;
+            for(int i=0;i<best.upperCount;++i) {
+                const int pitchClass=best.upper[i]%12;
+                if(pitchClass==target%12)continue;
+                int note=target-1-(target-1-pitchClass+132)%12;
+                if(note<1){constrained.melodySatisfied=false;break;}
+                constrained.upper[constrained.upperCount++]=note;
+            }
+            std::sort(constrained.upper.begin(),constrained.upper.begin()+constrained.upperCount);
+            if(constrained.melodySatisfied) {
+                constrained.upper[constrained.upperCount++]=target;
+                while(constrained.bass>=constrained.upper[0])constrained.bass-=12;
+                if(constrained.bass<0)constrained.melodySatisfied=false;
+            }
+            if(constrained.melodySatisfied)best=constrained;
+            else best.melodySatisfied=false;
+        }
+    }
     previous_=best; hasPrevious_=true;
     return best;
 }
-} // namespace harmony::preview
+} // namespace harmony

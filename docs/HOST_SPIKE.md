@@ -57,3 +57,30 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 2026-09-25：Phase 3 加入 161 条种子曲库、SQLite 运行库、后台推荐与 RECOMMEND 开发视图。本轮插件构建、CTest 7/7、Validator 47/47、独立 EditorHost 打开响应正常；用户本轮无法操作 Cubase，因此 **Phase 2 新基线和 Phase 3 界面均未完成 Cubase 实机 smoke**，不能写为宿主 PASS。细节见 [Phase 3 验证记录](PHASE3_TESTS.md)。
 
 公开格式参考：Steinberg [Clipboard VST-XML 定义](https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Clipboard%2BVST-XML/Index.html)。
+
+## 2026-09-30 · dev.2 MIDI 工作流
+
+- 用户决策端指令确认 dev.1 安装器 / 独立库 Cubase Gate PASS，依用户报告进入 dev.2。
+- 新增标准 SMF Format 0/1 PPQ 文件导入与和弦块提取；更多候选完整操作；标准 VSTGUI 文件路径 MIDI Drag-Out。SDK API 以本地 `vstgui/lib/dragging.h`、`cdropsource.h`、`idatapackage.h` 为依据。
+- 本机构建、定向测试及集中回归结果另见 `V0_8_DEV2_REPORT.md`；Demo 自动检查只能证明候选对应、回调及拖动准备，不能证明 Cubase 接受 drop、实际发声或工程重开。
+- dev.2 Cubase 人工验收待执行。Cubase 私有 MIDI Part 直接拖入未实现、未测试，不属于已支持输入。
+
+### dev.2 人工 Gate 准备
+
+收到 Cubase Manual Acceptance 指令后，仅更新 21 项人工清单，并准备 `manual-tests/dev2-midi` 文件。本轮未重跑产品自动回归，未宣称任何新 Cubase PASS，未修改插件或安装包、未推进 RC。等待用户实际结果；此前自动报告不代替人工验收。
+
+### 2026-09-30 · dev.2 人工结果与两项 UX 收口
+
+- 用户决策端最新指令报告：dev.2 Cubase 人工测试总体通过；拖出 MIDI 会产生额外 Marker Track / 标记，主界面分组缺少滚动。这是用户宿主证据，未收到逐项截图或独立记录。
+- 本轮只增加 AnnotatedFile / DAWClip 导出配置和七组共用的 ScrollableCandidateList。两个文件从同一 ExportSequence 写出；点击保存保留说明，拖出仅保留 PPQ、Note On/Off 和 End Of Track，单轨 Format 0，不写 tempo / meter / text / key / marker。
+- 候选生成、排名、质量/去重门槛保持原状；移除 MainView 的两行展示上限，使用既有策略默认最多 3 条，约两行高度独立滚动。滚轮在组内（包括边界）消费；空隙走父容器。无候选视图复用；绘制、点击映射共用原候选下标。
+- 本机针对性验证：MidiProfileTests 8/8，实际拖出临时文件事件精简，两个布局/三个范围音乐一致，保存 metadata 保留；Demo 七组 × 0/1/2/3/6 条 × 三种缩放，试听/拖動准备/Why/Snapshot/候选身份检查通过。实际宿主 drop、发声和 Marker Track 消失仍待用户复测，不由 Demo 推断。
+- 本轮未重复完整 CTest、Validator、音乐基线、Import fixtures 或 Round-trip。用户定向 PASS 后才运行最终集中回归并决定推进 RC，见 `V0_8_RC_TARGETED_MANUAL_TEST.md`。
+
+### 0.8.0-rc.1 Gate
+
+- 用户明确回传 dev.2 Cubase 人工验收 **PASS**：精简拖出无额外 Marker Track / 标记、七组滚动、滚动候选试听与拖出、More、MIDI Import 及其它 dev.2 人工项目；未发现新问题。两份人工清单同步完成状态。
+- 功能冻结在 `58e765e`。本轮集中回归仅执行一次：CTest 20/20，Release Validator 47/47；Continuation 42 例 / 214 候选，Enrichment 30 例 / 161 候选，所有逐例数据与既有基线一致。原有三处结构质量提示未新增、未修音乐算法。
+- CTest 内含 Constraint 16/16、MIDI Import 27/27、Round-trip 12/12；Demo MIDI / More / Scroll / Why PASS、Zoom 9/9、Resize 96/96。没有重复运行这些测试。
+- 集中回归未发现新 bug。只更新 ProductVersion 为 0.8.0-rc.1 与 RC 文档；库 / 数据 / 快照版本保持 2 / 1 / 5 / 2 / 1。
+- RC1 安装包是从确定 RC 提交重新构建的产物；其资源检查和最终 Validator 结果记录在随包 BUILD.txt。**dev.2 Cubase PASS 不等于 RC1 安装包已经重新人工测试**。完成 RC 打包后停止。

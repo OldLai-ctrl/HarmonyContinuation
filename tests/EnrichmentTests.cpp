@@ -2,6 +2,7 @@
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "preview/PreviewSequence.h"
+#include "preview/VoiceLeadingMetrics.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #include <algorithm>
 #include <cmath>
@@ -90,6 +91,18 @@ int main() {
                 require(technique(result, enrichment::TechniqueID::PassingDiminished), "passing diminished");
             if (file.path().stem().string().find("secondary_target") != std::string::npos)
                 require(technique(result, enrichment::TechniqueID::SecondaryDominant), "secondary dominant");
+            if (file.path().stem().string().find("inversion") != std::string::npos) {
+                require(technique(result,enrichment::TechniqueID::Inversion),"inversion candidate present");
+                const auto original=preview::measureVoiceLeading(loaded.scenario.chords);
+                require(static_cast<bool>(original),"source voice leading");
+                for(const auto& group:result.groups)for(const auto& candidate:group)
+                    if(std::find(candidate.techniques.begin(),candidate.techniques.end(),
+                                 enrichment::TechniqueID::Inversion)!=candidate.techniques.end()) {
+                        const auto changed=preview::measureVoiceLeading(candidate.progression);
+                        require(changed&&changed->bassMotionSemitones<original->bassMotionSemitones,
+                                "inversion improves actual bass motion");
+                    }
+            }
         }
         require(cases >= 24, "benchmark case count");
         require(candidates >= 20, "candidate coverage");

@@ -11,6 +11,8 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <charconv>
+#include <unordered_set>
 #if defined(_WIN32)
 #include <windows.h>
 #endif
@@ -32,8 +34,13 @@ struct Db {
     sqlite3* value{};
     Db(const std::filesystem::path& path, int flags) {
         const auto utf8 = path.u8string();
-        if (sqlite3_open_v2(reinterpret_cast<const char*>(utf8.c_str()), &value, flags, nullptr) != SQLITE_OK)
-            throw std::runtime_error(value ? sqlite3_errmsg(value) : "cannot open SQLite database");
+        if (sqlite3_open_v2(reinterpret_cast<const char*>(utf8.c_str()), &value, flags, nullptr) != SQLITE_OK) {
+            const std::string error=value ? sqlite3_errmsg(value) : "cannot open SQLite database";
+            if (value) sqlite3_close(value);
+            value=nullptr;
+            throw std::runtime_error(error);
+        }
+        sqlite3_busy_timeout(value, 2000);
     }
     ~Db() { if (value) sqlite3_close(value); }
     Db(const Db&) = delete;
@@ -75,19 +82,26 @@ void initialize(Db& db, const char* kind) {
         std::string(reinterpret_cast<const char*>(sqlite3_column_text(check.value, 0))) != kind)
         throw std::runtime_error("wrong library_type");
 }
-void validateReadOnly(Db& db, const char* kind) {
+int validateReadOnly(Db& db, const char* kind) {
     Statement st(db, "SELECT key,value FROM metadata");
     std::string schema, type, version;
-    while (sqlite3_step(st.value) == SQLITE_ROW) {
+    int code{};
+    while ((code=sqlite3_step(st.value)) == SQLITE_ROW) {
+        if (!sqlite3_column_text(st.value,0) || !sqlite3_column_text(st.value,1) ||
+            sqlite3_column_bytes(st.value,0)>128 || sqlite3_column_bytes(st.value,1)>128)
+            throw std::runtime_error("invalid database metadata");
         const std::string key(reinterpret_cast<const char*>(sqlite3_column_text(st.value, 0)));
         const std::string value(reinterpret_cast<const char*>(sqlite3_column_text(st.value, 1)));
         if (key == "schema_version") schema = value;
         else if (key == "library_type") type = value;
         else if (key == "library_version") version = value;
     }
-    if (schema != "1" || version.empty() || type != kind ||
-        (std::string_view(kind)=="factory" && version!="2"))
+    int number{};
+    const auto parsed=std::from_chars(version.data(),version.data()+version.size(),number);
+    if (code!=SQLITE_DONE || schema != "1" || type != kind ||
+        parsed.ec!=std::errc{} || parsed.ptr!=version.data()+version.size() || number<1)
         throw std::runtime_error("database version/type incompatible");
+    return number;
 }
 void bindTemplate(Statement& st, const ProgressionTemplate& input) {
     const auto payload = dev::serializeTemplateJson(input);
@@ -96,13 +110,20 @@ void bindTemplate(Statement& st, const ProgressionTemplate& input) {
 }
 LoadResult readAll(Db& db) {
     LoadResult result;
-    Statement st(db, "SELECT payload FROM progressions ORDER BY id");
+    Statement st(db, "SELECT payload,id FROM progressions ORDER BY id");
+    std::unordered_set<TemplateID> ids;
     int code{};
     while ((code = sqlite3_step(st.value)) == SQLITE_ROW) {
+        if (result.templates.size()>=100000 || sqlite3_column_bytes(st.value,0)>131072)
+            throw std::runtime_error("library resource limit exceeded");
         const auto* payload = reinterpret_cast<const char*>(sqlite3_column_text(st.value, 0));
         if (!payload) throw std::runtime_error("null template payload");
         auto parsed = dev::parseTemplateJson(std::string("[") + payload + "]");
         if (!parsed) throw std::runtime_error("invalid stored template: " + parsed.error);
+        const auto* storedId=reinterpret_cast<const char*>(sqlite3_column_text(st.value,1));
+        if (!storedId || parsed.templates.size()!=1 || parsed.templates.front().id!=storedId ||
+            !ids.insert(parsed.templates.front().id).second)
+            throw std::runtime_error("invalid or duplicate stored template ID");
         result.templates.push_back(std::move(parsed.templates.front()));
     }
     if (code != SQLITE_DONE) throw std::runtime_error(sqlite3_errmsg(db.value));
@@ -117,14 +138,15 @@ void checkTemplate(const ProgressionTemplate& item, const char* kind) {
 } // namespace
 
 bool compileFactory(const std::filesystem::path& output,
-                    const std::vector<ProgressionTemplate>& templates, std::string& error) {
+                    const std::vector<ProgressionTemplate>& templates, std::string& error, int libraryVersion) {
     try {
-        if (templates.empty()) throw std::runtime_error("factory library is empty");
+        if (templates.empty() || libraryVersion<1) throw std::runtime_error("invalid factory library/version");
         const auto temporary = std::filesystem::path(output.string() + ".new");
         std::filesystem::remove(temporary);
         {
             Db db(temporary, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
             initialize(db, "factory");
+            db.exec(("UPDATE metadata SET value='"+std::to_string(libraryVersion)+"' WHERE key='library_version'").c_str());
             db.exec("BEGIN IMMEDIATE");
             try {
                 Statement st(db, "INSERT INTO progressions VALUES (?,?)");
@@ -148,8 +170,16 @@ bool compileFactory(const std::filesystem::path& output,
 }
 LoadResult loadFactory(const std::filesystem::path& path) {
     try {
-        Db db(path, SQLITE_OPEN_READONLY); validateReadOnly(db, "factory");
-        return readAll(db);
+        if (std::filesystem::file_size(path)>268435456) throw std::runtime_error("library exceeds 256 MiB");
+        Db db(path, SQLITE_OPEN_READONLY);
+        const auto version=validateReadOnly(db, "factory");
+        auto result=readAll(db); result.libraryVersion=version;
+        if (result.templates.empty()) throw std::runtime_error("factory library is empty");
+        for (const auto& item:result.templates) {
+            checkTemplate(item,"factory");
+            if (item.nameZh.empty() || item.nameEn.empty()) throw std::runtime_error("factory display names missing");
+        }
+        return result;
     } catch (const std::exception& e) { return {{}, e.what()}; }
 }
 bool UserLibrary::addProgression(const ProgressionTemplate& input, std::string& error) {

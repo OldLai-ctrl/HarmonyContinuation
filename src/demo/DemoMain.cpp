@@ -1,9 +1,11 @@
 #include "DemoScenario.h"
 #include "plugin/RecommendationWorker.h"
 #include "session/ProductServices.h"
+#include "library/LibraryStore.h"
 #include "ui/MainView.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiImportWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #include "benchmark/Benchmark.h"
@@ -57,12 +59,8 @@ class DemoApp {
 public:
     explicit DemoApp(std::filesystem::path executable)
         : factoryPath_(executable.parent_path()/"factory.db"),
-          userPath_(userPath()),worker_(factoryPath_,userPath_) {}
+          userPath_(library::userDatabasePath()),worker_(factoryPath_,userPath_) {}
     ~DemoApp() { stopAudition(); if (frame_) { frame_->close(); frame_=nullptr; main_=nullptr; } }
-    static std::filesystem::path userPath() {
-        wchar_t value[32768]{}; const auto n=GetEnvironmentVariableW(L"LOCALAPPDATA",value,32768);
-        return n && n<32768?std::filesystem::path(value)/"HarmonyContinuation"/"user.db":std::filesystem::path("user.db");
-    }
     bool open(HWND host) {
         hostWindow_=GetParent(host);
         auto* factory=VSTGUI::getPlatformFactory().asWin32Factory();
@@ -80,6 +78,10 @@ public:
         actions.benchmarkSelect=[this](const ContinuationCandidate& c) { ratingCandidate_=c; };
         actions.auditionEnrichment=[this](const enrichment::EnrichmentCandidate& c) { auditionEnrichment(c); };
         actions.exportEnrichmentMidi=[this](const enrichment::EnrichmentCandidate& c) { return exportEnrichment(c); };
+        actions.midiPayload=[this](const ContinuationCandidate& c){return midi::candidatePayload(exportContext(),c);};
+        actions.enrichmentMidiPayload=[this](const enrichment::EnrichmentCandidate& c){return midi::candidatePayload(exportContext(),c);};
+        actions.saveMidiPayload=[this](const midi::MidiClipPayload& payload){return savePayload(payload);};
+        actions.importMidi=[this](bool open,const std::filesystem::path& path){importMidi(open,path);};
         actions.saveEnrichmentSnapshot=[this](const enrichment::EnrichmentCandidate& c) { return saveEnrichment(c); };
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
@@ -96,6 +98,15 @@ public:
         if(main_)main_->setEditorSizeState(static_cast<int>(state_.editorWidth),static_cast<int>(state_.editorHeight));
     }
     void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
+    bool zoomSmoke(std::uint32_t percent) {if(!main_)return false;main_->setUserZoom(percent);return main_->runZoomSmoke();}
+    bool midiWorkflowSmoke(const std::filesystem::path& fixture) {
+        if(!main_||!main_->runMidiWorkflowSmoke())return false;
+        if(fixture.empty())return true;
+        importMidi(false,fixture);if(state_.imported.events.size()!=4||state_.imported.events.back().openEnded||!state_.constraints.melody.empty())return false;
+        const auto before=session::serialize(state_);importMidi(false,fixture.parent_path()/"missing.mid");
+        if(session::serialize(state_)!=before)return false;
+        importMidi(true,fixture);return state_.imported.events.size()==4&&state_.imported.events.back().openEnded&&!state_.imported.events.back().durationQN;
+    }
     bool load(char which) {
         stopAudition();
         benchmarkId_.clear();benchmarkDescription_.clear();ratingCandidate_.reset();
@@ -109,6 +120,7 @@ public:
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
+        state_.constraints=scenario_.constraints;state_.tendency=scenario_.tendency;
         state_.meterNumerator=scenario_.meterNumerator; state_.meterDenominator=scenario_.meterDenominator;
         state_.imported.replace(std::move(scenario_.chords),TimelineCoordinateMode::RelativeToSelection);
         projectQN_=state_.imported.events.front().startQN; playing_=false;
@@ -179,6 +191,8 @@ public:
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
                 main_->setEnrichments(result->enrichments);
                 main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
+            if(main_&&!midiImportSummary_.empty()){main_->setActionStatus(midiImportSummary_+" · "+std::string(localization::text(state_.locale,"midi.key"))+" "+
+                (analysis_.selectedKey?formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();}
             }
         }
         const auto now=std::chrono::steady_clock::now();
@@ -215,6 +229,7 @@ public:
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.imported=snap.imported; state_.forcedKey=snap.key;
         state_.style=snap.style; state_.intent=snap.intent;
+        state_.constraints=snap.candidate.constraints;
         state_.meterNumerator=snap.meterNumerator; state_.meterDenominator=snap.meterDenominator;
         scenario_.name=path->filename().string(); scenario_.tempo=snap.tempoBPM;
         scenario_.meterNumerator=snap.meterNumerator; scenario_.meterDenominator=snap.meterDenominator;
@@ -253,6 +268,7 @@ private:
     bool snapshotLoaded_{};
     std::string benchmarkId_;
     std::string benchmarkDescription_;
+    std::string midiImportSummary_;
     std::optional<ContinuationCandidate> ratingCandidate_;
     double projectQN_{};
     std::chrono::steady_clock::time_point lastTick_{std::chrono::steady_clock::now()};
@@ -272,7 +288,7 @@ private:
         if (candidate.id==auditionId_) { stopAudition(); return; }
         ImportedProgressionSession transformed;
         if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection)) return;
-        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo));
+        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo,candidate.constraints));
     }
     void playPreview(const std::string& id,const preview::BuildResult& built) {
         stopAudition();
@@ -296,7 +312,7 @@ private:
     void submit(bool rankingOnly=false) {
         if (snapshotLoaded_) return;
         if (state_.imported.events.empty()) return;
-        RecommendationRequest request{state_.style,state_.intent};
+        RecommendationRequest request{state_.style,state_.intent,state_.constraints,state_.tendency};
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
             rankingOnly,state_.imported.revision);
         if (main_) main_->setWorkerStatus(generation,0,true,0,0);
@@ -323,20 +339,43 @@ private:
             return "MIDI export: "+(error.empty()?"invalid payload":error);
         return "MIDI saved: "+path->filename().string();
     }
+    midi::CandidateExportContext exportContext() const {
+        const auto key=state_.forcedKey?state_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+        return {state_.imported,scenario_.tempo,{scenario_.meterNumerator,scenario_.meterDenominator},key};
+    }
+    std::string savePayload(const midi::MidiClipPayload& payload) {
+        const auto text=[this](const char* key){return std::string(localization::text(state_.locale,key));};
+        const auto path=savePath(hostWindow_,std::wstring(payload.suggestedFilename.begin(),payload.suggestedFilename.end()),L"MIDI files\0*.mid\0\0",L"mid");
+        if(!path)return text("midi.cancelled");std::string error;
+        if(!midi::writeToFile(payload.smfBytes,*path,error))return text("midi.saveFailed");
+        return text("midi.saved");
+    }
     std::string exportRecommendation(const ContinuationCandidate& candidate) {
-        const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
-        if (!built) return "MIDI export: "+built.error;
-        return exportSequence(built.sequence,&candidate,midi::ExportScope::FullPhrase,candidate.key);
+        const auto result=midi::candidatePayload(exportContext(),candidate);
+        return result?savePayload(result.payload):std::string(localization::text(state_.locale,"midi.saveFailed"));
     }
     std::string exportEnrichment(const enrichment::EnrichmentCandidate& candidate) {
-        ImportedProgressionSession transformed;
-        if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection))
-            return "MIDI export: invalid enrichment timeline";
-        const auto built=preview::buildSequence(transformed,nullptr,scenario_.tempo);
-        if (!built) return "MIDI export: "+built.error;
-        const auto key=state_.forcedKey?state_.forcedKey:
-            analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
-        return exportSequence(built.sequence,nullptr,midi::ExportScope::FullPhrase,key);
+        const auto result=midi::candidatePayload(exportContext(),candidate);
+        return result?savePayload(result.payload):std::string(localization::text(state_.locale,"midi.saveFailed"));
+    }
+    void importMidi(bool open,const std::filesystem::path& supplied) {
+        try {
+            const auto path=supplied.empty()?midi::chooseMidiFile(hostWindow_):std::optional(supplied);if(!path)return;
+            const auto result=midi::importFile(*path,open);auto next=state_;
+            const auto text=[this](const char* key){return std::string(localization::text(state_.locale,key));};
+            if(!midi::applyImport(result,next.imported)){main_->setActionStatus(text(result.midi.status==midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));return;}
+            stopAudition();snapshotLoaded_=false;main_->setSnapshotMode(false);next.tab=session::Tab::Recommend;
+            if(!result.midi.file.meters.empty()) {const auto m=result.midi.file.meters.front();
+                if(m.numerator<=32&&m.denominator<=32){next.meterNumerator=m.numerator;next.meterDenominator=m.denominator;
+                    scenario_.meterNumerator=m.numerator;scenario_.meterDenominator=m.denominator;}}
+            applyState(next);
+            const auto warnings=result.midi.file.warnings.size()+result.extraction.warnings.size();
+            auto summary=text("midi.recognized")+" "+std::to_string(result.extraction.chords.size())+" · "+text("midi.track")+" "+result.extraction.selectedTrackName;
+            if(warnings)summary+=" · "+text("midi.uncertain")+" "+std::to_string(warnings);
+            std::string details;for(const auto& w:result.midi.file.warnings)details+=w+'\n';for(const auto& w:result.extraction.warnings)details+=w+'\n';
+            for(const auto& slice:result.extraction.slices)details+=slice.chord+" confidence="+std::to_string(slice.confidence)+'\n';
+            midiImportSummary_=summary;main_->setDropReport(summary,details,false);main_->setActionStatus(summary);
+        } catch(...){main_->setActionStatus(std::string(localization::text(state_.locale,"midi.failed")));}
     }
     std::string saveEnrichment(const enrichment::EnrichmentCandidate& candidate) {
         try {
@@ -386,9 +425,12 @@ private:
         } catch (const std::exception& e) {return std::string("Snapshot save: ")+e.what();}
     }
     void loadLibrary() {
-        auto factory=library::loadFactory(factoryPath_); auto user=library::UserLibrary(userPath_).loadAll();
+        auto selected=library::loadAvailableFactory(factoryPath_); auto& factory=selected.library;
+        if(factory) state_.factoryLibraryVersion=factory.libraryVersion;
+        if(main_) main_->setSessionState(state_);
+        auto user=library::UserLibrary(userPath_).loadAll();
         if (main_) main_->setLibrary(std::move(factory.templates),std::move(user.templates),
-            !factory?factory.error:!user?user.error:std::string{});
+            !factory?factory.error:!user?user.error:selected.warning);
     }
     std::string save(const ContinuationCandidate& c,const session::SaveMetadata& meta) {
         if (!userPath_.parent_path().empty()) std::filesystem::create_directories(userPath_.parent_path());
@@ -544,13 +586,16 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     demoContent=content;
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
     char initial='D'; int requestedWidth=1100,requestedHeight=900; double scale=1;
-    std::filesystem::path resizeSmokeReport,benchmarkSmokeReport;
+    std::filesystem::path resizeSmokeReport,benchmarkSmokeReport,zoomSmokeReport,midiSmokeReport,midiSmokeInput;
     std::string initialBenchmarkId;
     for (int i=1;i<argc;++i) {
         const std::wstring_view key(args[i]);
         if(key==L"--benchmark")benchmarkMode=true;
         else if(key==L"--benchmark-case"&&i+1<argc){benchmarkMode=true;initialBenchmarkId=utf8(args[++i]);}
         else if(key==L"--benchmark-smoke"&&i+1<argc){benchmarkMode=true;benchmarkSmokeReport=args[++i];}
+        else if(key==L"--zoom-smoke"&&i+1<argc)zoomSmokeReport=args[++i];
+        else if(key==L"--midi-workflow-smoke"&&i+1<argc)midiSmokeReport=args[++i];
+        else if(key==L"--midi-smoke-input"&&i+1<argc)midiSmokeInput=args[++i];
         else if (key==L"--case" && i+1<argc && wcslen(args[i+1])==1)initial=static_cast<char>(args[++i][0]);
         else if(key==L"--size"&&i+1<argc) {
             int width{},height{};
@@ -625,6 +670,27 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
         CreateWindowExW(0,L"BUTTON",L"Snapshot",WS_CHILD|WS_VISIBLE,137,742,110,30,hwnd,reinterpret_cast<HMENU>(205),instance,nullptr);
         loadBenchmarkIndex(benchmarkIndex);
     }else SendMessageW(combo,CB_SETCURSEL,initial-'A',0);
+    if(!zoomSmokeReport.empty()) {
+        std::ofstream report(zoomSmokeReport,std::ios::trunc);
+        if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 10;}
+        int passed{};
+        for(const auto [width,height]:std::array<std::pair<int,int>,3>{{{900,640},{1100,900},{1800,1000}}}) {
+            app->resize(width,height);
+            for(const std::uint32_t zoom:{100u,125u,150u}) {
+                if(!app->zoomSmoke(zoom)){report<<"failed "<<width<<'x'<<height<<" zoom "<<zoom<<'\n';
+                    DestroyWindow(hwnd);VSTGUI::exitPlatform();return 11;}
+                app->tick();++passed;
+            }
+        }
+        report<<"zoom smoke "<<passed<<"/9 PASS (modes, card hitbox, overlay, library)\n";
+        DestroyWindow(hwnd);VSTGUI::exitPlatform();return 0;
+    }
+    if(!midiSmokeReport.empty()) {
+        std::ofstream report(midiSmokeReport,std::ios::trunc);const bool okay=report&&app->midiWorkflowSmoke(midiSmokeInput);
+        report<<"MIDI workflow: visible/More Continue/Enrich identity, audition, save, drag arm, snapshot, overlay "<<(okay?"PASS":"FAIL")<<'\n';
+        report<<"Scrollable candidate groups: 7 groups x 0/1/2/3/6 rows x 100/125/150%; wheel priority, boundaries, preview, DAWClip drag arm, Why, Snapshot, fingerprint "<<(okay?"PASS":"FAIL")<<'\n';
+        DestroyWindow(hwnd);VSTGUI::exitPlatform();return okay?0:10;
+    }
     if(!resizeSmokeReport.empty()) {
         std::ofstream report(resizeSmokeReport,std::ios::trunc);
         if(!report){DestroyWindow(hwnd);VSTGUI::exitPlatform();return 3;}

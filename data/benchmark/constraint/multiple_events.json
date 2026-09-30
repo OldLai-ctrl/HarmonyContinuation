@@ -1,0 +1,14 @@
+{
+  "name": "Timed melody E4-F4-G4",
+  "tempo": 120,
+  "meter": [4,4],
+  "forcedKey": "C:major",
+  "style": "pop",
+  "tendency": "balanced",
+  "chords": [{"name":"C","start":0},{"name":"G7","start":4}],
+  "melody": [
+    {"note":"E4","startQN":0,"durationQN":2,"role":"top","strictness":"soft"},
+    {"note":"F4","startQN":2,"durationQN":2,"role":"top","strictness":"soft"},
+    {"note":"G4","startQN":4,"durationQN":4,"role":"top","strictness":"soft"}
+  ]
+}

@@ -54,7 +54,8 @@ BuildResult buildClip(const preview::Sequence& preview,ArrangementMode mode,Expo
             event.chord.root<0||event.chord.root>11||event.chord.bass<0||event.chord.bass>11||
             event.chord.intervals==0) { result.error="invalid preview event"; result.sequence={}; return result; }
         // Compute all voicings, even for suffix-only exports, to preserve the full preview's voice path.
-        const auto voiced=mode==ArrangementMode::VoiceLed?voicer.voice(event.chord):preview::Voicing{};
+        const bool useVoicing=mode==ArrangementMode::VoiceLed||event.topVoice.has_value();
+        const auto voiced=useVoicing?voicer.voice(event.chord,event.topVoice):preview::Voicing{};
         if (i<begin||i>=end) continue;
         const auto start=event.startQN-offset;
         if (start<0||!std::isfinite(start)) { result.error="invalid relative start"; result.sequence={}; return result; }
@@ -62,7 +63,7 @@ BuildResult buildClip(const preview::Sequence& preview,ArrangementMode mode,Expo
         auto note=[&](int pitch,std::uint8_t velocity,bool bass) {
             out.notes.push_back({pitch,start,event.durationQN,velocity,config.channel,bass});
         };
-        if (mode==ArrangementMode::VoiceLed) {
+        if (useVoicing) {
             note(voiced.bass,config.bassVelocity,true);
             for (int v=0;v<voiced.upperCount;++v) note(voiced.upper[v],config.upperVelocity,false);
         } else {

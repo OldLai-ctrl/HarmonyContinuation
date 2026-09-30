@@ -157,6 +157,7 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
     if (!s.imported.events.empty()) {
         const double anchor=s.imported.events.front().startQN;
         for (auto& event:s.imported.events) event.startQN-=anchor;
+        for(auto& melody:s.candidate.constraints.melody)melody.startQN-=anchor;
         s.imported.coordinateMode=TimelineCoordinateMode::RelativeToSelection;
     }
     const auto match=std::find_if(matches.begin(),matches.end(),[&](const auto& m){return m.templateId==candidate.primaryTemplate;});
@@ -192,6 +193,7 @@ std::string serialize(const RecommendationSnapshot& s) {
     const auto& c=s.candidate;
     out << "],\"candidate\":{\"id\":"; quoted(out,c.id);
     out << ",\"primaryTemplate\":"; quoted(out,c.primaryTemplate);
+    out << ",\"melodyConstraints\":"; quoted(out,encodeConstraints(c.constraints));
     out << ",\"intent\":" << static_cast<int>(c.intent) << ",\"key\":"; keyOut(out,c.key);
     out << ",\"cadence\":" << static_cast<int>(c.cadence) << ",\"styles\":" << c.styles
         << ",\"rankingScore\":" << c.rankingScore << ",\"matchSimilarity\":" << c.matchSimilarity
@@ -263,6 +265,7 @@ DecodeResult deserialize(std::string_view input) {
         s.imported.coordinateMode=TimelineCoordinateMode::RelativeToSelection; s.imported.revision=1;
         const auto& candidate=top.at("candidate"); auto& c=s.candidate;
         c.id=candidate.at("id").text(); c.primaryTemplate=candidate.at("primaryTemplate").text();
+        if(candidate.object.contains("melodyConstraints"))c.constraints=decodeConstraints(candidate.at("melodyConstraints").text());
         c.intent=static_cast<PhraseIntent>(candidate.at("intent").integer(0,4)); c.key=keyIn(candidate.at("key"));
         c.cadence=static_cast<CadenceType>(candidate.at("cadence").integer(0,static_cast<int>(CadenceType::Unknown)));
         c.styles=static_cast<StyleFlags>(candidate.at("styles").integer(0,63));
@@ -278,6 +281,7 @@ DecodeResult deserialize(std::string_view input) {
             e.roles=static_cast<RoleFlags>(item.at("roles").integer(0,0x7fffffff));
             c.continuation.push_back(std::move(e));
         }
+        c.melodyCompatibility=evaluateMelody(continuationProgression(s.imported.events,c),c.constraints);
         const auto& match=top.at("match");
         if(match.kind!=Value::Kind::Null) {
             MatchResult m; m.templateId=match.at("templateId").text(); m.templateName=match.at("templateName").text();

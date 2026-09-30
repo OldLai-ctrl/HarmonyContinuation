@@ -1,4 +1,5 @@
 #include "ProgressionEnrichmentEngine.h"
+#include "preview/VoiceLeadingMetrics.h"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -9,7 +10,6 @@ namespace harmony::enrichment {
 namespace {
 int pc(int n) { return (n % 12 + 12) % 12; }
 constexpr const char* spellings[]{"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"};
-int distance(int a, int b) { const int d = pc(a - b); return std::min(d, 12 - d); }
 std::string name(int root, ChordQuality quality) {
     const char* suffix = "";
     switch (quality) {
@@ -108,28 +108,41 @@ bool polish(EnrichmentCandidate& candidate, const HarmonicAnalysisResult& analys
     }
     return !candidate.operations.empty() && static_cast<int>(candidate.operations.size()) <= config.maxOperations[0];
 }
-bool improveInversion(EnrichmentCandidate& candidate) {
-    // Only use a first inversion when it shortens both neighboring bass moves.
+bool improveInversion(EnrichmentCandidate& candidate,const EnrichmentConfig& config) {
+    const auto baseline=preview::measureVoiceLeading(candidate.progression);
+    if(!baseline)return false;
+    std::optional<std::size_t> bestIndex;
+    float bestGain{};
     for (std::size_t i = 1; i + 1 < candidate.progression.size(); ++i) {
-        const auto prev = root(candidate.progression[i - 1]);
         const auto mid = root(candidate.progression[i]);
-        const auto next = root(candidate.progression[i + 1]);
-        if (!prev || !mid || !next) continue;
+        if (!mid) continue;
         const auto q = normalizeChord(candidate.progression[i]).quality;
         if (q != ChordQuality::Major && q != ChordQuality::Minor) continue;
         const int third = pc(*mid + (q == ChordQuality::Major ? 4 : 3));
-        if (distance(*prev, third) + distance(third, *next) >=
-            distance(*prev, *mid) + distance(*mid, *next)) continue;
-        auto& event = candidate.progression[i];
-        const auto before = event.name;
-        event = replacement(event, *mid, q);
-        event.bass = static_cast<PitchClass>(third);
-        event.name += "/" + std::string(spellings[third]);
-        record(candidate, OperationType::ChangeInversion, TechniqueID::Inversion, i,
-               before, event.name, "使用第一转位缩短相邻低音移动");
-        return true;
+        auto trial=candidate.progression;
+        trial[i]=replacement(trial[i],*mid,q);
+        trial[i].bass=static_cast<PitchClass>(third);
+        trial[i].name+="/"+std::string(spellings[third]);
+        const auto measured=preview::measureVoiceLeading(trial);
+        if(!measured)continue;
+        const int bassGain=baseline->bassMotionSemitones-measured->bassMotionSemitones;
+        if(bassGain<config.minimumBassImprovementSemitones ||
+           measured->score+config.toleratedVoiceLeadingLoss<baseline->score)continue;
+        const float gain=measured->score-baseline->score+0.02f*static_cast<float>(bassGain);
+        if(!bestIndex || gain>bestGain){bestIndex=i;bestGain=gain;}
     }
-    return false;
+    if(!bestIndex)return false;
+    auto& event=candidate.progression[*bestIndex];
+    const auto before=event.name;
+    const auto q=normalizeChord(event).quality;
+    const int mid=*root(event);
+    const int third=pc(mid+(q==ChordQuality::Major?4:3));
+    event=replacement(event,mid,q);
+    event.bass=static_cast<PitchClass>(third);
+    event.name+="/"+std::string(spellings[third]);
+    record(candidate,OperationType::ChangeInversion,TechniqueID::Inversion,*bestIndex,
+           before,event.name,"实际发声的低音移动更短，且整体声部连接保持自然");
+    return true;
 }
 struct Option { TechniqueID technique; std::size_t target; int pitch; ChordQuality quality; const char* reason; };
 std::vector<Option> options(const Progression& progression, const HarmonicAnalysisResult& analysis,
@@ -255,8 +268,15 @@ const char* groupName(Group group) noexcept {
     return "Unknown";
 }
 EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnalysisResult& analysis,
-                                   std::optional<Style> style, const EnrichmentConfig& config) {
+                                   std::optional<Style> style, const EnrichmentConfig& inputConfig) {
+    auto config=inputConfig;
+    const auto& profile=tendencyProfile(config.tendency);
+    if(config.tendency!=HarmonicTendency::Balanced) {
+        config.maxOperations=profile.operations;config.maxInsertions=profile.insertions;
+        config.maxSubstitutions=profile.substitutions;config.minimumSkeletonPreservation=profile.skeletonMinimum;
+    }
     EnrichmentResult result;
+    if(!validConstraints(config.constraints)){result.error="invalid melody constraints";return result;}
     if (source.empty() || source.size() > 64) { result.error = "invalid progression length"; return result; }
     for (std::size_t i = 0; i < source.size(); ++i) {
         if (!std::isfinite(source[i].startQN) || (i && source[i].startQN <= source[i - 1].startQN)) {
@@ -273,7 +293,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     polishCandidate.group = Group::Polish;
     polishCandidate.complexity = ComplexityLevel::Basic;
     polishCandidate.progression = source;
-    if (!polish(polishCandidate, analysis, style, config) && !improveInversion(polishCandidate))
+    if (!polish(polishCandidate, analysis, style, config) && !improveInversion(polishCandidate,config))
         return result;
     if(static_cast<int>(polishCandidate.operations.size())>config.maxOperations[0])return result;
     finalize(polishCandidate, source, analysis, style);
@@ -284,7 +304,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     inversion.group=Group::Polish;
     inversion.complexity=ComplexityLevel::Basic;
     inversion.progression=source;
-    if (config.maxOperations[0]>0 && improveInversion(inversion)) {
+    if (config.maxOperations[0]>0 && improveInversion(inversion,config)) {
         finalize(inversion,source,analysis,style);
         if (fingerprints.insert(inversion.fingerprint).second)
             result.groups[0].push_back(std::move(inversion));
@@ -378,6 +398,42 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         if (advanced.skeletonPreservation >= config.minimumSkeletonPreservation &&
             fingerprints.insert(advanced.fingerprint).second)
             result.groups[2].push_back(std::move(advanced));
+    }
+    // Score the completed set of paths. Scoring Rich earlier would also change
+    // which Rich path becomes the Advanced candidate.
+    const auto sourceVoice = preview::measureVoiceLeading(source);
+    if (sourceVoice) {
+        for (auto& group : result.groups) {
+            for (auto& candidate : group) {
+                if (const auto candidateVoice = preview::measureVoiceLeading(candidate.progression)) {
+                    const auto delta = std::clamp(candidateVoice->score - sourceVoice->score, -0.5f, 0.5f);
+                    candidate.score = std::clamp(candidate.score + 100.f * config.voiceLeadingWeight * delta, 0.f, 100.f);
+                }
+            }
+            std::stable_sort(group.begin(), group.end(),
+                [](const auto& a, const auto& b) { return a.score > b.score; });
+        }
+    }
+    for(auto& group:result.groups) {
+        for(auto& candidate:group) {
+            if(!config.constraints.melody.empty()) {
+                candidate.constraints=config.constraints;
+                candidate.melodyCompatibility=evaluateMelody(candidate.progression,config.constraints);
+                candidate.score-=melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
+            }
+            if(config.tendency!=HarmonicTendency::Balanced) {
+                const auto chromatic=std::count_if(candidate.techniques.begin(),candidate.techniques.end(),[](auto t) {
+                    return t==TechniqueID::BorrowedChord||t==TechniqueID::SecondaryDominant||
+                        t==TechniqueID::SecondaryLeadingTone||t==TechniqueID::PassingDiminished||
+                        t==TechniqueID::ChromaticApproach;
+                });
+                candidate.score=std::clamp(candidate.score+profile.chromaticBias*static_cast<float>(chromatic),0.f,100.f);
+            }
+        }
+        std::erase_if(group,[&](const auto& c) { return !c.melodyCompatibility.hardSatisfied||
+            (config.tendency!=HarmonicTendency::Balanced&&c.skeletonPreservation<config.minimumSkeletonPreservation); });
+        if(!config.constraints.melody.empty()||config.tendency!=HarmonicTendency::Balanced)
+            std::stable_sort(group.begin(),group.end(),[](const auto& a,const auto& b){return a.score>b.score;});
     }
     return result;
 }

@@ -9,10 +9,12 @@ constexpr int schemaVersion = 1;
 struct LoadResult {
     std::vector<ProgressionTemplate> templates;
     std::string error;
+    int libraryVersion{};
     explicit operator bool() const noexcept { return error.empty(); }
 };
 bool compileFactory(const std::filesystem::path& output,
-                    const std::vector<ProgressionTemplate>& templates, std::string& error);
+                    const std::vector<ProgressionTemplate>& templates, std::string& error,
+                    int libraryVersion = 2);
 LoadResult loadFactory(const std::filesystem::path& path);
 
 class UserLibrary {

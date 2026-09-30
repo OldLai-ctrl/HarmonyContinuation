@@ -7,33 +7,8 @@
 namespace harmony::preview {
 namespace {
 bool durationOK(double n) { return std::isfinite(n) && n>0 && n<=128; }
-int pc(int n) { return (n%12+12)%12; }
-int spelled(std::string_view text) {
-    if (text.empty()) return -1;
-    int n;
-    switch (text.front()) {
-        case 'C': n=0; break; case 'D': n=2; break; case 'E': n=4; break;
-        case 'F': n=5; break; case 'G': n=7; break; case 'A': n=9; break;
-        case 'B': n=11; break; default: return -1;
-    }
-    if (text.size()>1 && text[1]=='#') ++n;
-    if (text.size()>1 && text[1]=='b') --n;
-    return pc(n);
-}
 Chord convert(const ChordEvent& event) {
-    auto analysisEvent=event;
-    if (const auto slash=analysisEvent.name.find('/'); slash!=std::string::npos)
-        analysisEvent.name.resize(slash);
-    const auto normalized=normalizeChord(analysisEvent);
-    Chord c; c.label=event.name; c.quality=normalized.quality;
-    c.root=normalized.root?static_cast<int>(*normalized.root):-1;
-    c.bass=normalized.bass?static_cast<int>(*normalized.bass):c.root;
-    if (const auto slash=event.name.find('/'); slash!=std::string::npos) {
-        const int explicitBass=spelled(std::string_view(event.name).substr(slash+1));
-        if (explicitBass>=0) c.bass=explicitBass;
-    }
-    c.intervals=normalized.intervalMask;
-    return c;
+    return chordPitches(event);
 }
 }
 double sanitizeTempo(double bpm) noexcept {
@@ -52,7 +27,8 @@ Chord chordFromLabel(const std::string& label,ChordQuality hint) {
     ChordEvent event; event.name=label; event.quality=hint;
     return convert(event);
 }
-BuildResult buildSequence(const ImportedProgressionSession& imported,const ContinuationCandidate* candidate,double tempo) {
+BuildResult buildSequence(const ImportedProgressionSession& imported,const ContinuationCandidate* candidate,double tempo,
+    const HarmonyConstraintSet& explicitConstraints) {
     BuildResult result; auto& out=result.sequence;
     out.tempoBPM=sanitizeTempo(tempo);
     if (candidate) out.sourceRecommendation=candidate->id;
@@ -108,6 +84,37 @@ BuildResult buildSequence(const ImportedProgressionSession& imported,const Conti
         end+=e.durationQN;
     }
     out.totalQN=end;
+    const auto& constraints=candidate?candidate->constraints:explicitConstraints;
+    if(!validConstraints(constraints)){result.error="invalid melody constraints";return result;}
+    if(!constraints.melody.empty()) {
+        const auto heard=candidate?continuationProgression(imported.events,*candidate):imported.events;
+        if(!evaluateMelody(heard,constraints).hardSatisfied) {
+            result.error="strict melody constraint cannot be satisfied";result.sequence={};return result;
+        }
+        std::vector<Event> split;
+        for(const auto& event:out.events) {
+            std::vector<double> cuts{event.startQN,event.startQN+event.durationQN};
+            for(const auto& melody:constraints.melody) {
+                for(const double edge:{melody.startQN-anchor,melody.startQN+melody.durationQN-anchor})
+                    if(edge>cuts.front()+1e-7&&edge<event.startQN+event.durationQN-1e-7)cuts.push_back(edge);
+            }
+            std::sort(cuts.begin(),cuts.end());cuts.erase(std::unique(cuts.begin(),cuts.end()),cuts.end());
+            for(std::size_t i=1;i<cuts.size();++i) {
+                auto next=event;next.startQN=cuts[i-1];next.durationQN=cuts[i]-cuts[i-1];
+                const MelodyConstraint* chosen=nullptr;
+                for(const auto& melody:constraints.melody)
+                    if(melody.role==ConstraintRole::TopVoice&&melody.startQN<anchor+cuts[i]-1e-7&&
+                       melody.startQN+melody.durationQN>anchor+cuts[i-1]+1e-7&&
+                       classifyMelody(event.chord,melody.pitchClass)!=MelodyRelation::Conflict&&
+                       (!chosen||melody.strictness==ConstraintStrictness::Hard))chosen=&melody;
+                if(chosen)next.topVoice=melodyTopPitch(*chosen);
+                split.push_back(std::move(next));
+            }
+        }
+        out.events=std::move(split);
+        out.recommendationBoundary=static_cast<std::size_t>(std::count_if(out.events.begin(),out.events.end(),
+            [](const auto& event){return event.segment!=Segment::Recommended;}));
+    }
     return result;
 }
 } // namespace harmony::preview

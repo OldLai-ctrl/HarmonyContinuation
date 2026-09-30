@@ -1,5 +1,7 @@
 #pragma once
 #include "ProgressionMatcher.h"
+#include "HarmonyConstraints.h"
+#include "HarmonicTendency.h"
 #include <array>
 
 namespace harmony {
@@ -12,6 +14,14 @@ struct ConcreteChordEvent {
 };
 struct RecommendationSubScores {
     float match{}, skeleton{}, style{}, intent{}, cadence{}, continuation{}, prior{}, rhythm{}, support{};
+};
+enum class CompletionReason {
+    NoEvidence, DominantTonic, StableTonic, PhraseReturn, LoopClosure,
+    DevelopedPath, FunctionalPivot, ShortDevelopment, AudibleColor
+};
+struct IntentCompletionResult {
+    float score{}; // diagnostic 0..1, not a probability
+    CompletionReason reason{CompletionReason::NoEvidence};
 };
 struct ContinuationCandidate {
     std::string id;
@@ -30,6 +40,8 @@ struct ContinuationCandidate {
     StyleFlags styles{};
     int supportCount{1};
     std::vector<TemplateID> supportingTemplates;
+    HarmonyConstraintSet constraints;
+    MelodyCompatibility melodyCompatibility;
 };
 struct RecommendationWeights {
     float match{0.34f}, skeleton{0.11f}, style{0.08f}, intent{0.07f}, cadence{0.07f};
@@ -39,11 +51,14 @@ struct RecommendationWeights {
     float diversityPenalty{13.f};
     float unexplainedInsertionPenalty{8.f};
     float templateDeletionPenalty{2.f};
+    float intentCompletionTieBreak{0.005f}; // at most 0.25 points in either direction
     std::size_t perGroup{3};
 };
 struct RecommendationRequest {
     std::optional<Style> style;
     std::optional<PhraseIntent> preferredIntent;
+    HarmonyConstraintSet constraints;
+    HarmonicTendency tendency{HarmonicTendency::Balanced};
 };
 struct RecommendationSet {
     std::array<std::vector<ContinuationCandidate>, 4> groups; // Resolve, Develop, Loop, Color
@@ -53,6 +68,10 @@ struct RecommendationSet {
 struct RhythmScaleEstimate { float scale{1.f}; float confidence{}; std::size_t samples{}; };
 RhythmScaleEstimate estimateRhythmScale(const MatchResult&, const MatchQuery&, const ProgressionTemplate&);
 ConcreteChordEvent realizeContinuation(const MatchEvent&, KeySignature, double durationQN);
+IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate&,
+    std::optional<ScaleDegree> phraseStart = {}, std::optional<ScaleDegree> current = {}) noexcept;
+const char* completionReasonKey(CompletionReason) noexcept;
+Progression continuationProgression(const Progression&,const ContinuationCandidate&);
 RecommendationSet recommendContinuations(const MatchQuery&, const CandidateIndex&,
                                          const RecommendationRequest& = {},
                                          const RecommendationWeights& = {});

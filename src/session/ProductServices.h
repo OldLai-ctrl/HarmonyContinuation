@@ -11,6 +11,9 @@ struct RecommendationVisibilityPolicy {
     float minimumDiversityDistance{0.f}; // normalized path difference; 0 disables
     std::vector<std::size_t> visibleIndices(const std::vector<ContinuationCandidate>&) const;
 };
+using RecommendationPresentation = std::array<std::vector<std::size_t>, 4>;
+RecommendationPresentation presentationIndices(const RecommendationSet&,
+    const RecommendationVisibilityPolicy&);
 struct SaveMetadata {
     std::string name;
     std::optional<Style> style;

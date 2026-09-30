@@ -324,6 +324,7 @@ float fingerprintScore(const ProgressionFingerprint& q, const ProgressionFingerp
 
 MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& context, const MatchWeights& w) {
     MatchQuery query;
+    query.source=source;
     query.forcedKey = context.forcedKey.has_value();
     query.timeSigNumerator = context.timeSigNumerator;
     query.timeSigDenominator = context.timeSigDenominator;

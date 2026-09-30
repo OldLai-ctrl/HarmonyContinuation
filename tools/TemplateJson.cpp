@@ -1,6 +1,5 @@
 #include "TemplateJson.h"
 #include "core/LibraryMetadata.h"
-#include "EmbeddedTemplates.h"
 #include <algorithm>
 #include <cctype>
 #include <charconv>
@@ -341,7 +340,6 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
     } catch (const std::exception& e) { result.templates.clear(); result.error = e.what(); }
     return result;
 }
-JsonTemplates loadDevelopmentTemplates() { return parseTemplateJson(kDevelopmentTemplatesJson); }
 std::string serializeTemplateJson(const ProgressionTemplate& item) {
     auto quoted = [](std::string_view value) {
         std::string out{"\""};

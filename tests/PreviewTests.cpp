@@ -100,13 +100,17 @@ int main() {
         session::PluginSessionState state; state.pin("old",session::continuationFingerprint(candidate));
         const auto bytes=session::serialize(state);
         auto decoded=session::deserialize(bytes);
-        check(decoded && decoded.state.schemaVersion==4 && decoded.state.pinnedFingerprints.size()==1,"state v4 roundtrip");
-        auto future=bytes; future[4]=5;
+        check(decoded && decoded.state.schemaVersion==session::PluginSessionState::currentSchemaVersion &&
+            decoded.state.pinnedFingerprints.size()==1,"current state roundtrip");
+        auto future=bytes; future[4]=static_cast<char>(session::PluginSessionState::currentSchemaVersion+1);
         check(session::deserialize(future).error=="UnsupportedVersion","future version rejected");
-        auto version3=bytes; version3[3]='3'; version3[4]=3; version3.resize(version3.size()-2);
+        auto version4=bytes;version4[3]='4';version4[4]=4;version4.resize(version4.size()-6);
+        check(session::deserialize(version4)&&session::deserialize(version4).state.uiZoomPercent==100,
+            "v4 harmony preferences migration");
+        auto version3=version4; version3[3]='3'; version3[4]=3; version3.resize(version3.size()-2);
         check(session::deserialize(version3) && session::deserialize(version3).state.locale==session::Locale::ZhCN,
             "v3 preference migration");
-        auto old=bytes; old[3]='2'; old[4]=2; old.resize(old.size()-10);
+        auto old=version4; old[3]='2'; old[4]=2; old.resize(old.size()-10);
         const auto migrated=session::deserialize(old);
         check(migrated&&migrated.state.editorWidth==1100&&migrated.state.editorHeight==900,"v2 size migration");
         state.editorWidth=1500; state.editorHeight=850;

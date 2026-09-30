@@ -1,4 +1,5 @@
 #include "ui/UILayout.h"
+#include "ui/OverlayPolicy.h"
 #include "ui/ProgressionTimeline.h"
 #include <array>
 #include <iostream>
@@ -13,6 +14,13 @@ bool overlap(UiRect a,UiRect b){return a.left<b.right&&a.right>b.left&&a.top<b.b
 }
 int main(){
     try {
+        const auto overlay=computeLayout({1100,900,1,harmony::session::Tab::Recommend,true,false}).inspector;
+        check(!dismissOnOutsideClick(OverlayKind::Transient,overlay,overlay.left+12,overlay.top+12),"inside overlay remains");
+        check(dismissOnOutsideClick(OverlayKind::Transient,overlay,overlay.left-12,overlay.top+12),"outside dismisses transient");
+        check(!dismissOnOutsideClick(OverlayKind::Persistent,overlay,overlay.left-12,overlay.top+12),"persistent remains");
+        check(!dismissOnOutsideClick(OverlayKind::Modal,overlay,overlay.left-12,overlay.top+12),"modal remains");
+        check(dismissOnEscape(OverlayKind::Transient)&&!dismissOnEscape(OverlayKind::Persistent)&&
+            !dismissOnEscape(OverlayKind::Modal),"escape policy");
         constexpr std::array<int,18> widths{900,901,1049,1050,1051,1099,1100,1599,1600,1601,
             1701,1702,1703,1800,2105,2106,2107,2200};
         constexpr std::array<int,6> heights{640,641,700,850,900,1400};
@@ -62,6 +70,19 @@ int main(){
             check(timeline.blocks.back().x+timeline.blocks.back().width<=timeline.contentWidth+0.01,
                 "long progression final bound");
         }
+        for(const auto [w,h]:std::array<std::pair<int,int>,3>{{{900,640},{1100,900},{1800,1000}}})
+            for(const auto zoom:{1.,1.25,1.5})for(const auto dpi:{1.,1.5}) {
+                const auto l=computeLayout({static_cast<double>(w),static_cast<double>(h),dpi,
+                    harmony::session::Tab::Recommend,true,true,zoom});
+                check(std::abs(l.viewport.width()*zoom-w)<0.01,"zoom independent from resize");
+                for(auto control:l.constraintControls)check(inside(control,l.topBar),"constraint control bounds");
+                check(inside(l.inspector,l.viewport)&&l.inspector.height()>180,"zoom overlay bounds");
+                const auto card=candidateRowGeometry(l.lanes[0],0,true);
+                check(card.row.width()>=410&&inside(card.midi,card.row)&&inside(card.why,card.row),"zoom card controls");
+                const auto library=computeLayout({static_cast<double>(w),static_cast<double>(h),dpi,
+                    harmony::session::Tab::Library,false,false,zoom});
+                check(library.content.height()>=165&&library.libraryRows>=1,"zoom library usable");
+            }
         std::cout<<checks<<" layout checks passed\n";
     }catch(const std::exception& e){std::cerr<<"UILayoutTests: "<<e.what()<<'\n';return 1;}
 }

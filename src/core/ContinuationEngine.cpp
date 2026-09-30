@@ -214,6 +214,20 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             else if (step.operation == AlignmentOp::TemplateDeletion)
                 candidate.rankingScore -= w.templateDeletionPenalty;
         }
+        if(!request.constraints.melody.empty()) {
+            candidate.constraints=request.constraints;
+            candidate.melodyCompatibility=evaluateMelody(continuationProgression(query.source,candidate),request.constraints);
+            if(!candidate.melodyCompatibility.hardSatisfied)continue;
+        }
+        if(request.tendency!=HarmonicTendency::Balanced) {
+            const auto& profile=tendencyProfile(request.tendency);
+            const auto colors=std::count_if(candidate.continuation.begin(),candidate.continuation.end(),[](const auto& event) {
+                return event.degree.alteration!=0||hasRole(event.roles,Role::Borrowed)||
+                    hasRole(event.roles,Role::SecondaryDominant)||hasRole(event.roles,Role::SecondaryLeadingTone);
+            });
+            candidate.rankingScore+=profile.colorBias*static_cast<float>(colors)/
+                static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
+        }
         const auto fingerprint = suffixFingerprint(candidate, false);
         auto [it, inserted] = distinct.try_emplace(fingerprint, std::move(candidate));
         if (!inserted) {
@@ -234,7 +248,9 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     for (auto& [key, candidate] : distinct) {
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
         candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
-        if (candidate.rankingScore >= w.minimumScore) result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        if (candidate.rankingScore >= w.minimumScore) {
+            result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        }
     }
     for (auto& group : result.groups) {
         std::sort(group.begin(), group.end(), [](const auto& a, const auto& b) {
@@ -257,9 +273,40 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         }
         std::sort(diverse.begin(), diverse.end(), [](const auto& a, const auto& b) { return a.rankingScore > b.rankingScore; });
         if (diverse.size() > w.perGroup) diverse.resize(w.perGroup);
+        // Score only the already accepted cards: a diagnostic tie-break cannot
+        // remove a valid option or pull a lower-quality option across the gate.
+        for(auto& candidate:diverse)
+            if(const auto* selected=interpretationFor(query,candidate.key);selected&&!selected->full.empty()) {
+                const auto completion=evaluateIntentCompletion(candidate,selected->full.front().degree,
+                                                                selected->full.back().degree);
+                candidate.rankingScore=std::clamp(candidate.rankingScore+
+                    100.f*w.intentCompletionTieBreak*(completion.score-0.5f),0.f,100.f);
+            }
+        for(auto& candidate:diverse)
+            if(!candidate.constraints.melody.empty())
+                candidate.rankingScore-=melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
+        std::stable_sort(diverse.begin(),diverse.end(),[](const auto& a,const auto& b) {
+            return a.rankingScore>b.rankingScore;
+        });
         group = std::move(diverse);
     }
     return result;
+}
+Progression continuationProgression(const Progression& source,const ContinuationCandidate& candidate) {
+    auto path=source;
+    const double fallback=progressionOpenDuration(source);
+    double end=source.empty()?0:source.front().startQN;
+    for(std::size_t i=0;i<path.size();++i) {
+        auto& e=path[i];
+        if(!e.durationQN||e.openEnded)e.durationQN=i+1==path.size()?
+            candidate.suggestedCurrentChordDurationQN.value_or(fallback):fallback;
+        e.openEnded=false;end=std::max(end,e.startQN+*e.durationQN);
+    }
+    for(const auto& chord:candidate.continuation) {
+        ChordEvent e;e.name=chord.label;e.quality=chord.quality;e.startQN=end;
+        e.durationQN=chord.durationQN;e.openEnded=false;path.push_back(std::move(e));end+=chord.durationQN;
+    }
+    return path;
 }
 const char* intentName(PhraseIntent value) noexcept {
     switch (value) {

@@ -12,8 +12,10 @@
 #include "public.sdk/source/vst/utility/stringconvert.h"
 #include "pluginterfaces/base/ibstream.h"
 #include "session/ProductServices.h"
+#include "library/LibraryStore.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiImportWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #if defined(_WIN32)
@@ -50,12 +52,6 @@ std::filesystem::path factoryDatabasePath() {
     if (!length || length >= 32768) return {};
     return std::filesystem::path(path).parent_path().parent_path() / "Resources" / "factory.db";
 }
-std::filesystem::path userDatabasePath() {
-    wchar_t path[32768]{};
-    const auto length = GetEnvironmentVariableW(L"LOCALAPPDATA", path, 32768);
-    if (!length || length >= 32768) return {};
-    return std::filesystem::path(path) / "HarmonyContinuation" / "user.db";
-}
 std::optional<std::filesystem::path> savePath(void* owner, const std::string& suggestedName,
                                                const wchar_t* filter,const wchar_t* extension) {
     std::wstring filename(suggestedName.begin(),suggestedName.end());
@@ -74,7 +70,7 @@ std::optional<std::filesystem::path> savePath(void* owner, const std::string& su
 }
 #else
 std::filesystem::path factoryDatabasePath() { return "factory.db"; }
-std::filesystem::path userDatabasePath() { return "user.db"; }
+
 #endif
 const char* qualityName(harmony::ChordQuality q) {
     using Q = harmony::ChordQuality;
@@ -236,6 +232,8 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         importedProgression_=sessionState_.imported;
         recommendationRequest_.style=sessionState_.style;
         recommendationRequest_.preferredIntent=sessionState_.intent;
+        recommendationRequest_.constraints=sessionState_.constraints;
+        recommendationRequest_.tendency=sessionState_.tendency;
         analysis_={}; matches_.clear(); recommendations_={};
         if (view_) {
             view_->setSessionState(sessionState_);
@@ -319,13 +317,17 @@ void Controller::pollRecommendation() noexcept {
             view_->setRecommendations(recommendations_);
             view_->setEnrichments(latest->enrichments);
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
+            if(!midiImportSummary_.empty()) {
+                view_->setActionStatus(midiImportSummary_+" · "+std::string(harmony::localization::text(sessionState_.locale,"midi.key"))+" "+
+                    (analysis_.selectedKey?harmony::formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();
+            }
         }
     } catch (...) {}
 }
 
 void Controller::submitRecommendation(bool rankingOnly) {
     if (importedProgression_.events.empty()) return;
-    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),userDatabasePath());
+    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,sessionState_.analysisContext(),
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
@@ -341,6 +343,7 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         sessionState_.editorWidth=old.editorWidth;
         sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
+        recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
         if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={}; }
         if (view_) {
             view_->setSessionState(sessionState_);
@@ -358,15 +361,18 @@ void Controller::setRecommendationPreferences(std::optional<harmony::Style> styl
 
 void Controller::reloadLibraries() {
     if (!view_) return;
-    auto factory=harmony::library::loadFactory(factoryDatabasePath());
-    auto user=harmony::library::UserLibrary(userDatabasePath()).loadAll();
+    auto selected=harmony::library::loadAvailableFactory(factoryDatabasePath());
+    auto& factory=selected.library;
+    if(factory) sessionState_.factoryLibraryVersion=factory.libraryVersion;
+    view_->setSessionState(sessionState_);
+    auto user=harmony::library::UserLibrary(harmony::library::userDatabasePath()).loadAll();
     factoryCount_=factory.templates.size(); userCount_=user.templates.size();
     view_->setLibrary(std::move(factory.templates),std::move(user.templates),
-        !factory?factory.error:!user?user.error:std::string{});
+        !factory?factory.error:!user?user.error:selected.warning);
 }
 std::string Controller::saveRecommendation(const harmony::ContinuationCandidate& c,const harmony::session::SaveMetadata& m) noexcept {
     try {
-        const auto path=userDatabasePath();
+        const auto path=harmony::library::userDatabasePath();
         if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
         harmony::library::UserLibrary library(path); std::string error;
         if (!harmony::session::saveRecommendation(library,importedProgression_,c,m,error)) return "Save failed: "+error;
@@ -377,7 +383,7 @@ std::string Controller::saveRecommendation(const harmony::ContinuationCandidate&
 std::string Controller::updateUserProgression(const harmony::ProgressionTemplate& item) noexcept {
     try {
         std::string error;
-        if (!harmony::library::UserLibrary(userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
         if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
         reloadLibraries(); submitRecommendation(); return "User progression updated";
     } catch (const std::exception& e) { return std::string("Update failed: ")+e.what(); }
@@ -385,7 +391,7 @@ std::string Controller::updateUserProgression(const harmony::ProgressionTemplate
 std::string Controller::deleteUserProgression(const std::string& id) noexcept {
     try {
         std::string error;
-        if (!harmony::library::UserLibrary(userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
         if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
         reloadLibraries(); submitRecommendation(); return "User progression deleted";
     } catch (const std::exception& e) { return std::string("Delete failed: ")+e.what(); }
@@ -472,7 +478,7 @@ void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandida
             if (view_) view_->setActionStatus("试听失败：升级进行时间轴无效");
             return;
         }
-        playPreview(candidate.id,harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_));
+        playPreview(candidate.id,harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_,candidate.constraints));
     } catch (const std::exception& e) {
         if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
     } catch (...) {
@@ -511,33 +517,68 @@ std::string saveMidiSequence(const harmony::preview::Sequence& sequence,
 }
 }
 
+namespace {
+std::string saveCandidatePayload(const harmony::midi::PayloadResult& result,void* owner,harmony::session::Locale locale) {
+    const auto text=[locale](const char* key){return std::string(harmony::localization::text(locale,key));};
+    if(!result)return text("midi.saveFailed");
+#if defined(_WIN32)
+    const auto path=savePath(owner,result.payload.suggestedFilename,L"MIDI files\0*.mid\0\0",L"mid");
+    if(!path)return text("midi.cancelled");
+    std::string error;if(!harmony::midi::writeToFile(result.payload.smfBytes,*path,error))return text("midi.saveFailed");
+    return text("midi.saved");
+#else
+    (void)owner;return text("midi.saveFailed");
+#endif
+}
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::ContinuationCandidate& candidate) const {
+    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
+        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)}},candidate);
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::enrichment::EnrichmentCandidate& candidate) const {
+    const auto key=sessionState_.forcedKey?sessionState_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
+        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},key},candidate);
+}
 std::string Controller::exportMidi(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
-    try {
-        const auto built=harmony::preview::buildSequence(importedProgression_,&candidate,lastTempoBPM_);
-        if (!built) return "MIDI 导出失败："+built.error;
-        return saveMidiSequence(built.sequence,harmony::midi::ExportScope::FullPhrase,
-            {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},
-            candidate.key,candidate.intent,owner);
-    } catch (const std::exception& e) { return std::string("MIDI 导出失败：")+e.what(); }
-    catch (...) { return "MIDI 导出失败"; }
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
-
 std::string Controller::exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate& candidate,void* owner) noexcept {
-    try {
-        harmony::ImportedProgressionSession transformed;
-        if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection))
-            return "MIDI 导出失败：升级进行时间轴无效";
-        const auto built=harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_);
-        if (!built) return "MIDI 导出失败："+built.error;
-        const auto key=sessionState_.forcedKey?sessionState_.forcedKey:
-            analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
-        return saveMidiSequence(built.sequence,harmony::midi::ExportScope::FullPhrase,
-            {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},
-            key,std::nullopt,owner);
-    } catch (const std::exception& e) { return std::string("MIDI 导出失败：")+e.what(); }
-    catch (...) { return "MIDI 导出失败"; }
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
-
+void Controller::importMidi(bool openEnded,const std::filesystem::path& supplied,void* owner) noexcept {
+    try {
+        const auto path=supplied.empty()?harmony::midi::chooseMidiFile(owner):std::optional(supplied);
+        if(!path)return;
+        const auto loaded=harmony::midi::importFile(*path,openEnded);
+        const auto text=[&](const char* key){return std::string(harmony::localization::text(sessionState_.locale,key));};
+        if(!loaded){if(view_){view_->setDropReport(text("midi.failed"),loaded.midi.error+"\n"+loaded.extraction.error,false);view_->setActionStatus(text(loaded.midi.status==harmony::midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));}return;}
+        auto next=sessionState_;if(!harmony::midi::applyImport(loaded,next.imported))return;
+        next.tab=harmony::session::Tab::Recommend;
+        if(!loaded.midi.file.meters.empty()){const auto meter=loaded.midi.file.meters.front();
+            if(meter.numerator<=32&&meter.denominator<=32){next.meterNumerator=meter.numerator;next.meterDenominator=meter.denominator;}}
+        importedProgression_=next.imported;
+        if(view_)view_->setSnapshotMode(false);
+        applySessionState(next);
+        if(view_) {
+            std::string summary=text("midi.recognized")+" "+std::to_string(loaded.extraction.chords.size())+" · "+text("midi.track")+" "+loaded.extraction.selectedTrackName;
+            const auto warnings=loaded.midi.file.warnings.size()+loaded.extraction.warnings.size();
+            if(warnings)summary+=" · "+text("midi.uncertain")+" "+std::to_string(warnings);
+            std::ostringstream details;details<<"SMF "<<loaded.midi.file.format<<" PPQ "<<loaded.midi.file.ppq<<'\n';
+            for(const auto& t:loaded.extraction.tracks)details<<"Track "<<t.track<<" "<<t.name<<" score "<<t.chordLikeness<<'\n';
+            for(const auto& w:loaded.midi.file.warnings)details<<w<<'\n';
+            for(const auto& w:loaded.extraction.warnings)details<<w<<'\n';
+            for(std::size_t i=0;i<std::min<std::size_t>(256,loaded.extraction.slices.size());++i) {
+                const auto& slice=loaded.extraction.slices[i];details<<slice.startQN<<" "<<slice.chord<<" confidence="<<slice.confidence<<'\n';
+            }
+            midiImportSummary_=summary;
+            view_->setDropReport(summary,details.str(),false);view_->setActionStatus(summary);
+        }
+    } catch(...){if(view_)view_->setActionStatus(std::string(harmony::localization::text(sessionState_.locale,"midi.failed")));}
+}
+std::string Controller::saveMidiPayload(const harmony::midi::MidiClipPayload& payload,void* owner) noexcept {
+    try {return saveCandidatePayload({payload,{}},owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
+}
 std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& item,void* owner) noexcept {
     try {
         const auto key=sessionState_.forcedKey.value_or(analysis_.selectedKey?analysis_.selectedKey->key:

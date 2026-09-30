@@ -7,6 +7,9 @@
 #include "session/ProductServices.h"
 #include "ui/ProgressionTimeline.h"
 #include "ui/UILayout.h"
+#include "ui/ScrollableCandidateList.h"
+#include "ui/OverlayPolicy.h"
+#include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -34,6 +37,10 @@ public:
         std::function<void(const enrichment::EnrichmentCandidate&)> auditionEnrichment;
         std::function<std::string(const enrichment::EnrichmentCandidate&)> exportEnrichmentMidi;
         std::function<std::string(const enrichment::EnrichmentCandidate&)> saveEnrichmentSnapshot;
+        std::function<midi::PayloadResult(const ContinuationCandidate&)> midiPayload;
+        std::function<midi::PayloadResult(const enrichment::EnrichmentCandidate&)> enrichmentMidiPayload;
+        std::function<void(bool,const std::filesystem::path&)> importMidi;
+        std::function<std::string(const midi::MidiClipPayload&)> saveMidiPayload;
     };
     MainView(const VSTGUI::CRect&, Actions);
     VSTGUI::SharedPointer<VSTGUI::IDropTarget> getDropTarget() override;
@@ -64,9 +71,16 @@ public:
                          std::size_t userCount);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
+    VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
+    VSTGUI::CMouseEventResult onMouseUp(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
+    void onKeyboardEvent(VSTGUI::KeyboardEvent&) override;
     void onMouseWheelEvent(VSTGUI::MouseWheelEvent&) override;
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
+    void setUserZoom(std::uint32_t percent);
+    bool runZoomSmoke();
+    bool runMidiWorkflowSmoke();
+    bool runCandidateScrollSmoke();
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -104,13 +118,23 @@ private:
     std::string librarySearch_;
     std::deque<std::string> recentReports_, recentHostSnapshots_;
     UILayoutResult layout_;
+    std::array<double,4> continuationScroll_{};
+    std::array<double,3> enrichmentScroll_{};
     double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
     std::uint64_t paintGeneration_{};
-    enum class Form { None, Save, Rename, Search } form_{Form::None};
+    enum class Form { None, Save, Rename, Search, Melody } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
     VSTGUI::CTextEdit* noteEdit_{};
     session::SaveMetadata formMetadata_;
+    MelodyConstraint formMelody_;
+    VSTGUI::CPoint midiMouseDown_;
+    std::function<void()> midiClick_;
+    std::optional<midi::MidiClipPayload> midiPending_;
+    bool armMidi(const ContinuationCandidate&,VSTGUI::CPoint);
+    bool armMidi(const enrichment::EnrichmentCandidate&,VSTGUI::CPoint);
+    double userZoom() const noexcept { return state_.uiZoomPercent/100.0; }
+    VSTGUI::CRect editRect(VSTGUI::CRect) const;
     void notifyState();
     std::string t(std::string_view key) const { return std::string(localization::text(state_.locale,key)); }
     std::string tIntent(PhraseIntent intent) const {
@@ -137,6 +161,9 @@ private:
     void drawResponsiveInspector(VSTGUI::CDrawContext*);
     void drawResponsiveForm(VSTGUI::CDrawContext*);
     VSTGUI::CMouseEventResult onMouseDownResponsive(VSTGUI::CPoint&);
+    OverlayKind activeOverlayKind() const noexcept;
+    void dismissTransientOverlay();
+    void focusTransientOverlay();
     void refreshLayout();
     const ContinuationCandidate* selectedCandidate() const;
     const ContinuationCandidate* findCandidate(const std::string&) const;

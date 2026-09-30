@@ -39,6 +39,7 @@ int main(int argc,char** argv) {
         std::optional<KeySignature> key; std::optional<Style> style; std::optional<PhraseIntent> intent;
         std::vector<MatchResult> matches; double tempo{}; int numerator{},denominator{};
         bool candidateAvailable{};
+        HarmonyConstraintSet constraints;
         if(!snapshotIn.empty()) {
             const auto decoded=snapshot::loadFile(snapshotIn);
             if(!decoded)throw std::runtime_error(decoded.error);
@@ -58,13 +59,15 @@ int main(int argc,char** argv) {
                 throw std::runtime_error("invalid progression");
             tempo=loaded.scenario.tempo; numerator=loaded.scenario.meterNumerator; denominator=loaded.scenario.meterDenominator;
             key=loaded.scenario.forcedKey; style=loaded.scenario.style; intent=loaded.scenario.intent;
+            constraints=loaded.scenario.constraints;
             if(scope!=midi::ExportScope::CurrentOnly||!snapshotOut.empty()) {
                 const auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
                 if(!factory)throw std::runtime_error(factory.error);
                 const CandidateIndex index(factory.templates);
                 AnalysisContext context; context.forcedKey=key;
                 context.timeSigNumerator=numerator; context.timeSigDenominator=denominator;
-                const auto set=recommendContinuations(makeMatchQuery(imported.events,context),index,{style,intent});
+                const auto set=recommendContinuations(makeMatchQuery(imported.events,context),index,
+                    {style,intent,constraints,loaded.scenario.tendency});
                 int group=-1;
                 for(int i=0;i<4;++i)if(groupName==std::array<const char*,4>{"Resolve","Develop","Loop","Color"}[i])group=i;
                 if(group<0||candidateNumber<1||static_cast<std::size_t>(candidateNumber)>set.groups[group].size())
@@ -84,7 +87,7 @@ int main(int argc,char** argv) {
         }
         const ContinuationCandidate* selected=scope==midi::ExportScope::CurrentOnly?nullptr:
             candidateAvailable?&candidate:nullptr;
-        const auto preview=preview::buildSequence(imported,selected,tempo);
+        const auto preview=preview::buildSequence(imported,selected,tempo,constraints);
         if(!preview)throw std::runtime_error(preview.error);
         const auto clip=midi::buildClip(preview.sequence,mode,scope,{numerator,denominator},key,intent);
         if(!clip)throw std::runtime_error(clip.error);

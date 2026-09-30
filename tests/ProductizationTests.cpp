@@ -115,6 +115,24 @@ int main() {
         check(policy.visibleIndices(synthetic).size()==1,"minimum diversity distance");
         for (auto& item:synthetic) item.rankingScore=40;
         check(policy.visibleIndices(synthetic).empty(),"no strong option is empty");
+        session::RecommendationVisibilityPolicy presentationPolicy;
+        presentationPolicy.maxPerGroup=2;
+        auto card=[](std::string id,std::string label,float score) {
+            ContinuationCandidate item;item.id=std::move(id);item.rankingScore=score;
+            ConcreteChordEvent chord;chord.label=std::move(label);chord.durationQN=4;
+            item.continuation.push_back(std::move(chord));return item;
+        };
+        RecommendationSet display;
+        display.groups[0]={card("resolve-a","C",95),card("resolve-duplicate","C",94),card("resolve-b","F",90)};
+        display.groups[1]={card("develop-a","C",92),card("develop-b","G",83)};
+        display.groups[1][0].key.tonic=PitchClass::G; // different analysis, identical audible path
+        display.groups[2]={card("loop-a","C",80)};
+        display.groups[3]={card("color-a","Cmaj7",75)};
+        const auto presented=session::presentationIndices(display,presentationPolicy);
+        check(presented[0]==std::vector<std::size_t>({0,2}),"same-group exact path uses one card");
+        check(presented[1]==std::vector<std::size_t>({1}),"cross-group duplicate yields to alternative");
+        check(presented[2]==std::vector<std::size_t>({0}),"group without alternative stays visible");
+        check(presented[3]==std::vector<std::size_t>({0}),"similar path remains distinct");
         const auto query=makeMatchQuery(a.chords);
         const auto rec=recommendContinuations(query,index,{},weights);
         const ContinuationCandidate* choice{};
