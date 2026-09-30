@@ -112,8 +112,9 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
 }
 void Controller::observeEditor(double scale,bool accepted,bool scaleObserved) noexcept {
     hostEnvironment_.contentScaleFactor=scale;
+    // A scale callback alone does not prove that the host accepted a resize.
     if(scaleObserved)hostEnvironment_.capabilities.contentScaleFactor=host::Observed::Available;
-    hostEnvironment_.capabilities.editorResize=accepted?host::Observed::Available:host::Observed::Unavailable;
+    else hostEnvironment_.capabilities.editorResize=accepted?host::Observed::Available:host::Observed::Unavailable;
 }
 void Controller::observeDrop(bool file,bool supported) noexcept {
     hostEnvironment_.lastDropType=file?(supported?"FilePath MIDI":"FilePath unsupported"):"legacy data";

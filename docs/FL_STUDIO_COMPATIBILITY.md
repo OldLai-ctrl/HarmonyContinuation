@@ -14,7 +14,7 @@
 | More candidates / scrolling / Why / snapshot | Existing workflow reused; UI smoke | REAL FL TEST PENDING |
 | State restore / close / reopen | Actual plug-in loaded by SDK harness, both state/view orderings | REAL FL TEST PENDING: project save / reopen |
 | Multiple instances | 2 / 4 / 8 independent sessions, jobs, drag files; shared user DB | REAL FL TEST PENDING |
-| Content scale / user zoom | 4 host scales × 3 user zooms × 3 layouts; host resize rejection/reentry | REAL FL TEST PENDING: actual FL DPI |
+| Content scale / user zoom | 4 host scales × 3 user zooms × 3 window size presets (layout adapts to zoom); host resize rejection/reentry | REAL FL TEST PENDING: actual FL DPI |
 | Detached-like lifecycle | Removal / reattach / new native parent simulated | REAL FL TEST PENDING: FL Detached |
 | Keyboard focus / Escape | Only received editor events; unhandled shortcuts passed to host | REAL FL TEST PENDING |
 | Preview | Existing Windows default-device playback; process-wide ownership guard | REAL FL TEST PENDING |
