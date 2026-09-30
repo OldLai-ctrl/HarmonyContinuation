@@ -7,6 +7,7 @@
 #include "session/ProductServices.h"
 #include "ui/ProgressionTimeline.h"
 #include "ui/UILayout.h"
+#include "ui/ScrollableCandidateList.h"
 #include "ui/OverlayPolicy.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
@@ -79,6 +80,7 @@ public:
     void setUserZoom(std::uint32_t percent);
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
+    bool runCandidateScrollSmoke();
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -116,6 +118,8 @@ private:
     std::string librarySearch_;
     std::deque<std::string> recentReports_, recentHostSnapshots_;
     UILayoutResult layout_;
+    std::array<double,4> continuationScroll_{};
+    std::array<double,3> enrichmentScroll_{};
     double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
     std::uint64_t paintGeneration_{};
     enum class Form { None, Save, Rename, Search, Melody } form_{Form::None};

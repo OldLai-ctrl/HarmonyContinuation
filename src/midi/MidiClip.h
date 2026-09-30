@@ -9,6 +9,7 @@
 namespace harmony::midi {
 enum class ArrangementMode { BlockChords, VoiceLed };
 enum class ExportScope { FullPhrase, CurrentOnly, ContinuationOnly };
+enum class ExportProfile { AnnotatedFile, DAWClip };
 enum class MarkerType { ChordLabel, RecommendedStart };
 struct Meter { int numerator{4}, denominator{4}; };
 struct Note { int midiNote{}; double startQN{}, durationQN{}; std::uint8_t velocity{80}, channel{}; bool bass{}; };
@@ -28,6 +29,7 @@ struct ExportSequence {
 struct ExportConfig {
     std::uint16_t ppq{480};
     std::uint8_t upperVelocity{80}, bassVelocity{90}, channel{0};
+    ExportProfile profile{ExportProfile::AnnotatedFile};
 };
 struct BuildResult { ExportSequence sequence; std::string error; explicit operator bool() const noexcept {return error.empty();} };
 BuildResult buildClip(const preview::Sequence&,ArrangementMode,ExportScope,Meter,
@@ -40,6 +42,8 @@ struct MidiClipPayload {
     std::string suggestedFilename;
     std::size_t chordCount{}, noteCount{};
     std::optional<std::int64_t> boundaryTick;
+    // Both representations come from the same ExportSequence, captured at mouse-down.
+    std::vector<std::uint8_t> dawClipBytes;
 };
 std::string suggestedFilename(std::optional<PhraseIntent>,std::optional<KeySignature>,int candidateNumber=1);
 } // namespace harmony::midi

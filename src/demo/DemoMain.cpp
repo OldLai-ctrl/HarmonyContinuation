@@ -688,6 +688,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     if(!midiSmokeReport.empty()) {
         std::ofstream report(midiSmokeReport,std::ios::trunc);const bool okay=report&&app->midiWorkflowSmoke(midiSmokeInput);
         report<<"MIDI workflow: visible/More Continue/Enrich identity, audition, save, drag arm, snapshot, overlay "<<(okay?"PASS":"FAIL")<<'\n';
+        report<<"Scrollable candidate groups: 7 groups x 0/1/2/3/6 rows x 100/125/150%; wheel priority, boundaries, preview, DAWClip drag arm, Why, Snapshot, fingerprint "<<(okay?"PASS":"FAIL")<<'\n';
         DestroyWindow(hwnd);VSTGUI::exitPlatform();return okay?0:10;
     }
     if(!resizeSmokeReport.empty()) {

@@ -62,6 +62,7 @@ WriteResult writeToMemory(const ExportSequence& s,ExportConfig config) {
         const auto total=qnToTicks(s.totalQN,config.ppq);
         if (total<0||total>0x0fffffff) throw std::runtime_error("invalid MIDI length");
         std::vector<Item> conductor,notes;
+        if (config.profile==ExportProfile::AnnotatedFile) {
         const auto micros=static_cast<std::uint32_t>(std::lround(60000000.0/s.tempoBPM));
         Bytes tempo; meta(tempo,0x51,{static_cast<std::uint8_t>(micros>>16),static_cast<std::uint8_t>(micros>>8),static_cast<std::uint8_t>(micros)});
         conductor.push_back({0,0,std::move(tempo)});
@@ -84,6 +85,7 @@ WriteResult writeToMemory(const ExportSequence& s,ExportConfig config) {
             Bytes bytes; meta(bytes,marker.type==MarkerType::RecommendedStart?0x06:0x01,textBytes(marker.text));
             conductor.push_back({tick,marker.type==MarkerType::RecommendedStart?4:5,std::move(bytes)});
         }
+        }
         for (const auto& note:s.notes) {
             const auto start=qnToTicks(note.startQN,config.ppq);
             const auto end=qnToTicks(note.startQN+note.durationQN,config.ppq);
@@ -94,8 +96,10 @@ WriteResult writeToMemory(const ExportSequence& s,ExportConfig config) {
             notes.push_back({start,1,{static_cast<std::uint8_t>(0x90|note.channel),static_cast<std::uint8_t>(note.midiNote),note.velocity}});
         }
         auto& output=result.bytes;
-        output.insert(output.end(),{'M','T','h','d'}); be32(output,6); be16(output,1); be16(output,2); be16(output,config.ppq);
-        emitTrack(output,conductor,total); emitTrack(output,notes,total);
+        const bool annotated=config.profile==ExportProfile::AnnotatedFile;
+        output.insert(output.end(),{'M','T','h','d'}); be32(output,6); be16(output,annotated?1:0); be16(output,annotated?2:1); be16(output,config.ppq);
+        if(annotated)emitTrack(output,conductor,total);
+        emitTrack(output,notes,total);
     } catch (const std::exception& e) { result.bytes.clear(); result.error=e.what(); }
     return result;
 }

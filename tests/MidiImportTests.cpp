@@ -101,7 +101,7 @@ int main() {
             for(const auto* name:{"HC_old.mid","other.mid"})std::filesystem::last_write_time(dir/name,std::filesystem::file_time_type::clock::now()-std::chrono::hours(72));
             const auto a=createDragFile(payload.payload,dir),b=createDragFile(payload.payload,dir);check(bool(a)&&bool(b)&&a.path!=b.path&&std::filesystem::exists(a.path)&&std::filesystem::exists(b.path),"unique retained temp");
             check(!std::filesystem::exists(dir/"HC_old.mid")&&std::filesystem::exists(dir/"other.mid"),"expire only own 48h files");
-            std::ifstream input(a.path,std::ios::binary);const Bytes dragged{std::istreambuf_iterator<char>(input),{}};check(dragged==payload.payload.smfBytes,"temp equals save");
+            std::ifstream input(a.path,std::ios::binary);const Bytes dragged{std::istreambuf_iterator<char>(input),{}};check(dragged==payload.payload.dawClipBytes,"temp uses DAWClip");
             context.scope=ExportScope::ContinuationOnly;check(candidatePayload(context,c).payload.chordCount==1,"scope reuse");
             enrichment::EnrichmentCandidate e;e.progression=phrase({"Cmaj7","G7"});context.scope=ExportScope::FullPhrase;check(candidatePayload(context,e).payload.chordCount==2,"enrichment uses transformed original object");
         });

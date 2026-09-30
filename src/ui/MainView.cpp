@@ -89,7 +89,7 @@ std::size_t groupForVisual(std::size_t visual,std::optional<PhraseIntent> intent
 }
 MainView::MainView(const CRect& rect, Actions actions) : CView(rect), actions_(std::move(actions)) {
     setWantsFocus(true);
-    visibility_.maxPerGroup=2;
+    // Keep the existing policy default (3); two rows describe only viewport height.
     layout_=computeLayout({rect.getWidth(),rect.getHeight(),1,session::Tab::Recommend,false,false});
 }
 void MainView::resizeLayout(int width,int height) {
@@ -149,6 +149,84 @@ bool MainView::runZoomSmoke() {
     state_=saved;recommendations_=savedRecommendations;
     selectedChord_.reset();selectedCandidate_.reset();selectedLibrary_.reset();refreshLayout();invalid();return okay;
 }
+bool MainView::runCandidateScrollSmoke() {
+    const auto savedState=state_;const auto savedActions=actions_;const auto savedPolicy=visibility_;
+    const auto savedRecommendations=recommendations_;const auto savedEnrichments=enrichments_;
+    const auto savedContinueScroll=continuationScroll_;const auto savedEnrichScroll=enrichmentScroll_;
+    const auto savedContentScroll=contentScroll_;
+    bool okay=true;
+    const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}, {'D','A','W'}};
+    constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};
+    for(const auto zoom:{100u,125u,150u})for(const bool enrich:{false,true})
+    for(const std::size_t count:{0u,1u,2u,3u,6u}) {
+        state_.uiZoomPercent=zoom;state_.tab=session::Tab::Recommend;state_.intent.reset();state_.pinnedCandidateIds.clear();
+        state_.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+        selectedChord_.reset();selectedCandidate_.reset();selectedEnrichment_.reset();pinnedEnrichmentIds_.clear();
+        recommendations_={};enrichments_={};continuationScroll_.fill(0.);enrichmentScroll_.fill(0.);
+        // Synthetic 6-row coverage exercises reusable geometry without changing production policy.
+        visibility_=savedPolicy;visibility_.maxPerGroup=6;
+        for(std::size_t group=0;group<(enrich?3u:4u);++group)for(std::size_t index=0;index<count;++index) {
+            const auto id="scroll-"+std::to_string(group)+"-"+std::to_string(index);
+            if(enrich){enrichment::EnrichmentCandidate c;c.id=id;c.fingerprint=id;c.score=90.f-static_cast<float>(index);
+                ChordEvent event;event.name="C";event.durationQN=2.+index;event.openEnded=false;c.progression.push_back(event);
+                enrichments_.groups[group].push_back(c);
+            } else {ContinuationCandidate c;c.id=id;c.intent=intents[group];c.key={PitchClass::C,Mode::Major};
+                c.rankingScore=90.f-static_cast<float>(index);c.suggestedCurrentChordDurationQN=2.+index;
+                c.continuation.push_back({"C",2.+index+group*.1,{1,0},ChordQuality::Major,{}});
+                recommendations_.groups[group].push_back(c);}
+        }
+        actions_={};std::string heard,exported,snapshot;
+        actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
+        actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
+        actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
+        actions_.exportEnrichmentMidi=[](const enrichment::EnrichmentCandidate&){return std::string{};};
+        actions_.midiPayload=[&](const ContinuationCandidate& c){exported=session::continuationFingerprint(c);return midi::PayloadResult{fake,{}};};
+        actions_.enrichmentMidiPayload=[&](const enrichment::EnrichmentCandidate& c){exported=c.fingerprint;return midi::PayloadResult{fake,{}};};
+        actions_.saveSnapshot=[&](const ContinuationCandidate& c){snapshot=session::continuationFingerprint(c);return std::string{};};
+        actions_.saveEnrichmentSnapshot=[&](const enrichment::EnrichmentCandidate& c){snapshot=c.fingerprint;return std::string{};};
+        refreshLayout();
+        for(std::size_t group=0;group<(enrich?3u:4u);++group) {
+            auto lane=layout_.lanes[group];contentScroll_=std::clamp(lane.bottom-layout_.content.bottom,0.,layout_.laneScrollMax);
+            lane.top-=contentScroll_;lane.bottom-=contentScroll_;
+            auto& offset=enrich?enrichmentScroll_[group]:continuationScroll_[group];
+            ScrollableCandidateList before(lane,count,offset);const auto parent=contentScroll_;
+            MouseWheelEvent wheel;wheel.mousePosition={(lane.left+lane.right)/2*userZoom(),(before.viewport.top+20)*userZoom()};wheel.deltaY=-100;
+            onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&contentScroll_==parent;
+            ScrollableCandidateList list(lane,count,offset);okay=okay&&offset==list.maximum;
+            wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&offset==list.maximum&&contentScroll_==parent;
+            if(count==0){okay=okay&&!list.hit(lane.left+20,list.viewport.top+10);continue;}
+            const std::size_t index=count-1;
+            const auto expected=enrich?enrichments_.groups[group][index].fingerprint:session::continuationFingerprint(recommendations_.groups[group][index]);
+            const auto point=[&](UiRect r){return CPoint{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};};
+            UiRect play,midiRect,why,snap;
+            if(enrich){const auto g=enrichmentRowGeometry(lane,list,index);play=g.audition;midiRect=g.midi;why=g.why;snap=g.snapshot;}
+            else {const auto g=list.continuationRow(lane,index,true);play=g.audition;midiRect=g.midi;why=g.why;snap=g.snapshot;}
+            auto p=point(play);onMouseDown(p,CButtonState{kLButton});okay=okay&&heard==expected;
+            p=point(midiRect);onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&exported==expected&&midiPending_&&midiPending_->dawClipBytes==fake.dawClipBytes;
+            okay=okay&&shouldStartDrag(p,{p.x+8,p.y});midiPending_.reset();midiClick_={};
+            p=point(snap);onMouseDown(p,CButtonState{kLButton});okay=okay&&snapshot==expected;
+            p=point(why);onMouseDown(p,CButtonState{kLButton});
+            okay=okay&&(enrich?(selectedEnrichment_&&selectedEnrichment_->first==group&&selectedEnrichment_->second==index):
+                (selectedCandidate_&&selectedCandidate_->first==group&&selectedCandidate_->second==index));
+            dismissTransientOverlay();
+            wheel.deltaY=100;wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&offset==0&&contentScroll_==parent;
+            // A pinned comparison is persistent, and must not disable group scrolling.
+            if(enrich)pinnedEnrichmentIds_.push_back(enrichments_.groups[group][index].id);
+            else state_.pinnedCandidateIds.push_back(recommendations_.groups[group][index].id);
+            wheel.deltaY=-100;wheel.consumed=false;onMouseWheelEvent(wheel);okay=okay&&wheel.consumed&&offset==list.maximum&&contentScroll_==parent;
+            pinnedEnrichmentIds_.clear();state_.pinnedCandidateIds.clear();
+        }
+        if(!enrich){const auto original=session::presentationIndices(recommendations_,savedPolicy);
+            for(const auto& group:original)okay=okay&&group.size()<=savedPolicy.maxPerGroup;}
+        MouseWheelEvent outside;outside.mousePosition={(layout_.content.left+10)*userZoom(),(layout_.lanes[0].bottom+4)*userZoom()};outside.deltaY=-1;
+        contentScroll_=0;onMouseWheelEvent(outside);okay=okay&&outside.consumed&&contentScroll_==std::min(48.,layout_.laneScrollMax);
+    }
+    state_=savedState;actions_=savedActions;visibility_=savedPolicy;recommendations_=savedRecommendations;enrichments_=savedEnrichments;
+    continuationScroll_=savedContinueScroll;enrichmentScroll_=savedEnrichScroll;contentScroll_=savedContentScroll;
+    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();
+    return okay;
+}
 bool MainView::runMidiWorkflowSmoke() {
     const auto savedState=state_;const auto savedActions=actions_;const auto savedRecommendations=recommendations_;
     const auto savedEnrichments=enrichments_;const auto savedPreview=previewCandidateId_;
@@ -178,7 +256,7 @@ bool MainView::runMidiWorkflowSmoke() {
             actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
             actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
             actions_.exportEnrichmentMidi=[](const enrichment::EnrichmentCandidate&){return std::string{};};
-            const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}};
+            const midi::MidiClipPayload fake{{'M','T','h','d'},"HC_test.mid",1,3,{}, {'D','A','W'}};
             actions_.midiPayload=[&](const ContinuationCandidate& c){exported=session::continuationFingerprint(c);return midi::PayloadResult{fake,{}};};
             actions_.enrichmentMidiPayload=[&](const enrichment::EnrichmentCandidate& c){exported=c.fingerprint;return midi::PayloadResult{fake,{}};};
             actions_.saveMidiPayload=[&](const midi::MidiClipPayload& p){++saved;okay=okay&&p.smfBytes==fake.smfBytes;return std::string{};};
@@ -188,8 +266,8 @@ bool MainView::runMidiWorkflowSmoke() {
                 if(more){const auto a=layout_.inspector;const auto width=(a.width()-28)/(enrich?3:4);
                     return UiRect{a.left+14+action*width,a.bottom-39,a.left+14+(action+1)*width,a.bottom-8};}
                 const auto lane=layout_.lanes[0];
-                if(enrich){const double x=action==0?lane.right-122:action==1?lane.right-94:lane.right-51;
-                    return UiRect{x,lane.top+77,x+(action==0?24:39),lane.top+101};}
+                if(enrich){const ScrollableCandidateList list(lane,enrichments_.groups[0].size(),0.);
+                    const auto g=enrichmentRowGeometry(lane,list,0);return action==0?g.audition:action==1?g.midi:g.snapshot;}
                 const auto g=candidateRowGeometry(lane,0,true);return action==0?g.audition:action==1?g.midi:g.snapshot;
             };
             const auto point=[&](UiRect r){return CPoint{(r.left+r.right)/2*userZoom(),(r.top+r.bottom)/2*userZoom()};};
@@ -218,7 +296,7 @@ bool MainView::runMidiWorkflowSmoke() {
         }
     }
     state_=savedState;actions_=savedActions;recommendations_=savedRecommendations;enrichments_=savedEnrichments;previewCandidateId_=savedPreview;
-    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();return okay;
+    selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();return runCandidateScrollSmoke()&&okay;
 }
 void MainView::refreshLayout() {
     const auto priorWidth=layout_.timeline.width();
@@ -262,6 +340,22 @@ void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
     }
+    try {
+    if(state_.tab==session::Tab::Recommend&&activeOverlayKind()!=OverlayKind::Modal&&
+       (activeOverlayKind()!=OverlayKind::Transient||layout_.inspectorMode==InspectorMode::Side)&&layout_.content.contains(point.x,point.y)) {
+        const auto presentation=session::presentationIndices(recommendations_,visibility_);
+        const bool enrich=state_.productMode==session::ProductMode::Enrich;
+        for(std::size_t visual=0;visual<(enrich?3u:4u);++visual) {
+            auto lane=layout_.lanes[visual];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
+            if(!lane.contains(point.x,point.y))continue;
+            const auto group=enrich?visual:groupForVisual(visual,state_.intent);
+            auto& scroll=enrich?enrichmentScroll_[group]:continuationScroll_[group];
+            const ScrollableCandidateList list(lane,enrich?enrichments_.groups[group].size():presentation[group].size(),scroll);
+            // Deliberately consume at group boundaries too: never double-scroll the parent.
+            scroll=list.scroll(delta);invalid();event.consumed=true;return;
+        }
+    }
+    } catch(...) {event.consumed=true;return;}
     if (state_.tab==session::Tab::Recommend&&layout_.timeline.contains(point.x,point.y)) {
         timelineScroll_=std::clamp(timelineScroll_-delta,0.,
             std::max(0.,timelineContentWidth_-layout_.timeline.width()));
@@ -323,6 +417,7 @@ void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
     recommendations_=r;
+    continuationScroll_.fill(0.);
     if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
         session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
     const bool resolved=std::any_of(recommendations_.groups.begin(),recommendations_.groups.end(),
@@ -339,6 +434,7 @@ void MainView::setRecommendations(const RecommendationSet& r) {
     invalid();
 }
 void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
+    enrichmentScroll_.fill(0.);
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
     const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
     enrichments_=value;
@@ -552,10 +648,15 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             line(dc,workerBusy_?t("status.analyzing"):t("candidate.none"),CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
-        for (std::size_t row=0;row<visible.size()&&row<2;++row) {
+        const ScrollableCandidateList list(lane,visible.size(),continuationScroll_[group]);
+        continuationScroll_[group]=list.offset;
+        {
+        ConcatClip rowsClip(*dc,viewRect(list.viewport));
+        for (std::size_t row=0;row<visible.size();++row) {
+            if(!list.visible(row))continue;
             const auto& c=recommendations_.groups[group][visible[row]];
             const bool exportControls=static_cast<bool>(actions_.exportMidi);
-            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),exportControls);
+            const auto geometry=list.continuationRow(lane,row,exportControls);
             box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             drawMiniTimeline(dc,c,viewRect(geometry.timeline));
             std::string continuation;
@@ -576,6 +677,8 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             } else if(actions_.audition)
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
         }
+        }
+        if(list.maximum>0)box(dc,viewRect(list.thumb()),muted);
     }
     }
     drawCompare(dc,bounds);
@@ -600,35 +703,42 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
                  CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
-        for (std::size_t row=0;row<std::min<std::size_t>(2,candidates.size());++row) {
+        const ScrollableCandidateList list(lane,candidates.size(),enrichmentScroll_[group]);
+        enrichmentScroll_[group]=list.offset;
+        {
+        ConcatClip rowsClip(*dc,viewRect(list.viewport));
+        for (std::size_t row=0;row<candidates.size();++row) {
+            if(!list.visible(row))continue;
             const auto& candidate=candidates[row];
-            const double y=lane.top+28+row*80;
-            box(dc,CRect(lane.left+6,y,lane.right-6,y+76),CColor(33,49,69,255));
+            const auto geometry=enrichmentRowGeometry(lane,list,row);
+            box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             std::string progression;
             for (const auto& event:candidate.progression) {
                 if (!progression.empty()) progression+=" → ";
                 progression+=event.name;
             }
-            line(dc,progression,CRect(lane.left+12,y+3,lane.right-48,y+25),pale);
+            line(dc,progression,viewRect(geometry.summary),pale);
             line(dc,std::to_string(static_cast<int>(std::round(candidate.score))),
-                 CRect(lane.right-46,y+3,lane.right-10,y+25),accent,kRightText);
+                 viewRect(geometry.score),accent,kRightText);
             std::string badges;
             for (std::size_t i=0;i<std::min<std::size_t>(3,candidate.techniques.size());++i) {
                 if (!badges.empty()) badges+=" · ";
                 badges+=t("technique."+std::string(enrichment::techniqueName(candidate.techniques[i])));
             }
-            line(dc,badges,CRect(lane.left+12,y+26,lane.right-12,y+48),muted);
+            line(dc,badges,viewRect(geometry.badges),muted);
             line(dc,std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id)!=
                 pinnedEnrichmentIds_.end()?t("candidate.unpin"):t("candidate.pin"),
-                CRect(lane.right-213,y+49,lane.right-170,y+73),accent,kCenterText);
-            line(dc,t("candidate.why"),CRect(lane.right-169,y+49,lane.right-126,y+73),accent,kCenterText);
+                viewRect(geometry.pin),accent,kCenterText);
+            line(dc,t("candidate.why"),viewRect(geometry.why),accent,kCenterText);
             if (actions_.auditionEnrichment)
-                line(dc,"▶",CRect(lane.right-122,y+49,lane.right-98,y+73),accent,kCenterText);
+                line(dc,"▶",viewRect(geometry.audition),accent,kCenterText);
             if (actions_.exportEnrichmentMidi)
-                line(dc,t("midi.button"),CRect(lane.right-94,y+49,lane.right-55,y+73),accent,kCenterText);
+                line(dc,t("midi.button"),viewRect(geometry.midi),accent,kCenterText);
             if (actions_.saveEnrichmentSnapshot)
-                line(dc,"SNAP",CRect(lane.right-51,y+49,lane.right-8,y+73),muted,kCenterText);
+                line(dc,"SNAP",viewRect(geometry.snapshot),muted,kCenterText);
         }
+        }
+        if(list.maximum>0)box(dc,viewRect(list.thumb()),muted);
     }
     if (!enrichments_.opportunities.empty()) {
         const auto& opportunity=enrichments_.opportunities.front();
@@ -1212,23 +1322,25 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     }
                     return kMouseEventHandled;
                 }
-                const auto row=static_cast<std::size_t>(std::max(0.,std::floor((where.y-lane.top-28)/80)));
-                if(row>=std::min<std::size_t>(2,enrichments_.groups[group].size()))return kMouseEventHandled;
+                const ScrollableCandidateList list(lane,enrichments_.groups[group].size(),enrichmentScroll_[group]);
+                const auto hit=list.hit(where.x,where.y);
+                if(!hit)return kMouseEventHandled;
+                const auto row=*hit;
                 const auto& candidate=enrichments_.groups[group][row];
-                const auto rowY=lane.top+28+row*80;
-                if(where.y>=rowY+49 && where.x>=lane.right-214 && where.x<lane.right-169) {
+                const auto geometry=enrichmentRowGeometry(lane,list,row);
+                if(geometry.pin.contains(where.x,where.y)) {
                     const auto found=std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id);
                     if(found!=pinnedEnrichmentIds_.end())pinnedEnrichmentIds_.erase(found);
                     else if(pinnedEnrichmentIds_.size()<3)pinnedEnrichmentIds_.push_back(candidate.id);
                     refreshLayout();
-                } else if(where.y>=rowY+49 && where.x>=lane.right-169 && where.x<lane.right-125) {
+                } else if(geometry.why.contains(where.x,where.y)) {
                     selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
                     inspectorScroll_=0;refreshLayout();focusTransientOverlay();
-                } else if(where.y>=rowY+49 && where.x>=lane.right-52 && actions_.saveEnrichmentSnapshot)
+                } else if(geometry.snapshot.contains(where.x,where.y) && actions_.saveEnrichmentSnapshot)
                     actionStatus_=actions_.saveEnrichmentSnapshot(candidate);
-                else if(where.y>=rowY+49 && where.x>=lane.right-96 && actions_.exportEnrichmentMidi)
+                else if(geometry.midi.contains(where.x,where.y) && actions_.exportEnrichmentMidi)
                     armMidi(candidate,where);
-                else if(where.y>=rowY+49 && where.x>=lane.right-124 && actions_.auditionEnrichment)
+                else if(geometry.audition.contains(where.x,where.y) && actions_.auditionEnrichment)
                     actions_.auditionEnrichment(candidate);
                 else {selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
                     inspectorScroll_=0;refreshLayout();focusTransientOverlay();}
@@ -1260,12 +1372,13 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 }
                 return kMouseEventHandled;
             }
-            const auto rowHeight=(lane.height()-30)/2;
-            const auto row=static_cast<std::size_t>((where.y-lane.top-27)/rowHeight);
             const auto& visible=presentation[group];
-            if(row>=visible.size()||row>=2)return kMouseEventHandled;
+            const ScrollableCandidateList list(lane,visible.size(),continuationScroll_[group]);
+            const auto hit=list.hit(where.x,where.y);
+            if(!hit)return kMouseEventHandled;
+            const auto row=*hit;
             const auto index=visible[row];const auto& c=recommendations_.groups[group][index];
-            const auto geometry=candidateRowGeometry(lane,static_cast<int>(row),static_cast<bool>(actions_.exportMidi));
+            const auto geometry=list.continuationRow(lane,row,static_cast<bool>(actions_.exportMidi));
             if(actions_.benchmarkSelect)actions_.benchmarkSelect(c);
             if(geometry.pin.contains(where.x,where.y)){
                 if(state_.unpin(c.id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==c.id;});
