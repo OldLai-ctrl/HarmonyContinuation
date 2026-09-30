@@ -76,3 +76,11 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 候选生成、排名、质量/去重门槛保持原状；移除 MainView 的两行展示上限，使用既有策略默认最多 3 条，约两行高度独立滚动。滚轮在组内（包括边界）消费；空隙走父容器。无候选视图复用；绘制、点击映射共用原候选下标。
 - 本机针对性验证：MidiProfileTests 8/8，实际拖出临时文件事件精简，两个布局/三个范围音乐一致，保存 metadata 保留；Demo 七组 × 0/1/2/3/6 条 × 三种缩放，试听/拖動准备/Why/Snapshot/候选身份检查通过。实际宿主 drop、发声和 Marker Track 消失仍待用户复测，不由 Demo 推断。
 - 本轮未重复完整 CTest、Validator、音乐基线、Import fixtures 或 Round-trip。用户定向 PASS 后才运行最终集中回归并决定推进 RC，见 `V0_8_RC_TARGETED_MANUAL_TEST.md`。
+
+### 0.8.0-rc.1 Gate
+
+- 用户明确回传 dev.2 Cubase 人工验收 **PASS**：精简拖出无额外 Marker Track / 标记、七组滚动、滚动候选试听与拖出、More、MIDI Import 及其它 dev.2 人工项目；未发现新问题。两份人工清单同步完成状态。
+- 功能冻结在 `58e765e`。本轮集中回归仅执行一次：CTest 20/20，Release Validator 47/47；Continuation 42 例 / 214 候选，Enrichment 30 例 / 161 候选，所有逐例数据与既有基线一致。原有三处结构质量提示未新增、未修音乐算法。
+- CTest 内含 Constraint 16/16、MIDI Import 27/27、Round-trip 12/12；Demo MIDI / More / Scroll / Why PASS、Zoom 9/9、Resize 96/96。没有重复运行这些测试。
+- 集中回归未发现新 bug。只更新 ProductVersion 为 0.8.0-rc.1 与 RC 文档；库 / 数据 / 快照版本保持 2 / 1 / 5 / 2 / 1。
+- RC1 安装包是从确定 RC 提交重新构建的产物；其资源检查和最终 Validator 结果记录在随包 BUILD.txt。**dev.2 Cubase PASS 不等于 RC1 安装包已经重新人工测试**。完成 RC 打包后停止。
