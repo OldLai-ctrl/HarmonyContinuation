@@ -30,6 +30,15 @@ std::once_flag configureSoftwareDrawing;
 
 void configureSoftwareRendering() {
     std::call_once(configureSoftwareDrawing, [] {
+        // DXGI installs a message-loop hook on this Windows setup. SDK EditorHost
+        // unloads the last plug-in before its final GetMessage call; that hook
+        // otherwise points into an unloaded dxgi.dll. Keep the system runtime
+        // alive until process exit, even when all editor frames are removed.
+        if(auto graphics=LoadLibraryExW(L"dxgi.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32)) {
+            HMODULE retained{};
+            GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN,L"dxgi.dll",&retained);
+            FreeLibrary(graphics);
+        }
         // VSTGUI's default Windows frame may use DirectComposition/D3D11.
         // Keep this editor on the software Direct2D path for compatibility
         // with older Intel drivers that can fault while painting child views.

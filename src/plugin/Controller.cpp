@@ -597,7 +597,7 @@ void Controller::detach(harmony::ui::MainView* view) noexcept {
 
 void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
     try {
-        auto report = inspectDrop(package, "Cubase 拖放（VSTGUI IDataPackage）");
+        auto report = inspectDrop(package, "宿主拖放（VSTGUI IDataPackage）");
         harmony::Progression chords;
         std::ostringstream parsed;
         parsed << "最近一次拖放 / VSTGUI IDataPackage\n数据项数：" << report.itemCount

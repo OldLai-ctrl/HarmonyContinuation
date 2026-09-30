@@ -4,7 +4,7 @@
 
 | Feature | Automated Status | Real FL Status |
 |---|---|---|
-| Standard VST3 load and editor | SDK HostContractHarness + EditorHost; see gate report | REAL FL TEST PENDING |
+| Standard VST3 load and editor | SDK HostContractHarness 40/40 per profile; EditorHost 2/2; official TestHost load/editor PASS | REAL FL TEST PENDING |
 | Host identification / Generic fallback | Standard IHostApplication; name never enables capabilities | REAL FL TEST PENDING |
 | ProcessContext | Per-field optional QN, tempo, meter, transport; null/invalid safe | REAL FL TEST PENDING |
 | MIDI file picker | Existing SMF reader/extractor, background parsing | REAL FL TEST PENDING |
@@ -21,6 +21,10 @@
 | Factory / user Library | Library 2, 161 entries, same Library Manager and local user DB | REAL FL TEST PENDING |
 | Installation / update / uninstall | Same standard Windows VST3 installer; data-preserving behavior retained | REAL FL TEST PENDING: Plugin Manager scan |
 | Host Diagnostics | Advanced menu, safe text export; no music/user library/path/machine IDs | REAL FL TEST PENDING |
+
+## Automated gate
+
+CTest 25/25. Continuation 42 cases / 214 candidates, Enrichment 30 / 161: exact case data unchanged from the v0.8 baseline; the same 3 existing structural hints remain. Constraint 16/16, MIDI Import 27/27, round-trip 12/12, Demo MIDI/scroll PASS, Zoom 9/9, Resize 96/96. Final package Validator and SHA-256 records are delivered beside Setup.
 
 ## 简短使用说明
 
