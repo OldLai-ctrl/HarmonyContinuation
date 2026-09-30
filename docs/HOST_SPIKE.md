@@ -64,3 +64,7 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 新增标准 SMF Format 0/1 PPQ 文件导入与和弦块提取；更多候选完整操作；标准 VSTGUI 文件路径 MIDI Drag-Out。SDK API 以本地 `vstgui/lib/dragging.h`、`cdropsource.h`、`idatapackage.h` 为依据。
 - 本机构建、定向测试及集中回归结果另见 `V0_8_DEV2_REPORT.md`；Demo 自动检查只能证明候选对应、回调及拖动准备，不能证明 Cubase 接受 drop、实际发声或工程重开。
 - dev.2 Cubase 人工验收待执行。Cubase 私有 MIDI Part 直接拖入未实现、未测试，不属于已支持输入。
+
+### dev.2 人工 Gate 准备
+
+收到 Cubase Manual Acceptance 指令后，仅更新 21 项人工清单，并准备 `manual-tests/dev2-midi` 文件。本轮未重跑产品自动回归，未宣称任何新 Cubase PASS，未修改插件或安装包、未推进 RC。等待用户实际结果；此前自动报告不代替人工验收。
