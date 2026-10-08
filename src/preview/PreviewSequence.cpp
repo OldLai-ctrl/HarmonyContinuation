@@ -78,7 +78,7 @@ BuildResult buildSequence(const ImportedProgressionSession& imported,const Conti
     out.recommendationBoundary=out.events.size();
     if (candidate) for (const auto& e:candidate->continuation) {
         if (!durationOK(e.durationQN)) { result.error="invalid continuation duration"; result.sequence={}; return result; }
-        auto chord=chordFromLabel(e.label,e.quality);
+        auto chord=e.harmonicData?convert(*e.harmonicData):chordFromLabel(e.label,e.quality);
         if (chord.root<0 || chord.intervals==0) { result.error="unsupported continuation chord: "+e.label; result.sequence={}; return result; }
         out.events.push_back({std::move(chord),end,e.durationQN,Segment::Recommended});
         end+=e.durationQN;

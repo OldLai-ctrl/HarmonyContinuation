@@ -1,6 +1,7 @@
 #include "product/ProductVersion.h"
 #include "demo/DemoScenario.h"
 #include "library/ProgressionLibrary.h"
+#include "library/LibraryStore.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include <array>
@@ -41,8 +42,13 @@ int main(int argc,char** argv) {
         bool candidateAvailable{};
         HarmonyConstraintSet constraints;
         if(!snapshotIn.empty()) {
-            const auto decoded=snapshot::loadFile(snapshotIn);
+            auto active=library::loadFactory(HC_FACTORY_DB_PATH);
+            if(!active)throw std::runtime_error(active.error);
+            const auto user=library::UserLibrary(library::userDatabasePath()).loadAll();
+            if(user)active.templates.insert(active.templates.end(),user.templates.begin(),user.templates.end());
+            const auto decoded=snapshot::loadFile(snapshotIn,&active);
             if(!decoded)throw std::runtime_error(decoded.error);
+            if(!decoded.value.candidateAvailable)throw std::runtime_error("candidate reference unavailable");
             imported=decoded.value.imported; candidate=decoded.value.candidate; candidateAvailable=true;
             if(decoded.value.match)matches.push_back(*decoded.value.match);
             key=decoded.value.key; style=decoded.value.style; intent=decoded.value.intent;

@@ -10,7 +10,7 @@ int run(const std::string& command,const std::filesystem::path& path,const std::
     if (command=="inspect") {
         const auto loaded=loadFactory(path);
         if (!loaded) { std::cerr<<loaded.error<<'\n'; return 1; }
-        std::cout<<"library_version="<<loaded.libraryVersion<<" schema="<<schemaVersion
+        std::cout<<"library_version="<<loaded.libraryVersion<<" schema="<<loaded.storageSchemaVersion
             <<" progressions="<<loaded.templates.size()<<'\n'; return 0;
     }
     if (command=="install") {

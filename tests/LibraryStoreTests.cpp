@@ -1,4 +1,5 @@
 #include "library/LibraryStore.h"
+#include "library/LegacyFactoryIdResolver.h"
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -18,7 +19,7 @@ int main() {
         std::string error;
         check(installFactoryPackage(HC_FACTORY_DB_PATH,store,error),"first install");
         check(installFactoryPackage(HC_FACTORY_DB_PATH,store,error),"same-version repair");
-        auto next=initial.templates; next.front().name="Updated name";
+        auto next=canonicalFactoryEntries(initial.templates); next.front().name="Updated name";
         check(compileFactory(root/"update.db",next,error,3),"independent library version");
         UserLibrary user(root/"user.db"); auto item=initial.templates.front();item.id="user-kept";item.sourceType="user";
         check(user.addProgression(item,error),"personal collection saved");
@@ -27,7 +28,7 @@ int main() {
         check(active.library.libraryVersion==3 && active.library.templates.front().name=="Updated name","active new library");
         check(std::filesystem::exists(store/"2"/"factory.db") && user.loadAll().templates.size()==1,"old sets and user retained");
         check(installFactoryPackage(HC_FACTORY_DB_PATH,store,error) && loadAvailableFactory(HC_FACTORY_DB_PATH,store).library.libraryVersion==3,"no accidental downgrade");
-        check(compileFactory(root/"same-version.db",initial.templates,error,3),"conflicting package fixture");
+        check(compileFactory(root/"same-version.db",canonicalFactoryEntries(initial.templates),error,3),"conflicting package fixture");
         check(!installFactoryPackage(root/"same-version.db",store,error),"same version cannot replace content");
         { std::ofstream out(root/"broken.db");out<<"invalid"; }
         check(!installFactoryPackage(root/"broken.db",store,error) && loadAvailableFactory(HC_FACTORY_DB_PATH,store).library.libraryVersion==3,"invalid update retains active library");

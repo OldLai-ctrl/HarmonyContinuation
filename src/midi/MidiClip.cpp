@@ -1,4 +1,5 @@
 #include "MidiClip.h"
+#include <sstream>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -21,11 +22,27 @@ preview::BuildResult previewFromTemplate(const ProgressionTemplate& item,KeySign
     preview::BuildResult result;
     if (item.full.empty()||item.full.size()>64) {result.error="invalid library progression";return result;}
     ImportedProgressionSession imported; Progression chords; double at{};
+    if (!item.rawChords.empty()) {
+        if (!item.rawChordKey || item.rawChords.size()!=item.full.size()) {result.error="invalid stored chord data";return result;}
+        chords=item.rawChords;
+        const int shift=(static_cast<int>(key.tonic)-static_cast<int>(item.rawChordKey->tonic)+12)%12;
+        if (shift) for (auto& e:chords) {
+            const auto pitch=chordPitches(e);
+            if(pitch.root<0||pitch.bass<0){result.error="unsupported stored chord";return result;}
+            constexpr const char* notes[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+            e.root=static_cast<PitchClass>((pitch.root+shift)%12);e.bass=static_cast<PitchClass>((pitch.bass+shift)%12);
+            e.name=notes[static_cast<int>(*e.root)];e.name+="/";e.name+=notes[static_cast<int>(*e.bass)];
+            e.keyNoteValue.reset();e.bassNoteValue.reset();e.extensions.pitches.reset();
+            std::ostringstream mask;mask<<"0x"<<std::hex<<(pitch.intervals|pitch.colorMask);e.extensions.mask=mask.str();
+        }
+        if(!imported.replace(std::move(chords),TimelineCoordinateMode::RelativeToSelection)){result.error="invalid stored timeline";return result;}
+        return preview::buildSequence(imported,nullptr,tempo);
+    }
     for (const auto& e:item.full) {
         const double duration=e.durationQN.value_or(4.0);
         if (!std::isfinite(duration)||duration<=0||duration>128) {result.error="invalid library duration";return result;}
         const auto concrete=realizeContinuation(e,key,duration);
-        ChordEvent chord;chord.name=concrete.label;chord.quality=concrete.quality;
+        ChordEvent chord=concrete.harmonicData.value_or(ChordEvent{});chord.name=concrete.label;chord.quality=concrete.quality;
         chord.startQN=at;chord.durationQN=duration;chord.openEnded=false;
         chords.push_back(std::move(chord));at+=duration;
     }

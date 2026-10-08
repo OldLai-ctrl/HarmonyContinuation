@@ -12,5 +12,5 @@ struct JsonTemplates {
 JsonTemplates parseTemplateJson(std::string_view, bool requireFactoryMetadata = false);
 JsonTemplates loadDevelopmentTemplates(); // embedded, test-only library for MATCH view
 MatchEvent parseNotationEvent(std::string_view token, Mode mode, double durationQN = 4.0);
-std::string serializeTemplateJson(const ProgressionTemplate&);
+std::string serializeTemplateJson(const ProgressionTemplate&, bool includeData = true);
 } // namespace harmony::dev

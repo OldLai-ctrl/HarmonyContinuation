@@ -33,6 +33,10 @@ struct MatchEvent {
     float structuralWeight{0.7f};
     std::optional<double> durationQN;
     std::size_t sourceIndex{};
+    // Persistence/realization metadata; deliberately ignored by matcher costs.
+    std::optional<int> bassInterval;
+    std::uint16_t intervalMask{}, colorMask{};
+    std::string displaySuffix;
 };
 
 struct ProgressionFingerprint {
@@ -72,6 +76,9 @@ struct ProgressionTemplate {
     std::vector<std::string> tags;
     int version{1};
     ProgressionFingerprint fingerprint;
+    // Exact imported chords, alongside the frozen matching projection.
+    Progression rawChords;
+    std::optional<KeySignature> rawChordKey;
 };
 
 struct KeyInterpretation {

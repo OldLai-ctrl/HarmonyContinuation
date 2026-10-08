@@ -545,10 +545,11 @@ std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& it
 
 std::string Controller::saveSnapshot(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
     try {
-        const auto snapshot=harmony::snapshot::capture(importedProgression_,candidate,matches_,lastTempoBPM_,
+        auto snapshot=harmony::snapshot::capture(importedProgression_,candidate,matches_,lastTempoBPM_,
             sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4),
             sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
             sessionState_.style,sessionState_.intent);
+        snapshot.factoryLibraryVersion=static_cast<int>(sessionState_.factoryLibraryVersion);
 #if defined(_WIN32)
         const auto path=savePath(owner,candidate.id+".hcrec.json",
             L"Recommendation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0",L"json");

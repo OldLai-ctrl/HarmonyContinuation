@@ -1,4 +1,5 @@
 #include "TemplateJson.h"
+#include "persistence/ChordData.h"
 #include "core/LibraryMetadata.h"
 #include <algorithm>
 #include <cctype>
@@ -18,16 +19,11 @@ struct Input {
     bool take(char c) { space(); if (at < text.size() && text[at] == c) { ++at; return true; } return false; }
     void need(char c) { if (!take(c)) throw std::runtime_error(std::string("expected '") + c + "'"); }
     std::string string() {
-        need('"'); std::string value;
+        space(); const auto begin=at; need('"');
         while (at < text.size()) {
             const auto c = text[at++];
-            if (c == '"') return value;
-            if (c == '\\' && at < text.size()) {
-                const auto escape = text[at++];
-                if (escape == '"' || escape == '\\' || escape == '/') value += escape;
-                else if (escape == 'n') value += '\n';
-                else throw std::runtime_error("unsupported escape");
-            } else value += c;
+            if (c == '"') return benchmark::json::parse(text.substr(begin,at-begin)).text();
+            if (c == '\\' && at < text.size()) ++at;
         }
         throw std::runtime_error("unterminated string");
     }
@@ -222,7 +218,7 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             input.need('{');
             ProgressionTemplate item;
             std::string sequence, rhythmText, modeText, cadenceText, intentText, stylesText, tagsText, meterText,
-                        skeletonText, aliasesText, builtInTagsText, techniquesText, complexityLevelText;
+                        skeletonText, aliasesText, builtInTagsText, techniquesText, complexityLevelText, typedData;
             bool idSeen{}, sequenceSeen{}, nameSeen{}, modeSeen{}, intentSeen{}, cadenceSeen{},
                  loopSeen{}, meterSeen{}, stylesSeen{}, sourceSeen{}, priorSeen{}, complexitySeen{},
                  versionSeen{}, phraseSeen{};
@@ -238,6 +234,7 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
                 else if (key == "note") item.note = input.string();
                 else if (key == "createdAt") item.createdAt = input.string();
                 else if (key == "updatedAt") item.updatedAt = input.string();
+                else if (key == "typedData") typedData = input.string();
                 else if (key == "favorite") item.favorite = input.boolean();
                 else if (key == "aliases") aliasesText = input.string();
                 else if (key == "builtInTags") builtInTagsText = input.string();
@@ -329,6 +326,7 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             if (!item.phraseLength) item.phraseLength = item.full.size();
             if (item.phraseLength != item.full.size()) throw std::runtime_error("phrase boundary must be template end");
             if (item.name.empty()) item.name = sequence;
+            if (!typedData.empty()) persistence::decodeTemplateData(typedData,item);
             prepareTemplate(item);
             result.templates.push_back(std::move(item));
             if (input.take(']')) break;
@@ -340,15 +338,9 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
     } catch (const std::exception& e) { result.templates.clear(); result.error = e.what(); }
     return result;
 }
-std::string serializeTemplateJson(const ProgressionTemplate& item) {
+std::string serializeTemplateJson(const ProgressionTemplate& item, bool includeData) {
     auto quoted = [](std::string_view value) {
-        std::string out{"\""};
-        for (char c : value) {
-            if (c == '"' || c == '\\') out += '\\';
-            if (c == '\n') out += "\\n";
-            else out += c;
-        }
-        out += '"'; return out;
+        return benchmark::json::escape(value);
     };
     auto cadenceName = [](CadenceType value) -> const char* {
         switch (value) {
@@ -384,7 +376,7 @@ std::string serializeTemplateJson(const ProgressionTemplate& item) {
     for (std::size_t i = 0; i < item.full.size(); ++i) {
         if (i) { sequence << ' '; rhythm << ' '; }
         sequence << formatMatchEvent(item.full[i]);
-        rhythm << std::setprecision(9) << item.full[i].durationQN.value_or(4.0);
+        rhythm << std::setprecision(17) << item.full[i].durationQN.value_or(4.0);
     }
     for (std::size_t i = 0; i < item.styleWeights.size(); ++i) {
         if (i) styles << ',';
@@ -401,6 +393,7 @@ std::string serializeTemplateJson(const ProgressionTemplate& item) {
         skeleton << item.skeletonIndices[i];
     }
     std::ostringstream out;
+    out << std::setprecision(17);
     out << '{' << "\"id\":" << quoted(item.id) << ",\"name\":" << quoted(item.name)
         << ",\"nameZh\":" << quoted(item.nameZh)
         << ",\"nameEn\":" << quoted(item.nameEn)
@@ -425,7 +418,9 @@ std::string serializeTemplateJson(const ProgressionTemplate& item) {
         << ",\"sourceType\":" << quoted(item.sourceType)
         << ",\"priorWeight\":" << item.priorWeight << ",\"complexity\":" << item.complexity
         << ",\"version\":" << item.version << ",\"phraseLength\":" << item.phraseLength
-        << ",\"secondaryIntents\":" << item.secondaryIntents << '}';
+        << ",\"secondaryIntents\":" << item.secondaryIntents;
+    if (includeData) out << ",\"typedData\":" << quoted(persistence::encodeTemplateData(item));
+    out << '}';
     return out.str();
 }
 } // namespace harmony::dev

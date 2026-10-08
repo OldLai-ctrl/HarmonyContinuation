@@ -1,4 +1,5 @@
 #include "EnrichmentSnapshot.h"
+#include "persistence/ChordData.h"
 #include "benchmark/BenchJson.h"
 #include "preview/PreviewSequence.h"
 #include "product/ProductVersion.h"
@@ -10,28 +11,10 @@ namespace harmony::snapshot {
 namespace {
 using benchmark::json::Value;
 Value chordOut(const ChordEvent& chord) {
-    auto v=Value::map();
-    v.object["name"]=chord.name;
-    v.object["startQN"]=chord.startQN;
-    v.object["durationQN"]=chord.durationQN?Value(*chord.durationQN):Value{};
-    v.object["open"]=chord.openEnded;
-    v.object["quality"]=static_cast<int>(chord.quality);
-    v.object["root"]=chord.root?Value(static_cast<int>(*chord.root)):Value{};
-    v.object["bass"]=chord.bass?Value(static_cast<int>(*chord.bass)):Value{};
-    return v;
+    return persistence::chordOut(chord);
 }
 ChordEvent chordIn(const Value& v) {
-    ChordEvent chord;
-    chord.name=v.at("name").text();
-    chord.startQN=v.at("startQN").finite();
-    const auto& duration=v.at("durationQN");
-    if(duration.type!=Value::Type::Null) chord.durationQN=duration.finite();
-    chord.openEnded=v.at("open").boolean;
-    chord.quality=static_cast<ChordQuality>(v.at("quality").integer(0,static_cast<int>(ChordQuality::Augmented)));
-    const auto& root=v.at("root"),&bass=v.at("bass");
-    if(root.type!=Value::Type::Null) chord.root=static_cast<PitchClass>(root.integer(0,11));
-    if(bass.type!=Value::Type::Null) chord.bass=static_cast<PitchClass>(bass.integer(0,11));
-    return chord;
+    return persistence::chordIn(v);
 }
 Value chordsOut(const Progression& chords) {
     auto list=Value::list();
@@ -44,7 +27,7 @@ Progression chordsIn(const Value& list) {
     return out;
 }
 void validate(const EnrichmentSnapshot& snap) {
-    if(snap.schemaVersion!=EnrichmentSnapshot::currentSchemaVersion)
+    if(snap.schemaVersion<1||snap.schemaVersion>EnrichmentSnapshot::currentSchemaVersion)
         throw std::runtime_error("UnsupportedVersion");
     if(snap.original.events.empty()||snap.original.events.size()>64||
        snap.candidate.progression.empty()||snap.candidate.progression.size()>64||
@@ -83,7 +66,7 @@ EnrichmentSnapshot captureEnrichment(const ImportedProgressionSession& imported,
 std::string serialize(const EnrichmentSnapshot& snap) {
     validate(snap);
     auto root=Value::map();
-    root.object["schemaVersion"]=snap.schemaVersion;
+    root.object["schemaVersion"]=EnrichmentSnapshot::currentSchemaVersion;
     root.object["suggestionType"]="enrichment";
     root.object["productVersion"]=snap.productVersion;
     root.object["tempoBPM"]=snap.tempoBPM;
@@ -121,7 +104,7 @@ EnrichmentDecodeResult deserializeEnrichment(std::string_view input) {
     try {
         const auto top=benchmark::json::parse(input);auto& snap=result.value;
         snap.schemaVersion=top.at("schemaVersion").integer(0,1000000);
-        if(snap.schemaVersion!=EnrichmentSnapshot::currentSchemaVersion)
+        if(snap.schemaVersion<1||snap.schemaVersion>EnrichmentSnapshot::currentSchemaVersion)
             throw std::runtime_error("UnsupportedVersion");
         if(top.at("suggestionType").text()!="enrichment")throw std::runtime_error("wrong suggestion type");
         snap.productVersion=top.at("productVersion").text();
@@ -154,6 +137,7 @@ EnrichmentDecodeResult deserializeEnrichment(std::string_view input) {
             op.sourceIndex=static_cast<std::size_t>(operation.at("sourceIndex").integer(0,64));
             op.before=operation.at("before").text();op.after=operation.at("after").text();
             op.reason=operation.at("reason").text();c.operations.push_back(std::move(op));}
+        snap.schemaVersion=EnrichmentSnapshot::currentSchemaVersion;
         validate(snap);
     }catch(const std::exception& e){result.value={};result.error=e.what();}
     return result;

@@ -1,6 +1,7 @@
 #include "product/ProductVersion.h"
 #include "TemplateJson.h"
 #include "library/ProgressionLibrary.h"
+#include "library/LegacyFactoryIdResolver.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
         for (const auto& [key, count] : skeletons) if (count > 1) near += static_cast<std::size_t>(count - 1);
         std::string error;
         const int version=argc==4?std::stoi(argv[3]):2;
+        if(version>=3)templates=harmony::library::canonicalFactoryEntries(std::move(templates));
         if (!harmony::library::compileFactory(argv[2], templates, error,version)) throw std::runtime_error(error);
         auto loaded = harmony::library::loadFactory(argv[2]);
         if (!loaded || loaded.templates.size() != templates.size()) throw std::runtime_error("database roundtrip failed: " + loaded.error);

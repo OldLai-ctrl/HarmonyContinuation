@@ -11,6 +11,7 @@ struct ConcreteChordEvent {
     ScaleDegree degree{};
     ChordQuality quality{ChordQuality::Unknown};
     RoleFlags roles{};
+    std::optional<ChordEvent> harmonicData;
 };
 struct RecommendationSubScores {
     float match{}, skeleton{}, style{}, intent{}, cadence{}, continuation{}, prior{}, rhythm{}, support{};
