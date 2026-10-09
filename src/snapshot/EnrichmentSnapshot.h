@@ -5,7 +5,7 @@
 
 namespace harmony::snapshot {
 struct EnrichmentSnapshot {
-    static constexpr int currentSchemaVersion = 1;
+    static constexpr int currentSchemaVersion = 2;
     int schemaVersion{currentSchemaVersion};
     std::string productVersion;
     ImportedProgressionSession original;

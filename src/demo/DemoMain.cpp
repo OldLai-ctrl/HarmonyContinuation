@@ -177,6 +177,7 @@ public:
         rating.recommendation=snapshot::capture(state_.imported,*ratingCandidate_,recommendations_.matches,
             scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
             state_.forcedKey?state_.forcedKey:std::optional(ratingCandidate_->key),state_.style,state_.intent);
+        rating.recommendation.factoryLibraryVersion=static_cast<int>(state_.factoryLibraryVersion);
         std::string error;
         if(!benchmark::saveRating(rating,HC_BENCH_RATING_DIR,error))return "Rating: "+error;
         return "Rating saved: "+benchmark::ratingFilename(rating);
@@ -226,7 +227,11 @@ public:
     std::string openSnapshot() {
         const auto path=openSnapshotPath(hostWindow_);
         if (!path) return "Snapshot open cancelled";
-        const auto decoded=snapshot::loadFile(*path);
+        auto active=library::loadAvailableFactory(factoryPath_).library;
+        if(!active)return "Snapshot load: "+active.error;
+        const auto user=library::UserLibrary(userPath_).loadAll();
+        if(user)active.templates.insert(active.templates.end(),user.templates.begin(),user.templates.end());
+        const auto decoded=snapshot::loadFile(*path,&active);
         if (!decoded) return "Snapshot load: "+decoded.error;
         stopAudition(); snapshotLoaded_=true; playing_=false;
         const auto& snap=decoded.value;
@@ -243,7 +248,7 @@ public:
         recommendations_={};
         const auto group=snap.candidate.intent==PhraseIntent::Develop?1:snap.candidate.intent==PhraseIntent::Loop?2:
             snap.candidate.intent==PhraseIntent::Color?3:0;
-        recommendations_.groups[group].push_back(snap.candidate);
+        if(snap.candidateAvailable)recommendations_.groups[group].push_back(snap.candidate);
         if (snap.match) recommendations_.matches.push_back(*snap.match);
         if (main_) {
             main_->setSnapshotMode(true); main_->setSessionState(state_);
@@ -253,7 +258,7 @@ public:
             main_->setWorkerStatus(0,0,false,0,0);
             main_->setHostText("Snapshot · "+scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM");
         }
-        return "Snapshot loaded";
+        return snap.candidateAvailable?"Snapshot loaded":"方案暂不可用；原进行已恢复";
     }
 private:
     io::AsyncMidiImport importWorker_;
@@ -430,9 +435,10 @@ private:
     }
     std::string saveRecommendationSnapshot(const ContinuationCandidate& candidate) {
         try {
-            const auto snap=snapshot::capture(state_.imported,candidate,recommendations_.matches,
+            auto snap=snapshot::capture(state_.imported,candidate,recommendations_.matches,
                 scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
                 state_.forcedKey?state_.forcedKey:std::optional(candidate.key),state_.style,state_.intent);
+            snap.factoryLibraryVersion=static_cast<int>(state_.factoryLibraryVersion);
             auto name=midi::suggestedFilename(candidate.intent,candidate.key,1);
             name.replace(name.size()-4,4,".hcrec.json");
             const auto path=savePath(hostWindow_,std::wstring(name.begin(),name.end()),

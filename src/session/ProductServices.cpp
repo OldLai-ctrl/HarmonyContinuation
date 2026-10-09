@@ -1,4 +1,5 @@
 #include "ProductServices.h"
+#include "persistence/ChordData.h"
 #include <algorithm>
 #include <atomic>
 #include <bit>
@@ -21,6 +22,7 @@ std::string continuationFingerprint(const ContinuationCandidate& c) {
         sized(event.label);
         out << ':' << static_cast<int>(event.quality) << ':'
             << std::bit_cast<std::uint64_t>(event.durationQN) << ';';
+        if(event.harmonicData)sized(persistence::encodeChords({*event.harmonicData}));
     }
     return out.str();
 }
@@ -116,7 +118,8 @@ SaveResult makeUserProgression(const ImportedProgressionSession& session,
         const auto anchor=phrase.front().startQN;
         for (auto& event:phrase) event.startQN-=anchor;
         auto& open=phrase.back();
-        double hold=candidate.suggestedCurrentChordDurationQN.value_or(4.0);
+        double hold=(!open.openEnded&&open.durationQN)?*open.durationQN:
+            candidate.suggestedCurrentChordDurationQN.value_or(4.0);
         if (!std::isfinite(hold) || hold<=0 || hold>128) { result.error="invalid OPEN hold"; return result; }
         open.durationQN=hold; open.openEnded=false;
         double cursor=open.startQN+hold;
@@ -124,7 +127,7 @@ SaveResult makeUserProgression(const ImportedProgressionSession& session,
             if (!std::isfinite(suggested.durationQN) || suggested.durationQN<=0 || suggested.durationQN>128) {
                 result.error="invalid continuation duration"; return result;
             }
-            ChordEvent event; event.name=suggested.label; event.startQN=cursor;
+            ChordEvent event=suggested.harmonicData.value_or(ChordEvent{}); event.name=suggested.label; event.startQN=cursor;
             event.durationQN=suggested.durationQN; event.openEnded=false;
             event.quality=suggested.quality; phrase.push_back(std::move(event)); cursor+=suggested.durationQN;
         }
@@ -143,7 +146,16 @@ SaveResult makeUserProgression(const ImportedProgressionSession& session,
         if (metadata.style) { item.styles=static_cast<StyleFlags>(*metadata.style); item.styleWeights.emplace_back(*metadata.style,1.f); }
         item.tags=metadata.tags;
         item.note=metadata.note;
-        for (std::size_t i=0;i<item.full.size();++i) item.full[i].durationQN=phrase[i].durationQN;
+        item.rawChords=phrase; item.rawChordKey=candidate.key;
+        for (std::size_t i=0;i<item.full.size();++i) {
+            auto& event=item.full[i];event.durationQN=phrase[i].durationQN;
+            const auto chord=chordPitches(phrase[i]);
+            if(chord.root<0||chord.bass<0||!chord.intervals)throw std::runtime_error("unsupported saved chord");
+            event.bassInterval=(chord.bass-chord.root+12)%12;event.intervalMask=chord.intervals;event.colorMask=chord.colorMask;
+            auto name=phrase[i].name.substr(0,phrase[i].name.find('/'));
+            std::size_t rootLength=1;if(name.size()>1&&(name[1]=='#'||name[1]=='b'))rootLength=2;
+            if(name.size()>=rootLength)event.displaySuffix=name.substr(rootLength);
+        }
         prepareTemplate(item);
     } catch (const std::exception& e) { result.error=e.what(); result.item={}; }
     return result;

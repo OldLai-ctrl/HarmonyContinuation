@@ -1,11 +1,11 @@
 # 独立进行库与 Windows 安装程序
 
-当前构建：`0.8.0-dev.1-installer.1`，在 v0.8 开发分支增加本地库管理与安装器；没有实现 MIDI 导入。
+当前开发包：`0.9.0-dev.3 / Factory Library 3`。包状态与实际验收范围以 [NOW](../NOW.md) 为准；格式与旧版个人库边界见 [V3 契约](LIBRARY_V3_COMPATIBILITY.md)。标准 MIDI 导入沿用 v0.9 基线。
 
 ## 安装、更新、卸载
 
-- 完整安装包：`HarmonyContinuation-0.8.0-dev.1-installer.1-Setup.exe`。默认安装 VST3 与本地进行库，也可选择只更新库。
-- 独立库安装包：`HarmonyContinuation-Library-2-Setup.exe`。以后更新进行内容只需分发新版库安装包，无需重新构建或替换插件。
+- 完整安装包：`HarmonyContinuation-0.9.0-dev.3-Setup.exe`。默认安装 VST3 与本地进行库，也可选择只更新库。
+- 独立库安装包：`HarmonyContinuation-Library-3-Setup.exe`，需要支持 Factory Schema 2 的 `0.9.0-dev.2` 或更新插件。只更新库无需替换插件。
 - 已安装的应用中可以卸载；完整安装还提供开始菜单的库更新和卸载入口。
 - 更新插件前关闭使用插件的宿主。安装器拒绝替换被占用的插件，不主动关闭宿主。
 - 完整安装会将标准 VST3 目录内旧的 `HarmonyContinuation*-backup-*` 插件备份移到 `%ProgramData%\HarmonyContinuation\Backups\Plugins`，保留文件并避免 Cubase 同时扫描新旧版本。备份被占用或无法安全移动时停止安装并提示。
@@ -48,4 +48,4 @@
 
 ## 验证范围
 
-只运行本次改动相关的库保存/更新、个人库读写、实际隔离安装/更新/卸载检查；构建附带 VST3 Validator。未重复运行和声基线或全量测试，也不把隔离安装视为 Cubase 验收。
+V3 已有一次隔离安装/卸载的 9 项通过证据。本次收口未修改安装器逻辑，复用该结果，只检查干净提交构建的产物和 SHA-256；步骤见 [RUNBOOK](../RUNBOOK.md#打包与安装)，实际证据见 NOW。隔离安装不能替代 Cubase/FL 实机验证。

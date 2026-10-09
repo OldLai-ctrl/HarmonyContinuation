@@ -1,4 +1,11 @@
-# Progression Library, Phase 3
+# Progression Library
+
+Current V3 source content is defined in [the additions catalogue](../data/factory-v3/README.md);
+format compatibility is defined in [the frozen V3 contract](LIBRARY_V3_COMPATIBILITY.md).
+V3 builds combine the unchanged historical source with these additions. Current
+state and execution evidence are in [NOW](../NOW.md).
+
+## Historical Phase 3 baseline
 
 The factory catalogue is maintained as eight JSON files in `data/factory/`. Each row is one key independent harmonic phrase. `tools/generate_seed_json.py` contains the explicit seed list used to write the first 161 rows; it does not transpose or combine rows. The JSON files are the reviewed source. They include 141 major and 20 minor phrases. Style membership overlaps: Pop 101, Jazz 80, Functional 61, Rock 60, R&B 40, City Pop 20. Primary intents: Resolve 59, Color 42, Develop 36, Loop 24. This is a small initial seed catalogue, not a claim of complete musical coverage.
 
