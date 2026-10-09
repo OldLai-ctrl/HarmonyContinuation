@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-Color Analysis V1 已实现独立只读分析及两类推荐卡片提示，正在完成一次 Release 编译、三个数学代表案例及一个中英 UI / Why? 冒烟。支持范围、未知结构与完整路径接口见 [Color Analysis V1](docs/COLOR_ANALYSIS_V1.md)。显示色彩提示默认开启，复用编辑器状态在当前插件实例内保留；暂不跨工程或插件重载保存，不升级 Schema。推荐排序、曲库、音乐 Core、宿主入口和 MIDI 协议均冻结。本轮不制作安装器，不启动 dev.6。
+Color Analysis V1 已实现独立只读分析及两类推荐卡片提示，已完成一次 Release 构建及定向编译修复、三个数学代表案例及一个中英 UI / Why? 冒烟，标记 DEVELOPMENT READY。支持范围、未知结构与完整路径接口见 [Color Analysis V1](docs/COLOR_ANALYSIS_V1.md)。显示色彩提示默认开启，复用编辑器状态在当前插件实例内保留；暂不跨工程或插件重载保存，不升级 Schema。推荐排序、曲库、音乐 Core、宿主入口和 MIDI 协议均冻结。本轮不制作安装器，不启动 dev.6。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,10 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；当前进行 dev.5 附加色彩功能。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 dev.5：功能提交 `3a4c3268e0f8386ae3328aa5f19e466dd9f340a1`（以 Git 完整 hash 为准）的只读色彩模块、卡片及 Why? 已完成。一次 MSVC Release 构建首次在新冒烟工具遇到 Windows `near` 宏冲突和缺少 COM 头文件；仅修复该工具并增量完成剩余目标，未重跑整个项目。修复提交 `e0b8a818dba72ff11146208c3ae3c36662c71d77` 只改冒烟工具。插件版本 `0.9.0-dev.5 / Release`，生成 Git 标识 `3a4c326`，对应生产功能提交且不是 dirty/unknown；后续测试修复未改生产源码。插件及直接运行的 `HarmonyColorSmoke` 成功；三个案例覆盖普通和弦、转位/时值/完整路径接缝、角度跨界/多方向，另一个离屏 UI / Why? 冒烟覆盖中英、隐藏提示、推荐身份及功能解释保持、实例内开关恢复，全部通过。日志为 `build-v3-plugin/dev5-color-configure.log`、`dev5-color-build.log`、`dev5-color-build-finish.log`、`dev5-color-smoke.log`。未运行任何历史套件、Validator、音乐基准、宿主矩阵或安装器测试，未打包安装器；通过后停止测试。
+
+限制：V1 数学子集及阈值见专题文档；宽跨度、未覆盖等级/音集返回 Unknown，多方向返回 Uncertain；缺失时值不生成整段结论。开关不跨插件/工程重载保存。真实 DAW 显示未验收。本轮未改推荐排序、权重、Factory V3、用户库、宿主入口、MIDI 或任何 Schema。dev.6 可使用只读完整路径接口，但本轮不开始该阶段。
 
 2026-10-09 主线集成：`0.9.0-dev.4 / 32a0d64 / Release` 一次编译通过，复用本机 `_CL_=/Z7` 构建方式，Validator 关闭。直接运行 `FactoryCatalogTests --smoke-one`，仅 `V3_DUSK_001` 加载→推荐→MIDI 通过；`LibraryCompatibilityTests user-smoke` 仅一个隔离 Schema 1 用户库恢复案例通过，名称、备注、标签、收藏及进行条数保留，未触发迁移、未访问生产 user.db。宿主连接入口未改，Generic Host 检查跳过。未重审 629 条内容或六个旧 ID 合并，未运行历史测试套件、基准或安装检查，未制作 dev.4 安装器。原始结果为 `build-v3-plugin/v09-integration-build.log`、`v09-integration-factory-smoke.log`、`v09-integration-user-smoke.log`。通过后停止测试。
 
@@ -45,7 +49,7 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。开发主线集成只以本轮指定的最小验证为完成关口。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.5 只以本轮指定的最小验证为完成关口。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 
