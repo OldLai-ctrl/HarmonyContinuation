@@ -11,6 +11,7 @@
 #include "ui/OverlayPolicy.h"
 #include "ui/EffectiveScale.h"
 #include "ui/ColorHint.h"
+#include "ui/WhyExplanation.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
@@ -105,6 +106,7 @@ public:
     bool runColorHintSmoke(VSTGUI::CDrawContext*);
     bool runColorSortSmoke(VSTGUI::CDrawContext*,const Progression&,const RecommendationSet&);
     bool runEnrichmentColorSmoke(VSTGUI::CDrawContext*,const Progression&,const enrichment::EnrichmentResult&);
+    bool runWhyV2Smoke(VSTGUI::CDrawContext*,bool enrichmentMode);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -123,6 +125,7 @@ private:
     void refreshColorRanking();
     session::RecommendationPresentation continuationPresentation();
     void setColorPreference(color::Preference);
+    void setColorHints(bool value){showColorHints_=value;invalid();}
     bool showColorHints_{true}; // UI session preference; no persisted schema changes.
     std::vector<color::TimedChord> colorSource_;
     std::unordered_map<std::string,color::PathColor> colorPaths_;

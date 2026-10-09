@@ -573,11 +573,93 @@ const color::PathColor& MainView::candidateColor(const enrichment::EnrichmentCan
     return colorPaths_.emplace(key,color::ColorPreferenceReranker::analyzeEnrichment(candidate.progression)).first->second;
 }
 void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) {
-    if(hint.label.empty())return;
-    const auto tone=hint.tone==ColorTone::Warm?CColor(224,187,104,255):
-        hint.tone==ColorTone::Cool?CColor(103,188,215,255):muted;
+    if(hint.label.empty()||rect.getWidth()<20)return;
+    const auto tone=hint.tone==ColorTone::Warm?CColor(202,177,119,255):
+        hint.tone==ColorTone::Cool?CColor(114,171,188,255):muted;
     box(dc,CRect(rect.left,rect.top+3,rect.left+2,rect.bottom-3),tone);
-    rect.left+=7;line(dc,hint.label,rect,tone);
+    rect.left+=7;auto label=hint.label;dc->setFont(kNormalFont);
+    if(dc->getStringWidth(label.c_str())>rect.getWidth())
+        if(const auto split=label.find(" · ");split!=std::string::npos)label.resize(split);
+    line(dc,label,rect,tone);
+}
+bool MainView::runWhyV2Smoke(CDrawContext* dc,bool enrich) {
+    session::PluginSessionState state;state.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+    Progression source;
+    for(int i=0;i<(enrich?16:1);++i) {
+        ChordEvent e;e.name="C";e.root=PitchClass::C;e.bass=PitchClass::C;e.quality=ChordQuality::Major;
+        e.startQN=i*4.;e.durationQN=4.;e.openEnded=false;source.push_back(e);
+    }
+    if(!state.imported.replace(source,TimelineCoordinateMode::RelativeToSelection))return false;
+    setSessionState(state);
+    RecommendationSet continuation;enrichment::EnrichmentResult upgrades;
+    for(int i=0;i<2;++i) {
+        ContinuationCandidate c;c.id=i?"why-arc":"why-flat";c.intent=PhraseIntent::Resolve;
+        c.key={PitchClass::C,Mode::Major};c.rankingScore=89.f-i;
+        c.continuation={{i?"Cmaj7":"C",4.,{1,0},i?ChordQuality::Major7:ChordQuality::Major,{}},{"C",4.,{1,0},ChordQuality::Major,{}}};
+        continuation.groups[0].push_back(c);
+        enrichment::EnrichmentCandidate e;e.id=c.id;e.fingerprint=c.id;e.score=c.rankingScore;
+        e.skeletonPreservation=.985f;e.styleCompatibility=.8f;e.complexityScore=.44f;e.progression=source;
+        for(int j=0;j<16&&enrich;++j)if(i?(j==7||j==8):(j==0||j==15)) {
+            e.progression[j].name="Cmaj7";e.progression[j].quality=ChordQuality::Major7;
+            enrichment::EnrichmentOperation op;op.type=enrichment::OperationType::UpgradeQuality;
+            op.technique=enrichment::TechniqueID::SeventhColor;op.sourceIndex=j;op.before="C";op.after="Cmaj7";e.operations.push_back(op);
+        }
+        e.techniques={enrichment::TechniqueID::SeventhColor};upgrades.groups[0].push_back(e);
+    }
+    if(enrich)setEnrichments(upgrades);else setRecommendations(continuation);
+    refreshLayout();const auto serialized=session::serialize(state_);
+    std::string heard,exported;unsigned callbacks{},saved{};
+    actions_.stateChanged=[&](const auto&){++callbacks;};
+    actions_.audition=[&](const auto& c){heard=c.id;};actions_.auditionEnrichment=[&](const auto& c){heard=c.id;};
+    actions_.exportMidi=[](const auto&){return std::string{};};actions_.exportEnrichmentMidi=[](const auto&){return std::string{};};
+    const midi::MidiClipPayload fake{{'M','T','h','d'},"why_identity.mid",1,3,{}, {'D','A','W'}};
+    actions_.midiPayload=[&](const auto& c){exported=c.id;return midi::PayloadResult{fake,{}};};
+    actions_.enrichmentMidiPayload=[&](const auto& c){exported=c.id;return midi::PayloadResult{fake,{}};};
+    actions_.saveMidiPayload=[&](const auto&){++saved;return std::string{};};
+    const auto order=[&](){return enrich?enrichmentOrder(0):continuationPresentation()[0];};
+    const std::vector<std::size_t> original{0,1};if(order()!=original)return false;
+    setColorPreference(color::Preference::TensionArc);const auto ranked=order();if(ranked.front()!=1)return false;
+    setColorHints(false);if(order()!=ranked||colorPreference_!=color::Preference::TensionArc)return false;
+    setColorHints(true);
+    const auto candidateHintFor=[&](){return enrich?candidateHint(enrichments_.groups[0][1]):candidateHint(recommendations_.groups[0][1]);};
+    for(const auto locale:{session::Locale::ZhCN,session::Locale::EnUS}) {
+        state_.locale=locale;
+        const auto hint=candidateHintFor();
+        const auto functional=enrich?functionalWhy(enrichments_.groups[0][1],locale):
+            functionalWhy(evaluateIntentCompletion(recommendations_.groups[0][1]),locale);
+        const auto why=explainWhy(functional,hint,locale,colorPreference_,color::RankReason::Matched,true);
+        if(why.sentences.size()!=3||hint.label.empty()||why.sentences.front().find("whyV2.")!=std::string::npos)return false;
+        setColorHints(false);
+        const auto hiddenWhy=explainWhy(functional,candidateHintFor(),locale,colorPreference_,color::RankReason::Matched,true);
+        if(hiddenWhy.sentences.size()!=2||order()!=ranked)return false;
+        setColorHints(true);
+        color::PathColor unknown;unknown.status=color::Status::Unknown;
+        auto neutral=colorHint(unknown,locale);
+        if(neutral.tone!=ColorTone::Neutral||neutral.label!=t("color.unknown"))return false;
+        unknown.status=color::Status::Uncertain;unknown.positions.resize(1);unknown.positions[0].chord.reason=color::Reason::MissingBass;
+        neutral=colorHint(unknown,locale);
+        const auto fallback=explainWhy(functional,neutral,locale,colorPreference_,color::RankReason::InsufficientColor);
+        if(neutral.tone!=ColorTone::Neutral||fallback.sentences.size()!=2||neutral.explanation!=t("color.whyMissingBass"))return false;
+    }
+    state_.locale=state.locale;
+    // The first displayed row must route all actions to original candidate 1.
+    selectedCandidate_.reset();selectedEnrichment_.reset();refreshLayout();
+    const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,2,0.);
+    const auto cGeometry=list.continuationRow(lane,0,true);const auto eGeometry=enrichmentRowGeometry(lane,list,0);
+    const auto click=[&](UiRect rect,bool release=false){CPoint point{(rect.left+rect.right)/2*userZoom(),(rect.top+rect.bottom)/2*userZoom()};
+        onMouseDown(point,CButtonState{kLButton});if(release)onMouseUp(point,CButtonState{kLButton});};
+    dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+    click(enrich?eGeometry.audition:cGeometry.audition);click(enrich?eGeometry.midi:cGeometry.midi,true);
+    click(enrich?eGeometry.why:cGeometry.why);
+    const auto selected=enrich?(selectedEnrichment()?selectedEnrichment()->id:""):(selectedCandidate()?selectedCandidate()->id:"");
+    if(heard!="why-arc"||exported!="why-arc"||selected!="why-arc"||saved!=1)return false;
+    dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+    state_.debugExpanded=true;dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();state_.debugExpanded=false;
+    const auto retained=captureEditorUiState();setColorPreference(color::Preference::Off);
+    if(order()!=original)return false;restoreEditorUiState(retained);
+    setColorHints(false);if(order()!=ranked||!candidateHintFor().label.empty())return false;
+    state_.locale=state.locale;
+    return callbacks==0&&serialized==session::serialize(state_);
 }
 bool MainView::runEnrichmentColorSmoke(CDrawContext* dc,const Progression& source,const enrichment::EnrichmentResult& candidates) {
     session::PluginSessionState state;state.productMode=session::ProductMode::Enrich;
@@ -799,7 +881,7 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
             (state_.constraints.melody.size()>1?" +":""),
         t("tendency.label")+": "+t(state_.tendency==HarmonicTendency::Conservative?"tendency.conservative":
             state_.tendency==HarmonicTendency::Bold?"tendency.bold":"tendency.balanced"),
-        state_.tab==session::Tab::Recommend?t("colorSort.label")+": "+t(std::string(color::preferenceKey(colorPreference_))+"Short"):""};
+        state_.tab==session::Tab::Recommend?t("colorSort.labelShort")+": "+t(std::string(color::preferenceKey(colorPreference_))+"Short"):""};
     for(std::size_t i=0;i<constraints.size();++i)line(dc,constraints[i],viewRect(layout_.constraintControls[i]),
         i==0&&!state_.constraints.melody.empty()?accent:pale);
     if(state_.tab!=session::Tab::Recommend)return;
@@ -900,7 +982,12 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             if(state_.imported.events.back().openEnded&&c.suggestedCurrentChordDurationQN)
                 intent+=" · OPEN "+fixed(*c.suggestedCurrentChordDurationQN)+" QN";
             auto hint=candidateHint(c);
-            if(!hint.label.empty()){hint.label=intent+" · "+hint.label;drawColorHint(dc,hint,viewRect(geometry.intent));}
+            if(!hint.label.empty()){
+                auto rect=viewRect(geometry.intent);dc->setFont(kNormalFont);
+                const auto width=std::min(rect.getWidth()*.40,dc->getStringWidth(tIntent(c.intent).c_str())+9.);
+                auto purpose=rect;purpose.right=purpose.left+width;line(dc,tIntent(c.intent),purpose,muted);
+                rect.left+=width;drawColorHint(dc,hint,rect);
+            }
             else line(dc,intent,viewRect(geometry.intent),muted);
             line(dc,t("candidate.pin"),viewRect(geometry.pin),accent,kCenterText);
             if(exportControls) {
@@ -959,7 +1046,7 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
                 badges+=t("technique."+std::string(enrichment::techniqueName(candidate.techniques[i])));
             }
             auto hint=candidateHint(candidate);
-            if(!hint.label.empty()){hint.label+=" · "+badges;drawColorHint(dc,hint,viewRect(geometry.badges));}
+            if(!hint.label.empty())drawColorHint(dc,hint,viewRect(geometry.badges));
             else line(dc,badges,viewRect(geometry.badges),muted);
             line(dc,std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id)!=
                 pinnedEnrichmentIds_.end()?t("candidate.unpin"):t("candidate.pin"),
@@ -1295,7 +1382,10 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 if(i==3) {
                     if(state_.tab==session::Tab::Recommend) {
                         std::vector<std::string> options;for(int p=0;p<6;++p)options.push_back(t(color::preferenceKey(static_cast<color::Preference>(p))));
-                        const auto choice=popup(options,where);if(choice>=0)setColorPreference(static_cast<color::Preference>(choice));
+                        options.push_back(std::string(showColorHints_?"✓ ":"")+t("color.show"));
+                        const auto choice=popup(options,where);
+                        if(choice>=0&&choice<6)setColorPreference(static_cast<color::Preference>(choice));
+                        else if(choice==6){setColorHints(!showColorHints_);}
                     }
                 } else if(i==2) {
                     const auto choice=popup({t("tendency.conservative"),t("tendency.balanced"),t("tendency.bold")},where);
@@ -1357,7 +1447,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     const auto zoom=popup({"100%","125%","150%"},where);
                     if(zoom>=0)setUserZoom(std::array<std::uint32_t,3>{100,125,150}[zoom]);
                 }
-                else if(choice==8) {showColorHints_=!showColorHints_;invalid();}
+                else if(choice==8) {setColorHints(!showColorHints_);}
                 else if(choice==5&&actions_.importMidi) {
                     const auto option=popup({t("midi.complete"),t("midi.open")},where);
                     if(option>=0)actions_.importMidi(option==1,{});
@@ -1730,6 +1820,34 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     const auto add=[&](std::string text,CColor color=pale) {
         line(dc,std::move(text),CRect(area.left+14,y,area.right-14,y+23),color);y+=27;
     };
+    const auto paragraph=[&](const std::string& text,CColor color=pale) {
+        std::string row;dc->setFont(kNormalFont);const auto width=area.width()-28.;
+        for(std::size_t i=0;i<text.size();) {
+            const auto lead=static_cast<unsigned char>(text[i]);
+            const std::size_t length=lead<0x80?1:lead<0xe0?2:lead<0xf0?3:4;
+            const auto part=text.substr(i,length);i+=length;row+=part;
+            if(dc->getStringWidth(row.c_str())>width&&row.size()>part.size()) {
+                const auto space=row.rfind(' ',row.size()-part.size()-1);
+                if(space!=std::string::npos&&space>0){add(row.substr(0,space),color);row.erase(0,space+1);}
+                else {add(row.substr(0,row.size()-part.size()),color);row=part;}
+            }
+        }
+        if(!row.empty())add(row,color);
+    };
+    const auto colorDetails=[&](const color::PathColor& path,bool enrich) {
+        if(!showColorHints_)return;
+        add(t("whyV2.metrics"),accent);
+        for(std::size_t i=0;i<std::min<std::size_t>(8,path.positions.size());++i) {
+            const auto& p=path.positions[i];
+            const auto number=[](std::optional<double> value){return value?fixed(*value,2):std::string("—");};
+            paragraph(std::to_string(i+1)+"  T "+number(p.chord.T)+"  W "+number(p.chord.W)+"  S "+number(p.chord.S),muted);
+            if(p.fromPrevious)paragraph("ΔT "+fixed(p.fromPrevious->deltaT,2)+"  ΔW "+fixed(p.fromPrevious->deltaW,2)+
+                "  Ts "+fixed(p.fromPrevious->Ts,2)+"  Ws "+fixed(p.fromPrevious->Ws,2),muted);
+        }
+        if(path.positions.size()>8)add(t("whyV2.moreMetrics"),muted);
+        paragraph(t("color.modelNote"),muted);
+        if(enrich)paragraph(t("colorSort.symbolicBass"),muted);
+    };
     const auto addPath=[&](std::string title,const std::vector<std::string>& names){
         const auto limit=static_cast<std::size_t>(std::max(18.,(area.width()-40)/8.));
         std::string row=std::move(title);
@@ -1755,106 +1873,112 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()) {
         const auto& candidate=*selectedEnrichment();
         add(t("inspector.why"),accent);
-        if(state_.debugExpanded)add("Fingerprint: "+candidate.fingerprint,muted);
-        std::vector<std::string> sourceNames,transformedNames;
-        for(const auto& chord:state_.imported.events)sourceNames.push_back(chord.name);
-        for(const auto& chord:candidate.progression)transformedNames.push_back(chord.name);
-        addPath(t("inspector.user"),sourceNames);
-        addPath(t("mode.enrich"),transformedNames);
-        add(t("inspector.score")+"  "+fixed(candidate.score,1)+" · "+
-            t("inspector.preservation")+"  "+fixed(candidate.skeletonPreservation,2),muted);
-        add(t("inspector.styleFit")+"  "+fixed(candidate.styleCompatibility,2)+" · "+
-            t("inspector.complexity")+"  "+fixed(candidate.complexityScore,2),muted);
-        addMelody(candidate.melodyCompatibility);
-        const auto sourceVoice=preview::measureVoiceLeading(state_.imported.events);
-        const auto enrichedVoice=preview::measureVoiceLeading(candidate.progression);
-        if(sourceVoice&&enrichedVoice) {
-            const bool inversion=std::any_of(candidate.techniques.begin(),candidate.techniques.end(),
-                [](auto technique){return technique==enrichment::TechniqueID::Inversion;});
-            if(inversion&&enrichedVoice->bassMotionSemitones<sourceVoice->bassMotionSemitones)
-                add(t("voice.inversionImprovesBass"),accent);
-            else if(enrichedVoice->score>sourceVoice->score+0.03f)
-                add(t("voice.smoother"),accent);
-            add(t("voice.commonTones")+"  "+std::to_string(enrichedVoice->commonToneCount),muted);
-            add(t("voice.bass")+"  "+bassLine(enrichedVoice->bassMidi),muted);
-            add(t("voice.upper")+"  "+(enrichedVoice->upperVoiceTotalMotion<=sourceVoice->upperVoiceTotalMotion?
-                t("voice.upperSmoother"):t("voice.upperVaried")),muted);
-            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(enrichedVoice->score,2),muted);
-        }
-        for(const auto& operation:candidate.operations) {
-            add(operation.before+" → "+operation.after,pale);
-            add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
-                t("reason."+std::string(enrichment::techniqueName(operation.technique))),muted);
-        }
         const auto hint=candidateHint(candidate);
-        if(!hint.explanations.empty()){add(t("color.whyTitle"),accent);for(const auto& why:hint.explanations)add(why,muted);}
+        std::optional<color::RankReason> reason;bool promoted=false;
         if(colorPreference_!=color::Preference::Off) {
             refreshEnrichmentColorRanking();const auto [group,index]=*selectedEnrichment_;
-            add(t("colorSort.label")+" · "+t(color::preferenceKey(colorPreference_)),accent);
-            const auto reason=enrichmentColorRanks_[group].decisions[index].reason;
-            add(reason==color::RankReason::Matched?t("colorSort.enrichmentMatch"):t(color::rankReasonKey(reason)),muted);
+            const auto& rank=enrichmentColorRanks_[group];reason=rank.decisions[index].reason;
+            promoted=static_cast<std::size_t>(std::find(rank.order.begin(),rank.order.end(),index)-rank.order.begin())<index;
         }
-        if(showColorHints_)add(t("colorSort.symbolicBass"),muted);
+        std::vector<std::string> path;for(const auto& chord:candidate.progression)path.push_back(chord.name);
+        addPath(t("mode.enrich"),path);
+        const auto explanation=explainWhy(functionalWhy(candidate,state_.locale),hint,state_.locale,colorPreference_,reason,promoted);
+        for(const auto& sentence:explanation.sentences)paragraph(sentence);
+        if(state_.debugExpanded) {
+            add(t("whyV2.details"),accent);add("Fingerprint: "+candidate.fingerprint,muted);
+            std::vector<std::string> sourceNames,transformedNames;
+            for(const auto& chord:state_.imported.events)sourceNames.push_back(chord.name);
+            for(const auto& chord:candidate.progression)transformedNames.push_back(chord.name);
+            addPath(t("inspector.user"),sourceNames);
+            add(t("inspector.score")+"  "+fixed(candidate.score,1)+" · "+
+                t("inspector.preservation")+"  "+fixed(candidate.skeletonPreservation,2),muted);
+            add(t("inspector.styleFit")+"  "+fixed(candidate.styleCompatibility,2)+" · "+
+                t("inspector.complexity")+"  "+fixed(candidate.complexityScore,2),muted);
+            addMelody(candidate.melodyCompatibility);
+            const auto sourceVoice=preview::measureVoiceLeading(state_.imported.events);
+            const auto enrichedVoice=preview::measureVoiceLeading(candidate.progression);
+            if(sourceVoice&&enrichedVoice) {
+                const bool inversion=std::any_of(candidate.techniques.begin(),candidate.techniques.end(),
+                    [](auto technique){return technique==enrichment::TechniqueID::Inversion;});
+                if(inversion&&enrichedVoice->bassMotionSemitones<sourceVoice->bassMotionSemitones)
+                    add(t("voice.inversionImprovesBass"),accent);
+                else if(enrichedVoice->score>sourceVoice->score+0.03f)
+                    add(t("voice.smoother"),accent);
+                add(t("voice.commonTones")+"  "+std::to_string(enrichedVoice->commonToneCount),muted);
+                add(t("voice.bass")+"  "+bassLine(enrichedVoice->bassMidi),muted);
+                add(t("voice.upper")+"  "+(enrichedVoice->upperVoiceTotalMotion<=sourceVoice->upperVoiceTotalMotion?
+                    t("voice.upperSmoother"):t("voice.upperVaried")),muted);
+                if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(enrichedVoice->score,2),muted);
+            }
+            for(const auto& operation:candidate.operations) {
+                add(operation.before+" → "+operation.after,pale);
+                add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
+                    t("reason."+std::string(enrichment::techniqueName(operation.technique))),muted);
+            }
+            if(showColorHints_)colorDetails(candidateColor(candidate),true);
+        }
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);
-        if(state_.debugExpanded)add("Fingerprint: "+session::continuationFingerprint(c),muted);
-        addMelody(c.melodyCompatibility);
-        add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+
-            std::to_string(static_cast<int>(std::round(c.rankingScore))));
         std::optional<ScaleDegree> phraseStart,current;
         if(analysis_.selectedKey&&analysis_.selectedKey->key.tonic==c.key.tonic&&
            analysis_.selectedKey->key.mode==c.key.mode&&!analysis_.full.empty()) {
-            phraseStart=analysis_.full.front().degree;
-            current=analysis_.full.back().degree;
+            phraseStart=analysis_.full.front().degree;current=analysis_.full.back().degree;
         }
         const auto completion=evaluateIntentCompletion(c,phraseStart,current);
-        add(t(completionReasonKey(completion.reason)),accent);
-        const auto hint=candidateHint(c);
-        if(!hint.explanations.empty()){add(t("color.whyTitle"),accent);for(const auto& why:hint.explanations)add(why,muted);}
-        if(state_.debugExpanded)
-            add(t("inspector.completion")+"  "+fixed(completion.score,2),muted);
+        const auto hint=candidateHint(c);std::optional<color::RankReason> reason;bool promoted=false;
         if(colorPreference_!=color::Preference::Off) {
             refreshColorRanking();const auto [group,index]=*selectedCandidate_;
-            add(t("colorSort.label")+" · "+t(color::preferenceKey(colorPreference_)),accent);
-            add(t(color::rankReasonKey(colorRanks_[group].decisions[index].reason)),muted);
+            const auto& rank=colorRanks_[group];reason=rank.decisions[index].reason;
+            promoted=static_cast<std::size_t>(std::find(rank.order.begin(),rank.order.end(),index)-rank.order.begin())<index;
         }
-        Progression voiced=state_.imported.events;
-        for(const auto& event:c.continuation) {
-            ChordEvent next;next.name=event.label;next.quality=event.quality;
-            voiced.push_back(std::move(next));
-        }
-        if(const auto voice=preview::measureVoiceLeading(voiced)) {
-            add(t("voice.commonTones")+"  "+std::to_string(voice->commonToneCount)+" · "+
-                t("voice.bass")+"  "+bassLine(voice->bassMidi),muted);
-            if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(voice->score,2),muted);
-        }
-        std::vector<std::string> userNames,skeletonNames,continuationNames;
-        for(const auto& chord:state_.imported.events)userNames.push_back(chord.name);
-        for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())
-            skeletonNames.push_back(formatDegree(analysis_.full[index]));
-        for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
-        addPath(t("inspector.user"),userNames);addPath("SKELETON",skeletonNames);
-        const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
-        if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
-        addPath(t("mode.continue"),continuationNames);
-        add(t("inspector.source")+"  "+c.primaryTemplate,muted);
-        add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
-        add(t("inspector.cadence")+"  "+std::string(cadenceName(c.cadence)),muted);
-        add(t("label.style")+"  "+styleFlags(c.styles),muted);
-        add(t("inspector.rhythm")+"  "+fixed(c.subscores.rhythm,2)+"   "+t("label.style")+"  "+fixed(c.subscores.style,2),muted);
-        add(t("label.intent")+"  "+fixed(c.subscores.intent,2)+"   "+t("inspector.prior")+"  "+fixed(c.subscores.prior,2),muted);
-        add(t("inspector.support")+"  "+std::to_string(c.supportCount),muted);
-        add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):t("inspector.fallback"))+" QN",muted);
-        drawMiniTimeline(dc,c,CRect(area.left+14,y+2,area.right-14,y+27));y+=38;
-        if(match!=matches_.end())add("SKELETON "+fixed(match->subScores.skeletonHarmony,2)+
-            "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
-        std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
-        add(t("inspector.sources")+"  "+sources,muted);
-        if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
-            const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
-            const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");
-            add(user+"  ↔  "+templ,muted);
+        std::vector<std::string> path;for(const auto& chord:c.continuation)path.push_back(chord.label);
+        addPath(t("mode.continue"),path);
+        const auto explanation=explainWhy(functionalWhy(completion,state_.locale),hint,state_.locale,colorPreference_,reason,promoted);
+        for(const auto& sentence:explanation.sentences)paragraph(sentence);
+        if(state_.debugExpanded) {
+            add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);
+            addMelody(c.melodyCompatibility);
+            add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+fixed(c.rankingScore,1),muted);
+            add(t("inspector.completion")+" "+fixed(completion.score,2),muted);
+            Progression voiced=state_.imported.events;
+            for(const auto& event:c.continuation) {
+                ChordEvent next;next.name=event.label;next.quality=event.quality;
+                voiced.push_back(std::move(next));
+            }
+            if(const auto voice=preview::measureVoiceLeading(voiced)) {
+                add(t("voice.commonTones")+"  "+std::to_string(voice->commonToneCount)+" · "+
+                    t("voice.bass")+"  "+bassLine(voice->bassMidi),muted);
+                if(state_.debugExpanded)add(t("voice.score")+"  "+fixed(voice->score,2),muted);
+            }
+            std::vector<std::string> userNames,skeletonNames,continuationNames;
+            for(const auto& chord:state_.imported.events)userNames.push_back(chord.name);
+            for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())
+                skeletonNames.push_back(formatDegree(analysis_.full[index]));
+            for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
+            addPath(t("inspector.user"),userNames);addPath("SKELETON",skeletonNames);
+            const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
+            if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
+
+            add(t("inspector.source")+"  "+c.primaryTemplate,muted);
+            add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
+            add(t("inspector.cadence")+"  "+std::string(cadenceName(c.cadence)),muted);
+            add(t("label.style")+"  "+styleFlags(c.styles),muted);
+            add(t("inspector.rhythm")+"  "+fixed(c.subscores.rhythm,2)+"   "+t("label.style")+"  "+fixed(c.subscores.style,2),muted);
+            add(t("label.intent")+"  "+fixed(c.subscores.intent,2)+"   "+t("inspector.prior")+"  "+fixed(c.subscores.prior,2),muted);
+            add(t("inspector.support")+"  "+std::to_string(c.supportCount),muted);
+            add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):t("inspector.fallback"))+" QN",muted);
+            drawMiniTimeline(dc,c,CRect(area.left+14,y+2,area.right-14,y+27));y+=38;
+            if(match!=matches_.end())add("SKELETON "+fixed(match->subScores.skeletonHarmony,2)+
+                "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
+            std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
+            add(t("inspector.sources")+"  "+sources,muted);
+            if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
+                const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
+                const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");
+                add(user+"  ↔  "+templ,muted);
+            }
+            if(showColorHints_)colorDetails(candidateColor(c),false);
         }
     } else if(state_.tab==session::Tab::Library&&selectedLibrary_) {
         const auto [factory,index]=*selectedLibrary_;

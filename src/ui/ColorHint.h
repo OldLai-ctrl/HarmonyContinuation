@@ -18,19 +18,19 @@ inline ColorHint colorHint(const color::PathColor& path,session::Locale locale,b
     }
     const bool warm=*path.meanW>=1.,cool=*path.meanW<=-1.;
     out.tone=warm?ColorTone::Warm:cool?ColorTone::Cool:ColorTone::Neutral;
-    out.label=text(warm?"color.warm":cool?"color.cool":"color.balanced");
-    explain(warm?"color.whyWarm":cool?"color.whyCool":"color.whyBalanced");
-    const auto add=[&](const char* label,const char* why){out.label+=" · "+text(label);explain(why);};
-    if(path.warming)add("color.warming","color.whyWarming");
-    else if(path.cooling)add("color.cooling","color.whyCooling");
-    else if(path.tensionReleasing)add("color.release","color.whyRelease");
-    else if(path.tensionRising)add("color.rising","color.whyRising");
-    else if(path.temperatureTurn)add("color.turn","color.whyTurn");
-    else if(path.maxTs&&*path.maxTs>=8.)add("color.contrast","color.whyContrast");
-    // The last connection is reported separately from the whole-path mean/trend.
-    if(path.endingDeltaW&&*path.endingDeltaW>=1.)explain("color.whyEndingWarmer");
-    else if(path.endingDeltaW&&*path.endingDeltaW<=-1.)explain("color.whyEndingCooler");
-    if(path.tensionReleasing&&path.warming)explain("color.whyRelease");
-    explain("color.modelNote");return out;
+    out.label=text(path.warming?"color.warming":path.cooling?"color.cooling":path.temperatureTurn?"color.turn":
+        warm?"color.warm":cool?"color.cool":"color.balanced");
+    out.explanations.push_back(text(warm?"whyV2.meanWarm":cool?"whyV2.meanCool":"whyV2.meanBalanced"));
+    if(path.warming)out.explanations.push_back(text("whyV2.trendWarm"));
+    else if(path.cooling)out.explanations.push_back(text("whyV2.trendCool"));
+    else if(path.temperatureTurn)out.explanations.push_back(text("whyV2.turn"));
+    const auto add=[&](const char* label,const char* why){out.label+=" · "+text(label);out.explanations.push_back(text(why));};
+    if(path.tensionReleasing)add("color.release","whyV2.release");
+    else if(path.tensionRising)add("color.rising","whyV2.rising");
+    else if(path.maxTs&&*path.maxTs>=8.)add("color.contrast","whyV2.contrast");
+    out.explanation.clear();
+    for(const auto& part:out.explanations){if(!out.explanation.empty())out.explanation+=text("whyV2.clause");out.explanation+=part;}
+    out.explanation+=text("whyV2.period");
+    return out;
 }
 }

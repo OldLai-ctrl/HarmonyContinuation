@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-dev.7`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-dev.8`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-dev.7 Enrichment Color Guidance 已实现并通过一次 Release 编译及最小定向验证，标记 DEVELOPMENT READY。两模式共用默认关闭的偏好；Enrichment 比较原进行与完整候选，沿用目标匹配及最多移动两位的原索引展示排序。关闭恢复原位，不改变原生成、评分、改动预算、MIDI、宿主或 Schema。低音明确优先，缺失返回 Uncertain；详见 [色彩排序的 Enrichment 章节](docs/COLOR_PREFERENCE_RERANKER.md#enrichment-color-guidance--dev7)。偏好与提示开关独立，仅当前实例内保存。复用 dev.5/dev.6 证据，不打包安装器，不启动 dev.8。
+dev.8 Why? V2 + Color UI Integration 已实现，待一次 Release 编译及两个合并 UI 场景。卡片优先完整路径趋势，Why? 统一为功能、色彩、启用后的排序理由（最多三句）；既有数值/操作明细归高级详情。两模式共用菜单，色彩提示与排序状态独立；默认提示开、排序关。沿用实例内偏好，未添加跨工程保存。范围与限制见 [Why? V2](docs/WHY_V2.md)。算法、原候选及排序窗口、全部 Schema 冻结，复用 dev.5–dev.7 算法证据；真实 DAW 验收 Pending。本轮不制作安装器、不进入 v0.9 发布阶段。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -59,7 +59,7 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.7 只以本轮指定的最小验证为完成关口。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.8 只以本轮指定的最小验证为完成关口。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 
