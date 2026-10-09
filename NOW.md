@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-dev.5`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-dev.6`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-Color Analysis V1 已实现独立只读分析及两类推荐卡片提示，已完成一次 Release 构建及定向编译修复、三个数学代表案例及一个中英 UI / Why? 冒烟，标记 DEVELOPMENT READY。支持范围、未知结构与完整路径接口见 [Color Analysis V1](docs/COLOR_ANALYSIS_V1.md)。显示色彩提示默认开启，复用编辑器状态在当前插件实例内保留；暂不跨工程或插件重载保存，不升级 Schema。推荐排序、曲库、音乐 Core、宿主入口和 MIDI 协议均冻结。本轮不制作安装器，不启动 dev.6。
+dev.6 Color Preference Reranker 已实现，待一次 Release 编译及指定最小验证。只在继续发展的原候选生成后调整展示索引；默认关闭，关闭直接恢复原顺序。五种目标、固定尺度及质量窗口见 [色彩排序](docs/COLOR_PREFERENCE_RERANKER.md)。色彩提示与排序开关独立，在当前插件实例内保留，均不跨工程/插件重载保存。原候选、引擎、Enrichment 排序、曲库、宿主、MIDI 和全部 Schema 冻结。本轮不制作安装器，不启动 dev.7。dev.5 数学分析与 UI 证据直接复用。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -18,7 +18,7 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 `library/v3` 已推送到 `dcda009`，其干净提交的 `0.9.0-dev.3` 开发包及 SHA-256 已核验，记录位于 `build-installer/v3-final-output/BUILD_INFO.json` 和 `SHA256SUMS.txt`。本次仅将它集成到 `v0.9/dev` 并统一开发版本；不修改 main、不移动 v0.8.0 tag、不创建正式 Release Tag、不重新制作安装器。
 
-合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；当前进行 dev.5 附加色彩功能。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
+合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
 
@@ -49,7 +49,7 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.5 只以本轮指定的最小验证为完成关口。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.6 只以本轮指定的最小验证为完成关口。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 

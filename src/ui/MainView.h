@@ -11,6 +11,7 @@
 #include "ui/OverlayPolicy.h"
 #include "ui/EffectiveScale.h"
 #include "ui/ColorHint.h"
+#include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
@@ -31,6 +32,7 @@ public:
         double contentScroll{},timelineScroll{},inspectorScroll{};
         std::vector<std::string> pinnedEnrichmentIds;
         bool showColorHints{true};
+        color::Preference colorPreference{color::Preference::Off};
     };
     void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
     EditorUiState captureEditorUiState() const;
@@ -101,6 +103,7 @@ public:
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
     bool runColorHintSmoke(VSTGUI::CDrawContext*);
+    bool runColorSortSmoke(VSTGUI::CDrawContext*,const Progression&,const RecommendationSet&);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -109,6 +112,12 @@ private:
     HarmonicAnalysisResult analysis_;
     std::vector<MatchResult> matches_;
     RecommendationSet recommendations_;
+    color::Preference colorPreference_{color::Preference::Off};
+    bool colorRankDirty_{true};
+    std::array<color::ColorRankResult,4> colorRanks_;
+    void refreshColorRanking();
+    session::RecommendationPresentation continuationPresentation();
+    void setColorPreference(color::Preference);
     bool showColorHints_{true}; // UI session preference; no persisted schema changes.
     std::vector<color::TimedChord> colorSource_;
     std::unordered_map<std::string,color::PathColor> colorPaths_;

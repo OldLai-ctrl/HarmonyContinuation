@@ -25,6 +25,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | 宿主、窗口、生命周期与诊断 | `src/host/`、`src/plugin/`、`src/ui/EffectiveScale.h` | `docs/V0_9_HOST_ARCHITECTURE.md`、`docs/FL_STUDIO_COMPATIBILITY.md` |
 | MIDI 读取、识别、输出及拖放 | `src/midi/`、`src/io/` | `docs/V0_8_DEV2.md`、`docs/MIDI_EXPORT.md` |
 | 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md` |
+| 继续发展色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
 | 只读色彩分析、卡片提示及 Why? | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |
 | 升级进行、试听与声部进行 | `src/enrichment/`、`src/preview/` | 对应 `tests/EnrichmentTests.cpp`、`tests/VoiceLeadingMetricsTests.cpp` |
 | 状态、曲库及快照 | `src/session/`、`src/library/`、`src/snapshot/`、`src/persistence/` | `docs/LIBRARY_V3_COMPATIBILITY.md`；安装查 `docs/INSTALLER_AND_LIBRARY.md` |
