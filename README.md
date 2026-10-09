@@ -2,18 +2,18 @@
 
 把已有和弦进行变成下一段音乐，或让它本身更丰富。
 
-开发主线 `v0.9/dev` 已集成 `Factory Library 3`，源码版本为 `0.9.0-dev.8`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；[Why? V2](docs/WHY_V2.md) 用简短说明统一功能、色彩与排序依据，推荐与 MIDI 工作流保持原样。尚未发布或在 DAW 验收。以下安装教程仍对应已分发的 `0.9.0-dev.1 / Library 2` 测试包；不要用旧插件打开新版 Schema 2 用户库。
+开发主线 `v0.9/dev` 已集成 `Factory Library 3`，发布候选版本为 `0.9.0-rc.1`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；[Why? V2](docs/WHY_V2.md) 用简短说明统一功能、色彩与排序依据，推荐与 MIDI 工作流保持原样。本包供真实 DAW 人工验收，尚未正式发布；不要用旧插件打开新版 Schema 2 用户库。
 
 HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手。你可以导入和弦片段，查看和声分析，选择「继续发展」或「升级进行」，试听方案，再输出 MIDI 给自己的乐器演奏。界面默认简体中文，也可以切换 English。
 
-**当前版本：0.9.0-dev.1，面向 FL Studio 20+ 的兼容性测试版；真实 FL 验收尚未完成。** Cubase 的既有流程来自已验收的 v0.8 功能，不代表本次新包已在所有宿主实测通过。
+**当前版本：0.9.0-rc.1，供 Cubase Pro 15 / FL Studio 人工验收，二者本次验收均 Pending。** Cubase 的既有流程来自已验收的 v0.8 功能，不代表本次新包已在所有宿主实测通过。
 
 ## 1. 安装与加载
 
 ### 安装
 
 1. 使用 Windows x64 和支持 VST3 的 64 位宿主。本轮测试目标为 FL Studio 20+，也保留 Cubase 工作流。
-2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.9.0-dev.1-Setup.exe**，允许安装程序请求管理员权限。
+2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.9.0-rc.1-Setup.exe**，允许安装程序请求管理员权限。
 3. 默认插件位置为 `C:\Program Files\Common Files\VST3\HarmonyContinuation.vst3`。这是一个插件文件夹，请保留完整内容。
 4. 完整 Setup 已包含进行库和必要运行文件，首次使用无需再运行独立曲库安装器，也无需安装开发工具。安装和音乐处理均可离线进行。
 
@@ -24,7 +24,7 @@ HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手
 1. 打开 **Options → File settings → Manage plugins**，不同版本的入口可能略有不同。
 2. 启用 **Verify plugins**，点击 **Find installed plugins**。更新已有版本时，同时启用 **Rescan previously verified plugins**。
 3. 找到 **HarmonyContinuation**。当前它注册为 **Effect（效果器）**，从 Mixer 的效果器插槽加载；不要只在乐器列表查找。
-4. 打开插件，在 **更多 → 关于** 确认版本 **0.9.0-dev.1**、提交 **ac40822**。
+4. 打开插件，在 **更多 → 关于** 确认版本 **0.9.0-rc.1**，提交应与 RC 目录中的 **BUILD_INFO.json** 一致。
 
 扫描与分类步骤参考 [FL Studio 官方安装说明](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/basics_externalplugins.htm)。文件导入、试听和 MIDI 文件输出不要求设置 MIDI 端口。
 
@@ -38,7 +38,7 @@ HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手
 
 优先使用和弦音符同时开始、节奏清楚的 **.mid / .midi** 文件。支持标准 MIDI **Format 0 / 1、PPQ 时基**，不支持 SMPTE。
 
-FL 测试 ZIP 附带 **examples/pop_block.mid**：C → Am → F → G，总长度 **7 个四分音符拍**，不是四个完整小节。
+可先准备简单的 C → Am → F → G 和弦块 MIDI，使用自己的节奏。RC 安装包不附额外示例文件。
 
 ### 导入
 
@@ -52,7 +52,7 @@ FL 测试 ZIP 附带 **examples/pop_block.mid**：C → Am → F → G，总长�
 
 ### 推荐与试听
 
-点击 **继续发展**，选择一个方案，点击 **试听**；也可以切换到 **升级进行**，听对原片段的改写。
+导入后自动显示推荐；在 **继续发展** 中选择一个方案，点击 **试听**；也可以切换到 **升级进行**，听对原片段的改写。
 
 试听使用 **Windows 默认播放设备**，不经过 FL / Cubase 混音器。宿主无需播放才能试听；切换方案会替换当前声音。多个实例共享这一路试听。
 
@@ -76,6 +76,14 @@ FL 测试 ZIP 附带 **examples/pop_block.mid**：C → Am → F → G，总长�
 | 升级进行 · 进阶 | 尝试变化更明显的改写。 |
 
 某组显示「暂无高质量方案」是允许的结果，尤其是色彩组。收束只推荐一个和弦，也可能已完整完成目标。这两种情况不自动算故障。
+
+## 色彩提示与 Why? V2
+
+FULL 展示完整和弦信息，SKELETON 便于比较和声骨架。色彩提示默认开启，以细色条和文字呈现整段温度与张力趋势；Why? V2 用 1～3 句解释功能、色彩和启用后的排序理由。高级色彩详情只显示前八个位置。
+
+「色彩排序」默认关闭，两种模式共用六种选项：关闭、自动延续前段（升级时对应原进行）、逐渐温暖、逐渐偏冷、张力先升后降、先紧张最后温暖收束。仅对已有候选有限重排，关闭恢复原顺序；「显示色彩提示」独立控制显示，不会关闭排序。设置目前只在插件实例内保留，不保证跨工程重载恢复。
+
+色彩模型是创作辅助指标，不是客观情绪识别。未覆盖的结构或缺失可靠信息可能显示 Unknown / Uncertain（不足以判断），不影响原推荐。
 
 ## 4. 候选操作
 
@@ -108,7 +116,7 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 ## 6. 进行库、语言与界面
 
 - **更多 → 进行库：** 浏览内置和个人进行，按名称、标签、风格等搜索筛选，使用页码及上一页 / 下一页浏览。
-- **Library Version 2** 含 **161 条**内置进行。内置条目只读；个人条目可保存名称、标签、收藏和备注。
+- **Factory Library V3** 含 **629 条**内置进行。内置条目只读；个人条目可保存名称、标签、收藏和备注。
 - 库条目可浏览、试听和导出 MIDI。需要把库进行作为输入时，先导出 MIDI，再导入「当前进行」。
 - **更多 → English / 简体中文：** 切换语言。
 - **更多 → 界面缩放：** 选择 100% / 125% / 150%，也可以调整窗口大小。
@@ -118,7 +126,7 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 
 1. 按宿主正常方式保存工程，重新打开后核对片段、模式、设置和缩放。
 2. 更新前关闭占用插件的宿主，运行新版完整 Setup。当前更新方式是运行新包，不是联网自动下载。
-3. **HarmonyContinuation-Library-2-Setup.exe** 是独立曲库安装器，仅更新库时使用，不必替换插件。
+3. **HarmonyContinuation-Library-3-Setup.exe** 是独立曲库安装器，仅更新库时使用，不必替换插件。
 4. 从 Windows「已安装的应用」或开始菜单卸载入口卸载。
 
 更新及卸载保留个人进行库和 Factory 库历史。个人库位于 `%LOCALAPPDATA%\HarmonyContinuation\user.db`；如需备份，关闭宿主后复制该数据目录。
@@ -132,15 +140,15 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 | 拖入无反应 | 检查 Accept dropped files，或用「更多 → 导入 MIDI」。 |
 | 拖出没有音符 | 单击保存 MIDI 再导入；反馈拖动到的具体位置。 |
 | 试听听不到 | 检查 Windows 默认播放设备和音量；声音不经过宿主混音器。 |
-| 导入失败 | 先试随包示例；无有效和弦或损坏文件应保留原片段。 |
+| 导入失败 | 先试简单和弦块 MIDI；无有效和弦或损坏文件应保留原片段。 |
 | 某组没有推荐 | 可能无可靠方案，可试其他分组或输入。 |
 | 界面太小或点击错位 | 先试插件缩放，记录 Windows / FL 缩放并附截图。 |
 
-## 9. 给 FL 测试用户
+## 9. 给 RC 人工验收用户
 
-使用 ZIP 中完整 Setup 安装，按教程完成一次导入、两种模式试听和 MIDI 输出，然后按 [FL 测试清单](docs/FL_STUDIO_TEST_GUIDE.md) 保存并重开工程。示例位于 ZIP 的 examples/。
+使用 RC 目录中的完整 Setup 安装，按 [RC 六项人工清单](docs/RC_DAW_ACCEPTANCE.md) 在 Cubase Pro 15 / FL Studio 验收。记录通过、失败或未测；安装成功不代表宿主验收通过。
 
-反馈附上 **FL 完整版本、Windows 版本、插件版本、复现步骤、预期与实际结果**，以及导出的宿主诊断。MIDI 识别问题可附愿意分享的最小 MIDI 示例。
+反馈附上 **宿主完整版本、Windows 版本、插件版本、复现步骤、预期与实际结果**，以及导出的宿主诊断。MIDI 识别问题可附愿意分享的最小 MIDI 示例。
 
 ## 当前边界与开发资料
 
@@ -149,6 +157,6 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 - 不提供音频和弦识别、实时键盘录入、私有 Piano Roll / Playlist 格式解析或完整歌曲生成。
 - 真实 FL 扫描、文件拖放、缩放、Detached、工程恢复和播放位置仍待验收。标准测试宿主通过不能替代 FL 实测。
 - [FL 兼容状态与中英文说明](docs/FL_STUDIO_COMPATIBILITY.md)
-- [0.9.0-dev.1 更新说明](docs/V0_9_RELEASE_NOTES.md)
+- [0.9.0-rc.1 更新说明](docs/V0_9_RELEASE_NOTES.md)
 
 源码使用 C++20、CMake、MSVC x64、Steinberg VST3 SDK 3.8.1、VSTGUI 和 SQLite。源码不含 Steinberg SDK；普通测试用户只需 Setup。

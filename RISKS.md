@@ -8,7 +8,7 @@
 
 ## R02 真实宿主仍待验收
 
-触发：宣称 FL 兼容、推进 RC/正式版、修改窗口/拖放/恢复行为。当前待验收状态由 [NOW.md](NOW.md#待验收与下一步) 维护，具体项目见 `docs/FL_STUDIO_COMPATIBILITY.md`。SDK 测试不能证明真实 FL 行为；无可访问真机记录的结论标为待核实。
+触发：宣称 FL 兼容、推进 RC/正式版、修改窗口/拖放/恢复行为。当前待验收状态由 [NOW.md](NOW.md#当前任务) 维护，RC 的 Cubase Pro 15 / FL Studio 六项人工检查见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)，两者当前 Pending；旧兼容说明见 `docs/FL_STUDIO_COMPATIBILITY.md`。SDK 测试不能证明真实 FL 行为；无可访问真机记录的结论标为待核实。
 
 ## R03 安装与持久数据
 

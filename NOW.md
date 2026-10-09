@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-dev.8`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-rc.1`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-dev.8 Why? V2 + Color UI Integration 已实现，一次 Release 编译及两个合并 UI 场景通过，标记 DEVELOPMENT READY。卡片优先完整路径趋势，Why? 统一为功能、色彩、启用后的排序理由（最多三句）；既有数值/操作明细归高级详情。两模式共用菜单，色彩提示与排序状态独立；默认提示开、排序关。沿用实例内偏好，未添加跨工程保存。范围与限制见 [Why? V2](docs/WHY_V2.md)。算法、原候选及排序窗口、全部 Schema 冻结，复用 dev.5–dev.7 算法证据；真实 DAW 验收 Pending。本轮不制作安装器、不进入 v0.9 发布阶段。
+rc.1 功能冻结与安装包整合：从 dev.8 基线 `f48a6366095921eb35e10397ae65e799edfe2a1b` 准备 `0.9.0-rc.1`。仅修改版本、安装前说明和文档，算法、Factory V3、MIDI、宿主及 Schema 不变。复用原安装器工程，计划只构建一次 Release、生成一次包并检查关键文件/依赖；不执行安装生命周期或历史测试。构建完成后在下方记录实际证据，真实 Cubase Pro 15 / FL Studio 人工验收 Pending；[六项清单](docs/RC_DAW_ACCEPTANCE.md) 已备好。非正式发布，不合并 main 或创建 Tag。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -65,8 +65,8 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。dev.8 只以本轮指定的最小验证为完成关口。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.1 只以本轮指定的构建/打包文件检查为完成关口。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 
-人工逐条试听和真实 Cubase/FL 验收仍未执行。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或安装回归。最小验证及推送完成后停止。
+人工逐条试听和真实 Cubase/FL 验收仍未执行。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或安装回归。RC 打包及推送完成后停止，等待人工 DAW 结果。

@@ -11,6 +11,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | 当前需要 | 首选位置 | 搜索词示例 |
 | --- | --- | --- |
 | 接续进度、待验收、安排下一步 | [NOW.md](NOW.md) 的对应章节 | `当前任务`、`待验收`、`证据` |
+| RC 说明与六项真实 DAW 人工验收 | [版本记录](docs/V0_9_RELEASE_NOTES.md)、[人工清单](docs/RC_DAW_ACCEPTANCE.md) | `rc.1`、`Pending` |
 | 冻结 Factory V3 的内容覆盖 | [LIBRARY_V3_SUMMARY.md](LIBRARY_V3_SUMMARY.md) | `Total`、`Major`、`Missing Metadata` |
 | 设备路径、分支、产物及同步边界 | [MAP.md](MAP.md) | `本机`、`同步`、`构建` |
 | 构建、运行、局部测试、安装、交付 | [RUNBOOK.md](RUNBOOK.md) | `构建`、`验收`、`交付` |
