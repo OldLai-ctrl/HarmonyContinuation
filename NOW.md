@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-dev.7 Enrichment Color Guidance 已实现，待一次 Release 编译及一个合并定向冒烟。两模式共用默认关闭的偏好；Enrichment 比较原进行与完整候选，沿用目标匹配及最多移动两位的原索引展示排序。关闭恢复原位，不改变原生成、评分、改动预算、MIDI、宿主或 Schema。低音明确优先，缺失返回 Uncertain；详见 [色彩排序的 Enrichment 章节](docs/COLOR_PREFERENCE_RERANKER.md#enrichment-color-guidance--dev7)。偏好与提示开关独立，仅当前实例内保存。复用 dev.5/dev.6 证据，不打包安装器，不启动 dev.8。
+dev.7 Enrichment Color Guidance 已实现并通过一次 Release 编译及最小定向验证，标记 DEVELOPMENT READY。两模式共用默认关闭的偏好；Enrichment 比较原进行与完整候选，沿用目标匹配及最多移动两位的原索引展示排序。关闭恢复原位，不改变原生成、评分、改动预算、MIDI、宿主或 Schema。低音明确优先，缺失返回 Uncertain；详见 [色彩排序的 Enrichment 章节](docs/COLOR_PREFERENCE_RERANKER.md#enrichment-color-guidance--dev7)。偏好与提示开关独立，仅当前实例内保存。复用 dev.5/dev.6 证据，不打包安装器，不启动 dev.8。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,12 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 dev.7：生产提交 `fe6be3783b4246cb1d97ba0ef9af2b8c6f9f29c4` 的干净源码一次 MSVC Release 编译通过，目标仅插件和 `EnrichmentColorSmoke`，Validator 关闭，沿用 `_CL_=/Z7`。插件产物为 `0.9.0-dev.7 / Release / fe6be37`，moduleinfo 版本一致。后续仅调整测试 fixture 和验证记录，未改生产代码、未重编整个项目。
+
+合并冒烟覆盖一个完整 Enrichment 张力弧目标、关闭恢复及重排后卡片/Why/Preview/MIDI payload/比较/快照身份；首次四位置 fixture 未换位，保留生产门槛，调整同一示例后身份与恢复通过。随后修正 fixture 的原进行和真实两次扩展音操作对应关系，其声部评价损失超过 0.02，正确保留原位；扩展该单一示例的共同位置以满足同一声部质量门槛后，只使用 `--target-only` 重验目标，排序及显式转位/缺失低音断言通过。没有放宽生产资格或改变色彩权重，已通过的身份与恢复项不重复运行。证据为 `build-v3-plugin/dev7-color-configure.log`、`dev7-color-build.log`、`dev7-color-smoke.log`、`dev7-color-smoke-fix.log`、`dev7-color-target-final.log`；定向工具增量编译日志为 `dev7-color-smoke-build-fix.log`。身份检查使用模拟 payload 观察候选对象，不代表实际 MIDI 导出或 DAW 听感验收。
+
+复用 dev.5/dev.6 证据，未跑 CTest、Validator、音乐基准、完整 Host Harness、MIDI 套件、安装或性能测试，未制作安装包。所有要求通过后停止，不启动 dev.8。限制：原时值不完整、低音缺失、模型 Unknown/Uncertain 或声部标签与明确低音不一致时不参与重排；质量窗口保守可能不换位，暖收束还需原功能分析支持。偏好仍仅实例内保存；最终 MIDI 配音与真实 DAW 听感未验收。Factory V3、生成/评分/音乐预算、宿主/MIDI 及全部 Schema 未改。功能及后续工具/证据提交一同推送 `v0.9/dev`，同步状态以 tracking ref 为准。
 
 2026-10-09 dev.6：生产功能提交 `0ab87b8d6a50357bfd522705797d78a008cd11dd` 的干净源码一次 MSVC Release 编译通过（沿用 `_CL_=/Z7`），目标仅插件和 `ColorPreferenceSmoke`，Validator 关闭。产物版本 `0.9.0-dev.6 / Release / 0ab87b8`，moduleinfo 版本一致；后续仅提交此验证记录，未更改生产源码。直接运行一次最小冒烟：关闭时原候选身份/顺序保持、一个完整张力弧目标在同质量窗口前移且低质量候选不越级、Unknown/Uncertain 固定位置、短前段自动模式回退、关闭恢复原顺序，全部通过。同一代表场景离屏绘制工具栏/卡片/Why? 中英文字，并验证提示开关独立、实例内偏好恢复、原索引选择不变和未发送重生成回调。证据在 `build-v3-plugin/dev6-color-configure.log`、`dev6-color-build.log`、`dev6-color-smoke.log`。复用 dev.5 分析证据，没有重跑旧检查、CTest、Validator、音乐基准、宿主矩阵、MIDI、安装或性能测试，未制作安装包。通过后停止，不启动 dev.7。
 
