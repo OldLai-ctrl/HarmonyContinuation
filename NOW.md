@@ -16,9 +16,11 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 `library/v3` 已推送到 `dcda009`，其干净提交的 `0.9.0-dev.3` 开发包及 SHA-256 已核验，记录位于 `build-installer/v3-final-output/BUILD_INFO.json` 和 `SHA256SUMS.txt`。本次仅将它集成到 `v0.9/dev` 并统一开发版本；不修改 main、不移动 v0.8.0 tag、不创建正式 Release Tag、不重新制作安装器。
 
-集成验证待执行：一次 MSVC Release 编译，一个 Factory V3 加载/推荐案例、一个隔离 Schema 1 User Library 恢复案例。宿主入口未改，Generic Host 检查不触发。完成后提交证据并推送 `v0.9/dev`，本阶段停止；只为 Color Analysis V1 准备基线，不开始该功能。
+合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。本次只准备基线，不开始该功能。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 主线集成：`0.9.0-dev.4 / 32a0d64 / Release` 一次编译通过，复用本机 `_CL_=/Z7` 构建方式，Validator 关闭。直接运行 `FactoryCatalogTests --smoke-one`，仅 `V3_DUSK_001` 加载→推荐→MIDI 通过；`LibraryCompatibilityTests user-smoke` 仅一个隔离 Schema 1 用户库恢复案例通过，名称、备注、标签、收藏及进行条数保留，未触发迁移、未访问生产 user.db。宿主连接入口未改，Generic Host 检查跳过。未重审 629 条内容或六个旧 ID 合并，未运行历史测试套件、基准或安装检查，未制作 dev.4 安装器。原始结果为 `build-v3-plugin/v09-integration-build.log`、`v09-integration-factory-smoke.log`、`v09-integration-user-smoke.log`。通过后停止测试。
 
 以下为已完成 Library V3 的历史证据，本次集成不重复执行。
 
