@@ -18,7 +18,9 @@ Factory Schema 2、Continuation 3、Enrichment 2 从此冻结。批量扩库期�
 
 映射唯一权威源是 [LegacyFactoryIdResolver.h](../src/library/LegacyFactoryIdResolver.h)。六个 legacy ID 直接指向最终 canonical ID；编译期拒绝链、环和重复源，V3 数据编译及读取拒绝缺失目标和 legacy duplicate row。
 
-`resolveFactoryId()` 先查 active entries 的原 ID，缺失才重定向。因此 Library 2 保持原 ID，Library 3 生产 DB 只含 155 条 canonical 记录。编译 V3 时只去除这六条重复音乐记录，旧名称进入目标条目的 aliases，不批量增库，也不修改原始 Factory JSON。
+`resolveFactoryId()` 先查 active entries 的原 ID，缺失才重定向。因此 Library 2 保持原 ID，Library 3 保留 155 条 canonical 历史记录，再加入独立的 [V3 新内容](../data/factory-v3/README.md)。编译 V3 时合并六条历史重复记录：styles 取并集、对应权重取最大值；保留 canonical 主意图，其他意图进入已有 secondaryIntents；techniques、搜索标签、aliases 取并集，旧 ID 和中英文名称加入 aliases，loopable 取并集。不修改原始 Factory JSON，也不改变 ID 契约。`ROCK_001 → COMMON_MAJOR_020` 的 Rock 与 Loop 因此仍可用于过滤和搜索。
+
+整个生产库统一使用 `canonicalMusicalFingerprint()`：保留调式、拍号、音级、quality、secondary target、borrowed role、bass/inversion、有效扩展音及精确相对 QN 时值；忽略名称、风格、意图、标签、别名、复杂度、骨架及编辑权重。同一音乐只保留一个条目并合并上述元数据；实际音乐差异可以保留。此函数只用于库内容去重，不改变 Matcher 或推荐算法。
 
 引用审计入口：
 
@@ -60,4 +62,4 @@ Factory Schema 2 在已有 payload 中增加 `typedData` JSON 字符串，保存
 
 18 类用户和弦包括 Major triad、第一/第二转位、七和弦第三转位、非和弦低音、maj7/m7/7/6/m6/9/maj9/m9/dim7/m7b5/sus、借用和弦转位、次属和弦转位；保存后关闭重开，比较完整内容、试听音高结构及 MIDI 字节。历史音乐测试继续显式使用 Library 2 fixture，不把删除重复记录后的 V3 内容误作旧语料。
 
-本轮不跑全 CTest、42 例续写、30 例升级、FL Host Harness，不安装到宿主扫描目录，不宣称 Cubase/FL 真机验收或发布。纯字段传递涉及 Core 数据结构和 realization；分析、匹配成本、排序、声部权重及 Host/FL 实现保持基线。
+兼容桥阶段不跑全 CTest、42 例续写、30 例升级、FL Host Harness，不安装到宿主扫描目录，不宣称 Cubase/FL 真机验收或发布。纯字段传递涉及 Core 数据结构和 realization；分析、匹配成本、排序、声部权重及 Host/FL 实现保持基线。后续扩库的集中验收使用 [FactoryCatalogTests](../tests/FactoryCatalogTests.cpp)；已执行范围只在 NOW 记录。

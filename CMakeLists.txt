@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.9.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.2" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRERELEASE "dev.3" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -260,11 +260,16 @@ target_link_libraries(recommend_cli PRIVATE harmony_library)
 add_executable(recommend_bench tools/recommend_bench.cpp)
 target_link_libraries(recommend_bench PRIVATE harmony_library)
 file(GLOB HC_FACTORY_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory/*.json")
+file(GLOB HC_FACTORY_V3_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3/*.json")
 set(HC_FACTORY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory.db")
 set(HC_FACTORY_LIBRARY_VERSION 3 CACHE STRING "Factory content version; 2 retains historical rows")
+set(HC_FACTORY_ADDITIONS)
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
+    list(APPEND HC_FACTORY_ADDITIONS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3")
+endif()
 add_custom_command(OUTPUT "${HC_FACTORY_DB}"
-    COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_DB}" "${HC_FACTORY_LIBRARY_VERSION}"
-    DEPENDS db_compiler ${HC_FACTORY_JSON}
+    COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_DB}" "${HC_FACTORY_LIBRARY_VERSION}" ${HC_FACTORY_ADDITIONS}
+    DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 set(HC_FACTORY_LEGACY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v2.db")
@@ -338,6 +343,14 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
+    add_executable(FactoryCatalogTests tests/FactoryCatalogTests.cpp)
+    target_link_libraries(FactoryCatalogTests PRIVATE harmony_library harmony_midi)
+    target_compile_definitions(FactoryCatalogTests PRIVATE
+        HC_FACTORY_DB_PATH="${HC_FACTORY_DB}" HC_FACTORY_V2_PATH="${HC_FACTORY_LEGACY_DB}")
+    add_dependencies(FactoryCatalogTests factory_database factory_legacy_database)
+    add_test(NAME FactoryV3Catalog COMMAND FactoryCatalogTests)
+    endif()
     add_executable(LibraryCompatibilityTests tests/LibraryCompatibilityTests.cpp)
     target_link_libraries(LibraryCompatibilityTests PRIVATE harmony_snapshot harmony_product)
     target_compile_definitions(LibraryCompatibilityTests PRIVATE HC_FACTORY_SOURCE="${CMAKE_CURRENT_SOURCE_DIR}/data/factory")

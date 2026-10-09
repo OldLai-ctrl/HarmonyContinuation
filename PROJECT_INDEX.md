@@ -4,13 +4,14 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-当前开发分支为 `library/v3`，来源是 GitHub 的 `v0.9/dev`。正在交付 Factory V3 兼容桥：旧 ID、快照恢复及用户库的完整和弦保存。音乐算法和宿主适配保持来源版本；尚未批量扩库。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。版本、提交及实际构建以当前 checkout 和产物为准，不能凭目录名推断。
+当前开发分支为 `library/v3`，来源是 GitHub 的 `v0.9/dev`。兼容桥之后推进 Factory V3 内容扩充；新增数据位于 `data/factory-v3/`，历史 Library 2 数据保留。音乐算法和宿主适配保持来源版本。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。版本、提交及实际构建以当前 checkout 和产物为准，不能凭目录名推断。
 
 ## 按任务定位
 
 | 当前需要 | 首选位置 | 搜索词示例 |
 | --- | --- | --- |
 | 接续进度、待验收、安排下一步 | [NOW.md](NOW.md) 的对应章节 | `当前任务`、`待验收`、`证据` |
+| 冻结 Factory V3 的内容覆盖 | [LIBRARY_V3_SUMMARY.md](LIBRARY_V3_SUMMARY.md) | `Total`、`Major`、`Missing Metadata` |
 | 设备路径、分支、产物及同步边界 | [MAP.md](MAP.md) | `本机`、`同步`、`构建` |
 | 构建、运行、局部测试、安装、交付 | [RUNBOOK.md](RUNBOOK.md) | `构建`、`验收`、`交付` |
 | 设计取舍或已有约束冲突 | [DECISIONS.md](DECISIONS.md) | 决策 ID、模块名 |

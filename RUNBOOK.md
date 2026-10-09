@@ -18,13 +18,15 @@ cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PR
 cmake --build build-v09 --config Release -j 6
 ```
 
-多配置构建使 `tools/build-installer.ps1` 预期的 `Release/library_manager.exe` 与 `VST3/Release/` 路径一致。若采用单配置 Ninja，先核对打包脚本路径，不能盲用上述交付步骤。子进程无法读 Git 时可传当前 `git rev-parse --short=7 HEAD` 到 `HC_GIT_COMMIT_OVERRIDE`；不能沿用旧覆盖值。验证生成的 `ProductVersionGenerated.h` 与 `moduleinfo.json`；构建后置 Validator 结果也要记录，避免重复运行。
+多配置构建使用 `Release/library_manager.exe`；`tools/build-installer.ps1` 也支持元数据为 Release 的单配置 Ninja 根目录 `library_manager.exe`，VST3 bundle 仍在 `VST3/Release/`。子进程无法读 Git 时可传当前 `git rev-parse --short=7 HEAD` 到 `HC_GIT_COMMIT_OVERRIDE`；不能沿用旧覆盖值。验证生成的 `ProductVersionGenerated.h` 与 `moduleinfo.json`；构建后置 Validator 结果也要记录，避免重复运行。
 
 ## 局部自动验收
 
 前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：
 
 Factory V3 兼容桥只构建 `LibraryCompatibilityTests`，运行 `ctest --test-dir <build> -R '^LibraryV3_' --output-on-failure`。Library 2/3 数据 fixture 和 user.db 均在该测试独有的临时目录内创建、关闭、重新打开及清理，不读生产用户目录。具体格式、降级和测试边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。新生产 DB 目标 `factory_database` 默认 Library 3；`factory_legacy_database` 只用于历史 Library 2 测试。
+
+V3 收口只运行一次已有编译器：`db_compiler data/factory <build>/factory.db 3 data/factory-v3 LIBRARY_V3_SUMMARY.md`。它校验字段、和弦、统一音乐去重、元数据合并和 DB 读回，并输出短统计；不要另跑相同 lint。必要的新增内容冒烟运行 `FactoryCatalogTests --smoke`，仅两条代表案例走加载→推荐→MIDI；低音/转位/扩展音路径未改时复用已有 18 类证据。此前全新增内容消费者检查已通过，不因入口存在而重跑 `FactoryV3Catalog`、兼容桥四组或音乐基准。失败只修复受影响内容，再按当前任务授权校验。
 
 ```powershell
 ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGeneric|HostContractCubase|EditorHostSmoke)$' --output-on-failure
@@ -41,6 +43,8 @@ MIDI 选 MidiImport / MidiProfile，状态/库选 Productization / LibraryStore�
 前置：已确认的 Release 构建、Inno Setup 6.7+、可分发的 MSVC x64 CRT、有效 factory.db。搜索并读取 `tools/build-installer.ps1` 的参数段，再显式传 `-BuildDirectory build-v09 -Iscc <本机ISCC> -RuntimeDirectory <本机CRT>`；脚本默认 build-v08，不能直接沿用。库单独更新使用 `-LibraryOnly -FactoryDatabase <已验证DB>`。
 
 安装逻辑变动时按 `tools/test-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
+
+V3 已有 `test-v3-installer.ps1` 的一次隔离生命周期、9 项通过结果。安装器逻辑未改时直接复用，不重复安装/卸载。本次从已提交且干净的源码构建一次 Release，关闭构建附带 Validator，清除旧 Git override；生成完整包、Library 3 包及 `SHA256SUMS.txt`，一次确认插件、打包 DB 的 Library 3 / Schema 2、版本、Git 标识与校验和。成功后停止，不自动进入完整回归。完整提交及产物证据随包记录在 `BUILD_INFO.json`。
 
 ## 交付与同步
 

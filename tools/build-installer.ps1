@@ -29,11 +29,17 @@ if (!$RuntimeDirectory -or !(Test-Path -LiteralPath (Join-Path $RuntimeDirectory
 }
 if (!$FactoryDatabase) { $FactoryDatabase = Join-Path $buildPath 'factory.db' }
 $FactoryDatabase = Absolute $FactoryDatabase
+$header = Get-Content -LiteralPath (Join-Path $buildPath 'generated/ProductVersionGenerated.h') -Raw
 $manager = Join-Path $buildPath 'Release/library_manager.exe'
+if (!(Test-Path -LiteralPath $manager)) {
+    if ($header -notmatch 'HC_PRODUCT_BUILD_TYPE\s+"Release"') {
+        throw '单配置安装包必须来自 Release 构建。'
+    }
+    $manager = Join-Path $buildPath 'library_manager.exe'
+}
 $info = & $manager inspect $FactoryDatabase
 if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw '进行库检查失败。' }
 $libraryVersion = $Matches[1]
-$header = Get-Content -LiteralPath (Join-Path $buildPath 'generated/ProductVersionGenerated.h') -Raw
 if ($header -notmatch 'HC_PRODUCT_VERSION\s+"([^"]+)"') { throw '无法读取产品版本。' }
 $productVersion = $Matches[1]
 $stage = Join-Path $outputPath ('stage-' + $libraryVersion)
@@ -67,8 +73,12 @@ if (!$LibraryOnly) {
 }
 $setups = @($librarySetup)
 if (!$LibraryOnly) { $setups += Join-Path $outputPath "HarmonyContinuation-$productVersion-Setup$suffix.exe" }
+$checksums = @()
 foreach ($setup in $setups) {
     $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-    [IO.File]::WriteAllText($setup+'.sha256', $hash+'  '+[IO.Path]::GetFileName($setup)+"`n",[Text.UTF8Encoding]::new($false))
+    $line = $hash+'  '+[IO.Path]::GetFileName($setup)
+    $checksums += $line
+    [IO.File]::WriteAllText($setup+'.sha256', $line+"`n",[Text.UTF8Encoding]::new($false))
     Write-Host "已生成：$setup"
 }
+[IO.File]::WriteAllText((Join-Path $outputPath 'SHA256SUMS.txt'), ($checksums -join "`n")+"`n",[Text.UTF8Encoding]::new($false))

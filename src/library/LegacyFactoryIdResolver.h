@@ -30,6 +30,9 @@ struct FactoryReference {
 };
 FactoryReference resolveFactoryId(std::string_view,std::span<const ProgressionTemplate>);
 bool validateFactoryRedirectTargets(std::span<const ProgressionTemplate>,std::string& error);
+// Content identity only: never use the matcher's ranking fingerprint for dedup.
+std::string canonicalMusicalFingerprint(const ProgressionTemplate&);
+void mergeFactoryMetadata(ProgressionTemplate& target,const ProgressionTemplate& source);
 std::vector<ProgressionTemplate> canonicalFactoryEntries(std::vector<ProgressionTemplate>);
 std::string resolveFingerprint(std::string_view,int libraryVersion);
 } // namespace harmony::library
