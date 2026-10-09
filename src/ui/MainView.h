@@ -10,6 +10,7 @@
 #include "ui/ScrollableCandidateList.h"
 #include "ui/OverlayPolicy.h"
 #include "ui/EffectiveScale.h"
+#include "ui/ColorHint.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
@@ -17,6 +18,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace VSTGUI { class CTextEdit; }
 namespace harmony::ui {
@@ -28,6 +30,7 @@ public:
         std::array<double,4> continuationScroll{};std::array<double,3> enrichmentScroll{};
         double contentScroll{},timelineScroll{},inspectorScroll{};
         std::vector<std::string> pinnedEnrichmentIds;
+        bool showColorHints{true};
     };
     void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
     EditorUiState captureEditorUiState() const;
@@ -97,6 +100,7 @@ public:
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
+    bool runColorHintSmoke(VSTGUI::CDrawContext*);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -105,6 +109,14 @@ private:
     HarmonicAnalysisResult analysis_;
     std::vector<MatchResult> matches_;
     RecommendationSet recommendations_;
+    bool showColorHints_{true}; // UI session preference; no persisted schema changes.
+    std::vector<color::TimedChord> colorSource_;
+    std::unordered_map<std::string,color::PathColor> colorPaths_;
+    const color::PathColor& candidateColor(const ContinuationCandidate&);
+    const color::PathColor& candidateColor(const enrichment::EnrichmentCandidate&);
+    ColorHint candidateHint(const ContinuationCandidate& c) {return showColorHints_?colorHint(candidateColor(c),state_.locale):ColorHint{};}
+    ColorHint candidateHint(const enrichment::EnrichmentCandidate& c) {return showColorHints_?colorHint(candidateColor(c),state_.locale):ColorHint{};}
+    void drawColorHint(VSTGUI::CDrawContext*,const ColorHint&,VSTGUI::CRect);
     enrichment::EnrichmentResult enrichments_;
     std::vector<ContinuationCandidate> pinnedSnapshots_;
     std::vector<std::string> pinnedEnrichmentIds_;

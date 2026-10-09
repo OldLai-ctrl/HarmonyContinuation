@@ -14,15 +14,17 @@
 # 先配置本机已核实的 SDK 环境变量；缺失时停止配置。
 $hcSdk = $env:VST3_SDK_ROOT
 if ([string]::IsNullOrWhiteSpace($hcSdk)) { throw 'VST3_SDK_ROOT 待配置并核实' }
-cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE=dev.4 -DSMTG_RUN_VST_VALIDATOR=OFF
-cmake --build build-v09 --config Release -j 6
+cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE=dev.5 -DSMTG_RUN_VST_VALIDATOR=OFF
+cmake --build build-v09 --config Release --target HarmonyContinuation HarmonyColorSmoke -j 6
 ```
 
 多配置构建使用 `Release/library_manager.exe`；`tools/build-installer.ps1` 也支持元数据为 Release 的单配置 Ninja 根目录 `library_manager.exe`，VST3 bundle 仍在 `VST3/Release/`。子进程无法读 Git 时可传当前 `git rev-parse --short=7 HEAD` 到 `HC_GIT_COMMIT_OVERRIDE`；不能沿用旧覆盖值。验证生成的 `ProductVersionGenerated.h` 与 `moduleinfo.json`；构建后置 Validator 结果也要记录，避免重复运行。
 
 ## 局部自动验收
 
-当前 v0.9 主线集成只编译一次 Release，显式构建插件及 `FactoryCatalogTests`、`LibraryCompatibilityTests`，直接运行 `FactoryCatalogTests --smoke-one`（一例 Factory V3 加载/推荐）和 `LibraryCompatibilityTests user-smoke`（一个隔离旧 Schema 1 用户库恢复案例）。只在实际改动宿主连接入口时增加一次 Generic Host 加载；不因下面历史入口存在而执行它们。全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归。通过即停止，本次不重做安装包或安装验证。
+dev.5 只构建一次 Release 的 `HarmonyContinuation` 和 `HarmonyColorSmoke`，直接运行 `HarmonyColorSmoke.exe`：三个色彩代表案例加一个中英 UI / Why? / 开关冒烟。该入口不注册 CTest，不触发历史套件；通过即停止。详见 [Color Analysis V1](docs/COLOR_ANALYSIS_V1.md)。
+
+以下 dev.4 主线集成步骤为历史入口，本轮不执行：只编译一次 Release，显式构建插件及 `FactoryCatalogTests`、`LibraryCompatibilityTests`，直接运行 `FactoryCatalogTests --smoke-one`（一例 Factory V3 加载/推荐）和 `LibraryCompatibilityTests user-smoke`（一个隔离旧 Schema 1 用户库恢复案例）。只在实际改动宿主连接入口时增加一次 Generic Host 加载；不因下面历史入口存在而执行它们。全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归。通过即停止，本次不重做安装包或安装验证。
 
 前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：
 

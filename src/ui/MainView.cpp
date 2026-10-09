@@ -437,9 +437,10 @@ MainView::EditorUiState MainView::captureEditorUiState() const {
     if(const auto* c=selectedEnrichment()){out.enrichmentId=c->id;out.enrichmentFingerprint=c->fingerprint;}
     out.chord=selectedChord_;out.continuationScroll=continuationScroll_;out.enrichmentScroll=enrichmentScroll_;
     out.contentScroll=contentScroll_;out.timelineScroll=timelineScroll_;out.inspectorScroll=inspectorScroll_;
-    out.pinnedEnrichmentIds=pinnedEnrichmentIds_;return out;
+    out.pinnedEnrichmentIds=pinnedEnrichmentIds_;out.showColorHints=showColorHints_;return out;
 }
 void MainView::restoreEditorUiState(const EditorUiState& s){
+    showColorHints_=s.showColorHints;
     if(s.chord&&*s.chord<state_.imported.events.size())selectedChord_=s.chord;
     for(std::size_t g=0;g<recommendations_.groups.size();++g)for(std::size_t i=0;i<recommendations_.groups[g].size();++i){
         const auto& c=recommendations_.groups[g][i];if(c.id==s.continuationId&&session::continuationFingerprint(c)==s.continuationFingerprint)selectedCandidate_={{g,i}};
@@ -461,6 +462,7 @@ void MainView::setSessionState(const session::PluginSessionState& s) {
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
     const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
     state_=s;
+    if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();}
     if(zoomChanged)resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
     if (timelineChanged) {
         pinnedSnapshots_.clear(); pinnedEnrichmentIds_.clear(); selectedChord_.reset();
@@ -477,6 +479,7 @@ void MainView::setHostText(std::string s, std::string snapshot) {
 void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     if (state_.imported.revision==s.revision && state_.imported.events.size()==s.events.size()) return;
     state_.imported=s; selectedChord_.reset(); selectedCandidate_.reset();
+    colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();
     selectedEnrichment_.reset(); pinnedEnrichmentIds_.clear(); rebuildTimeline();
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
@@ -486,6 +489,7 @@ void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
     recommendations_=r;
+    colorPaths_.clear();
     continuationScroll_.fill(0.);
     if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
         session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
@@ -507,6 +511,7 @@ void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
     const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
     enrichments_=value;
+    colorPaths_.clear();
     if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected || selectedEnrichment()->fingerprint!=oldFingerprint))
         selectedEnrichment_.reset();
     std::erase_if(pinnedEnrichmentIds_,[&](const std::string& id) { return !findEnrichment(id); });
@@ -514,6 +519,53 @@ void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
 }
 void MainView::setPreviewPosition(std::string id,double qn,double totalQN) {
     previewCandidateId_=std::move(id); previewQN_=qn; previewTotalQN_=totalQN; invalid();
+}
+const color::PathColor& MainView::candidateColor(const ContinuationCandidate& candidate) {
+    const auto key="c:"+session::continuationFingerprint(candidate);
+    if(const auto found=colorPaths_.find(key);found!=colorPaths_.end())return found->second;
+    return colorPaths_.emplace(key,color::HarmonyColorAnalyzer::analyzeContinuation(colorSource_,candidate)).first->second;
+}
+const color::PathColor& MainView::candidateColor(const enrichment::EnrichmentCandidate& candidate) {
+    const auto key="e:"+candidate.id+":"+candidate.fingerprint;
+    if(const auto found=colorPaths_.find(key);found!=colorPaths_.end())return found->second;
+    return colorPaths_.emplace(key,color::HarmonyColorAnalyzer::analyzePath(
+        color::HarmonyColorAnalyzer::prepare(candidate.progression))).first->second;
+}
+void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) {
+    if(hint.label.empty())return;
+    const auto tone=hint.tone==ColorTone::Warm?CColor(224,187,104,255):
+        hint.tone==ColorTone::Cool?CColor(103,188,215,255):muted;
+    box(dc,CRect(rect.left,rect.top+3,rect.left+2,rect.bottom-3),tone);
+    rect.left+=7;line(dc,hint.label,rect,tone);
+}
+bool MainView::runColorHintSmoke(CDrawContext* dc) {
+    session::PluginSessionState state;
+    ChordEvent chord;chord.name="Cmaj7";chord.quality=ChordQuality::Major7;
+    chord.root=PitchClass::C;chord.bass=PitchClass::C;chord.durationQN=4.;chord.openEnded=false;
+    if(!state.imported.replace({chord},TimelineCoordinateMode::RelativeToSelection))return false;
+    state.factoryLibraryVersion=3;setSessionState(state);
+    ContinuationCandidate candidate;candidate.id="color-smoke";candidate.primaryTemplate="COMMON_MAJOR_020";
+    candidate.key={PitchClass::C,Mode::Major};candidate.intent=PhraseIntent::Resolve;candidate.rankingScore=90;
+    ConcreteChordEvent next;next.label="C";next.quality=ChordQuality::Major;next.durationQN=4.;
+    candidate.continuation.push_back(next);
+    RecommendationSet result;result.groups[0].push_back(candidate);setRecommendations(result);
+    selectedCandidate_={{0,0}};refreshLayout();
+    const auto identity=session::continuationFingerprint(recommendations_.groups[0].front());
+    for(const auto locale:{session::Locale::ZhCN,session::Locale::EnUS}) {
+        state_.locale=locale;showColorHints_=true;
+        const auto shown=candidateHint(candidate);
+        if(shown.tone!=ColorTone::Warm||shown.explanations.size()<2||!candidateColor(candidate).tensionReleasing)return false;
+        const auto functional=evaluateIntentCompletion(candidate,{},{}).reason;
+        dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw(); // Card and selected Why? inspector.
+        const auto serialized=session::serialize(state_);showColorHints_=false;
+        const auto hidden=candidateHint(candidate);
+        if(!hidden.label.empty()||!hidden.explanations.empty())return false;
+        dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+        if(serialized!=session::serialize(state_)||identity!=session::continuationFingerprint(recommendations_.groups[0].front())||
+           functional!=evaluateIntentCompletion(candidate,{},{}).reason)return false;
+    }
+    const auto saved=captureEditorUiState();showColorHints_=true;restoreEditorUiState(saved);
+    return !showColorHints_&&selectedCandidate()!=nullptr;
 }
 void MainView::setSnapshotMode(bool enabled) {
     visibility_.absoluteMinimumScore=enabled?0.f:60.f;
@@ -737,7 +789,9 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
             std::string intent=tIntent(c.intent);
             if(state_.imported.events.back().openEnded&&c.suggestedCurrentChordDurationQN)
                 intent+=" · OPEN "+fixed(*c.suggestedCurrentChordDurationQN)+" QN";
-            line(dc,intent,viewRect(geometry.intent),muted);
+            auto hint=candidateHint(c);
+            if(!hint.label.empty()){hint.label=intent+" · "+hint.label;drawColorHint(dc,hint,viewRect(geometry.intent));}
+            else line(dc,intent,viewRect(geometry.intent),muted);
             line(dc,t("candidate.pin"),viewRect(geometry.pin),accent,kCenterText);
             if(exportControls) {
                 line(dc,previewCandidateId_==c.id?"■":"▶",viewRect(geometry.audition),accent,kCenterText);
@@ -794,7 +848,9 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
                 if (!badges.empty()) badges+=" · ";
                 badges+=t("technique."+std::string(enrichment::techniqueName(candidate.techniques[i])));
             }
-            line(dc,badges,viewRect(geometry.badges),muted);
+            auto hint=candidateHint(candidate);
+            if(!hint.label.empty()){hint.label+=" · "+badges;drawColorHint(dc,hint,viewRect(geometry.badges));}
+            else line(dc,badges,viewRect(geometry.badges),muted);
             line(dc,std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id)!=
                 pinnedEnrichmentIds_.end()?t("candidate.unpin"):t("candidate.pin"),
                 viewRect(geometry.pin),accent,kCenterText);
@@ -1168,7 +1224,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(i==3) {
                 const auto choice=popup({t("nav.library"),t("nav.diagnostics"),
                     state_.locale==session::Locale::ZhCN?"English":"简体中文",t("nav.about"),
-                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import"),t("nav.hostDiagnostics"),t("nav.exportHostDiagnostics")},where);
+                    t("zoom.label")+" "+std::to_string(state_.uiZoomPercent)+"%",t("midi.import"),t("nav.hostDiagnostics"),t("nav.exportHostDiagnostics"),
+                    std::string(showColorHints_?"✓ ":"")+t("color.show")},where);
                 if(choice==0) state_.tab=session::Tab::Library;
                 else if(choice==1) state_.tab=session::Tab::Diagnostics;
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
@@ -1185,13 +1242,14 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     const auto zoom=popup({"100%","125%","150%"},where);
                     if(zoom>=0)setUserZoom(std::array<std::uint32_t,3>{100,125,150}[zoom]);
                 }
+                else if(choice==8) {showColorHints_=!showColorHints_;invalid();}
                 else if(choice==5&&actions_.importMidi) {
                     const auto option=popup({t("midi.complete"),t("midi.open")},where);
                     if(option>=0)actions_.importMidi(option==1,{});
                 }
                 else if(choice==6&&actions_.hostDiagnostics){setHostText(actions_.hostDiagnostics());state_.tab=session::Tab::Diagnostics;}
                 else if(choice==7&&actions_.exportHostDiagnostics){actionStatus_=actions_.exportHostDiagnostics();}
-                if(choice>=0) notifyState();
+                if(choice>=0&&choice!=8) notifyState();
             }
             else if(i==4){state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;
                 selectedEnrichment_.reset();selectedLibrary_.reset();notifyState();}
@@ -1607,6 +1665,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
                 t("reason."+std::string(enrichment::techniqueName(operation.technique))),muted);
         }
+        const auto hint=candidateHint(candidate);
+        if(!hint.explanations.empty()){add(t("color.whyTitle"),accent);for(const auto& why:hint.explanations)add(why,muted);}
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);
@@ -1622,6 +1682,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         const auto completion=evaluateIntentCompletion(c,phraseStart,current);
         add(t(completionReasonKey(completion.reason)),accent);
+        const auto hint=candidateHint(c);
+        if(!hint.explanations.empty()){add(t("color.whyTitle"),accent);for(const auto& why:hint.explanations)add(why,muted);}
         if(state_.debugExpanded)
             add(t("inspector.completion")+"  "+fixed(completion.score,2),muted);
         Progression voiced=state_.imported.events;
