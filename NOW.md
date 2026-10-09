@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-dev.6 Color Preference Reranker 已实现，待一次 Release 编译及指定最小验证。只在继续发展的原候选生成后调整展示索引；默认关闭，关闭直接恢复原顺序。五种目标、固定尺度及质量窗口见 [色彩排序](docs/COLOR_PREFERENCE_RERANKER.md)。色彩提示与排序开关独立，在当前插件实例内保留，均不跨工程/插件重载保存。原候选、引擎、Enrichment 排序、曲库、宿主、MIDI 和全部 Schema 冻结。本轮不制作安装器，不启动 dev.7。dev.5 数学分析与 UI 证据直接复用。
+dev.6 Color Preference Reranker 已实现并通过一次 Release 编译及指定最小验证，标记 DEVELOPMENT READY。只在继续发展的原候选生成后调整展示索引；默认关闭，关闭直接恢复原顺序。五种目标、固定尺度及质量窗口见 [色彩排序](docs/COLOR_PREFERENCE_RERANKER.md)。色彩提示与排序开关独立，在当前插件实例内保留，均不跨工程/插件重载保存。原候选、引擎、Enrichment 排序、曲库、宿主、MIDI 和全部 Schema 冻结。本轮不制作安装器，不启动 dev.7。dev.5 数学分析与 UI 证据直接复用。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,10 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 dev.6：生产功能提交 `0ab87b8d6a50357bfd522705797d78a008cd11dd` 的干净源码一次 MSVC Release 编译通过（沿用 `_CL_=/Z7`），目标仅插件和 `ColorPreferenceSmoke`，Validator 关闭。产物版本 `0.9.0-dev.6 / Release / 0ab87b8`，moduleinfo 版本一致；后续仅提交此验证记录，未更改生产源码。直接运行一次最小冒烟：关闭时原候选身份/顺序保持、一个完整张力弧目标在同质量窗口前移且低质量候选不越级、Unknown/Uncertain 固定位置、短前段自动模式回退、关闭恢复原顺序，全部通过。同一代表场景离屏绘制工具栏/卡片/Why? 中英文字，并验证提示开关独立、实例内偏好恢复、原索引选择不变和未发送重生成回调。证据在 `build-v3-plugin/dev6-color-configure.log`、`dev6-color-build.log`、`dev6-color-smoke.log`。复用 dev.5 分析证据，没有重跑旧检查、CTest、Validator、音乐基准、宿主矩阵、MIDI、安装或性能测试，未制作安装包。通过后停止，不启动 dev.7。
+
+当前限制：只重排原展示策略已接受的集合；三位置/五分质量带/三分分差及原质量子项门槛较保守，可能保持原次序。分析器的 Unknown/Uncertain 和缺失时值继续限制可排序范围；自动模式需要三个可靠前段位置。设置仅当前插件实例保存，真实 DAW 显示未实测。Enrichment、Factory V3、全部 Schema 及音乐生成路径未改。本次指定的代表排序目标为张力弧，没有扩展成五预设测试矩阵。实现和本文档证据提交一同推送 `v0.9/dev`，最终同步状态以 tracking ref 为准。
 
 2026-10-09 dev.5：功能提交 `3a4c3268e0f8386ae3328aa5f19e466dd9f340a1`（以 Git 完整 hash 为准）的只读色彩模块、卡片及 Why? 已完成。一次 MSVC Release 构建首次在新冒烟工具遇到 Windows `near` 宏冲突和缺少 COM 头文件；仅修复该工具并增量完成剩余目标，未重跑整个项目。修复提交 `e0b8a818dba72ff11146208c3ae3c36662c71d77` 只改冒烟工具。插件版本 `0.9.0-dev.5 / Release`，生成 Git 标识 `3a4c326`，对应生产功能提交且不是 dirty/unknown；后续测试修复未改生产源码。插件及直接运行的 `HarmonyColorSmoke` 成功；三个案例覆盖普通和弦、转位/时值/完整路径接缝、角度跨界/多方向，另一个离屏 UI / Why? 冒烟覆盖中英、隐藏提示、推荐身份及功能解释保持、实例内开关恢复，全部通过。日志为 `build-v3-plugin/dev5-color-configure.log`、`dev5-color-build.log`、`dev5-color-build-finish.log`、`dev5-color-smoke.log`。未运行任何历史套件、Validator、音乐基准、宿主矩阵或安装器测试，未打包安装器；通过后停止测试。
 
