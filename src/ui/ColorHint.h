@@ -1,6 +1,7 @@
 #pragma once
 #include "color/HarmonyColorAnalyzer.h"
 #include "localization/Localization.h"
+#include <algorithm>
 
 namespace harmony::ui {
 enum class ColorTone { Neutral, Warm, Cool };
@@ -12,7 +13,8 @@ inline ColorHint colorHint(const color::PathColor& path,session::Locale locale,b
     if(path.status!=color::Status::Known||!path.meanW) {
         const bool uncertain=path.status==color::Status::Uncertain;
         out.label=text(uncertain?"color.uncertain":"color.unknown");
-        explain(uncertain?"color.whyUncertain":"color.whyUnknown");return out;
+        const bool missingBass=std::any_of(path.positions.begin(),path.positions.end(),[](const auto& p){return p.chord.reason==color::Reason::MissingBass;});
+        explain(missingBass?"color.whyMissingBass":uncertain?"color.whyUncertain":"color.whyUnknown");return out;
     }
     const bool warm=*path.meanW>=1.,cool=*path.meanW<=-1.;
     out.tone=warm?ColorTone::Warm:cool?ColorTone::Cool:ColorTone::Neutral;

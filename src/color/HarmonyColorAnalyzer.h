@@ -5,7 +5,7 @@
 
 namespace harmony::color {
 enum class Status { Known, Unknown, Uncertain };
-enum class Reason { None, UnsupportedPitchSet, UnsupportedGrade, WideSpan, MultipleDirections };
+enum class Reason { None, UnsupportedPitchSet, UnsupportedGrade, WideSpan, MultipleDirections, MissingBass };
 struct StaticColor {
     Status status{Status::Unknown};
     Reason reason{Reason::UnsupportedPitchSet};

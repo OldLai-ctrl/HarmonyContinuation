@@ -104,6 +104,7 @@ public:
     bool runCandidateScrollSmoke();
     bool runColorHintSmoke(VSTGUI::CDrawContext*);
     bool runColorSortSmoke(VSTGUI::CDrawContext*,const Progression&,const RecommendationSet&);
+    bool runEnrichmentColorSmoke(VSTGUI::CDrawContext*,const Progression&,const enrichment::EnrichmentResult&);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -115,6 +116,10 @@ private:
     color::Preference colorPreference_{color::Preference::Off};
     bool colorRankDirty_{true};
     std::array<color::ColorRankResult,4> colorRanks_;
+    bool enrichmentColorRankDirty_{true};
+    std::array<color::ColorRankResult,3> enrichmentColorRanks_;
+    void refreshEnrichmentColorRanking();
+    const std::vector<std::size_t>& enrichmentOrder(std::size_t);
     void refreshColorRanking();
     session::RecommendationPresentation continuationPresentation();
     void setColorPreference(color::Preference);

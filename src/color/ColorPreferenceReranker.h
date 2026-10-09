@@ -1,5 +1,6 @@
 #pragma once
 #include "HarmonyColorAnalyzer.h"
+#include "enrichment/ProgressionEnrichmentEngine.h"
 
 namespace harmony::color {
 enum class Preference { Off, ContinueSource, Warmer, Cooler, TensionArc, TensionWarmClose };
@@ -11,6 +12,10 @@ struct ColorRankResult {
 };
 class ColorPreferenceReranker {
 public:
+    static PathColor analyzeEnrichment(const Progression&);
+    static ColorRankResult rankEnrichment(const Progression& source,const HarmonicAnalysisResult& analysis,
+        std::optional<PhraseIntent> intent,HarmonicTendency tendency,
+        std::span<const enrichment::EnrichmentCandidate> candidates,std::span<const PathColor> paths,Preference);
     static ColorRankResult rank(std::span<const TimedChord> source,
         std::span<const KeyCandidate> keys,std::optional<KeySignature> selectedKey,
         std::span<const ContinuationCandidate> candidates,std::span<const PathColor> paths,Preference);

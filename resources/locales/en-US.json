@@ -251,7 +251,7 @@
   "color.modelNote": "Model temperature is not an emotion rating.",
   "colorSort.label": "Color sort",
   "colorSort.off": "Off",
-  "colorSort.auto": "Continue source",
+  "colorSort.auto": "Preserve source color",
   "colorSort.warmer": "Gradually warmer",
   "colorSort.cooler": "Gradually cooler",
   "colorSort.arc": "Tension rise and release",
@@ -268,5 +268,8 @@
   "colorSort.reasonSource": "Insufficient source trend; original order retained.",
   "colorSort.reasonFunction": "Existing functional analysis does not support closure; original order retained.",
   "colorSort.reasonQuality": "Original musical quality and constraint tier retained.",
-  "colorSort.reasonTarget": "This path does not meet the complete color target; original order retained."
+  "colorSort.reasonTarget": "This path does not meet the complete color target; original order retained.",
+  "color.whyMissingBass": "Reliable symbolic bass is missing; color remains uncertain.",
+  "colorSort.enrichmentMatch": "This complete upgrade is matched to the selected target while preserving its quality, skeleton and edit budget.",
+  "colorSort.symbolicBass": "Color uses the candidate symbolic bass; final MIDI voicing and perceived sound are not verified."
 }

@@ -1,9 +1,9 @@
-# Color Preference Reranker — dev.6
+# Color Preference Reranker — dev.6 / dev.7
 
 A read-only presentation stage for Continue, after original candidate generation.
 Off is the default and directly returns the existing presentation order. No
 candidate, score, group, chord, duration, bass, constraint or MIDI data is edited.
-Enrichment ordering is untouched. The original engine result remains authoritative.
+dev.7 extends the same presentation stage to Enrichment (see below). The original engine result remains authoritative.
 
 ## Inputs and preset matching
 
@@ -79,3 +79,57 @@ Unknown/Uncertain fallback and Off restoration; the same scenario also draws the
 modified UI/Why and checks no regeneration callback and independent hint toggle.
 Reuse dev.5 evidence. No CTest, Validator, benchmark, host matrix, MIDI suite or
 installer regression. Actual execution and artifact commit are recorded in NOW.
+
+## Enrichment Color Guidance — dev.7
+
+`rankEnrichment` compares original and complete upgraded paths, with no artificial
+Continuation seam. Shared `track`, `fit`, normalization and `sortWindows` retain
+dev.6 goal matching and maximum two-position displacement. Off returns original
+indices immediately. Both modes share one default-Off preference and dropdown.
+
+Source and candidate are aligned by QN interval overlap, including inserted chords
+that subdivide an original position. Unknown timing, unmatched coverage, Unknown
+or Uncertain positions prevent scoring. Auto preserves the original T/W/S contour
+with fixed weights 0.4/0.4/0.1 plus 0.05 each for Ts and signed Ws change; at least
+three reliable source positions are required. Warmer/cooler splits the existing
+90% trajectory component equally between complete-candidate and source-relative
+W ramp matching, keeping the same 10% spatial component. Tension arc reuses the
+full-path target. Warm closure also requires original analyzed tonic closure,
+compatible requested intent and a final tonic of supported major/minor quality;
+color does not independently invent a harmonic cadence.
+
+`analyzeEnrichment` reuses HarmonyColorAnalyzer, prioritizing explicit bass or
+bassNoteValue over names. A verified slash bass is accepted if typed bass is absent.
+Missing bass produces Uncertain/MissingBass with no fabricated root-bass W/S.
+Candidate timing, pitch masks and extensions are unchanged. Color describes
+symbolic bass; it does not verify final MIDI voicing or perceived sound.
+
+Groups, complexity level, five-point quality bands and maximum three-score-point
+gaps remain protected. Pairwise skeleton/style/complexity/melody differences must
+be ≤0.05; hard melody constraints must pass. Existing tendency profiles supply
+operation/insertion/substitution budgets and skeleton minima: Conservative uses
+1/2/3 operations and 0.88 skeleton minimum, Balanced 2/3/5 and 0.75, Bold 2/4/6
+and 0.75. These are the engine's actual engineering meanings, not new emotional
+labels. Existing full-path and skeleton preservation scores are read-only.
+The current engine supports melody constraints, not separate per-chord locks.
+
+Existing VoiceLeading measurement is reused unchanged: candidates need a reliable
+measurement, at most 0.02 loss against source, and at most 0.02 pairwise difference.
+Its label-based bass must agree with the explicit symbolic bass; disagreement is
+protected in original position rather than bypassing voice quality with a color
+score. No generator, substitution, extension, inversion, VoiceLeading or melody
+algorithm is modified, and no edit budget is increased.
+
+Cards, More, Why, Preview, MIDI payload, snapshot and comparison all resolve the
+same presentation-index-to-original-index mapping or stable ID. Original containers
+never reorder. Why retains existing explanations and adds one target-matching
+sentence only when enabled; hints remain independently switchable. A symbolic-bass
+note distinguishes model information from final sound. Preferences remain instance
+local without database/session/snapshot format changes.
+
+Validation is one Release build and one combined EnrichmentColorSmoke scenario:
+a qualified complete tension-arc target actually moves, Off restores indices,
+and reordered card/Why/Preview/MIDI/comparison/snapshot identity remains consistent.
+It also checks explicit inversion bass and missing-bass uncertainty in that scenario.
+The MIDI check is callback/payload identity, not a MIDI protocol or DAW test. Reuse
+dev.5/dev.6 evidence; no historical suite or additional matrix is run.

@@ -2,7 +2,7 @@
 
 把已有和弦进行变成下一段音乐，或让它本身更丰富。
 
-开发主线 `v0.9/dev` 已集成 `Factory Library 3`，源码版本为 `0.9.0-dev.6`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展另有默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；推荐与 MIDI 工作流保持原样。尚未发布或在 DAW 验收。以下安装教程仍对应已分发的 `0.9.0-dev.1 / Library 2` 测试包；不要用旧插件打开新版 Schema 2 用户库。
+开发主线 `v0.9/dev` 已集成 `Factory Library 3`，源码版本为 `0.9.0-dev.7`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；推荐与 MIDI 工作流保持原样。尚未发布或在 DAW 验收。以下安装教程仍对应已分发的 `0.9.0-dev.1 / Library 2` 测试包；不要用旧插件打开新版 Schema 2 用户库。
 
 HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手。你可以导入和弦片段，查看和声分析，选择「继续发展」或「升级进行」，试听方案，再输出 MIDI 给自己的乐器演奏。界面默认简体中文，也可以切换 English。
 

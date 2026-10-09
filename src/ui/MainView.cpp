@@ -461,8 +461,9 @@ void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) ac
 void MainView::setSessionState(const session::PluginSessionState& s) {
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
     const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
+    if(state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints)enrichmentColorRankDirty_=true;
     state_=s;
-    if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();colorRankDirty_=true;}
+    if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;}
     if(zoomChanged)resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
     if (timelineChanged) {
         pinnedSnapshots_.clear(); pinnedEnrichmentIds_.clear(); selectedChord_.reset();
@@ -479,17 +480,17 @@ void MainView::setHostText(std::string s, std::string snapshot) {
 void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     if (state_.imported.revision==s.revision && state_.imported.events.size()==s.events.size()) return;
     state_.imported=s; selectedChord_.reset(); selectedCandidate_.reset();
-    colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();colorRankDirty_=true;
+    colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
     selectedEnrichment_.reset(); pinnedEnrichmentIds_.clear(); rebuildTimeline();
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
-void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true; invalid(); }
+void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true; invalid(); }
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
 void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
     recommendations_=r;
-    colorPaths_.clear();colorRankDirty_=true;
+    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
     continuationScroll_.fill(0.);
     if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
         session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
@@ -511,7 +512,7 @@ void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
     const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
     enrichments_=value;
-    colorPaths_.clear();colorRankDirty_=true;
+    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
     if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected || selectedEnrichment()->fingerprint!=oldFingerprint))
         selectedEnrichment_.reset();
     std::erase_if(pinnedEnrichmentIds_,[&](const std::string& id) { return !findEnrichment(id); });
@@ -522,7 +523,7 @@ void MainView::setPreviewPosition(std::string id,double qn,double totalQN) {
 }
 void MainView::setColorPreference(color::Preference value) {
     if(colorPreference_==value)return;
-    colorPreference_=value;colorRankDirty_=true;continuationScroll_.fill(0.);invalid();
+    colorPreference_=value;colorRankDirty_=true;enrichmentColorRankDirty_=true;continuationScroll_.fill(0.);enrichmentScroll_.fill(0.);invalid();
 }
 void MainView::refreshColorRanking() {
     if(!colorRankDirty_)return;
@@ -547,6 +548,20 @@ session::RecommendationPresentation MainView::continuationPresentation() {
     }
     return result;
 }
+void MainView::refreshEnrichmentColorRanking() {
+    if(!enrichmentColorRankDirty_)return;
+    for(std::size_t group=0;group<3;++group) {
+        std::vector<color::PathColor> paths;
+        if(colorPreference_!=color::Preference::Off)
+            for(const auto& c:enrichments_.groups[group])paths.push_back(candidateColor(c));
+        enrichmentColorRanks_[group]=color::ColorPreferenceReranker::rankEnrichment(state_.imported.events,
+            analysis_,state_.intent,state_.tendency,enrichments_.groups[group],paths,colorPreference_);
+    }
+    enrichmentColorRankDirty_=false;
+}
+const std::vector<std::size_t>& MainView::enrichmentOrder(std::size_t group) {
+    refreshEnrichmentColorRanking();return enrichmentColorRanks_[group].order;
+}
 const color::PathColor& MainView::candidateColor(const ContinuationCandidate& candidate) {
     const auto key="c:"+session::continuationFingerprint(candidate);
     if(const auto found=colorPaths_.find(key);found!=colorPaths_.end())return found->second;
@@ -555,8 +570,7 @@ const color::PathColor& MainView::candidateColor(const ContinuationCandidate& ca
 const color::PathColor& MainView::candidateColor(const enrichment::EnrichmentCandidate& candidate) {
     const auto key="e:"+candidate.id+":"+candidate.fingerprint;
     if(const auto found=colorPaths_.find(key);found!=colorPaths_.end())return found->second;
-    return colorPaths_.emplace(key,color::HarmonyColorAnalyzer::analyzePath(
-        color::HarmonyColorAnalyzer::prepare(candidate.progression))).first->second;
+    return colorPaths_.emplace(key,color::ColorPreferenceReranker::analyzeEnrichment(candidate.progression)).first->second;
 }
 void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) {
     if(hint.label.empty())return;
@@ -564,6 +578,49 @@ void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) 
         hint.tone==ColorTone::Cool?CColor(103,188,215,255):muted;
     box(dc,CRect(rect.left,rect.top+3,rect.left+2,rect.bottom-3),tone);
     rect.left+=7;line(dc,hint.label,rect,tone);
+}
+bool MainView::runEnrichmentColorSmoke(CDrawContext* dc,const Progression& source,const enrichment::EnrichmentResult& candidates) {
+    session::PluginSessionState state;state.productMode=session::ProductMode::Enrich;
+    if(!state.imported.replace(source,TimelineCoordinateMode::RelativeToSelection))return false;
+    setSessionState(state);setEnrichments(candidates);refreshLayout();
+    const std::vector<std::size_t> baseline{0,1};
+    if(enrichmentOrder(0)!=baseline)return false;
+    setColorPreference(color::Preference::TensionArc);
+    if(enrichmentOrder(0)!=std::vector<std::size_t>({1,0}))return false;
+    const auto expected=candidates.groups[0][1].id;
+    std::string heard,exported,snapshot;unsigned saved{},regenerated{};
+    actions_.stateChanged=[&](const auto&){++regenerated;};
+    actions_.auditionEnrichment=[&](const auto& c){heard=c.id;};
+    actions_.exportEnrichmentMidi=[](const auto&){return std::string{};};
+    actions_.saveEnrichmentSnapshot=[&](const auto& c){snapshot=c.id;return std::string{};};
+    const midi::MidiClipPayload fake{{'M','T','h','d'},"color_identity.mid",1,3,{}, {'D','A','W'}};
+    actions_.enrichmentMidiPayload=[&](const auto& c){exported=c.id;return midi::PayloadResult{fake,{}};};
+    actions_.saveMidiPayload=[&](const auto&){++saved;return std::string{};};
+    const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,2,0.);
+    const auto geometry=enrichmentRowGeometry(lane,list,0);
+    const auto click=[&](UiRect rect,bool release=false){CPoint point{(rect.left+rect.right)/2*userZoom(),(rect.top+rect.bottom)/2*userZoom()};
+        onMouseDown(point,CButtonState{kLButton});if(release)onMouseUp(point,CButtonState{kLButton});};
+    dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+    click(geometry.audition);click(geometry.midi,true);click(geometry.snapshot);click(geometry.pin);
+    if(heard!=expected||exported!=expected||snapshot!=expected||saved!=1||
+       pinnedEnrichmentIds_!=std::vector<std::string>{expected})return false;
+    // Comparison uses the stable pinned ID, then resolves the original container index.
+    const auto compare=layout_.compare;
+    CPoint point{(compare.left+20)*userZoom(),(compare.top+35)*userZoom()};onMouseDown(point,CButtonState{kLButton});
+    if(!selectedEnrichment()||selectedEnrichment()->id!=expected||selectedEnrichment_->second!=1)return false;
+    selectedEnrichment_.reset();refreshLayout();
+    const auto currentLane=layout_.lanes[0];const ScrollableCandidateList currentList(currentLane,2,0.);
+    click(enrichmentRowGeometry(currentLane,currentList,0).why);
+    if(!selectedEnrichment()||selectedEnrichment()->id!=expected)return false;
+    for(const auto locale:{session::Locale::ZhCN,session::Locale::EnUS}) {
+        state_.locale=locale;dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+        if(t("colorSort.enrichmentMatch").empty())return false;
+    }
+    showColorHints_=false;const auto retained=captureEditorUiState();setColorPreference(color::Preference::Off);
+    if(enrichmentOrder(0)!=baseline||!candidateHint(candidates.groups[0][1]).label.empty())return false;
+    restoreEditorUiState(retained);
+    return colorPreference_==color::Preference::TensionArc&&!showColorHints_&&enrichmentOrder(0).front()==1&&
+        selectedEnrichment()&&selectedEnrichment()->id==expected&&regenerated==0;
 }
 bool MainView::runColorSortSmoke(CDrawContext* dc,const Progression& source,const RecommendationSet& candidates) {
     session::PluginSessionState state;
@@ -742,7 +799,7 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
             (state_.constraints.melody.size()>1?" +":""),
         t("tendency.label")+": "+t(state_.tendency==HarmonicTendency::Conservative?"tendency.conservative":
             state_.tendency==HarmonicTendency::Bold?"tendency.bold":"tendency.balanced"),
-        state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Continue?t("colorSort.label")+": "+t(std::string(color::preferenceKey(colorPreference_))+"Short"):""};
+        state_.tab==session::Tab::Recommend?t("colorSort.label")+": "+t(std::string(color::preferenceKey(colorPreference_))+"Short"):""};
     for(std::size_t i=0;i<constraints.size();++i)line(dc,constraints[i],viewRect(layout_.constraintControls[i]),
         i==0&&!state_.constraints.melody.empty()?accent:pale);
     if(state_.tab!=session::Tab::Recommend)return;
@@ -885,7 +942,7 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
         ConcatClip rowsClip(*dc,viewRect(list.viewport));
         for (std::size_t row=0;row<candidates.size();++row) {
             if(!list.visible(row))continue;
-            const auto& candidate=candidates[row];
+            const auto& candidate=candidates[enrichmentOrder(group)[row]];
             const auto geometry=enrichmentRowGeometry(lane,list,row);
             box(dc,viewRect(geometry.row),CColor(33,49,69,255));
             std::string progression;
@@ -1236,7 +1293,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
         for(std::size_t i=0;i<layout_.constraintControls.size();++i)
             if(layout_.constraintControls[i].contains(where.x,where.y)) {
                 if(i==3) {
-                    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Continue) {
+                    if(state_.tab==session::Tab::Recommend) {
                         std::vector<std::string> options;for(int p=0;p<6;++p)options.push_back(t(color::preferenceKey(static_cast<color::Preference>(p))));
                         const auto choice=popup(options,where);if(choice>=0)setColorPreference(static_cast<color::Preference>(choice));
                     }
@@ -1496,7 +1553,9 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 auto lane=layout_.lanes[group];lane.top-=contentScroll_;lane.bottom-=contentScroll_;
                 if(!lane.contains(where.x,where.y))continue;
                 if(where.y<lane.top+27&&where.x>=lane.right-120&&enrichments_.groups[group].size()>2) {
-                    const auto listed=enrichments_.groups[group];const auto revision=state_.imported.revision;
+                    std::vector<enrichment::EnrichmentCandidate> listed;
+                    for(const auto index:enrichmentOrder(group))listed.push_back(enrichments_.groups[group][index]);
+                    const auto revision=state_.imported.revision;
                     std::vector<std::string> options;
                     for(const auto& c:listed) {
                         std::string path;for(const auto& chord:c.progression){if(!path.empty())path+=" → ";path+=chord.name;}
@@ -1514,7 +1573,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 const auto hit=list.hit(where.x,where.y);
                 if(!hit)return kMouseEventHandled;
                 const auto row=*hit;
-                const auto& candidate=enrichments_.groups[group][row];
+                const auto originalIndex=enrichmentOrder(group)[row];
+                const auto& candidate=enrichments_.groups[group][originalIndex];
                 const auto geometry=enrichmentRowGeometry(lane,list,row);
                 if(geometry.pin.contains(where.x,where.y)) {
                     const auto found=std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id);
@@ -1522,7 +1582,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     else if(pinnedEnrichmentIds_.size()<3)pinnedEnrichmentIds_.push_back(candidate.id);
                     refreshLayout();
                 } else if(geometry.why.contains(where.x,where.y)) {
-                    selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                    selectedEnrichment_={{group,originalIndex}};selectedChord_.reset();selectedCandidate_.reset();
                     inspectorScroll_=0;refreshLayout();focusTransientOverlay();
                 } else if(geometry.snapshot.contains(where.x,where.y) && actions_.saveEnrichmentSnapshot)
                     actionStatus_=actions_.saveEnrichmentSnapshot(candidate);
@@ -1530,7 +1590,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     armMidi(candidate,where);
                 else if(geometry.audition.contains(where.x,where.y) && actions_.auditionEnrichment)
                     actions_.auditionEnrichment(candidate);
-                else {selectedEnrichment_={{group,row}};selectedChord_.reset();selectedCandidate_.reset();
+                else {selectedEnrichment_={{group,originalIndex}};selectedChord_.reset();selectedCandidate_.reset();
                     inspectorScroll_=0;refreshLayout();focusTransientOverlay();}
                 invalid();return kMouseEventHandled;
             }
@@ -1728,6 +1788,13 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         const auto hint=candidateHint(candidate);
         if(!hint.explanations.empty()){add(t("color.whyTitle"),accent);for(const auto& why:hint.explanations)add(why,muted);}
+        if(colorPreference_!=color::Preference::Off) {
+            refreshEnrichmentColorRanking();const auto [group,index]=*selectedEnrichment_;
+            add(t("colorSort.label")+" · "+t(color::preferenceKey(colorPreference_)),accent);
+            const auto reason=enrichmentColorRanks_[group].decisions[index].reason;
+            add(reason==color::RankReason::Matched?t("colorSort.enrichmentMatch"):t(color::rankReasonKey(reason)),muted);
+        }
+        if(showColorHints_)add(t("colorSort.symbolicBass"),muted);
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
         add(t("inspector.why"),accent);

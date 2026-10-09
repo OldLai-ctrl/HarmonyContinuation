@@ -251,7 +251,7 @@
   "color.modelNote": "模型温度不代表客观心理情绪。",
   "colorSort.label": "色彩排序",
   "colorSort.off": "关闭",
-  "colorSort.auto": "自动延续前段",
+  "colorSort.auto": "自动延续原进行色彩",
   "colorSort.warmer": "逐渐温暖",
   "colorSort.cooler": "逐渐偏冷",
   "colorSort.arc": "张力先升后降",
@@ -268,5 +268,8 @@
   "colorSort.reasonSource": "前段趋势信息不足，保留原排序。",
   "colorSort.reasonFunction": "原功能判断未支持收束，保留原排序。",
   "colorSort.reasonQuality": "保留原音乐质量和约束层级。",
-  "colorSort.reasonTarget": "该路径未满足所选完整色彩目标，保留原排序。"
+  "colorSort.reasonTarget": "该路径未满足所选完整色彩目标，保留原排序。",
+  "color.whyMissingBass": "缺少可靠的符号低音，不强行判断色彩。",
+  "colorSort.enrichmentMatch": "该完整升级路径参与所选目标匹配，同时保留原质量、骨架及改动预算。",
+  "colorSort.symbolicBass": "色彩依据候选符号低音，尚未验证最终 MIDI 配音与实际听感。"
 }
