@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-dev.8 Why? V2 + Color UI Integration 已实现，待一次 Release 编译及两个合并 UI 场景。卡片优先完整路径趋势，Why? 统一为功能、色彩、启用后的排序理由（最多三句）；既有数值/操作明细归高级详情。两模式共用菜单，色彩提示与排序状态独立；默认提示开、排序关。沿用实例内偏好，未添加跨工程保存。范围与限制见 [Why? V2](docs/WHY_V2.md)。算法、原候选及排序窗口、全部 Schema 冻结，复用 dev.5–dev.7 算法证据；真实 DAW 验收 Pending。本轮不制作安装器、不进入 v0.9 发布阶段。
+dev.8 Why? V2 + Color UI Integration 已实现，一次 Release 编译及两个合并 UI 场景通过，标记 DEVELOPMENT READY。卡片优先完整路径趋势，Why? 统一为功能、色彩、启用后的排序理由（最多三句）；既有数值/操作明细归高级详情。两模式共用菜单，色彩提示与排序状态独立；默认提示开、排序关。沿用实例内偏好，未添加跨工程保存。范围与限制见 [Why? V2](docs/WHY_V2.md)。算法、原候选及排序窗口、全部 Schema 冻结，复用 dev.5–dev.7 算法证据；真实 DAW 验收 Pending。本轮不制作安装器、不进入 v0.9 发布阶段。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,12 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 dev.8：生产提交 `825b8fc9325154b7fd14399664e8338a47bddad1` 的干净源码一次 MSVC Release 编译通过，目标仅 `HarmonyContinuation` 和 `WhyV2Smoke`，Validator 关闭，沿用 `_CL_=/Z7`。产物 `0.9.0-dev.8 / Release / 825b8fc`，moduleinfo 版本一致；后续仅提交本证据，生产源码未改。直接运行一次 WhyV2Smoke，Continuation 与 Enrichment 两个场景均通过：完整卡片/默认三句 Why?/高级详情的离屏绘制，中英资源，Unknown/Uncertain 中性文案与缺失低音原因，提示与排序独立，关闭恢复原索引，实例内偏好恢复；排序后卡片/Why/Preview/MIDI payload 指向同一原始候选，设置未触发重生成回调。日志为 `build-v3-plugin/dev8-why-configure.log`、`dev8-why-build.log`、`dev8-why-smoke.log`。
+
+本轮改动仅 UI、本地化、版本/构建入口和文档；HarmonyColorAnalyzer、ColorPreferenceReranker、候选生成/评分、Matcher、VoiceLeading、旋律约束、Factory/User 库、FULL/SKELETON、档位预算、MIDI 和宿主代码未改，Schema 保持 Factory 2 / User 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。复用 dev.5–dev.7 算法证据，未重跑旧测试、CTest、Validator、42/30 基准、宿主矩阵、MIDI、安装器或性能回归，未制作安装包或 Tag。验证通过后停止，不进入 v0.9 发布阶段。
+
+限制：偏好仍仅当前实例保存；缺失时值、低音及模型支持范围继续限制色彩结论。短卡片不足以容纳双标签时省略次标签，完整路径及细节可在 Why? 查看。高级色彩数字只列前八位置并明示截断。离屏绘制与模拟 MIDI payload 身份不替代实际导出、缩放矩阵或真实 DAW 验收；真实 DAW 保持 Pending。功能及证据提交一同推送 `v0.9/dev`，同步状态以 tracking ref 为准。
 
 2026-10-09 dev.7：生产提交 `fe6be3783b4246cb1d97ba0ef9af2b8c6f9f29c4` 的干净源码一次 MSVC Release 编译通过，目标仅插件和 `EnrichmentColorSmoke`，Validator 关闭，沿用 `_CL_=/Z7`。插件产物为 `0.9.0-dev.7 / Release / fe6be37`，moduleinfo 版本一致。后续仅调整测试 fixture 和验证记录，未改生产代码、未重编整个项目。
 
