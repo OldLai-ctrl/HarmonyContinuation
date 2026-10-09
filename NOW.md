@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-rc.1 功能冻结与安装包整合：从 dev.8 基线 `f48a6366095921eb35e10397ae65e799edfe2a1b` 准备 `0.9.0-rc.1`。仅修改版本、安装前说明和文档，算法、Factory V3、MIDI、宿主及 Schema 不变。复用原安装器工程，计划只构建一次 Release、生成一次包并检查关键文件/依赖；不执行安装生命周期或历史测试。构建完成后在下方记录实际证据，真实 Cubase Pro 15 / FL Studio 人工验收 Pending；[六项清单](docs/RC_DAW_ACCEPTANCE.md) 已备好。非正式发布，不合并 main 或创建 Tag。
+rc.1 功能冻结与安装包整合已完成，标记 RELEASE CANDIDATE READY，等待真实 Cubase Pro 15 / FL Studio 人工验收（均 Pending）。构建提交 `da1fd6d08ab20771f8696944bdaa4b027e4ca7b9`，只修改版本、安装前说明和文档，算法、Factory V3、MIDI、宿主及 Schema 不变。复用已有安装器；一次 Release 构建、一次打包及必要文件/依赖检查通过。RC 位于 `build-installer/rc-0.9.0-rc.1/`，不覆盖旧正式产物；[六项清单](docs/RC_DAW_ACCEPTANCE.md) 已随目录附带。功能提交与后续证据提交推送至 `v0.9/dev`，实时同步以 tracking ref 为准。非正式发布，不合并 main 或创建 Tag；本轮完成后停止。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,14 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-09 rc.1：从干净提交 `da1fd6d08ab20771f8696944bdaa4b027e4ca7b9` 一次 MSVC Release 构建插件及 library_manager 通过，沿用 `_CL_=/Z7`，Validator 关闭；产物 `0.9.0-rc.1 / Release / da1fd6d`，VST3 moduleinfo 与完整 Setup ProductVersion 一致。后续证据提交仅改本文档，不重编生产代码。
+
+一次调用现有 build-installer.ps1 生成完整 Setup 和其所需的独立 Library 3 更新包。包暂存插件/语言资源/Factory 与构建源哈希一致，库元数据为 `library_version=3 schema=2 progressions=629`，MSVC 导入依赖已随附（其余为 Windows 10+ 系统组件）；暂存仅插件、图标/元数据、项目双语资源、Factory DB、更新工具及 CRT，不含购买的 PDF/Excel/付费转换数据。安装/卸载路径与数据保留逻辑未改，复用既有九项隔离安装证据，不执行新安装生命周期。
+
+完整包 `HarmonyContinuation-0.9.0-rc.1-Setup.exe` SHA-256：`5a8fbe9a1842b297b65420077239fb3ec569c9227a1b6faaa43aec0861b6b751`；独立库 `HarmonyContinuation-Library-3-Setup.exe`：`b558ed64090ef324d710f4ac4d249f20959c6184b272201b243da924b91c9740`。两项均重算匹配 SHA256SUMS.txt。原始证据为 `build-v3-plugin/rc1-release-configure.log`、`rc1-release-build.log`、`build-installer/rc1-package-build.log`、`rc1-dependencies.log`；RC 目录附 `BUILD_INFO.json`、`FILE_MANIFEST.sha256`、README、版本说明及人工清单。构建/包/日志不随 Git 推送，须单独分发。
+
+本轮未发现安装准备、编译或打包阻断；没有实际 DAW 通过证据，不能据此正式发布。偏好实例内保留、详情前八位置、Unknown/Uncertain 和最终听感/输出限制沿用 dev.8。复用 dev.5–dev.8 证据，不运行测试程序、CTest、Validator、42/30 基准、MIDI、宿主矩阵、性能或安装回归。全量回归仍留到 v1.0 正式发布前。
 
 2026-10-09 dev.8：生产提交 `825b8fc9325154b7fd14399664e8338a47bddad1` 的干净源码一次 MSVC Release 编译通过，目标仅 `HarmonyContinuation` 和 `WhyV2Smoke`，Validator 关闭，沿用 `_CL_=/Z7`。产物 `0.9.0-dev.8 / Release / 825b8fc`，moduleinfo 版本一致；后续仅提交本证据，生产源码未改。直接运行一次 WhyV2Smoke，Continuation 与 Enrichment 两个场景均通过：完整卡片/默认三句 Why?/高级详情的离屏绘制，中英资源，Unknown/Uncertain 中性文案与缺失低音原因，提示与排序独立，关闭恢复原索引，实例内偏好恢复；排序后卡片/Why/Preview/MIDI payload 指向同一原始候选，设置未触发重生成回调。日志为 `build-v3-plugin/dev8-why-configure.log`、`dev8-why-build.log`、`dev8-why-smoke.log`。
 
