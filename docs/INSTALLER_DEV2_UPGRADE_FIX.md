@@ -36,3 +36,14 @@ Manual replacement can leave the same bundled residue; retained logs prove RC1 i
 Initial 413-check run passed: fresh install; official tag fixture upgrade; actual RC bundled V3/plugin replacement and corroborated RC V2 residue; modified valid Factory rejection in both languages; complete-content match with different physical hash; component update/repair/modify/uninstall; permanent backup and personal/history/unmanaged sentinel preservation.
 
 Final build identity, expanded verification and package checksums are recorded in the final delivery section after completion. No full CTest, Validator, DAW matrix or music benchmark is run. Cubase manual acceptance of dev.2 remains pending.
+## Final delivery
+
+INSTALLER UPGRADE FIX READY. Product 0.10.0-dev.2 / Release / build commit 533eb463a4e0554f1f66d72775b8d64b949ba898. Later evidence/test-documentation commits do not change binary identity.
+
+Final focused run: 611 checks PASS across fresh, pure official-v09, RC/manual, unknown, official content with changed physical layout, old-engine-only update and failed-backup protection. Additional legacy dual-installer migration: 93 checks PASS. Total 704. All real installer/uninstaller executions use isolated workspace paths and HKCU identities; original old published Setup binary was unavailable, so formal upgrade uses a plugin/Setup rebuilt from the exact v0.9.0 tag. The RC/manual path uses the actual retained RC artifacts.
+
+Final Setup extraction: 16/16 plugin files match the staging ownership manifest; embedded plugin commit is 533eb46; module version 0.10.0-dev.2; extracted DB Library 4 / Schema 2 / 657. V4 Factory SHA remains identical to dev.1. Actual device production Library files/pointer checksums unchanged; personal/favourites/settings/progression/history/unmanaged sentinels preserved in isolation. Permanent backups survive modify/repair/uninstall. Failed existing-backup verification preserves original bytes, engine and component state.
+
+Package: `build-installer/v4-0.10.0-dev.2/HarmonyContinuation-0.10.0-dev.2-Setup.exe`.
+Setup SHA-256: `95984545b637e1e70498d8658bc9cd8e5b1f1596a8d8433758fbe4e30bc31ba5`.
+`BUILD_INFO.json`, `FILE_MANIFEST.sha256`, `SHA256SUMS.txt` and evidence are alongside the package. Dev.1 download/package is not replaced. User must close hosts and select both components when moving from 0.9.0 to V4. Next step is user reinstall and Cubase manual acceptance only.

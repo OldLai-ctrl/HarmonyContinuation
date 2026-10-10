@@ -3,7 +3,7 @@ param([string]$Iscc='build-installer/tools/Inno/ISCC.exe',
       [string]$OldPackageDirectory='build-installer/dev2-work/official-v09-package',
       [string]$TestRoot='build-installer/dev2-upgrade-tests',
       [string]$RCV2Factory='build-installer/dev2-work/rc08/factory.db',
-      [string[]]$Cases=@('fresh','official-v09','rc-manual','unknown','official-content-layout','official-v09-plugin-only','backup-conflict'))
+      [string[]]$Cases=@('fresh','official-v09','rc-manual','unknown','official-content-layout','official-v09-plugin-only','backup-conflict','legacy-dual'))
 $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot
 if(![IO.Path]::IsPathRooted($Iscc)){$Iscc=Join-Path $repo $Iscc}
@@ -110,6 +110,19 @@ foreach($name in $Cases) {
    Check ((Hash $bundled) -eq $before[$bundled]) 'Uninstall removed unmanaged unknown Factory'
    PersonalIntact;continue
   }
+  if($name -eq 'legacy-dual') {
+   $legacyOriginal=Join-Path $repo 'packaging/HarmonyContinuation.iss'
+   $legacySource=Join-Path (Split-Path $oldOriginal) 'Dev2LegacyLibraryFixture.iss'
+   $legacyText=[IO.File]::ReadAllText($legacyOriginal).Replace('CreateUninstallRegKey=no','CreateUninstallRegKey=yes')
+   $legacyText=$legacyText.Replace('  #define TestSuffix "-IsolatedTest"',"  #ifndef TestSuffix`n   #define TestSuffix `"-IsolatedTest`"`n  #endif")
+   [IO.File]::WriteAllText($legacySource,$legacyText,[Text.UTF8Encoding]::new($false))
+   & $Iscc '/Qp' "/DStageDir=$oldStage" "/DOutputPath=$script:case" '/DProductVersion=0.9.0' '/DLibraryVersion=3' '/DLibraryOnly' "/DTestRoot=$script:case" "/DTestSuffix=$script:suffix" $legacySource *> (Join-Path $script:case 'legacy-library-compile.log')
+   if($LASTEXITCODE -ne 0){throw 'Legacy component fixture failed to compile'}
+   $legacySetup=Join-Path $script:case ('HarmonyContinuation-Library-3-Setup'+$script:suffix+'.exe')
+   $null=Run $legacySetup 'legacy-library-install'
+   $legacyReg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-FactoryLibrary'+$script:suffix+'_is1'
+   Check (Test-Path -LiteralPath $legacyReg) 'Legacy dual registration not created'
+  }
   $oldBinaryHash=Hash $binary
   $null=Run $new 'v09-library-only-blocked' @('/COMPONENTS=library') $false
   Check ((Hash $binary) -eq $oldBinaryHash -and !(Test-Path -LiteralPath $script:db4)) 'Compatibility rejection changed engine/data'
@@ -139,6 +152,7 @@ foreach($name in $Cases) {
   $migrationHash=if(Test-Path -LiteralPath $bundled){Hash $bundled}else{''}
   $null=Run $new 'upgrade-both' @('/COMPONENTS=plugin,library');Matching
   Check (!(Test-Path -LiteralPath $bundled)) 'Legacy bundled fallback remains active'
+  if($name -eq 'legacy-dual'){Check (!(Test-Path -LiteralPath $legacyReg)) 'Old dual component registration remains'}
   if($migrationHash) {
   $backup=Join-Path $script:case ('Data/Backups/FactoryMigration/'+$migrationHash.ToLowerInvariant()+'/factory.db')
   Check ((Hash $backup) -eq $migrationHash) 'Verified permanent migration backup missing'
@@ -170,4 +184,4 @@ foreach($name in $Cases) {
  Check (!(Test-Path -LiteralPath $binary) -and !(Test-Path -LiteralPath $script:db4) -and !(Test-Path -LiteralPath $reg)) 'Managed uninstall incomplete'
  PersonalIntact
 }
-"Dev.2 focused upgrade: $script:checks checks PASS (fresh / official-v09 / RC-manual / unknown; component maintenance, verified backups and personal protection)." | Tee-Object (Join-Path $root 'result.txt')
+"Dev.2 focused upgrade: $script:checks checks PASS ($($Cases -join ' / '); component maintenance, verified backups and personal protection)." | Tee-Object (Join-Path $root 'result.txt')

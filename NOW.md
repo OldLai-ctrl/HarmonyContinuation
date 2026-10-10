@@ -8,14 +8,15 @@
 
 ## 当前任务
 
-2026-10-10 在独立 `library/v4` 产品化 Factory V4，开发候选版本 `0.10.0-dev.1`。657 条（629+28），精确重复及新增结构族重复为 0。V3 源文件不变；编译副本维护 139 条旧记录（57 条空标签补全、10 条副导语义修正、13 条骨架恢复，计数重叠）。本轮 A03 去除共同音标签，5 条减七路线调整弱拍；C 类 8 条保留。
+2026-10-10：`library/v4` 最新候选为 **0.10.0-dev.2**，本轮只修复真实旧版升级被 bundled Factory 识别规则误拦截的问题。Factory V4 仍为 657 条（629+28）；音乐算法、Factory 源内容与 Schema 未变。
 
-28 条指定输入批量检查：26 默认可见，A11/B09 通过已有 More candidates 可访问，0 阻断。B09 Pop/Resolve 第 4，无 Style 第 5，实际 worker 保留 10 条，无需更改全局排序。修复 V4 完整骨架与输入简化不一致；相关 Matcher 40/40、Continuation 42/42、Enrichment 30 案例及完整路径/Preview/MIDI 定向通过。真实 Cubase / FL Studio 及风格听审均 Pending。
+官方完整内容与可信 RC 哈希可识别；移除旧 bundled 副本前创建永久备份并核对 SHA-256。未知或修改过的文件仍阻止安装，并显示中英文路径、版本、哈希、原因与安全处理建议。V4 不允许搭配旧 0.9.0 引擎进行数据单独升级；组件取消勾选保持原状，管理记录保留实际库版本/哈希。
 
-统一开发 Setup 及匹配 VST3 / DB / MIDI 位于 `build-installer/v4-0.10.0-dev.1/`。Release 构建与统一打包通过，21 项隔离安装检查通过。Build ID `0.10.0-dev.1 / 86a8641 / Release / Library 4`；随后仅补充隔离测试身份与结果文档。V4 PRODUCTIZATION READY，供人工验收。产品行为、兼容、审核及边界见 [V4 产品化](docs/FACTORY_V4_PRODUCTIZATION.md)，下一步仅为 [V4 人工验收](docs/V4_DAW_ACCEPTANCE.md)。本轮提交推送 library/v4，实时状态以 Git 为准；不合并 main、不打正式 Tag、不公开发布，不启动 v1.0 或卡池。
+本机 Release 构建及统一打包通过；最终定向验证 611 项、旧双安装迁移 93 项，共 **704 项 PASS**，覆盖新装、官方 v0.9.0 标签重建夹具升级、实际 RC/手动替换、未知文件保护、备份失败、修改/修复/卸载及个人/历史数据保护。最终包解包 16/16 插件文件匹配；库为 V4 / Schema 2 / 657。未执行全量 CTest、Validator、DAW 矩阵或音乐 Benchmark。原冲突文件当前不在现场，不能宣称已恢复其失败当时哈希；详见 [升级修复证据](docs/INSTALLER_DEV2_UPGRADE_FIX.md)。
 
-跨设备交付：源码在 `origin/library/v4`；本开发版安装包及完整交接 ZIP 使用 [GitHub 未发布草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1) 分发，需登录有仓库写权限的账号。包的构建身份仍为上述 `86a8641`，不能把交接文档提交误认为重新编译。下载、校验及另一设备接手步骤见 [RUNBOOK](RUNBOOK.md#交付与同步)。不复制本机缓存、SDK、用户库或宿主工程。
+新包：`build-installer/v4-0.10.0-dev.2/HarmonyContinuation-0.10.0-dev.2-Setup.exe`，SHA-256 `95984545b637e1e70498d8658bc9cd8e5b1f1596a8d8433758fbe4e30bc31ba5`。Build ID `0.10.0-dev.2 / 533eb46 / Release / Library 4`；后续证据提交不改变编译身份。旧 GitHub 未发布草稿仍为 dev.1，本轮 dev.2 安装包在本机独立目录；不将旧包误认为 dev.2。
 
+**INSTALLER UPGRADE FIX READY**。完成源码提交/推送后停止，等待用户重新安装与 Cubase 人工验收；FL Studio / 风格听审继续 Pending，不自动启动其它功能。V4 原产品化和人工验收范围仍见 [V4 产品化](docs/FACTORY_V4_PRODUCTIZATION.md)、[V4 人工验收](docs/V4_DAW_ACCEPTANCE.md)。
 ## 发布与验证证据
 
 正式包：`build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`。构建版本、提交、VST3/Factory/Setup 哈希、依赖与验证范围保存在同目录 `BUILD_INFO.json`、`SHA256SUMS.txt` 与 `FILE_MANIFEST.sha256`。Setup SHA-256：`1ee1ba17a3b689ad7b8ea8f7ffe245c2fc08ac71226ae82eed441788628136f7`。
