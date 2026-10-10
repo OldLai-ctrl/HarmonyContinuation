@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-RC3 Unified Setup：基线 `dcbb3d80b99353e649086fd61589bcf1734d0bc8` 包含 RC2 Enrichment OPEN 显示修复，工作区接手时干净，本机原安装记录为 RC2。用户本次报告色彩修复完成，具体新 RC3 DAW 验收仍 Pending。沿用 Inno Setup，唯一 Setup 管理 VST3 和 Factory 数据组件、更新/修复/明确移除/完整卸载；旧主程序 AppId 复用，旧曲库仅可靠识别后调用原卸载器迁移。当前正在做隔离安装定向验证，完成证据见下方；不执行音乐回归。音乐算法、数据内容、MIDI、宿主和 Schema 冻结。RC1/RC2 目录保留，新目录为 `build-installer/rc-0.9.0-rc.3-unified/`。
+RC3 Unified Setup：基线 `dcbb3d80b99353e649086fd61589bcf1734d0bc8` 包含 RC2 Enrichment OPEN 显示修复，工作区接手时干净，本机原安装记录为 RC2。用户本次报告色彩修复完成，具体新 RC3 DAW 验收仍 Pending。沿用 Inno Setup，唯一 Setup 管理 VST3 和 Factory 数据组件、更新/修复/明确移除/完整卸载；旧主程序 AppId 复用，旧曲库仅可靠识别后调用原卸载器迁移。一次隔离生命周期 28 项检查通过，构建/包校验完成，RELEASE CANDIDATE READY；真实标准安装与 DAW 验收 Pending。证据见下方，不再执行音乐回归。音乐算法、数据内容、MIDI、宿主和 Schema 冻结。RC1/RC2 目录保留，新目录为 `build-installer/rc-0.9.0-rc.3-unified/`。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -22,6 +22,13 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 证据
 
+2026-10-10 rc.3 Unified Setup：从干净提交 `590897fddb064dba88de2d68fdb932044111ce6d` 一次 MSVC Release 编译插件和 library_manager，Validator 关闭，产物 `0.9.0-rc.3 / Release / 590897f`。一次生成唯一用户包 `build-installer/rc-0.9.0-rc.3-unified/HarmonyContinuation-Setup.exe`，SHA-256 `ab38e54bb4cacbdfedb2634a4ebde37872fd44642b8a88c51b17dabb18cdb02d`，重算匹配清单；VST3/moduleinfo/Setup 版本一致，暂存插件与编译二进制一致，Factory 与 RC2 逐字节相同（V3 / Schema 2 / 629）。中英资源、MSVC 导入依赖已随附，其余为 Windows 10+ 系统组件；暂存不含购买的原始或转换色彩数据。
+
+安装器脚本一次语法修复后编译通过（补充 Windows 文件属性 API 声明，未重编插件）。隔离测试首轮受沙箱注册表访问限制，在任何安装操作前停止；获得隔离运行权限后执行一次完整生命周期，28 项检查通过：全新双组件、独立增删 Factory/VST3、损坏官方库修复、旧双卸载记录合并、只更新所选组件、占用插件拒绝覆盖、完整卸载；专用个人数据哨兵、历史 Factory 2、其它插件和 bundle 中未管理文件均保留。测试包只使用工作区路径和独立 HKCU AppId，生产安装及真实 user.db 未变。旧版 fixture 和测试包不面向用户。未重复已通过流程。
+
+证据：`build-v3-plugin/rc3-unified-configure.log`、`rc3-unified-build.log`，`build-installer/rc3-unified-package.log`、`rc3-unified-lifecycle.log`、`rc3-unified-dependencies.log`，`build-installer/unified-smoke/result.txt` 与分步安装日志。随包记录 `BUILD_INFO.json`、`FILE_MANIFEST.sha256`、`SHA256SUMS.txt` 和人工清单。后续仅提交本文证据，不重编或重打包生产代码。提交并推送指定 `v0.9/dev`，同步以 tracking ref 为准；保留 main、正式 Tag 和 RC1/RC2。
+
+限制：真实管理员标准目录/UAC、交互界面及 Cubase/FL 的 RC3 人工验收 Pending；用户报告 RC2 Enrichment 修复完成，不能代替新包验收。未知旧卸载身份/路径不自动迁移；仅库迁移的旧插件需更新/修复后才能通过组件页移除；系统断电/崩溃不支持自动跨进程事务恢复，必要时重新修复。RC 未签名。音乐算法、排序窗口、Factory/User 内容、MIDI、宿主和所有 Schema 未改，不执行音乐/宿主全量回归。达到发布候选准备关口，停止并等待用户人工验收。
 2026-10-10 RC2：干净生产提交 `a8e3847a286702e7b2982d2fe64dac77b8cf6857`，一次 Release 构建插件、library_manager、WhyV2Smoke 通过，产物 `0.9.0-rc.2 / Release / a8e3847`，Validator 关闭，沿用 `_CL_=/Z7`。直接运行一次 `WhyV2Smoke rc2-hints` 通过：普通完整 Enrichment 候选、截图对应 Dmin → C/E → Bb → A OPEN 的可靠静态/未知时值分开展示、多方向中性回退、独立提示开关、开启偏好时保留具体时值解释、Continuation 原提示及实际色条像素；同一运行覆盖中英文。OPEN path 的 status 仍 Unknown、meanW 缺失，原末事件仍 OPEN/无时值，没有补值或改变色彩排序资格。FULL/SKELETON 和档位不参与新增提示判断，使用同一个实际候选 PathColor；未扩大成矩阵。
 
 复用原脚本一次生成独立 RC2 目录 `build-installer/rc-0.9.0-rc.2/`。完整 Setup SHA-256：`8737ff9af4935501325db9b3ffdba521c96937625281d43aa903e19a4e5044f2`；独立库更新包：`d719b04526b5778ab6c2f44769bbb016bf13c758e431c9cb2dd117f0c640bd1f`。校验和重算匹配，完整 Setup ProductVersion、VST3 moduleinfo 均为 rc.2；暂存二进制与构建源一致，Factory 两份 DB 与 RC1 逐字节相同，中英资源与源码一致。附 BUILD_INFO.json / FILE_MANIFEST.sha256 / SHA256SUMS.txt、README、版本说明及人工清单，RC1 产物保留。日志为 `build-v3-plugin/rc2-release-configure.log`、`rc2-release-build.log`、`rc2-hints-smoke.log`、`build-installer/rc2-package-build.log`。
@@ -79,8 +86,8 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.1 只以本轮指定的构建/打包文件检查为完成关口。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.3 以一次 Release 构建、统一安装器隔离生命周期及打包文件核验为准备关口，真实验收留待用户。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 
-人工逐条试听和真实 Cubase/FL 验收仍未执行。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或安装回归。RC 打包及推送完成后停止，等待人工 DAW 结果。
+人工逐条试听未执行；RC3 真实 Cubase/FL 验收 Pending。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或完整安装回归；本次仅运行统一安装器定向隔离检查。RC 打包及推送完成后停止，等待人工 DAW 结果。
