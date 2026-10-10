@@ -25,7 +25,9 @@
  #endif
 #endif
 #ifdef TestRoot
- #define TestSuffix "-IsolatedTest"
+ #ifndef TestSuffix
+  #define TestSuffix "-IsolatedTest"
+ #endif
 #else
  #define TestSuffix ""
 #endif

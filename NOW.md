@@ -12,7 +12,7 @@
 
 28 条指定输入批量检查：26 默认可见，A11/B09 通过已有 More candidates 可访问，0 阻断。B09 Pop/Resolve 第 4，无 Style 第 5，实际 worker 保留 10 条，无需更改全局排序。修复 V4 完整骨架与输入简化不一致；相关 Matcher 40/40、Continuation 42/42、Enrichment 30 案例及完整路径/Preview/MIDI 定向通过。真实 Cubase / FL Studio 及风格听审均 Pending。
 
-统一开发 Setup 及匹配 VST3 / DB / MIDI 位于 `build-installer/v4-0.10.0-dev.1/`；本轮开发构建和隔离安装验证完成后记录结果。产品行为、兼容、审核及边界见 [V4 产品化](docs/FACTORY_V4_PRODUCTIZATION.md)，下一步为 [V4 人工验收](docs/V4_DAW_ACCEPTANCE.md)。本轮授权提交推送 library/v4；不合并 main、不打正式 Tag、不公开发布，不启动 v1.0 或卡池。
+统一开发 Setup 及匹配 VST3 / DB / MIDI 位于 `build-installer/v4-0.10.0-dev.1/`。Release 构建与统一打包通过，21 项隔离安装检查通过。Build ID `0.10.0-dev.1 / 86a8641 / Release / Library 4`；随后仅补充隔离测试身份与结果文档。V4 PRODUCTIZATION READY，供人工验收。产品行为、兼容、审核及边界见 [V4 产品化](docs/FACTORY_V4_PRODUCTIZATION.md)，下一步仅为 [V4 人工验收](docs/V4_DAW_ACCEPTANCE.md)。本轮提交推送 library/v4，实时状态以 Git 为准；不合并 main、不打正式 Tag、不公开发布，不启动 v1.0 或卡池。
 
 ## 发布与验证证据
 

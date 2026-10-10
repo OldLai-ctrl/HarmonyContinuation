@@ -61,14 +61,18 @@
 
 版本检测复用已安装 moduleinfo.json 的 SemVer；这是现有安装管理契约，不是对任意第三方篡改安装的二进制能力证明。运行路径与占用检测、事务、修复、已知旧版迁移、所有权保护均沿用统一安装器。V4 使用版本化 Factory/4，保留历史 Factory/3；同版本不同内容拒绝覆盖，不覆盖历史备份。User Library、收藏、配置不进入卸载删除清单。
 
-定向隔离验证由 `tools/test-v4-installer.ps1` 使用相同安装器源码和 payload，仅将路径与卸载注册重定向到工作区/HKCU；覆盖无插件及真实 v0.9.0 旧插件拒绝、只更新主程序保留 V3、兼容引擎只装 V4、占用拒绝、配套修复及卸载保留个人哨兵和旧库。既有完整旧版迁移生命周期记录继续复用，未重跑全部矩阵。隔离验证不能替代真实管理员安装和宿主验收。
+定向隔离验证 **21 项通过**。`tools/test-v4-installer.ps1` 使用相同安装器源码和 payload，仅将路径与专用 V4ProductTest 卸载注册重定向到工作区/HKCU；覆盖无插件及真实 v0.9.0 旧插件拒绝、只更新主程序保留 V3、兼容引擎只装 V4、占用拒绝、配套修复、首次安装两个组件及卸载保留个人哨兵和旧库。既有完整旧版迁移生命周期记录继续复用，未重跑全部矩阵。隔离验证不能替代真实管理员安装和宿主验收。
 
 ## 产物、验证与剩余边界
 
 开发包目录：`build-installer/v4-0.10.0-dev.1/`；Setup、`stage-4/HarmonyContinuation.vst3`、`stage-4/factory.db`、`evidence/`、`midi/`、`BUILD_INFO.json`、`SHA256SUMS.txt`。数据库及插件源构建位于 `build-v4-dev/`。构建提交与文档交付提交分别记录，不将后续文档提交冒充编译身份。
 
-继承记录维护保持上一轮数量：139 条，包含 138 条技术列表变化、57 条空列表补全、10 条副导语义修正、13 条骨架恢复（计数重叠）；本轮新增记录调整 6 条。V3 原文件不改，旧 629 条音乐身份保留，精确重复及新增结构族重复均为 0。
+继承记录维护保持上一轮数量：139 条，包含 138 条技术列表变化、57 条空列表补全、10 条副导语义修正、13 条骨架恢复（计数重叠）；本轮新增记录调整 5 条，其中 A03 标签调整与节奏调整重叠。V3 原文件不改，旧 629 条音乐身份保留，精确重复及新增结构族重复均为 0。
 
 保留 C01–C08：固定内声部/Line Cliché、指定声部共同音、严格 Planing、枢纽双功能、分段调性、真实转调、跨乐句解决及相关声部表达能力。定义见 `data/review/factory-v4-capabilities.json`，不宣称本包已支持。Enrichment 沿用明确低音/音集合/连接保护，不能安全升级时允许无候选，不调用 Factory V4 进行推荐。
 
-本轮仅执行 Factory 批量定向、相关 Matcher/Continuation/Enrichment 检查、必要 Release 构建及安装定向验证。没有全量 CTest、Validator、音乐 Benchmark、DAW 矩阵。Cubase 和 FL Studio 对本开发二进制均 **Pending**；风格听审 Pending。下一步仅为用户人工验收，不自动开展 v1.0 或特色卡池。
+本轮通过：657 条编译及读回、28 条批量、V4 契约、Matcher 40/40、Continuation 42/42、Enrichment 30 案例（159 个候选的 Preview/MIDI/Snapshot）、一次 Release 插件构建、一次实际统一包构建和 21 项隔离安装检查。独立 Preview/MIDI 原有测试未修改，复用上一轮通过记录。没有全量 CTest、Validator、音乐 Benchmark、DAW 矩阵。
+
+实际 VST3、Setup 源构建提交为 `86a8641224fa3f998a183a98977d94a0ba90ae98`，Build ID **0.10.0-dev.1 / 86a8641 / Release / Library 4**；随后提交仅补充隔离测试身份和结果文档，不重新编译插件。Setup SHA-256：`605774d91cd9f8594fd43e6e60c4e0b8167485d6d1c2b3b9a2769e96d11b337e`。完整交付文件哈希见随包 SHA256SUMS.txt。
+
+**V4 PRODUCTIZATION READY：YES，供人工验收的开发候选版。** Cubase 和 FL Studio 对本二进制均 **Pending**；风格听审 Pending。下一步仅为用户人工验收，不自动开展 v1.0 或特色卡池。

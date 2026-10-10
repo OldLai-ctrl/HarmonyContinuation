@@ -4,17 +4,17 @@ $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot
 $root=[IO.Path]::GetFullPath((Join-Path $repo $TestRoot))
 if (!$root.StartsWith($repo+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $root)) { throw 'Use a fresh workspace-owned isolated root.' }
-$reg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-Application-IsolatedTest_is1'
+$reg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-Application-V4ProductTest_is1'
 if (Test-Path $reg) { throw 'Existing isolated registration must be retained; choose a clean test environment.' }
 $stage=Join-Path $repo "$PackageDirectory/stage-4"
 $oldStage=Join-Path $repo 'build-installer/release-0.9.0/stage-3'
 $factoryHash=(Get-FileHash -LiteralPath (Join-Path $stage 'factory.db')).Hash
 New-Item -ItemType Directory -Path $root | Out-Null
 $compile=@('/Qp',"/DStageDir=$stage","/DOutputPath=$root",'/DProductVersion=0.10.0-dev.1',
-    '/DLibraryVersion=4','/DFactoryEntryCount=657',"/DFactoryHash=$factoryHash",'/DLegacyFactoryHash=',"/DTestRoot=$root")
+    '/DLibraryVersion=4','/DFactoryEntryCount=657',"/DFactoryHash=$factoryHash",'/DLegacyFactoryHash=',"/DTestRoot=$root",'/DTestSuffix=-V4ProductTest')
 & (Join-Path $repo 'build-installer/tools/Inno/ISCC.exe') @compile (Join-Path $repo 'packaging/UnifiedSetup.iss') *> (Join-Path $root 'compile.log')
 if ($LASTEXITCODE -ne 0) { throw 'Isolated installer compilation failed.' }
-$setup=Join-Path $root 'HarmonyContinuation-Setup-IsolatedTest.exe'
+$setup=Join-Path $root 'HarmonyContinuation-Setup-V4ProductTest.exe'
 $app=Join-Path $root 'HarmonyContinuation'
 $bundle=Join-Path $root 'VST3/HarmonyContinuation.vst3'
 $binary=Join-Path $bundle 'Contents/x86_64-win/HarmonyContinuation.vst3'
