@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-rc.2`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-rc.3`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-RC2 定向修复：用户确认 Cubase Pro 15 的 RC1 加载、自动推荐、排序切换、Why?、Preview、MIDI 导出和 Continuation 提示通过；Enrichment 是显示灰色「不足以判断」，并非渲染缺失。截图 Dmin → C → Bb → A 的末和弦 OPEN。原因是整段汇总要求完整时值，Enrichment 保留 OPEN，UI 却同时隐藏了可靠静态指标；Continuation 具有候选建议时值。修复仅在 Enrichment 展示层保留可靠逐和弦静态信息，并明确整段信息不足及原因，不补时值、不改变分析与排序资格。一次 Release 构建、一次合并定向冒烟及 RC2 打包通过，标记 RELEASE CANDIDATE READY；真实 Cubase 定向复验 Pending，FL 无新增证据。RC1 产物保留，完成后停止等待用户复验。
+RC3 Unified Setup：基线 `dcbb3d80b99353e649086fd61589bcf1734d0bc8` 包含 RC2 Enrichment OPEN 显示修复，工作区接手时干净，本机原安装记录为 RC2。用户本次报告色彩修复完成，具体新 RC3 DAW 验收仍 Pending。沿用 Inno Setup，唯一 Setup 管理 VST3 和 Factory 数据组件、更新/修复/明确移除/完整卸载；旧主程序 AppId 复用，旧曲库仅可靠识别后调用原卸载器迁移。当前正在做隔离安装定向验证，完成证据见下方；不执行音乐回归。音乐算法、数据内容、MIDI、宿主和 Schema 冻结。RC1/RC2 目录保留，新目录为 `build-installer/rc-0.9.0-rc.3-unified/`。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 

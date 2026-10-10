@@ -1,5 +1,5 @@
 param(
-    [string]$BuildDirectory = 'build-v08',
+    [string]$BuildDirectory = 'build-v3-plugin',
     [string]$OutputDirectory = 'build-installer/output',
     [string]$Iscc = 'build-installer/tools/Inno/ISCC.exe',
     [string]$RuntimeDirectory = '',
@@ -8,6 +8,7 @@ param(
     [switch]$LibraryOnly
 )
 $ErrorActionPreference = 'Stop'
+if ($LibraryOnly) { throw 'Unified Setup uses /COMPONENTS=library. Separate library installers are no longer generated.' }
 $repo = Split-Path -Parent $PSScriptRoot
 function Absolute([string]$path) {
     if ([IO.Path]::IsPathRooted($path)) { return [IO.Path]::GetFullPath($path) }
@@ -59,20 +60,25 @@ if (!$LibraryOnly) {
     Get-ChildItem -LiteralPath $RuntimeDirectory -Filter '*.dll' -File |
         Copy-Item -Destination (Join-Path $stageBundle 'Contents/x86_64-win')
 }
-$common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DLibraryVersion='+$libraryVersion))
-if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
-$script = Join-Path $repo 'packaging/HarmonyContinuation.iss'
-& $compilerPath @common '/DLibraryOnly' $script
-if ($LASTEXITCODE -ne 0) { throw '进行库安装程序构建失败。' }
-$suffix = if ($TestRoot) {'-IsolatedTest'} else {''}
-$librarySetup = Join-Path $outputPath "HarmonyContinuation-Library-$libraryVersion-Setup$suffix.exe"
-if (!$LibraryOnly) {
-    Copy-Item -LiteralPath $librarySetup -Destination (Join-Path $stage 'LibraryUpdate.exe')
-    & $compilerPath @common $script
-    if ($LASTEXITCODE -ne 0) { throw '完整安装程序构建失败。' }
+# The Factory is an independent data component; do not ship a hidden fallback
+# inside the VST3 component. Only the newly staged copy is changed here.
+$bundledFactory = Join-Path $stageBundle 'Contents/Resources/factory.db'
+if (Test-Path -LiteralPath $bundledFactory) { Remove-Item -LiteralPath $bundledFactory }
+$manifest = Get-ChildItem -LiteralPath $stageBundle -Recurse -File | Sort-Object FullName | ForEach-Object {
+    $relative = $_.FullName.Substring($stageBundle.Length + 1)
+    (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '|' + $relative
 }
-$setups = @($librarySetup)
-if (!$LibraryOnly) { $setups += Join-Path $outputPath "HarmonyContinuation-$productVersion-Setup$suffix.exe" }
+[IO.File]::WriteAllText((Join-Path $stage 'plugin-files.txt'),($manifest -join "`n")+"`n",[Text.UTF8Encoding]::new($false))
+$factoryHash = (Get-FileHash -LiteralPath $FactoryDatabase -Algorithm SHA256).Hash.ToLowerInvariant()
+$legacyFactoryHash = ''
+$legacyDb = Join-Path $buildPath 'factory-v2.db'
+if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -LiteralPath $legacyDb -Algorithm SHA256).Hash.ToLowerInvariant() }
+$common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
+if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
+& $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
+if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }
+$suffix = if ($TestRoot) {'-IsolatedTest'} else {''}
+$setups = @(Join-Path $outputPath "HarmonyContinuation-Setup$suffix.exe")
 $checksums = @()
 foreach ($setup in $setups) {
     $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()

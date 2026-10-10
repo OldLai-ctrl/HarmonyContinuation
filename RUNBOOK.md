@@ -14,15 +14,17 @@
 # 先配置本机已核实的 SDK 环境变量；缺失时停止配置。
 $hcSdk = $env:VST3_SDK_ROOT
 if ([string]::IsNullOrWhiteSpace($hcSdk)) { throw 'VST3_SDK_ROOT 待配置并核实' }
-cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE=rc.2 -DSMTG_RUN_VST_VALIDATOR=OFF
-cmake --build build-v09 --config Release --target HarmonyContinuation library_manager WhyV2Smoke -j 6
+cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE=rc.3 -DSMTG_RUN_VST_VALIDATOR=OFF
+cmake --build build-v09 --config Release --target HarmonyContinuation library_manager -j 6
 ```
 
 多配置构建使用 `Release/library_manager.exe`；`tools/build-installer.ps1` 也支持元数据为 Release 的单配置 Ninja 根目录 `library_manager.exe`，VST3 bundle 仍在 `VST3/Release/`。子进程无法读 Git 时可传当前 `git rev-parse --short=7 HEAD` 到 `HC_GIT_COMMIT_OVERRIDE`；不能沿用旧覆盖值。验证生成的 `ProductVersionGenerated.h` 与 `moduleinfo.json`；构建后置 Validator 结果也要记录，避免重复运行。
 
 ## 局部自动验收
 
-RC2 仅构建一次 Release 的插件、library_manager 与 WhyV2Smoke，直接运行 `WhyV2Smoke rc2-hints` 一次，合并普通完整路径、截图 OPEN 静态/时值回退、多方向中性回退、开关及 Continuation 色条像素检查；不运行旧冒烟入口。仅本轮定向项目通过后打包，复用已有 factory.db 与 dev.5–dev.8 证据；一次调用 build-installer.ps1，输出到独立 build-installer/rc-0.9.0-rc.2 目录，检查版本、Git 标识、关键文件、依赖和 SHA-256，不运行安装生命周期或测试程序。人工验收见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)。
+RC3 只构建一次 Release 插件和 library_manager；一次生成统一 Setup，运行 `tools/test-unified-installer.ps1` 的两个隔离生命周期，检查首次安装、组件独立更新/增删/修复、旧双记录迁移、文件占用及完整卸载。测试包只写编译进的项目内路径及独立 HKCU 测试 AppId，不操作生产数据；失败只定向修复和继续未通过步骤。打包说明见 [统一安装器](docs/INSTALLER_AND_LIBRARY.md)。不运行插件测试或回归。
+
+以下 RC2 为历史入口，本轮不执行：RC2 仅构建一次 Release 的插件、library_manager 与 WhyV2Smoke，直接运行 `WhyV2Smoke rc2-hints` 一次，合并普通完整路径、截图 OPEN 静态/时值回退、多方向中性回退、开关及 Continuation 色条像素检查；不运行旧冒烟入口。仅本轮定向项目通过后打包，复用已有 factory.db 与 dev.5–dev.8 证据；一次调用 build-installer.ps1，输出到独立 build-installer/rc-0.9.0-rc.2 目录，检查版本、Git 标识、关键文件、依赖和 SHA-256，不运行安装生命周期或测试程序。人工验收见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)。
 
 以下 dev.8 为历史入口，本轮不执行：只构建一次 Release 的 `HarmonyContinuation` 和 `WhyV2Smoke`，直接运行后者一次，合并一个 Continuation 与一个 Enrichment 的卡片/Why?/开关 UI 场景，顺带未知状态及 Preview/MIDI 身份。复用 dev.5–dev.7 算法证据；若失败仅指定 `continuation` 或 `enrichment` 定向重验。禁止扩大为历史回归或 UI 矩阵，通过后停止。详见 [Why? V2](docs/WHY_V2.md)。
 
@@ -52,11 +54,11 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 ## 打包与安装
 
-前置：已确认的 Release 构建、Inno Setup 6.7+、可分发的 MSVC x64 CRT、有效 factory.db。搜索并读取 `tools/build-installer.ps1` 的参数段，再显式传 `-BuildDirectory build-v09 -Iscc <本机ISCC> -RuntimeDirectory <本机CRT>`；脚本默认 build-v08，不能直接沿用。库单独更新使用 `-LibraryOnly -FactoryDatabase <已验证DB>`。
+前置：已确认的 Release 构建、Inno Setup 6.7+、可分发的 MSVC x64 CRT、有效 factory.db。搜索并读取 `tools/build-installer.ps1` 的参数段，再显式传 `-BuildDirectory build-v3-plugin -Iscc <本机ISCC> -RuntimeDirectory <本机CRT>`。只更新库由同一 Setup 选择 Factory Library 组件，脚本不再生成独立库安装器。
 
-安装逻辑变动时按 `tools/test-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
+统一安装逻辑变动时按 `tools/test-unified-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
 
-V3 已有 `test-v3-installer.ps1` 的一次隔离生命周期、9 项通过结果。安装器逻辑未改时直接复用，不重复安装/卸载。本次从已提交且干净的源码构建一次 Release，关闭构建附带 Validator，清除旧 Git override；生成完整包、Library 3 包及 `SHA256SUMS.txt`，一次确认插件、打包 DB 的 Library 3 / Schema 2、版本、Git 标识与校验和。成功后停止，不自动进入完整回归。完整提交及产物证据随包记录在 `BUILD_INFO.json`。
+旧 V3 九项安装证据保留为历史。本轮统一安装器有实际逻辑变动，只做一次隔离生命周期，覆盖独立组件维护、旧双安装器迁移、文件占用拒绝和保留个人数据的完整卸载。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；只生成 `HarmonyContinuation-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
 
 ## 交付与同步
 

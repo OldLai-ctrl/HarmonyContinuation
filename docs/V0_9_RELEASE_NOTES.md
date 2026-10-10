@@ -1,3 +1,11 @@
+# HarmonyContinuation 0.9.0-rc.3 — Unified Setup
+
+沿用包含 Enrichment OPEN 显示修复的 RC2 源码，只更新安装工程和版本。唯一 `HarmonyContinuation-Setup.exe` 管理 VST3 与 Factory Library V3 两个独立组件，支持离线安装/更新、明确组件增删、修复和完整卸载。默认两组件，跳过更新不等于删除；Windows 沿用一个主程序 AppId。个人库/收藏/配置及其它历史库保留，原 RC1/RC2 包不覆盖。
+
+已知旧双安装器按可验证身份/路径迁移，不强删注册信息。首次仅库迁移保留旧插件，安全的组件级插件移除需先更新/修复它以登记清单。只装插件不再暗含 Factory 数据；官方推荐需要另选库组件。具体迁移与失败恢复边界见 [统一安装器说明](INSTALLER_AND_LIBRARY.md)。
+
+音乐算法、排序窗口/权重、Factory 629 条内容、MIDI、宿主及 Schema 不变。用户报告 RC2 Cubase Enrichment 修复完成；RC3 标准安装与 DAW 人工验收仍待反馈，FL 无新增通过证据。未正式发布、不合并 main、不创建 Tag、不启动 Library V4。
+
 # HarmonyContinuation 0.9.0-rc.2
 
 仅修复升级进行的色彩展示：Cubase 导入的末和弦正常保留 OPEN，缺失时值导致整段色彩汇总为空；RC1 将可靠的逐和弦静态指标一并隐藏。RC2 在全部和弦静态指标可靠、仅时间信息不完整时显示中性「静态：…；整段信息不足」，Why? 明确时值缺失，不编造时长、平均值或时间趋势。正常完整路径沿用原提示；缺失低音、未覆盖音集或多方向仍中性回退。

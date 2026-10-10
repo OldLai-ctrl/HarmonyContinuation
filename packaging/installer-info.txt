@@ -1,21 +1,22 @@
 HarmonyContinuation 本地安装与更新
 
-本包为 0.9.0-rc.2 发布候选 / Factory Library 3，包含 629 条内置进行；供真实 DAW 人工验收，不是正式发布。
-Release Candidate 0.9.0-rc.2 / Factory Library 3 (629 entries). Cubase Pro 15 and FL Studio acceptance is pending; this is not a final release.
-独立 Library 3 包需要支持 Factory Schema 2 的 0.9.0-dev.2 或更新插件。
+本包为 0.9.0-rc.3 发布候选 / Factory Library 3，包含 629 条内置进行；供真实 DAW 人工验收，不是正式发布。
+Release Candidate 0.9.0-rc.3 / Factory Library 3 (629 entries). Cubase Pro 15 and FL Studio acceptance is pending; this is not a final release.
+Factory 数据组件需要支持 Factory Schema 2 的 0.9.0-dev.2 或更新插件。
 新版插件首次写入旧个人库时会升级到 User Schema 2，并保留一次性 user.db.v1-backup。
 v0.8.0 和旧 0.9.0-dev.1 无法读取新版个人库；升级前请关闭宿主并另存个人数据备份。
 
 安装：把 VST3 插件放入系统标准插件目录，并安装本地内置进行库。
-更新：直接运行新版安装程序。只更新进行库时，可以运行单独的进行库安装包。
+更新、修复和修改组件：运行同一个 HarmonyContinuation-Setup.exe。取消勾选更新项不会卸载，删除组件必须使用明确移除操作。
+Unified Setup manages independent VST3 and Factory components. Skipping an update does not uninstall; removal is explicit.
 卸载：在 Windows「已安装的应用」中卸载，或使用开始菜单中的卸载入口。
 
-个人进行保存在原来的本地位置。安装、更新和卸载都不会删除个人进行。
-内置进行库独立保存，并保留以前安装的版本。插件卸载后这些本地数据也会保留。
+个人进行、收藏和配置保存在原来的本地位置。安装、更新和卸载都不会删除个人数据。
+官方库独立保存。明确移除库或完整卸载时，只删除本安装器管理的 Factory V3；其它历史库保留。只安装插件而未安装库时，官方推荐不可用。
 进行库更新后，请重新打开插件实例以载入新版本。
 
 更新插件前请关闭 Cubase 及其他正在使用此插件的宿主。
-标准插件目录中的旧版 HarmonyContinuation 备份会移到 ProgramData 下的备份目录，避免宿主同时加载新旧版本；旧文件会保留。
+已知旧双安装器按身份与标准路径安全合并；无法识别时保留并提示，不强删注册信息。
 验收记录请参阅对应版本说明；安装成功本身不等于完成宿主人工验收。
 
 FL Studio 20+：当前为兼容候选，尚待真实 FL Studio 验收。
