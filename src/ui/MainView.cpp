@@ -572,12 +572,13 @@ const color::PathColor& MainView::candidateColor(const enrichment::EnrichmentCan
     if(const auto found=colorPaths_.find(key);found!=colorPaths_.end())return found->second;
     return colorPaths_.emplace(key,color::ColorPreferenceReranker::analyzeEnrichment(candidate.progression)).first->second;
 }
-void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) {
+void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect,CRect card) {
     if(hint.label.empty()||rect.getWidth()<20)return;
-    const auto tone=hint.tone==ColorTone::Warm?CColor(202,177,119,255):
-        hint.tone==ColorTone::Cool?CColor(114,171,188,255):muted;
-    box(dc,CRect(rect.left,rect.top+3,rect.left+2,rect.bottom-3),tone);
-    rect.left+=7;auto label=hint.label;dc->setFont(kNormalFont);
+    const auto tone=hint.tone==ColorTone::Warm?CColor(232,184,94,255):
+        hint.tone==ColorTone::Cool?CColor(95,202,220,255):CColor(180,185,194,255);
+    // A fixed card edge, separate from chord/progress graphics and purpose text.
+    box(dc,CRect(card.left+1,card.top+4,card.left+5,card.bottom-4),tone);
+    rect.left=std::max(rect.left,card.left+10);auto label=hint.label;dc->setFont(kNormalFont);
     if(dc->getStringWidth(label.c_str())>rect.getWidth())
         if(const auto split=label.find(" · ");split!=std::string::npos)label.resize(split);
     line(dc,label,rect,tone);
@@ -596,7 +597,7 @@ bool MainView::runEnrichmentHintSmoke(CDrawContext* dc,const std::function<bool(
     const auto render=[&](const enrichment::EnrichmentCandidate& c){
         enrichment::EnrichmentResult result;result.groups[0].push_back(c);setEnrichments(result);
         refreshLayout();const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,1,0.);
-        const auto rect=viewRect(enrichmentRowGeometry(lane,list,0).badges);
+        const auto rect=viewRect(enrichmentRowGeometry(lane,list,0).row);
         const auto hint=candidateHint(enrichments_.groups[0][0]);
         dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
         return !hint.label.empty()&&painted(rect,hint.tone);
@@ -630,10 +631,51 @@ bool MainView::runEnrichmentHintSmoke(CDrawContext* dc,const std::function<bool(
     c.continuation={{"Dm",2.,{1,0},ChordQuality::Minor,{}}};RecommendationSet result;result.groups[0].push_back(c);setRecommendations(result);
     refreshLayout();const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,1,0.);
     const auto geometry=list.continuationRow(lane,0,false);const auto hint=candidateHint(recommendations_.groups[0][0]);
-    auto rect=viewRect(geometry.intent);dc->setFont(kNormalFont);
-    rect.left+=std::min(rect.getWidth()*.40,dc->getStringWidth(tIntent(c.intent).c_str())+9.);
+    const auto rect=viewRect(geometry.row);
     dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
     return !hint.staticOnly&&!hint.label.empty()&&hint.label==colorHint(candidateColor(c),state_.locale).label&&painted(rect,hint.tone);
+}
+bool MainView::runColorVisibilitySmoke(CDrawContext* dc,const std::function<bool(CRect,CRect,ColorTone,bool)>& painted) {
+    session::PluginSessionState state;
+    ChordEvent source;source.name="Cmaj7";source.root=PitchClass::C;source.bass=PitchClass::C;
+    source.quality=ChordQuality::Major7;source.startQN=0.;source.durationQN=4.;source.openEnded=false;
+    if(!state.imported.replace({source},TimelineCoordinateMode::RelativeToSelection))return false;
+    for(const bool enrich:{false,true}) {
+        state.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
+        setSessionState(state);
+        // One ordinary calculable candidate, then a genuinely ambiguous structure.
+        for(const bool ambiguous:{false,true}) {
+            ContinuationCandidate c;c.id="visibility";c.rankingScore=90;c.key={PitchClass::C,Mode::Major};
+            ConcreteChordEvent next;next.label=ambiguous?"Caug":"C";
+            next.quality=ambiguous?ChordQuality::Augmented:ChordQuality::Major;next.durationQN=4.;
+            c.continuation.push_back(next);
+            enrichment::EnrichmentCandidate e;e.id="visibility";e.fingerprint=ambiguous?"aug":"major";e.score=90;
+            auto event=source;event.name=next.label;event.quality=next.quality;e.progression.push_back(event);
+            if(enrich){enrichment::EnrichmentResult r;r.groups[0].push_back(e);setEnrichments(r);}
+            else {RecommendationSet r;r.groups[0].push_back(c);setRecommendations(r);}
+            refreshLayout();const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,1,0.);
+            const auto cg=list.continuationRow(lane,0,false);const auto eg=enrichmentRowGeometry(lane,list,0);
+            const auto card=viewRect(enrich?eg.row:cg.row),label=viewRect(enrich?eg.badges:cg.intent);
+            setColorPreference(color::Preference::TensionArc);
+            for(const auto locale:{session::Locale::ZhCN,session::Locale::EnUS}) {
+                state_.locale=locale;setColorHints(true);
+                const auto hint=enrich?candidateHint(enrichments_.groups[0][0]):candidateHint(recommendations_.groups[0][0]);
+                const auto& path=enrich?candidateColor(enrichments_.groups[0][0]):candidateColor(recommendations_.groups[0][0]);
+                if(hint.label.empty())return false;
+                if(ambiguous) {
+                    if(path.status==color::Status::Known||hint.tone!=ColorTone::Neutral||hint.label!=t("color.uncertain"))return false;
+                } else if(path.status!=color::Status::Known||hint.tone!=ColorTone::Warm||!path.meanW)return false;
+                dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+                if(!painted(card,label,hint.tone,true))return false;
+                setColorHints(false);
+                if(colorPreference_!=color::Preference::TensionArc||
+                    !(enrich?candidateHint(enrichments_.groups[0][0]):candidateHint(recommendations_.groups[0][0])).label.empty())return false;
+                dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+                if(!painted(card,label,hint.tone,false))return false;
+            }
+        }
+    }
+    return true;
 }
 bool MainView::runWhyV2Smoke(CDrawContext* dc,bool enrich) {
     session::PluginSessionState state;state.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
@@ -1039,7 +1081,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
                 auto rect=viewRect(geometry.intent);dc->setFont(kNormalFont);
                 const auto width=std::min(rect.getWidth()*.40,dc->getStringWidth(tIntent(c.intent).c_str())+9.);
                 auto purpose=rect;purpose.right=purpose.left+width;line(dc,tIntent(c.intent),purpose,muted);
-                rect.left+=width;drawColorHint(dc,hint,rect);
+                rect.left+=width;drawColorHint(dc,hint,rect,viewRect(geometry.row));
             }
             else line(dc,intent,viewRect(geometry.intent),muted);
             line(dc,t("candidate.pin"),viewRect(geometry.pin),accent,kCenterText);
@@ -1099,7 +1141,7 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
                 badges+=t("technique."+std::string(enrichment::techniqueName(candidate.techniques[i])));
             }
             auto hint=candidateHint(candidate);
-            if(!hint.label.empty())drawColorHint(dc,hint,viewRect(geometry.badges));
+            if(!hint.label.empty())drawColorHint(dc,hint,viewRect(geometry.badges),viewRect(geometry.row));
             else line(dc,badges,viewRect(geometry.badges),muted);
             line(dc,std::find(pinnedEnrichmentIds_.begin(),pinnedEnrichmentIds_.end(),candidate.id)!=
                 pinnedEnrichmentIds_.end()?t("candidate.unpin"):t("candidate.pin"),

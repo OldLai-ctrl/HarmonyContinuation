@@ -1,6 +1,6 @@
 # RC 真实 DAW 人工验收
 
-对象：0.9.0-rc.3 Unified Setup，Windows x64。用户报告 RC2 的 Cubase Enrichment 色彩修复完成；RC3 的真实标准安装、Cubase 复验及 FL 验收待反馈。仅填写实际执行项，不把旧版本报告当新包结果。
+当前对象：0.9.0-rc.4 色彩提示 VST3 定向验证，Windows x64。本轮只需确认左缘色条与文字、Unknown 中性提示及开关隐藏，顺带查看两模式；下方 RC3 统一安装器清单保留，不要求重新执行。用户报告 RC2 的 Cubase Enrichment 色彩修复完成；RC3 的真实标准安装、Cubase 复验及 FL 验收待反馈。仅填写实际执行项，不把旧版本报告当新包结果。
 
 关闭宿主后运行 RC 目录内统一 HarmonyContinuation-Setup.exe。核对「更多 → 关于」的版本/提交与 BUILD_INFO.json；不要覆盖或删除个人数据。插件在标准 Common Files/VST3 路径；FL 从效果器插槽加载，必要时重新扫描，文件拖入设置参阅 [既有说明](FL_STUDIO_COMPATIBILITY.md)。
 

@@ -108,6 +108,7 @@ public:
     bool runEnrichmentColorSmoke(VSTGUI::CDrawContext*,const Progression&,const enrichment::EnrichmentResult&);
     bool runWhyV2Smoke(VSTGUI::CDrawContext*,bool enrichmentMode);
     bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
+    bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -134,7 +135,7 @@ private:
     const color::PathColor& candidateColor(const enrichment::EnrichmentCandidate&);
     ColorHint candidateHint(const ContinuationCandidate& c) {return showColorHints_?colorHint(candidateColor(c),state_.locale):ColorHint{};}
     ColorHint candidateHint(const enrichment::EnrichmentCandidate& c) {return showColorHints_?enrichmentColorHint(candidateColor(c),state_.locale):ColorHint{};}
-    void drawColorHint(VSTGUI::CDrawContext*,const ColorHint&,VSTGUI::CRect);
+    void drawColorHint(VSTGUI::CDrawContext*,const ColorHint&,VSTGUI::CRect,VSTGUI::CRect);
     enrichment::EnrichmentResult enrichments_;
     std::vector<ContinuationCandidate> pinnedSnapshots_;
     std::vector<std::string> pinnedEnrichmentIds_;

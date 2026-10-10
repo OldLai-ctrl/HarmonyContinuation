@@ -1,3 +1,9 @@
+# 0.9.0-rc.4 — 色彩提示可见性修复
+
+Continuation 与 Enrichment 共用固定卡片左缘 4px 色条，增强橙金、青蓝及中性灰对比度；文字在原提示行显示。Unknown / Uncertain 明确显示色彩不足以判断，提示关闭后色条与文字一起隐藏，排序开关独立。保留 RC2 的 OPEN 静态提示及可靠性边界；没有整段证据就不生成时间趋势。数学、排序、候选、Factory 及所有 Schema 不变。
+
+本轮仅 VST3 验证产物，无新安装器；构建标识及最小显示验证见 [NOW](../NOW.md#证据)，真实 Cubase 验收 Pending。
+
 # HarmonyContinuation 0.9.0-rc.3 — Unified Setup
 
 沿用包含 Enrichment OPEN 显示修复的 RC2 源码，只更新安装工程和版本。唯一 `HarmonyContinuation-Setup.exe` 管理 VST3 与 Factory Library V3 两个独立组件，支持离线安装/更新、明确组件增删、修复和完整卸载。默认两组件，跳过更新不等于删除；Windows 沿用一个主程序 AppId。个人库/收藏/配置及其它历史库保留，原 RC1/RC2 包不覆盖。

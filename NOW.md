@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-rc.3`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-rc.4`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-RC3 Unified Setup：基线 `dcbb3d80b99353e649086fd61589bcf1734d0bc8` 包含 RC2 Enrichment OPEN 显示修复，工作区接手时干净，本机原安装记录为 RC2。用户本次报告色彩修复完成，具体新 RC3 DAW 验收仍 Pending。沿用 Inno Setup，唯一 Setup 管理 VST3 和 Factory 数据组件、更新/修复/明确移除/完整卸载；旧主程序 AppId 复用，旧曲库仅可靠识别后调用原卸载器迁移。一次隔离生命周期 28 项检查通过，构建/包校验完成，RELEASE CANDIDATE READY；真实标准安装与 DAW 验收 Pending。证据见下方，不再执行音乐回归。音乐算法、数据内容、MIDI、宿主和 Schema 冻结。RC1/RC2 目录保留，新目录为 `build-installer/rc-0.9.0-rc.3-unified/`。
+RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。计划一次 Release 编译及一个合并离屏像素冒烟，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`，不制作安装包，不覆盖旧 RC 产物。完成后推送并停止等待用户 Cubase 复验。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 

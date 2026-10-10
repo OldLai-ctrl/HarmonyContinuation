@@ -11,12 +11,32 @@ int main(int argc,char** argv) {
     {
         auto canvas=VSTGUI::COffscreenContext::create({1100,900});
         if(!canvas)result=1;
+        else if(argc>1&&std::string(argv[1])=="rc-visibility") {
+            auto view=VSTGUI::owned(new harmony::ui::MainView({0,0,1100,900},{}));
+            const bool pass=view->runColorVisibilitySmoke(canvas.get(),[&](VSTGUI::CRect card,VSTGUI::CRect label,harmony::ui::ColorTone tone,bool shown){
+                auto pixels=VSTGUI::owned(VSTGUI::CBitmapPixelAccess::create(canvas->getBitmap()));if(!pixels)return false;
+                const auto expected=tone==harmony::ui::ColorTone::Warm?VSTGUI::CColor(232,184,94,255):
+                    tone==harmony::ui::ColorTone::Cool?VSTGUI::CColor(95,202,220,255):VSTGUI::CColor(180,185,194,255);
+                const VSTGUI::CColor background(33,49,69,255);
+                const auto pixel=[&](int x,int y){VSTGUI::CColor c;pixels->setPosition(x,y);pixels->getColor(c);return c;};
+                for(int x=1;x<=4;++x)
+                    if(pixel(static_cast<int>(card.left)+x,static_cast<int>(card.top)+10)!=(shown?expected:background))return false;
+                if(pixel(static_cast<int>(card.left)+5,static_cast<int>(card.top)+10)!=background)return false;
+                bool textPainted=false;
+                for(int y=static_cast<int>(label.top);y<static_cast<int>(label.bottom);++y)
+                    for(int x=static_cast<int>(label.left);x<static_cast<int>(label.right);++x)
+                        textPainted|=pixel(x,y)==expected;
+                return textPainted==shown;
+            });
+            std::cout<<"Continuation + Enrichment: known warmth / ambiguous neutral / 4px edge + label pixels / hints toggle independent of ranking / zh+en "<<(pass?"PASS":"FAIL")<<'\n';
+            if(!pass)result=1;
+        }
         else if(argc>1&&std::string(argv[1])=="rc2-hints") {
             auto view=VSTGUI::owned(new harmony::ui::MainView({0,0,1100,900},{}));
             const bool pass=view->runEnrichmentHintSmoke(canvas.get(),[&](VSTGUI::CRect rect,harmony::ui::ColorTone tone){
                 auto pixels=VSTGUI::owned(VSTGUI::CBitmapPixelAccess::create(canvas->getBitmap()));if(!pixels)return false;
-                const VSTGUI::CColor expected=tone==harmony::ui::ColorTone::Warm?VSTGUI::CColor(202,177,119,255):
-                    tone==harmony::ui::ColorTone::Cool?VSTGUI::CColor(114,171,188,255):VSTGUI::CColor(148,173,200,255);
+                const VSTGUI::CColor expected=tone==harmony::ui::ColorTone::Warm?VSTGUI::CColor(232,184,94,255):
+                    tone==harmony::ui::ColorTone::Cool?VSTGUI::CColor(95,202,220,255):VSTGUI::CColor(180,185,194,255);
                 VSTGUI::CColor actual;pixels->setPosition(static_cast<uint32_t>(rect.left+1),static_cast<uint32_t>(rect.top+10));pixels->getColor(actual);
                 return actual==expected;
             });
