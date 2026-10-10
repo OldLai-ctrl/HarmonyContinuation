@@ -1,6 +1,6 @@
 # RC 真实 DAW 人工验收
 
-对象：0.9.0-rc.1，Windows x64；Cubase Pro 15 与 FL Studio 分别记录实际完整版本。当前两者均 **Pending**。本清单只准备人工验收，不代表已经执行。
+对象：0.9.0-rc.2，Windows x64；Cubase Pro 15 与 FL Studio 分别记录实际完整版本。RC2 当前两者均 **Pending**。RC1 的 Cubase 用户报告见 [宿主记录](HOST_SPIKE.md#2026-10-10--rc1-用户报告--rc2-待复验)；本次 Cubase 只需用同一 OPEN 输入复验升级卡片、Why? 和提示开关，其余已通过项不要求重复。本清单只准备人工验收，不代表已经执行。
 
 关闭宿主后运行 RC 目录内完整 Setup。核对「更多 → 关于」的版本/提交与 BUILD_INFO.json；不要覆盖或删除个人数据。插件在标准 Common Files/VST3 路径；FL 从效果器插槽加载，必要时重新扫描，文件拖入设置参阅 [既有说明](FL_STUDIO_COMPATIBILITY.md)。
 

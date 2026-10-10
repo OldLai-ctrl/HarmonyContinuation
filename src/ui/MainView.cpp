@@ -582,6 +582,59 @@ void MainView::drawColorHint(CDrawContext* dc,const ColorHint& hint,CRect rect) 
         if(const auto split=label.find(" · ");split!=std::string::npos)label.resize(split);
     line(dc,label,rect,tone);
 }
+bool MainView::runEnrichmentHintSmoke(CDrawContext* dc,const std::function<bool(CRect,ColorTone)>& painted) {
+    session::PluginSessionState state;state.productMode=session::ProductMode::Enrich;
+    Progression phrase;
+    const char* names[]{"Dmin","C/E","Bb","A"};
+    const PitchClass roots[]{PitchClass::D,PitchClass::C,PitchClass::Bb,PitchClass::A};
+    for(int i=0;i<4;++i){ChordEvent e;e.name=names[i];e.root=roots[i];e.bass=i==1?PitchClass::E:roots[i];
+        e.quality=i?ChordQuality::Major:ChordQuality::Minor;e.startQN=i*2.;e.durationQN=2.;e.openEnded=false;phrase.push_back(e);}
+    if(!state.imported.replace(phrase,TimelineCoordinateMode::AbsoluteProjectQN))return false;
+    setSessionState(state);
+    enrichment::EnrichmentCandidate candidate;candidate.id="rc2-hint";candidate.fingerprint="rc2-hint";
+    candidate.progression=phrase;candidate.score=82;
+    const auto render=[&](const enrichment::EnrichmentCandidate& c){
+        enrichment::EnrichmentResult result;result.groups[0].push_back(c);setEnrichments(result);
+        refreshLayout();const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,1,0.);
+        const auto rect=viewRect(enrichmentRowGeometry(lane,list,0).badges);
+        const auto hint=candidateHint(enrichments_.groups[0][0]);
+        dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+        return !hint.label.empty()&&painted(rect,hint.tone);
+    };
+    for(const auto locale:{session::Locale::ZhCN,session::Locale::EnUS}){
+        state_.locale=locale;
+        // The same ordinary candidate with complete timing retains the old summary.
+        if(!render(candidate))return false;
+        const auto& complete=candidateColor(enrichments_.groups[0][0]);
+        const auto normal=candidateHint(enrichments_.groups[0][0]);
+        if(complete.status!=color::Status::Known||normal.staticOnly||normal.label!=colorHint(complete,locale).label)return false;
+        // Reproduce the screenshot: the final A is OPEN, bass/inversion are explicit.
+        auto open=candidate;open.progression.back().durationQN.reset();open.progression.back().openEnded=true;
+        if(!render(open))return false;
+        const auto& path=candidateColor(enrichments_.groups[0][0]);const auto hint=candidateHint(enrichments_.groups[0][0]);
+        if(path.status!=color::Status::Unknown||path.meanW||!hint.staticOnly||hint.tone!=ColorTone::Neutral||
+            hint.explanation.find(t("color.whyMissingTiming"))==std::string::npos||path.positions[1].chord.status!=color::Status::Known||
+            !enrichments_.groups[0][0].progression.back().openEnded||enrichments_.groups[0][0].progression.back().durationQN)return false;
+        const auto why=explainWhy("functional",hint,locale,color::Preference::Warmer,color::RankReason::InsufficientColor);
+        if(why.sentences.size()!=3||why.sentences[1]!=hint.explanation)return false;
+        setColorHints(false);if(!candidateHint(enrichments_.groups[0][0]).label.empty())return false;setColorHints(true);
+        // Genuine multi-direction ambiguity is never replaced by a static-only tag.
+        auto ambiguous=candidate;ambiguous.progression[0].name="Daug";ambiguous.progression[0].quality=ChordQuality::Augmented;
+        if(!render(ambiguous))return false;
+        const auto fallback=candidateHint(enrichments_.groups[0][0]);
+        if(fallback.staticOnly||fallback.tone!=ColorTone::Neutral||fallback.label!=t("color.uncertain"))return false;
+    }
+    // Continuation still uses its original complete-path hint and renderer.
+    state_.productMode=session::ProductMode::Continue;
+    ContinuationCandidate c;c.id="rc2-continuation";c.key={PitchClass::D,Mode::Minor};c.rankingScore=85;
+    c.continuation={{"Dm",2.,{1,0},ChordQuality::Minor,{}}};RecommendationSet result;result.groups[0].push_back(c);setRecommendations(result);
+    refreshLayout();const auto lane=layout_.lanes[0];const ScrollableCandidateList list(lane,1,0.);
+    const auto geometry=list.continuationRow(lane,0,false);const auto hint=candidateHint(recommendations_.groups[0][0]);
+    auto rect=viewRect(geometry.intent);dc->setFont(kNormalFont);
+    rect.left+=std::min(rect.getWidth()*.40,dc->getStringWidth(tIntent(c.intent).c_str())+9.);
+    dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+    return !hint.staticOnly&&!hint.label.empty()&&hint.label==colorHint(candidateColor(c),state_.locale).label&&painted(rect,hint.tone);
+}
 bool MainView::runWhyV2Smoke(CDrawContext* dc,bool enrich) {
     session::PluginSessionState state;state.productMode=enrich?session::ProductMode::Enrich:session::ProductMode::Continue;
     Progression source;

@@ -84,3 +84,7 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - CTest 内含 Constraint 16/16、MIDI Import 27/27、Round-trip 12/12；Demo MIDI / More / Scroll / Why PASS、Zoom 9/9、Resize 96/96。没有重复运行这些测试。
 - 集中回归未发现新 bug。只更新 ProductVersion 为 0.8.0-rc.1 与 RC 文档；库 / 数据 / 快照版本保持 2 / 1 / 5 / 2 / 1。
 - RC1 安装包是从确定 RC 提交重新构建的产物；其资源检查和最终 Validator 结果记录在随包 BUILD.txt。**dev.2 Cubase PASS 不等于 RC1 安装包已经重新人工测试**。完成 RC 打包后停止。
+
+## 2026-10-10 · RC1 用户报告 / RC2 待复验
+
+用户报告 Cubase Pro 15 中 RC1 的加载、自动推荐、排序切换、Why?、Preview、MIDI 导出及 Continuation 色彩提示通过。截图的 Dmin → C → Bb → A 末和弦 OPEN；升级 Dmin → C/E → Bb → A 显示灰色「不足以判断」，Why? 为音集、方向或时值不足。源码确认末时值缺失会使整段摘要不可用，并不代表单和弦静态指标全部失败。RC2 只分开展示可靠静态指标和整段时间信息不足；真实 Cubase 定向复验 Pending。未新增 FL Studio 结果，未宣称跨工程恢复或完整宿主矩阵通过。

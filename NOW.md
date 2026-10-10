@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-rc.1`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0-rc.2`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-rc.1 功能冻结与安装包整合已完成，标记 RELEASE CANDIDATE READY，等待真实 Cubase Pro 15 / FL Studio 人工验收（均 Pending）。构建提交 `da1fd6d08ab20771f8696944bdaa4b027e4ca7b9`，只修改版本、安装前说明和文档，算法、Factory V3、MIDI、宿主及 Schema 不变。复用已有安装器；一次 Release 构建、一次打包及必要文件/依赖检查通过。RC 位于 `build-installer/rc-0.9.0-rc.1/`，不覆盖旧正式产物；[六项清单](docs/RC_DAW_ACCEPTANCE.md) 已随目录附带。功能提交与后续证据提交推送至 `v0.9/dev`，实时同步以 tracking ref 为准。非正式发布，不合并 main 或创建 Tag；本轮完成后停止。
+RC2 定向修复：用户确认 Cubase Pro 15 的 RC1 加载、自动推荐、排序切换、Why?、Preview、MIDI 导出和 Continuation 提示通过；Enrichment 是显示灰色「不足以判断」，并非渲染缺失。截图 Dmin → C → Bb → A 的末和弦 OPEN。原因是整段汇总要求完整时值，Enrichment 保留 OPEN，UI 却同时隐藏了可靠静态指标；Continuation 具有候选建议时值。修复仅在 Enrichment 展示层保留可靠逐和弦静态信息，并明确整段信息不足及原因，不补时值、不改变分析与排序资格。最小定向验证和 RC2 打包待记录；真实 Cubase 定向复验 Pending，FL 无新增证据。RC1 产物保留，完成后停止等待用户复验。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 

@@ -25,6 +25,21 @@ purpose and the full path; detailed techniques are in Why. If the short hint is
 too wide, its secondary tag is omitted using actual font width. Backgrounds,
 actions, card dimensions, scaling and index mappings stay unchanged.
 
+## RC2: OPEN Enrichment display
+
+Cubase's terminal OPEN event has no reliable duration. The unchanged analyzer
+retains per-position static metrics but cannot emit a duration-weighted path
+mean/trend. Enrichment cards now retain those static facts when every position
+is Known and only timing is missing. A neutral “Static: …; path incomplete” tag
+and Why timing explanation explicitly distinguish this from a full-path trend.
+Warm/cool categories use the existing ±1 W display thresholds across all positions;
+no average, rhythm, direction or scalar score is invented. A reliable final ΔT
+may be described as the final connection only. Cached PathColor stays Unknown,
+mean/trend stay absent, and ranking eligibility is unchanged. Genuine unknown
+pitch sets, ambiguous directions and missing bass keep the old neutral fallback.
+Continuation keeps its original presentation path. Hint visibility still governs
+both labels and their explanation, including with an active ranking preference.
+
 ## Why structure
 
 The complete candidate path precedes one to three explanation sentences:

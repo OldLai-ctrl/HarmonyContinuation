@@ -1,7 +1,7 @@
 HarmonyContinuation 本地安装与更新
 
-本包为 0.9.0-rc.1 发布候选 / Factory Library 3，包含 629 条内置进行；供真实 DAW 人工验收，不是正式发布。
-Release Candidate 0.9.0-rc.1 / Factory Library 3 (629 entries). Cubase Pro 15 and FL Studio acceptance is pending; this is not a final release.
+本包为 0.9.0-rc.2 发布候选 / Factory Library 3，包含 629 条内置进行；供真实 DAW 人工验收，不是正式发布。
+Release Candidate 0.9.0-rc.2 / Factory Library 3 (629 entries). Cubase Pro 15 and FL Studio acceptance is pending; this is not a final release.
 独立 Library 3 包需要支持 Factory Schema 2 的 0.9.0-dev.2 或更新插件。
 新版插件首次写入旧个人库时会升级到 User Schema 2，并保留一次性 user.db.v1-backup。
 v0.8.0 和旧 0.9.0-dev.1 无法读取新版个人库；升级前请关闭宿主并另存个人数据备份。

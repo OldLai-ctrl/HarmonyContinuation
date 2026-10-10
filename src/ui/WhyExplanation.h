@@ -9,7 +9,7 @@ inline WhyExplanation explainWhy(std::string functional,const ColorHint& hint,se
     WhyExplanation out;out.sentences.push_back(std::move(functional));
     const auto text=[&](const std::string& key){return std::string(localization::text(locale,key));};
     const bool insufficient=reason&&(*reason==color::RankReason::InsufficientColor||*reason==color::RankReason::InsufficientSource);
-    if(!hint.explanation.empty()&&!(preference!=color::Preference::Off&&insufficient))out.sentences.push_back(hint.explanation);
+    if(!hint.explanation.empty()&&!(preference!=color::Preference::Off&&insufficient&&!hint.staticOnly))out.sentences.push_back(hint.explanation);
     if(preference!=color::Preference::Off&&reason) {
         if(*reason==color::RankReason::Matched)out.sentences.push_back(text(promoted?"whyV2.rankPromoted":"whyV2.rankCompared")+
             text(color::preferenceKey(preference))+text(promoted?"whyV2.rankPromotedEnd":"whyV2.rankComparedEnd"));

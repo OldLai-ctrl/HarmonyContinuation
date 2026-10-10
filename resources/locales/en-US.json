@@ -303,5 +303,11 @@
   "colorSort.labelShort": "Color Pref.",
   "whyV2.details": "Details",
   "whyV2.metrics": "Color metrics (symbolic)",
-  "whyV2.moreMetrics": "First eight positions shown."
+  "whyV2.moreMetrics": "First eight positions shown.",
+  "color.staticPrefix": "Static: ",
+  "color.staticIncomplete": "; path incomplete",
+  "color.staticMixed": "mixed warmth",
+  "color.staticWhy": "Reliable per-chord static warmth shows ",
+  "color.whyMissingTiming": "; OPEN or missing timing prevents a whole-path mean or time trend.",
+  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration."
 }

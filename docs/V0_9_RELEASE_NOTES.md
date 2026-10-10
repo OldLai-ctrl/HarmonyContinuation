@@ -1,3 +1,13 @@
+# HarmonyContinuation 0.9.0-rc.2
+
+仅修复升级进行的色彩展示：Cubase 导入的末和弦正常保留 OPEN，缺失时值导致整段色彩汇总为空；RC1 将可靠的逐和弦静态指标一并隐藏。RC2 在全部和弦静态指标可靠、仅时间信息不完整时显示中性「静态：…；整段信息不足」，Why? 明确时值缺失，不编造时长、平均值或时间趋势。正常完整路径沿用原提示；缺失低音、未覆盖音集或多方向仍中性回退。
+
+数学公式、排序门槛/权重、原候选/评分、FULL/SKELETON、档位、MIDI、Factory 629 条及所有 Schema 不变；不改变 Unknown 候选的排序资格。显示提示开关仍独立有效。
+
+用户于 2026-10-10 报告 RC1 在 Cubase Pro 15 的加载、自动推荐、排序切换、Why?、Preview、MIDI 导出与 Continuation 提示通过；截图显示原进行 Dmin → C → Bb → A（OPEN），升级候选 Dmin → C/E → Bb → A 显示「不足以判断」。这是用户报告，不是 Codex 执行的宿主测试。RC2 的 Cubase 定向复验仍 Pending，FL Studio 无新增证据。
+
+RC2 独立目录保留 RC1，仍为候选版；最小验证及包构建证据见 [NOW](../NOW.md#证据)。复验只需同一原进行的升级卡片/Why? 与提示开关，核对新增静态信息和时值说明；不要求重跑已通过项目。
+
 # HarmonyContinuation 0.9.0-rc.1
 
 发布候选，功能冻结，供 Cubase Pro 15 与 FL Studio 真实 DAW 人工验收；不是正式发布。人工结果均 Pending，清单见 [RC 人工验收](RC_DAW_ACCEPTANCE.md)。

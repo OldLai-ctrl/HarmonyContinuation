@@ -303,5 +303,11 @@
   "colorSort.labelShort": "色彩排序",
   "whyV2.details": "高级详情",
   "whyV2.metrics": "色彩数值（符号层）",
-  "whyV2.moreMetrics": "仅列前八个位置。"
+  "whyV2.moreMetrics": "仅列前八个位置。",
+  "color.staticPrefix": "静态：",
+  "color.staticIncomplete": "；整段信息不足",
+  "color.staticMixed": "冷暖分布",
+  "color.staticWhy": "各和弦的可靠静态温度显示",
+  "color.whyMissingTiming": "；存在 OPEN 或缺失时值，不能判断整段平均温度及时间趋势。",
+  "color.staticRelease": "末次连接的自身张力有所降低，这不依赖未知时值。"
 }
