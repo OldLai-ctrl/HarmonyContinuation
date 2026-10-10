@@ -114,7 +114,9 @@ int main() {
     std::filesystem::create_directories(temp);
     const auto factoryPath = temp / "factory.db", userPath = temp / "user.db";
     std::string error;
-    check(library::compileFactory(factoryPath, basic, error), "factory compile");
+    const bool compiled=library::compileFactory(factoryPath, basic, error);
+    if(!compiled)std::cerr<<"factory compile: "<<error<<'\n';
+    check(compiled, "factory compile");
     check(library::loadFactory(factoryPath).templates.size() == 1, "factory read");
     const auto shipped = library::loadFactory(HC_FACTORY_DB_PATH);
     check(shipped && shipped.templates.size() == 161, "factory seed count and SQLite roundtrip");

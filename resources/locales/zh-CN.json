@@ -309,5 +309,7 @@
   "color.staticMixed": "冷暖分布",
   "color.staticWhy": "各和弦的可靠静态温度显示",
   "color.whyMissingTiming": "；存在 OPEN 或缺失时值，不能判断整段平均温度及时间趋势。",
-  "color.staticRelease": "末次连接的自身张力有所降低，这不依赖未知时值。"
+  "color.staticRelease": "末次连接的自身张力有所降低，这不依赖未知时值。",
+  "whyV4.bass": "保留此路线指定的低音。",
+  "whyV4.pitchSet": "保留此路线明确定义的和弦音。"
 }

@@ -4,7 +4,7 @@
 namespace harmony {
 struct Voicing {
     int bass{};
-    std::array<int,8> upper{};
+    std::array<int,12> upper{};
     int upperCount{};
     bool melodySatisfied{true};
 };

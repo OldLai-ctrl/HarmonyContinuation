@@ -7,11 +7,12 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `main`（发布后）；`v0.9/dev` 保留 | 独立 Git 仓库；不依赖旧目录的 worktree 元数据 |
+| 主开发 checkout | `HarmonyContinuation-release/` → `library/v4`；`main` / `v0.9/dev` 保留 | V4 独立开发，不合并正式分支 |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
-| 构建与打包输出 | `<checkout>/build*/` | 当前仅保留 `build-installer/release-0.9.0/` 正式包、其 `evidence/` 及 `build-installer/tools/Inno/`；旧构建/RC/隔离测试输出已清理。`.gitignore` 排除，另一设备独立构建 |
+| 正式构建与打包输出 | `<checkout>/build-installer/release-0.9.0/`、其 `evidence/` 及 `build-installer/tools/Inno/` | 保留正式产物；`.gitignore` 排除，另一设备独立构建 |
+| V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；同目录 `factory-v4-maintenance.tsv`、`VST3/Release/` | 仅适配后的 V4 开发引擎使用；不覆盖生产 ProgramData；详见 [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
 

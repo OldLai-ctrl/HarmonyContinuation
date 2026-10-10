@@ -1,4 +1,5 @@
 #include "ProgressionMatcher.h"
+#include "ChordPitchSet.h"
 
 #include <algorithm>
 #include <cmath>
@@ -102,6 +103,11 @@ float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reas
 float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tRhythm,
                const MatchWeights& w, MatchReasonFlags& reasons, bool queryFinal, Mode mode) {
     float cost{};
+    // A stopped dominant has not revealed its destination. Do not treat the
+    // missing future target as evidence against an otherwise identical chord.
+    const bool unresolvedDominant = queryFinal && !q.target && t.target &&
+        sameDegree(q.degree,t.degree) && q.quality==ChordQuality::Dominant7 &&
+        t.quality==ChordQuality::Dominant7 && hasRole(t.roles,Role::SecondaryDominant);
     if (sameDegree(q.degree, t.degree)) reasons |= flag(MatchReason::SameDegree);
     else if (q.degree && t.degree && relativeSemitone(*q.degree, mode) == relativeSemitone(*t.degree, mode)) {
         reasons |= flag(MatchReason::EnharmonicDegree);
@@ -120,7 +126,7 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
         cost += extensionVariant(q.quality, t.quality) ? w.qualityExtensionDifference : w.qualityDifference;
     }
     if (q.function == t.function && q.function != HarmonicFunction::Unknown) reasons |= flag(MatchReason::SameFunction);
-    else if (q.function != t.function) {
+    else if (q.function != t.function && !unresolvedDominant) {
         cost += (isPredominant(q.function) && isPredominant(t.function)) ||
                 (isDominant(q.function) && isDominant(t.function)) ||
                 (isTonic(q.function) && isTonic(t.function)) ? w.functionDifference * 0.32f : w.functionDifference;
@@ -129,6 +135,7 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
                                 flag(Role::Borrowed) | flag(Role::Cadential) | flag(Role::Passing);
     auto qRoles = q.roles & important;
     auto tRoles = t.roles & important;
+    if(unresolvedDominant)tRoles&=~flag(Role::SecondaryDominant);
     // A phrase stopped on V has not yet shown whether it will resolve to I.
     if (queryFinal && sameDegree(q.degree, t.degree) && q.function == t.function) {
         qRoles &= ~flag(Role::Cadential);
@@ -140,13 +147,19 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
         reasons |= flag(MatchReason::BorrowedVariant);
         cost *= w.borrowedVariantFactor;
     }
-    if (q.target || t.target) {
+    if ((q.target || t.target) && !unresolvedDominant) {
         if (sameDegree(q.target, t.target)) reasons |= flag(MatchReason::SecondaryTargetMatch);
         else { reasons |= flag(MatchReason::SecondaryTargetMismatch); cost += w.secondaryTargetDifference; }
     }
     // A single implausible chord is still one substitution, rather than an
     // artificially cheap delete-plus-insert detour through the same position.
     cost = std::min(cost, w.substitutionMaxCost);
+    // Unspecified legacy template realizations keep their original scoring.
+    if (t.bassInterval && q.bassInterval && *t.bassInterval != *q.bassInterval)
+        cost += w.explicitBassDifference;
+    if (t.intervalMask && q.intervalMask &&
+        (t.intervalMask | t.colorMask) != (q.intervalMask | q.colorMask))
+        cost += w.explicitPitchSetDifference;
     // OPEN query durations never add a rhythmic penalty; their harmonic data remains.
     if (qRhythm > 0.f && tRhythm > 0.f) {
         const auto deviation = std::min(2.f, std::abs(std::log2(qRhythm / tRhythm)));
@@ -329,6 +342,11 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
     query.timeSigNumerator = context.timeSigNumerator;
     query.timeSigDenominator = context.timeSigDenominator;
     if (source.empty()) return query;
+    const bool preserveRealizationPath = std::any_of(source.begin(), source.end(), [](const auto& e) {
+        const auto tones = chordPitches(e);
+        return e.name.find('/') != std::string::npos || tones.bass != tones.root ||
+               e.extensions.mask.has_value() || e.extensions.pitches.has_value();
+    });
     const auto initial = analyzeHarmony(source, context);
     std::vector<KeyCandidate> keys;
     if (context.forcedKey && initial.selectedKey) keys.push_back(*initial.selectedKey);
@@ -343,10 +361,22 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
         KeyInterpretation interpretation;
         interpretation.key = key;
         interpretation.skeletonIndices = analysis.skeletonIndices;
+        if (preserveRealizationPath) {
+            // A short connector can define an explicitly supplied bass/color path.
+            // Retain that path rather than inferring that its middle is disposable.
+            interpretation.skeletonIndices.resize(analysis.full.size());
+            std::iota(interpretation.skeletonIndices.begin(), interpretation.skeletonIndices.end(), 0);
+        }
         for (std::size_t i = 0; i < analysis.full.size(); ++i) {
             const auto& e = analysis.full[i];
             interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.roles,
                                            e.structuralWeight, source[i].durationQN, i});
+            const auto tones = chordPitches(source[i]);
+            auto& projected = interpretation.full.back();
+            projected.intervalMask = tones.intervals;
+            projected.colorMask = tones.colorMask;
+            if (e.chord.bass || source[i].name.find('/') != std::string::npos)
+                projected.bassInterval = (tones.bass - tones.root + 12) % 12;
         }
         interpretation.fingerprint = makeFingerprint(key.key.mode, interpretation.full,
                                                      interpretation.skeletonIndices, CadenceType::None);
@@ -527,7 +557,7 @@ std::string formatMatchEvent(const MatchEvent& e) {
     }
     if (e.quality == ChordQuality::Dominant7 || e.quality == ChordQuality::Minor7 || e.quality == ChordQuality::Diminished7) text += '7';
     else if (e.quality == ChordQuality::Major7) text += "maj7";
-    if (e.target && e.target->degree >= 1 && e.target->degree <= 7) {
+    if (localFunctionSymbol && e.target->degree >= 1 && e.target->degree <= 7) {
         text += '/';
         if (e.target->alteration < 0) text += 'b';
         else if (e.target->alteration > 0) text += '#';

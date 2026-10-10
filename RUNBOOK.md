@@ -22,6 +22,8 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+Factory V4 独立开发：在新的 `build-v4-dev` 中配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=factory-v4.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实的离线 SDK。构建 `HarmonyContinuation` 和 `FactoryV4Tests`，直接运行后者；必要时仅运行修改对应的 Matcher / Continuation / Preview / MIDI / Enrichment 测试。数据库与维护 TSV 留在该构建目录，不写入正式 staging、不刷新 V3 统计、不切换生产 active.txt。候选、兼容性、实际测试输入和结果见 [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md)。V4 Schema 2 数据可解析不等于能直接替换 v0.9.0 的生产库。
+
 v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
 
 前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：

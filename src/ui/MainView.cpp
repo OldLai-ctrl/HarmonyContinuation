@@ -2029,7 +2029,9 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         std::vector<std::string> path;for(const auto& chord:c.continuation)path.push_back(chord.label);
         addPath(t("mode.continue"),path);
-        const auto explanation=explainWhy(functionalWhy(completion,state_.locale),hint,state_.locale,colorPreference_,reason,promoted);
+        auto functional=functionalWhy(completion,state_.locale);
+        if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
+        const auto explanation=explainWhy(functional,hint,state_.locale,colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
         if(state_.debugExpanded) {
             add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);

@@ -309,5 +309,7 @@
   "color.staticMixed": "mixed warmth",
   "color.staticWhy": "Reliable per-chord static warmth shows ",
   "color.whyMissingTiming": "; OPEN or missing timing prevents a whole-path mean or time trend.",
-  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration."
+  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration.",
+  "whyV4.bass": "Preserves the specified bass notes.",
+  "whyV4.pitchSet": "Preserves the explicitly defined chord tones."
 }

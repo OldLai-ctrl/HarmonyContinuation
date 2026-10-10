@@ -1,0 +1,10 @@
+[
+  {"id":"C01","status":"DEFERRED","example":"Am Am(maj7) Am7 Am6 Dm6 E7 Am","relative":"i i(maj7) i7 i6 iv6 V7 i","requires":["FixedInnerVoice"],"voice":"A G# G F# in the same inner voice"},
+  {"id":"C02","status":"DEFERRED","example":"C Cmaj7 C7 C6 F Fm C","relative":"I Imaj7 I7 I6 IV iv I","requires":["FixedInnerVoice"],"voice":"C B Bb A A Ab G in the same inner voice"},
+  {"id":"C03","status":"DEFERRED","example":"C Cdim7 C F G7 C","relative":"I i-dim7 I IV V7 I","requires":["CommonToneVoiceHold"],"voice":"C held in the same voice across the diminished neighbor"},
+  {"id":"C04","status":"DEFERRED","example":"Cmaj7 Abmaj7 Emaj7 Cmaj7","relative":"Imaj7 bVImaj7 IIImaj7 Imaj7","requires":["CommonToneVoiceHold"],"voice":"Different adjacent common tones remain in specified voices"},
+  {"id":"C05","status":"DEFERRED","example":"C Em Am D7 G C/G D7 G","relative":"C:I iii vi=G:ii V7 I IV/I V7 I","requires":["KeySegments","PivotDualFunction","ModulationConfirmation"]},
+  {"id":"C06","status":"DEFERRED","example":"C F Dm E7 Am E7 Am","relative":"C:I IV ii; Am:V7 i V7 i","requires":["KeySegments","ModulationConfirmation"]},
+  {"id":"C07","status":"DEFERRED","example":"Cm7 Dbm7 Dm7 Ebm7 Em7 Fm7 G7 C","relative":"i7 bii7 ii7 biii7 iii7 iv7 V7 I","requires":["FixedVoicing","ParallelVoiceMotion"],"voice":"First six chords use the same voicing translated by semitones"},
+  {"id":"C08","status":"DEFERRED","example":"C Dm7 G7 Am7 | Fm6 C/G G7 C","relative":"I ii7 V7 vi7 | iv6 I/5 V7 I","requires":["PhraseBoundary","CrossPhraseResolution"]}
+]

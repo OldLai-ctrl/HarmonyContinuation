@@ -80,7 +80,11 @@ std::optional<ScaleDegree> secondaryTarget(const std::vector<NormalizedChord>& c
     if (i + 1 >= chords.size() || !chords[i].root || !chords[i + 1].root) return std::nullopt;
     const auto target = degreeOf(*chords[i + 1].root, key);
     if (!target || target->alteration != 0 || target->degree == 1) return std::nullopt;
-    if (!diatonicQuality(chords[i + 1].quality, key, target->degree)) return std::nullopt;
+    const bool observedDominantChain = !leadingTone &&
+        chords[i].quality == ChordQuality::Dominant7 &&
+        chords[i + 1].quality == ChordQuality::Dominant7;
+    if (!diatonicQuality(chords[i + 1].quality, key, target->degree) && !observedDominantChain)
+        return std::nullopt;
     const auto interval = mod12(number(*chords[i].root) - number(*chords[i + 1].root));
     const auto sourceDegree = degreeOf(*chords[i].root, key);
     if (sourceDegree && sourceDegree->alteration == 0 &&

@@ -3,16 +3,16 @@
 ## 功能基线
 
 - 当前正式版本：`0.9.0`；发布提交与 `v0.9.0` Tag 均为 `ddc4f89babd4520daac3eae74824d6f581ce0e75`。源码清理提交不改变该正式包的构建身份。
-- Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。音乐算法、宿主适配、MIDI 和生产数据本轮未改。
+- 正式版为 Factory Library 3；本轮独立开发版本为 Library 4。Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2 保持；生产数据与宿主适配未改。
 - Factory V3 为 155 条 canonical 历史记录加 474 条新进行，共 629 条；六条 QUESTIONABLE 留在非生产清单。统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)，兼容与降级边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。
 
 ## 当前任务
 
-2026-10-10 按用户要求清理本地与远程仓库：移除四个阶段专用色彩/Why 冒烟工具、三个已被统一安装器测试取代的旧脚本、过期人工清单/交接材料和 Phase 3 生成报告及其脚本；同步删除构建目标和失效引用。保留常规回归测试、测试输入、迁移 fixture、数据生成工具、音乐基准、现行安装器和打包工具。
+2026-10-10 在独立 `library/v4` 完成 Factory V4 综合开发：恢复本对话 Phase 1 的原始定义，制作全部 28 条 A/B 候选，其中 A14 调整为 Db/F 的 Neapolitan 六和弦。657 条开发库编译及读回通过，精确重复和新增结构族重复均为 0。V3 源文件不变；编译副本维护 139 条旧记录（57 条空标签补全、10 条副导语义修正、13 条骨架恢复，计数重叠）。
 
-本地只保留正式版 `build-installer/release-0.9.0/` 与可复用 Inno 编译器；旧开发/RC 包、隔离安装目录、缓存和中间产物清除。正式包依赖的最低历史证据集中至正式目录 `evidence/`。这些本地输出不进入 Git。
+局部适配覆盖明确低音匹配、连续属链目标、精确音集合配器、骨架保守保留、Enrichment 保护和双语 Why。开发 VST3 编译通过；定向推荐、移调、Snapshot、Preview、MIDI 文件读回和相关五项测试通过。B09 指定输入排名第 5，需扩展候选上限才可见；其它未逐条验证的候选不声称默认前三可达。C 类 8 条保留为后续能力需求。
 
-清理检查：完整插件配置的 CMake 生成通过，剩余源码入口与文档引用检查通过，正式 Setup 校验和保持不变。本轮不重新编译产品、不运行音乐或宿主全量回归。清理提交同步到 `main` 与 `v0.9/dev`；实际提交/推送状态以 Git HEAD 与远程引用为准。旧版本分支、Tag 与 Git 历史保留。
+源数据、兼容性、逐项维护与测试范围见 [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md)。开发数据库和证据位于 `build-v4-dev/`；正式目录保留。本轮授权提交并推送 `library/v4`，实际提交与远端状态以 Git 引用为准；不合并 main，不打 Tag，不打包安装器。
 
 ## 发布与验证证据
 

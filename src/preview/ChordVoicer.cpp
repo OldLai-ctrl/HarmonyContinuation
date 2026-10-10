@@ -34,7 +34,7 @@ std::vector<int> priorityIntervals(const ChordPitchSet& c) {
     for (int n:{1,2,3,9}) add(n); // altered ninth, ninth, thirteenth
     add(7); add(8); add(6); add(0);
     for (int n=0;n<12;++n) add(n);
-    if (result.size()>4) result.resize(4);
+    if (!c.exactIntervals && result.size()>4) result.resize(4);
     if (result.size()<3) { add(0); add(7); }
     return result;
 }

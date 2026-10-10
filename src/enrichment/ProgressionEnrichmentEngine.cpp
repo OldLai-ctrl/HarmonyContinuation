@@ -39,6 +39,13 @@ ChordEvent replacement(const ChordEvent& old, int pitch, ChordQuality quality) {
     next.name = name(pitch, quality);
     return next;
 }
+bool exactRealization(const ChordEvent& event) {
+    const auto tones=chordPitches(event);
+    return event.extensions.mask.has_value()||event.extensions.pitches.has_value()||
+        event.name.find('/')!=std::string::npos||
+        (event.bass.has_value()&&tones.bass!=tones.root)||
+        (event.bassNoteValue.has_value()&&tones.bass!=tones.root);
+}
 void record(EnrichmentCandidate& candidate, OperationType type, TechniqueID technique,
             std::size_t index, std::string before, std::string after, std::string reason) {
     candidate.operations.push_back({type, technique, index, std::move(before), std::move(after), std::move(reason)});
@@ -51,6 +58,9 @@ bool insertBefore(EnrichmentCandidate& candidate, std::size_t target, int pitch,
     if (target == 0 || target >= candidate.progression.size()) return false;
     auto& previous = candidate.progression[target - 1];
     auto& next = candidate.progression[target];
+    // Without voice/line tracking, do not insert a new chord inside a defined
+    // bass or exact-color connection. The original phrase remains available.
+    if(exactRealization(previous)||exactRealization(next))return false;
     const double available = next.startQN - previous.startQN;
     if (!std::isfinite(available) || available < config.minimumSplitQN * 2) return false;
     const double split = available / 2;
@@ -73,6 +83,7 @@ bool polish(EnrichmentCandidate& candidate, const HarmonicAnalysisResult& analys
             std::optional<Style> style, const EnrichmentConfig& config) {
     for (std::size_t i = 0; i < candidate.progression.size(); ++i) {
         auto& event = candidate.progression[i];
+        if(exactRealization(event))continue;
         const auto normalized = normalizeChord(event);
         if (!normalized.root) continue;
         ChordQuality newQuality = ChordQuality::Unknown;
@@ -92,6 +103,7 @@ bool polish(EnrichmentCandidate& candidate, const HarmonicAnalysisResult& analys
     }
     for (std::size_t i = 0; i < candidate.progression.size(); ++i) {
         auto& event = candidate.progression[i];
+        if(exactRealization(event))continue;
         const auto normalized = normalizeChord(event);
         if (!normalized.root || (normalized.colorMask & (1u << 2))) continue;
         const auto quality = normalized.quality;
@@ -114,6 +126,7 @@ bool improveInversion(EnrichmentCandidate& candidate,const EnrichmentConfig& con
     std::optional<std::size_t> bestIndex;
     float bestGain{};
     for (std::size_t i = 1; i + 1 < candidate.progression.size(); ++i) {
+        if(exactRealization(candidate.progression[i]))continue;
         const auto mid = root(candidate.progression[i]);
         if (!mid) continue;
         const auto q = normalizeChord(candidate.progression[i]).quality;
@@ -329,6 +342,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         // A second color is still a meaningful Rich variant when insertion is impossible.
         for (std::size_t i = 0; i < rich.progression.size(); ++i) {
             auto& event = rich.progression[i];
+            if(exactRealization(event))continue;
             const auto normalized = normalizeChord(event);
             if (!normalized.root || (normalized.quality != ChordQuality::Major &&
                                      normalized.quality != ChordQuality::Minor)) continue;
@@ -356,6 +370,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     if (key && key->mode == Mode::Major && config.maxSubstitutions[2]>0 &&
         static_cast<int>(advanced.operations.size()) < config.maxOperations[2]) {
         for (std::size_t i = 0; i + 1 < advanced.progression.size(); ++i) {
+            if(exactRealization(advanced.progression[i]))continue;
             const auto current = root(advanced.progression[i]);
             const auto next = root(advanced.progression[i + 1]);
             if (!current || !next || pc(*current - static_cast<int>(key->tonic)) != 5 ||

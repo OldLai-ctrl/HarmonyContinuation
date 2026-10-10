@@ -33,6 +33,11 @@ std::string suffixFingerprint(const ContinuationCandidate& candidate, bool coars
                             event.durationQN / std::max(0.001, average) > 1.4 ? 2 : 1);
         else out << event.label << '@' << std::round(event.durationQN * 4.0) / 4.0;
         out << '|';
+        // Bass and exact colors define some V4 phrases, including diversity identity.
+        if (event.harmonicData) {
+            const auto tones=chordPitches(*event.harmonicData);
+            out << tones.bass << ':' << tones.intervals << '|';
+        }
     }
     return out.str();
 }
@@ -171,6 +176,20 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                     (step.operation == AlignmentOp::Match || step.operation == AlignmentOp::Substitute);
             });
         if (!tailAligned) continue;
+        // Only explicit V4 definitions are constraints. Unknown input bass is
+        // allowed; an explicitly contradictory bass must not identify this path.
+        if (item.version >= 4) {
+            bool conflictingBass=false;
+            for (const auto& step:match.alignmentTrace) {
+                if (!step.queryIndex || !step.templateIndex ||
+                    (step.operation!=AlignmentOp::Match && step.operation!=AlignmentOp::Substitute)) continue;
+                const auto& input=selected->full[*step.queryIndex];
+                const auto& expected=item.full[*step.templateIndex];
+                if (expected.bassInterval && input.bassInterval &&
+                    *expected.bassInterval!=*input.bassInterval) conflictingBass=true;
+            }
+            if (conflictingBass) continue;
+        }
         if (!match.hasContinuation && !item.loopable) continue;
         std::vector<MatchEvent> suffix;
         for (std::size_t i = match.continuationStartIndex; i < item.full.size(); ++i) suffix.push_back(item.full[i]);

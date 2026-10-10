@@ -33,7 +33,7 @@ struct MatchEvent {
     float structuralWeight{0.7f};
     std::optional<double> durationQN;
     std::size_t sourceIndex{};
-    // Persistence/realization metadata; deliberately ignored by matcher costs.
+    // Optional exact realization; explicit template values also guide matching.
     std::optional<int> bassInterval;
     std::uint16_t intervalMask{}, colorMask{};
     std::string displaySuffix;
@@ -109,6 +109,8 @@ struct MatchWeights {
     float sameFunctionDegreeFactor{0.52f};
     float roleDifference{0.22f};
     float secondaryTargetDifference{0.34f};
+    float explicitBassDifference{0.45f};
+    float explicitPitchSetDifference{0.30f};
     float borrowedVariantFactor{0.58f};
     float substitutionMaxCost{1.30f};
     float rhythmWeight{0.18f};

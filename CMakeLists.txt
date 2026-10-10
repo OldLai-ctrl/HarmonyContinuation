@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.9.0 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_FACTORY_LIBRARY_VERSION 3 CACHE STRING "Factory content version; 4 is opt-in development content")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -270,15 +271,30 @@ target_link_libraries(recommend_bench PRIVATE harmony_library)
 file(GLOB HC_FACTORY_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory/*.json")
 file(GLOB HC_FACTORY_V3_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3/*.json")
 set(HC_FACTORY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory.db")
-set(HC_FACTORY_LIBRARY_VERSION 3 CACHE STRING "Factory content version; 2 retains historical rows")
 set(HC_FACTORY_ADDITIONS)
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     list(APPEND HC_FACTORY_ADDITIONS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3")
 endif()
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4")
+    target_compile_definitions(harmony_library PRIVATE HC_BUNDLED_FACTORY_V4=1)
+    add_executable(factory_v4_compiler tools/factory_v4_compiler.cpp)
+    target_link_libraries(factory_v4_compiler PRIVATE harmony_library)
+    if(MSVC)
+        target_compile_options(factory_v4_compiler PRIVATE /utf-8 /W4)
+    endif()
+    file(GLOB HC_FACTORY_V4_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4/*.json")
+    add_custom_command(OUTPUT "${HC_FACTORY_DB}" "${CMAKE_CURRENT_BINARY_DIR}/factory-v4-maintenance.tsv"
+        COMMAND $<TARGET_FILE:factory_v4_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
+            "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3" "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4"
+            "${HC_FACTORY_DB}" "${CMAKE_CURRENT_BINARY_DIR}/factory-v4-maintenance.tsv"
+        DEPENDS factory_v4_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON} ${HC_FACTORY_V4_JSON}
+        VERBATIM)
+else()
 add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_DB}" "${HC_FACTORY_LIBRARY_VERSION}" ${HC_FACTORY_ADDITIONS}
     DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
+endif()
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 set(HC_FACTORY_LEGACY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v2.db")
 add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
@@ -351,6 +367,16 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4")
+        add_executable(FactoryV4Tests tests/FactoryV4Tests.cpp)
+        target_link_libraries(FactoryV4Tests PRIVATE harmony_library harmony_midi harmony_snapshot)
+        target_compile_definitions(FactoryV4Tests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}")
+        add_dependencies(FactoryV4Tests factory_database)
+        if(MSVC)
+            target_compile_options(FactoryV4Tests PRIVATE /utf-8 /W4)
+        endif()
+        add_test(NAME FactoryV4Focused COMMAND FactoryV4Tests)
+    endif()
     if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     add_executable(FactoryCatalogTests tests/FactoryCatalogTests.cpp)
     target_link_libraries(FactoryCatalogTests PRIVATE harmony_library harmony_midi)
