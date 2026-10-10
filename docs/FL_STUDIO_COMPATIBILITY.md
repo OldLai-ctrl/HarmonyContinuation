@@ -1,4 +1,6 @@
-# FL Studio 20+ compatibility candidate — 0.9.0-dev.1
+# FL Studio 20+ compatibility — v0.9.0
+
+**v0.9.0: Not Verified / Pending. FL Studio compatibility has not yet been verified with the v0.9.0 release.** No FL Studio acceptance is required in this release task. Historical automated evidence below is reused, not rerun for v0.9.0.
 
 **IMPLEMENTATION READY** is a software delivery status. **REAL FL STUDIO VERIFIED** has not been reached. This workstation has no FL Studio installation. Standard VST3 host simulations cannot establish FL Wrapper behavior.
 

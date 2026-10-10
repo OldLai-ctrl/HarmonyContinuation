@@ -2,20 +2,20 @@
 
 把已有和弦进行变成下一段音乐，或让它本身更丰富。
 
-开发主线 `v0.9/dev` 已集成 `Factory Library 3`，发布候选版本为 `0.9.0-rc.4`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；[Why? V2](docs/WHY_V2.md) 用简短说明统一功能、色彩与排序依据，推荐与 MIDI 工作流保持原样。本包供真实 DAW 人工验收，尚未正式发布；不要用旧插件打开新版 Schema 2 用户库。
+开发主线 `v0.9/dev` 已集成 `Factory Library 3`，正式版本为 `0.9.0`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；[Why? V2](docs/WHY_V2.md) 用简短说明统一功能、色彩与排序依据，推荐与 MIDI 工作流保持原样。正式版复用用户对 Cubase Pro 15 的核心功能及 RC4 色彩修复验收，正式构建未另行实机测试；FL Studio 为 Not Verified / Pending；不要用旧插件打开新版 Schema 2 用户库。
 
 HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手。你可以导入和弦片段，查看和声分析，选择「继续发展」或「升级进行」，试听方案，再输出 MIDI 给自己的乐器演奏。界面默认简体中文，也可以切换 English。
 
-**当前版本：0.9.0-rc.4，供 Cubase Pro 15 / FL Studio 人工验收，二者本次验收均 Pending。** Cubase 的既有流程来自已验收的 v0.8 功能，不代表本次新包已在所有宿主实测通过。
+**当前版本：0.9.0。** Cubase Pro 15 主要功能和 RC4 色彩提示修复已由用户人工确认，本次只复用既有证据，没有为正式构建重新实机测试。**FL Studio：Not Verified / Pending。** FL Studio compatibility has not yet been verified with the v0.9.0 release.
 
 ## 1. 安装与加载
 
-RC4 已提供包含色彩提示可见性修复的统一安装包。关闭宿主后运行 RC4 目录中的 HarmonyContinuation-Setup.exe；默认同时安装 VST3 与 Factory Library，也可只更新主程序。旧 RC 包保留。
+正式统一安装包为 HarmonyContinuation-0.9.0-Setup.exe，保留 RC4 色彩显示修复。默认安装 VST3 与 Factory Library，也可只更新主程序；用户数据保留，旧 RC 包不覆盖。安装包未数字签名。
 
 ### 安装
 
 1. 使用 Windows x64 和支持 VST3 的 64 位宿主。本轮测试目标为 FL Studio 20+，也保留 Cubase 工作流。
-2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-Setup.exe**，允许安装程序请求管理员权限。
+2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.9.0-Setup.exe**，允许安装程序请求管理员权限。
 3. 默认插件位置为 `C:\Program Files\Common Files\VST3\HarmonyContinuation.vst3`。这是一个插件文件夹，请保留完整内容。
 4. 统一 Setup 默认选择 VST3 和 Factory Library，可单独安装任一组件；安装 / 更新、修复、修改和完整卸载均使用同一入口，无需开发工具。安装和音乐处理均可离线进行。
 
@@ -26,7 +26,7 @@ RC4 已提供包含色彩提示可见性修复的统一安装包。关闭宿主�
 1. 打开 **Options → File settings → Manage plugins**，不同版本的入口可能略有不同。
 2. 启用 **Verify plugins**，点击 **Find installed plugins**。更新已有版本时，同时启用 **Rescan previously verified plugins**。
 3. 找到 **HarmonyContinuation**。当前它注册为 **Effect（效果器）**，从 Mixer 的效果器插槽加载；不要只在乐器列表查找。
-4. 打开插件，在 **更多 → 关于** 确认版本 **0.9.0-rc.4**，提交应与 RC 目录中的 **BUILD_INFO.json** 一致。
+4. 打开插件，在 **更多 → 关于** 确认版本 **0.9.0**，提交应与正式发布目录中的 **BUILD_INFO.json** 一致。
 
 扫描与分类步骤参考 [FL Studio 官方安装说明](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/basics_externalplugins.htm)。文件导入、试听和 MIDI 文件输出不要求设置 MIDI 端口。
 
@@ -128,7 +128,7 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 
 1. 按宿主正常方式保存工程，重新打开后核对片段、模式、设置和缩放。
 2. 更新前关闭占用插件的宿主，运行新版完整 Setup。当前更新方式是运行新包，不是联网自动下载。
-3. 再次运行 **HarmonyContinuation-Setup.exe**，只选 Factory Library 即可更新数据，不替换 VST3；删除组件请使用「修改组件」中的明确移除项。
+3. 再次运行 **HarmonyContinuation-0.9.0-Setup.exe**，只选 Factory Library 即可更新数据，不替换 VST3；删除组件请使用「修改组件」中的明确移除项。
 4. 从 Windows「已安装的应用」或开始菜单卸载入口卸载。
 
 更新时取消勾选不会卸载。统一管理器可单独移除 VST3 或本次管理的 Factory V3；完整卸载移除管理入口。个人进行库、收藏、配置和非本次管理的 Factory 历史始终保留。个人库位于 `%LOCALAPPDATA%\HarmonyContinuation\user.db`；如需备份，关闭宿主后复制该数据目录。
@@ -159,6 +159,6 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 - 不提供音频和弦识别、实时键盘录入、私有 Piano Roll / Playlist 格式解析或完整歌曲生成。
 - 真实 FL 扫描、文件拖放、缩放、Detached、工程恢复和播放位置仍待验收。标准测试宿主通过不能替代 FL 实测。
 - [FL 兼容状态与中英文说明](docs/FL_STUDIO_COMPATIBILITY.md)
-- [0.9.0-rc.4 更新说明](docs/V0_9_RELEASE_NOTES.md)
+- [0.9.0 更新说明](docs/V0_9_RELEASE_NOTES.md)
 
 源码使用 C++20、CMake、MSVC x64、Steinberg VST3 SDK 3.8.1、VSTGUI 和 SQLite。源码不含 Steinberg SDK；普通测试用户只需 Setup。

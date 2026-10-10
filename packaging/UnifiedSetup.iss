@@ -8,6 +8,9 @@
 #ifndef ProductVersion
  #error ProductVersion required
 #endif
+#ifndef SetupFileStem
+ #define SetupFileStem "HarmonyContinuation-Setup"
+#endif
 #ifndef LibraryVersion
  #define LibraryVersion "3"
 #endif
@@ -37,7 +40,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#OutputPath}
-OutputBaseFilename=HarmonyContinuation-Setup{#TestSuffix}
+OutputBaseFilename={#SetupFileStem}{#TestSuffix}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

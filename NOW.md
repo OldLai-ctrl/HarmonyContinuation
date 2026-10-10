@@ -3,12 +3,12 @@
 ## 功能基线
 
 - 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0-rc.4`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
+- 当前源码版本：`0.9.0`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
 - 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
 
 ## 当前任务
 
-RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。一次 Release 编译与一个合并离屏像素冒烟已通过，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`；用户追加要求统一安装包，复用 RC4 已验证二进制生成 `build-installer/rc-0.9.0-rc.4-unified/`，不重复编译或安装回归，不覆盖旧 RC 产物。提交并推送指定开发分支后停止，等待用户 Cubase 复验。
+v0.9.0 正式发布：接手 `v0.9/dev` HEAD `2714e6078d0a6dbc45697cc5cbd4a3e84b7d4c1c`，工作区干净，RC4 安装包与 f719317 修复二进制一致，Factory V3 / Schema 2 / 629。通过现有系统代理获取远端：main 为 `5082eb0133df3d87d21b2a3cf671aedcad463200`，是开发分支祖先，没有独立未合入改动；不存在 v0.9.0 Tag 或 GitHub Release。仅变更正式版本、About 中旧 Schema 显示常量、安装包文件名和说明，音乐算法/数据/MIDI/适配/Schema 冻结。正式包为 `build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`；保留 RC3/RC4 原产物。用户已确认 Cubase Pro 15 核心功能与 RC4 色彩显示通过，正式构建复用该证据；FL Studio Not Verified / Pending，不要求执行。不新增功能、不启动后续版本。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,8 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+v0.9.0 正式发布证据入口：最终 main 提交从干净源码执行一次 Release 编译及一次统一安装器打包。实际构建提交/Build ID、main/Tag 对应关系、VST3/Setup 哈希、版本/Factory/依赖核验、推送结果均记录在正式目录 BUILD_INFO.json、SHA256SUMS.txt 和 FILE_MANIFEST.sha256；构建与打包日志为 build-v3-plugin/v090-release-*.log、build-installer/v090-package.log。复用 RC3 的 28 项隔离安装生命周期和 RC4 的定向显示证据，安装组件/卸载/迁移逻辑不变，仅外部输出文件名版本化；不重跑旧验证、全量回归或真实宿主。本轮新增实际宿主事实只来自用户确认，详见 docs/HOST_SPIKE.md。正式门槛满足后推送 main、v0.9/dev 与 v0.9.0 Tag，随后停止。
 
 2026-10-10 RC4 追加统一安装包：按用户明确请求，沿用已通过 RC3 隔离生命周期的 Unified Setup 与已验证 RC4 插件 f719317，不重复编译、不重复安装回归。一次生成独立目录 build-installer/rc-0.9.0-rc.4-unified，Setup 与 VST3 版本均为 0.9.0-rc.4，暂存二进制哈希与定向验证产物一致。Setup SHA-256：8de24d52decb54ef1b8dfd766d80d9619460b60f2196cbcf55c4189e60523e9d，重算匹配 SHA256SUMS.txt；打包日志 build-installer/rc4-unified-package.log。仅更新安装前说明及交付文档，不改变安装逻辑；真实 Cubase 复验 Pending。
 
@@ -95,8 +97,8 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.4 仅以一次 Release 编译及指定色彩显示冒烟为本轮关口，真实验收留待用户；RC3 安装器证据继续有效。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。v0.9.0 仅以一次正式构建、一次打包及版本/内容/哈希相关核验为本轮关口；RC3 安装器和 RC4 显示证据继续有效。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 
-人工逐条试听未执行；RC3 真实 Cubase/FL 验收 Pending。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或完整安装回归；本次仅运行统一安装器定向隔离检查。RC 打包及推送完成后停止，等待人工 DAW 结果。
+人工逐条试听未执行；Cubase 核心功能与 RC4 显示用户验收通过，正式构建未重新实机测试；FL Not Verified / Pending。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或完整安装回归；本次仅运行统一安装器定向隔离检查。RC 打包及推送完成后停止，等待人工 DAW 结果。

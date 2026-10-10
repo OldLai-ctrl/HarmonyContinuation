@@ -14,7 +14,7 @@
 # 先配置本机已核实的 SDK 环境变量；缺失时停止配置。
 $hcSdk = $env:VST3_SDK_ROOT
 if ([string]::IsNullOrWhiteSpace($hcSdk)) { throw 'VST3_SDK_ROOT 待配置并核实' }
-cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE=rc.3 -DSMTG_RUN_VST_VALIDATOR=OFF
+cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE= -DSMTG_RUN_VST_VALIDATOR=OFF
 cmake --build build-v09 --config Release --target HarmonyContinuation library_manager -j 6
 ```
 
@@ -22,7 +22,9 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
-RC3 只构建一次 Release 插件和 library_manager；一次生成统一 Setup，运行 `tools/test-unified-installer.ps1` 的两个隔离生命周期，检查首次安装、组件独立更新/增删/修复、旧双记录迁移、文件占用及完整卸载。测试包只写编译进的项目内路径及独立 HKCU 测试 AppId，不操作生产数据；失败只定向修复和继续未通过步骤。打包说明见 [统一安装器](docs/INSTALLER_AND_LIBRARY.md)。不运行插件测试或回归。
+v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
+
+以下 RC3 为历史入口，本轮不执行：RC3 只构建一次 Release 插件和 library_manager；一次生成统一 Setup，运行 `tools/test-unified-installer.ps1` 的两个隔离生命周期，检查首次安装、组件独立更新/增删/修复、旧双记录迁移、文件占用及完整卸载。测试包只写编译进的项目内路径及独立 HKCU 测试 AppId，不操作生产数据；失败只定向修复和继续未通过步骤。打包说明见 [统一安装器](docs/INSTALLER_AND_LIBRARY.md)。不运行插件测试或回归。
 
 以下 RC2 为历史入口，本轮不执行：RC2 仅构建一次 Release 的插件、library_manager 与 WhyV2Smoke，直接运行 `WhyV2Smoke rc2-hints` 一次，合并普通完整路径、截图 OPEN 静态/时值回退、多方向中性回退、开关及 Continuation 色条像素检查；不运行旧冒烟入口。仅本轮定向项目通过后打包，复用已有 factory.db 与 dev.5–dev.8 证据；一次调用 build-installer.ps1，输出到独立 build-installer/rc-0.9.0-rc.2 目录，检查版本、Git 标识、关键文件、依赖和 SHA-256，不运行安装生命周期或测试程序。人工验收见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)。
 
@@ -58,7 +60,7 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 统一安装逻辑变动时按 `tools/test-unified-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
 
-旧 V3 九项安装证据保留为历史。本轮统一安装器有实际逻辑变动，只做一次隔离生命周期，覆盖独立组件维护、旧双安装器迁移、文件占用拒绝和保留个人数据的完整卸载。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；只生成 `HarmonyContinuation-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
+旧 V3 九项和 RC3 28 项安装证据保留。安装维护逻辑未改时复用，不重复生命周期；本轮正式版只版本化输出文件名。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；正式版只生成 `HarmonyContinuation-0.9.0-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
 
 ## 交付与同步
 

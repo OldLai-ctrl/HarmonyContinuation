@@ -73,12 +73,13 @@ $factoryHash = (Get-FileHash -LiteralPath $FactoryDatabase -Algorithm SHA256).Ha
 $legacyFactoryHash = ''
 $legacyDb = Join-Path $buildPath 'factory-v2.db'
 if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -LiteralPath $legacyDb -Algorithm SHA256).Hash.ToLowerInvariant() }
-$common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
+$setupFileStem = if ($productVersion -match '^\d+\.\d+\.\d+$') { "HarmonyContinuation-$productVersion-Setup" } else { 'HarmonyContinuation-Setup' }
+$common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
 if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
 & $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }
 $suffix = if ($TestRoot) {'-IsolatedTest'} else {''}
-$setups = @(Join-Path $outputPath "HarmonyContinuation-Setup$suffix.exe")
+$setups = @(Join-Path $outputPath "$setupFileStem$suffix.exe")
 $checksums = @()
 foreach ($setup in $setups) {
     $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()

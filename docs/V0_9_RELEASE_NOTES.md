@@ -1,3 +1,41 @@
+# HarmonyContinuation 0.9.0
+
+Windows x64 VST3 正式版，保留 RC4 运行行为与色彩提示可见性修复。唯一安装包为 `HarmonyContinuation-0.9.0-Setup.exe`，正式产物目录 `build-installer/release-0.9.0/`；实际 main 提交、Build ID 与文件哈希见随包 BUILD_INFO.json / SHA256SUMS.txt，Tag 为 `v0.9.0`。不额外创建 GitHub Release 页面或上传公开资产。
+
+## 本版内容
+
+- 继续发展生成后续完整路径，升级进行改写已有完整进行；FULL / SKELETON、既有档位、Preview、MIDI 保存与拖出保留。
+- Factory Library V3：629 条（155 条历史 canonical + 474 条新增），六条 QUESTIONABLE 不进入生产库。
+- 色彩提示默认开启，两模式共用卡片左缘 4 逻辑像素色条与文字：橙金暖色、青蓝冷色、中性灰；静态与整段时间趋势区分，Unknown / Uncertain 不伪造冷暖结论。
+- 色彩排序默认关闭，六种偏好：关闭、自动延续前段/原进行、逐渐温暖、逐渐偏冷、张力先升后降、先紧张最后温暖收束。仅有限重排已有候选，最多移动两位，关闭恢复原次序，不改变候选内容。
+- Why? V2 合并功能解释、色彩变化和启用后的排序理由，保留中英文与高级详情。
+- 统一安装器管理 VST3 与 Factory 两个独立组件，默认同时选择；保留首次安装、更新、修改、修复、单组件移除、完整卸载和已知旧双安装器迁移。取消勾选更新项不删除已有组件；保留 User Library、收藏、配置、个人进行、历史库及未管理文件。
+
+## 验收与验证范围
+
+Cubase Pro 15：用户已确认主要功能及 RC4 色彩提示修复通过人工检查；正式版没有改变相关运行逻辑，因此复用这些证据。**没有声称正式构建经过新的 Cubase 实机测试。**
+
+FL Studio：**Not Verified / Pending**。FL Studio compatibility has not yet been verified with the v0.9.0 release. 本轮不要求 FL Studio 验收，也不以 Pending 阻止发布。
+
+本轮仅一次正式 Release 编译、一次统一安装器打包、版本/Build ID/内容/依赖/哈希及安装器相关逻辑核对；复用 RC3 的 28 项隔离生命周期与 RC4 定向显示证据，不重复安装流程或音乐测试。全量回归统一留到 v1.0 正式发布前，v0.9 不例行执行。实际检查结果见 [NOW](../NOW.md#证据) 指向的随包记录。
+
+## 已知限制
+
+1. 未覆盖音集、多方向、缺少可靠低音或时间信息等结构可能为 Unknown / Uncertain；不可靠时保留中性提示和原排序。OPEN 仅在静态指标可靠时显示静态回退，不编造整段时间趋势。
+2. 色彩和声是辅助创作的数学模型，不是客观情绪识别；符号层低音分析不代表最终 MIDI 配音或实际听感已验证。
+3. 色彩偏好设置只在当前插件实例内保存，不保证跨工程重载恢复。
+4. 高级色彩数值仅展示前八个位置。
+5. FL Studio 实机验收 Pending。Preview 使用 Windows 默认播放设备，不经过宿主混音器；宿主不接受 MIDI 拖放时可保存后导入。
+6. 安装包尚未数字签名，Windows 可能显示发布者提示。
+7. 旧安装器迁移沿用 RC3 边界：未知身份/路径不自动接管；仅库迁移的旧插件需先更新/修复才能通过组件页单独移除；修改过的托管文件先修复再移除；断电/系统崩溃后不提供跨进程自动恢复，必要时重新修复。
+
+Schema 保持 Factory 2 / User 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2，本轮不迁移。v0.8.0 和旧 dev.1 无法安全读写 User Schema 2。更新前关闭宿主并保留个人数据备份。
+
+不分发购买的色彩和声 PDF、Excel、付费数据库或转换副本。音乐数学、Matcher、候选生成/评分、排序权重/窗口、VoiceLeading、MelodyConstraint、Factory 内容、MIDI 和宿主适配冻结。不启动后续版本开发。
+
+---
+
+## 以下为历史 RC / 开发记录
 # 0.9.0-rc.4 — 色彩提示可见性修复
 
 Continuation 与 Enrichment 共用固定卡片左缘 4px 色条，增强橙金、青蓝及中性灰对比度；文字在原提示行显示。Unknown / Uncertain 明确显示色彩不足以判断，提示关闭后色条与文字一起隐藏，排序开关独立。保留 RC2 的 OPEN 静态提示及可靠性边界；没有整段证据就不生成时间趋势。数学、排序、候选、Factory 及所有 Schema 不变。
