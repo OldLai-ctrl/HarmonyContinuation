@@ -78,6 +78,7 @@ Source: "{#StageDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\library_manager.exe"; Flags: dontcopy
 Source: "{#StageDir}\runtime\*.dll"; Flags: dontcopy
 Source: "{#StageDir}\factory.db"; Flags: dontcopy
+Source: "{#StageDir}\official-factory\*.db"; DestDir: "{tmp}\official-factory"; Flags: dontcopy
 Source: "{#StageDir}\plugin-files.txt"; Flags: dontcopy
 Source: "{#StageDir}\HarmonyContinuation.vst3\*"; DestDir: "{code:PluginFolder}"; Components: plugin; Flags: ignoreversion recursesubdirs createallsubdirs uninsneveruninstall
 Source: "{srcexe}"; DestDir: "{app}"; DestName: "HarmonyContinuation-Setup.exe"; Flags: external ignoreversion; Check: CopySetup
@@ -104,7 +105,7 @@ var
   SnapshotPresent: TStringList;
   PluginWasPresent, LibraryWasPresent, OwnPlugin, OwnLibrary: Boolean;
   RemovePlugin, RemoveLibrary, SkipLibrary, Committed, TransactionStarted, Uninstalled: Boolean;
-  DetectedVersion, DetectedLibrary, LegacyUninstaller: String;
+  DetectedVersion, DetectedLibrary, LegacyUninstaller, BundledFactoryHash: String;
 
 function Text(Zh, En: String): String;
 begin
@@ -152,6 +153,14 @@ function PluginBinary: String;
 begin Result := PluginFolder('') + '\Contents\x86_64-win\HarmonyContinuation.vst3'; end;
 function LibraryDatabase: String;
 begin Result := StoreFolder + '\{#LibraryVersion}\factory.db'; end;
+function ManagedLibraryDatabase: String;
+var Version: String; ActiveText: AnsiString;
+begin
+  Version:=GetIniString('Components','LibraryVersion','',StateFile);
+  if (Version='') and LoadStringFromFile(StoreFolder+'\active.txt',ActiveText) then Version:=Trim(String(ActiveText));
+  if (Version='') or (IntToStr(StrToIntDef(Version,0))<>Version) or (StrToIntDef(Version,0)<1) then
+    Result:=LibraryDatabase else Result:=StoreFolder+'\'+Version+'\factory.db';
+end;
 function CopySetup: Boolean;
 begin Result := CompareText(ExpandConstant('{srcexe}'), AppFolder + '\HarmonyContinuation-Setup.exe') <> 0; end;
 function FileAttributes(Path: String): LongWord;
@@ -213,6 +222,7 @@ procedure ExtractPayload;
 begin
   ExtractTemporaryFile('library_manager.exe'); ExtractTemporaryFiles('{tmp}\*.dll');
   ExtractTemporaryFile('factory.db'); ExtractTemporaryFile('plugin-files.txt');
+  ExtractTemporaryFiles('{tmp}\official-factory\*.db');
 end;
 function ReadActive: String;
 var S: AnsiString;
@@ -283,18 +293,60 @@ begin
 end;
 procedure RemoveManagedLibrary;
 begin
-  if FileExists(LibraryDatabase) and not DeleteFile(LibraryDatabase) then RaiseException('Cannot remove managed Factory DB');
-  if ReadActive='{#LibraryVersion}' then
+  if FileExists(LibraryDatabase) and not DeleteFile(ManagedLibraryDatabase) then RaiseException('Cannot remove managed Factory DB');
+  if CompareText(StoreFolder+'\'+ReadActive+'\factory.db',ManagedLibraryDatabase)=0 then
     if not DeleteFile(StoreFolder+'\active.txt') then RaiseException('Cannot clear active Factory pointer');
-  RemoveDir(ExtractFileDir(LibraryDatabase)); RemoveDir(StoreFolder);
+  RemoveDir(ExtractFileDir(ManagedLibraryDatabase)); RemoveDir(StoreFolder);
 end;
+function BundledFactoryPath: String;
+begin Result:=PluginFolder('')+'\Contents\Resources\factory.db'; end;
 function KnownBundledFactory: Boolean;
 var Path, Hash: String;
 begin
-  Path:=PluginFolder('')+'\Contents\Resources\factory.db'; Result:=True;
+  Path:=BundledFactoryPath; Result:=True; BundledFactoryHash:='';
   if not FileExists(Path) then Exit;
+  if not SafePath(Path) or FileExists(Path+'-wal') or FileExists(Path+'-journal') or FileExists(Path+'-shm') then begin Result:=False; Exit; end;
+  Hash:=GetSHA256OfFile(Path); BundledFactoryHash:=Hash;
+  Log('Bundled Factory path='+Path+' SHA256='+Hash);
+  // Shipped RC1 artifact, corroborated by original release checksum manifest
+  // and preserved installed backup; metadata/version is never sufficient.
+  Result:=(CompareText(Hash,'9b1fae16302d13a97e1f694ad7147be08920078e6c16057586aaa34e28fbe076')=0) or
+    Manager('verify-factory "'+Path+'" "'+ExpandConstant('{tmp}\official-factory')+'"',True);
+end;
+function UnknownBundledFactoryMessage: String;
+var Details: AnsiString; Report: String;
+begin
+  Report:=ExpandConstant('{tmp}\factory-conflict.txt'); Details:='Unknown';
+  if Manager('describe-factory "'+BundledFactoryPath+'" "'+Report+'"',True) then LoadStringFromFile(Report,Details);
+  Result:=Text('检测到无法确认来源的旧版 Factory 曲库文件。为保护现有数据，安装已暂停。',
+    'An old Factory file of unverified origin was detected. Installation is paused to protect existing data.')+#13#10+
+    Text('冲突路径：','Conflict path: ')+BundledFactoryPath+#13#10+
+    Text('实际版本信息（不代表来源已确认）：','Reported version (not proof of origin): ')+String(Details)+#13#10+
+    'SHA-256: '+BundledFactoryHash+#13#10+
+    Text('原因：完整内容与随包官方参考库不符，或路径/日志文件无法安全验证。不会覆盖、删除或接管该文件。',
+      'Reason: full content does not match official references, or linked paths/journal files prevent safe verification. The file will not be overwritten, deleted or adopted.')+#13#10+
+    Text('请关闭宿主，将该文件及其日志完整备份到独立目录并核对备份哈希，再手动移走冲突文件后重试；无法确认备份可恢复时请保留原状。不要删除 User Library、收藏、设置或历史数据库。',
+      'Close hosts, back up this file and any journals to a separate directory and verify backup hashes before manually moving the conflict and retrying. Keep the original if recovery cannot be assured. Do not delete User Library, favourites, settings or historical databases.');
+end;
+procedure BackupBundledFactory;
+var Path, Backup, Hash: String;
+begin
+  Path:=BundledFactoryPath;
+  if not FileExists(Path) then begin
+    if BundledFactoryHash<>'' then RaiseException('Factory changed after verification; retry.');
+    Exit;
+  end;
   Hash:=GetSHA256OfFile(Path);
-  Result:=(CompareText(Hash,'{#FactoryHash}')=0) or (CompareText(Hash,'{#LegacyFactoryHash}')=0);
+  if (BundledFactoryHash='') or (CompareText(Hash,BundledFactoryHash)<>0) or
+      FileExists(Path+'-wal') or FileExists(Path+'-journal') or FileExists(Path+'-shm') then
+    RaiseException('Factory changed after verification; preserved.');
+  Backup:=ExtractFileDir(ExtractFileDir(StoreFolder))+'\Backups\FactoryMigration\'+Hash+'\factory.db';
+  if not SafePath(Backup) then RaiseException('Unsafe Factory backup path; preserved.');
+  if not ForceDirectories(ExtractFileDir(Backup)) then RaiseException('Cannot create permanent Factory backup; preserved.');
+  if not FileExists(Backup) then
+    if not FileCopy(Path,Backup,True) then RaiseException('Cannot create permanent Factory backup; preserved.');
+  if CompareText(GetSHA256OfFile(Backup),Hash)<>0 then RaiseException('Factory backup verification failed; original preserved.');
+  Log('Verified permanent Factory backup: '+Backup+' SHA256='+Hash);
 end;
 function Selection(Name: String): Boolean;
 begin Result:=WizardIsComponentSelected(Name); end;
@@ -403,7 +455,7 @@ begin
   if not Manager('check-plugin "'+PluginBinary+'"',True) or
      not Manager('check-plugin "'+LibraryDatabase+'"',True) then begin Result:=Text('请关闭 Cubase、FL Studio 或其它占用插件/曲库的程序后重试。','Close Cubase, FL Studio or any process using the plugin/library, then retry.'); Exit; end;
   if RemovePlugin and (not OwnPlugin or not ManifestPaths(AppFolder+'\plugin-files.txt',True)) then begin Result:='Plugin ownership cannot be verified. Repair/update the plugin first; no files removed.'; Exit; end;
-  if RemoveLibrary and (not OwnLibrary or ((FileExists(LibraryDatabase)) and (CompareText(GetSHA256OfFile(LibraryDatabase),ManagedHash)<>0))) then begin Result:='Factory ownership/content differs. Repair the managed library first; no files removed.'; Exit; end;
+  if RemoveLibrary and (not OwnLibrary or ((FileExists(ManagedLibraryDatabase)) and (CompareText(GetSHA256OfFile(ManagedLibraryDatabase),ManagedHash)<>0))) then begin Result:='Factory ownership/content differs. Repair the managed library first; no files removed.'; Exit; end;
   if Selection('plugin') and PluginWasPresent then begin
     if VersionOrder(DetectedVersion)<0 then begin Result:='Installed plugin version unknown; preserved.'; Exit; end;
     if VersionOrder(DetectedVersion)>VersionOrder('{#ProductVersion}') then
@@ -420,7 +472,8 @@ begin
     Result:=Text('Factory V{#LibraryVersion} 需要 {#MinimumPluginVersion} 或更新主程序，请同时勾选主程序升级。',
       'Factory V{#LibraryVersion} requires plugin {#MinimumPluginVersion} or newer; select the plugin component too.'); Exit;
   end;
-  if (Selection('plugin') or RemoveLibrary) and not KnownBundledFactory then begin Result:='Unrecognized bundled Factory file preserved. Back it up and move it before maintenance.'; Exit; end;
+  if (Selection('plugin') or RemoveLibrary) and not Manager('check-plugin '+Chr(34)+BundledFactoryPath+Chr(34),True) then begin Result:=Text('请关闭占用旧版 Factory 文件的程序后重试。','Close applications using the old bundled Factory and retry.'); Exit; end;
+  if (Selection('plugin') or RemoveLibrary) and not KnownBundledFactory then begin Result:=UnknownBundledFactoryMessage; Log(Result); Exit; end;
   if Selection('library') and not SkipLibrary and FileExists(LibraryDatabase) then begin
     Hash:=GetSHA256OfFile(LibraryDatabase);
     if (CompareText(Hash,'{#FactoryHash}')<>0) and not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedHash,'{#FactoryHash}')=0)) then begin
@@ -442,14 +495,18 @@ begin
     RememberFile(StoreFolder+'\active.txt');
     if Selection('plugin') then RememberManifest(ExpandConstant('{tmp}\plugin-files.txt'));
     if RemovePlugin then RememberManifest(AppFolder+'\plugin-files.txt');
-    if (Selection('library') and not SkipLibrary) or RemoveLibrary then RememberFile(LibraryDatabase);
+    if Selection('library') and not SkipLibrary then RememberFile(LibraryDatabase);
+    if RemoveLibrary then RememberFile(ManagedLibraryDatabase);
     if Selection('plugin') or RemoveLibrary then RememberFile(PluginFolder('')+'\Contents\Resources\factory.db');
     try
       if RemovePlugin then RemoveManagedPlugin;
       if RemoveLibrary then RemoveManagedLibrary;
       Path:=PluginFolder('')+'\Contents\Resources\factory.db';
       if (Selection('plugin') or RemoveLibrary) and FileExists(Path) then
-        if not DeleteFile(Path) then RaiseException('Cannot remove known legacy bundled Factory copy');
+        begin
+          BackupBundledFactory;
+          if not DeleteFile(Path) then RaiseException('Cannot remove known legacy bundled Factory copy');
+        end;
       if Selection('library') and not SkipLibrary then begin
         if FileExists(LibraryDatabase) and (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
           if not DeleteFile(LibraryDatabase) then RaiseException('Cannot replace damaged managed Factory');
@@ -466,8 +523,11 @@ begin
     if Selection('library') and not SkipLibrary then OwnLibrary:=True;
     if RemoveLibrary then OwnLibrary:=False;
     if not SetIniString('Components','Plugin',IntToStr(Ord(OwnPlugin)),StateFile) or
-       not SetIniString('Components','Library',IntToStr(Ord(OwnLibrary)),StateFile) or
-       not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) then RaiseException('Cannot record component state');
+       not SetIniString('Components','Library',IntToStr(Ord(OwnLibrary)),StateFile) then RaiseException('Cannot record component state');
+    if Selection('library') and not SkipLibrary then begin
+      if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
+         not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
+    end;
     Committed:=True; TransactionStarted:=False;
   end;
 end;
@@ -484,7 +544,7 @@ begin
   OwnLibrary:=GetIniString('Components','Library','0',StateFile)='1';
   Result:=SafePath(AppFolder) and SafePath(PluginFolder('')) and SafePath(StoreFolder);
   if Result and OwnPlugin then Result:=ManifestPaths(AppFolder+'\plugin-files.txt',True);
-  if Result and OwnLibrary and FileExists(LibraryDatabase) then Result:=CompareText(GetSHA256OfFile(LibraryDatabase),ManagedHash)=0;
+  if Result and OwnLibrary and FileExists(ManagedLibraryDatabase) then Result:=CompareText(GetSHA256OfFile(ManagedLibraryDatabase),ManagedHash)=0;
   if Result then Result:=Manager('check-plugin "'+PluginBinary+'"',False) and Manager('check-plugin "'+LibraryDatabase+'"',False);
   if not Result then SuppressibleMsgBox(Text('请关闭宿主。若安装文件被修改，请先修复；未删除文件或个人数据。','Close hosts; repair modified managed files before removal. No personal data was deleted.'),mbError,MB_OK,IDOK);
 end;
@@ -494,7 +554,7 @@ begin
     TransactionStarted:=True;
     RememberFile(StoreFolder+'\active.txt');
     if OwnPlugin then RememberManifest(AppFolder+'\plugin-files.txt');
-    if OwnLibrary then RememberFile(LibraryDatabase);
+    if OwnLibrary then RememberFile(ManagedLibraryDatabase);
     try
       if OwnPlugin then RemoveManagedPlugin;
       if OwnLibrary then RemoveManagedLibrary;

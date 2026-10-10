@@ -73,6 +73,14 @@ $manifest = Get-ChildItem -LiteralPath $stageBundle -Recurse -File | Sort-Object
     (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '|' + $relative
 }
 [IO.File]::WriteAllText((Join-Path $stage 'plugin-files.txt'),($manifest -join "`n")+"`n",[Text.UTF8Encoding]::new($false))
+$referenceDir = Join-Path $stage 'official-factory'
+New-Item -ItemType Directory -Force -Path $referenceDir | Out-Null
+foreach ($reference in @('factory-v2.db','factory-v3.db')) {
+    $source = Join-Path $buildPath $reference
+    if (!(Test-Path -LiteralPath $source)) { throw "Missing official reference compiled from repository data: $reference" }
+    Copy-Item -LiteralPath $source -Destination (Join-Path $referenceDir $reference)
+}
+Copy-Item -LiteralPath $FactoryDatabase -Destination (Join-Path $referenceDir 'factory-v4.db')
 $factoryHash = (Get-FileHash -LiteralPath $FactoryDatabase -Algorithm SHA256).Hash.ToLowerInvariant()
 $legacyFactoryHash = ''
 $legacyDb = Join-Path $buildPath 'factory-v2.db'

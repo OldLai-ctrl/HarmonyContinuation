@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.10.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.1" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRERELEASE "dev.2" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_FACTORY_LIBRARY_VERSION 4 CACHE STRING "Factory content version; V4 development candidate")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
@@ -302,6 +302,16 @@ add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON}
     VERBATIM)
 add_custom_target(factory_legacy_database DEPENDS "${HC_FACTORY_LEGACY_DB}")
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4")
+    set(HC_FACTORY_V3_REFERENCE_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v3.db")
+    add_custom_command(OUTPUT "${HC_FACTORY_V3_REFERENCE_DB}"
+        COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
+            "${HC_FACTORY_V3_REFERENCE_DB}" 3 "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3"
+        DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
+        VERBATIM)
+    add_custom_target(factory_reference_databases DEPENDS "${HC_FACTORY_LEGACY_DB}" "${HC_FACTORY_V3_REFERENCE_DB}")
+    add_dependencies(library_manager factory_reference_databases)
+endif()
 add_dependencies(continuation_benchmark_cli factory_database)
 add_dependencies(constraint_benchmark factory_database)
 add_dependencies(TendencyTests factory_database)
