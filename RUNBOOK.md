@@ -52,4 +52,11 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 ## 交付与同步
 
+### Factory V4 另一设备接手
+
+1. 登录有仓库写权限的 GitHub 账号，打开 [未发布的 V4 交付草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)。下载 `HarmonyContinuation-0.10.0-dev.1-Handoff.zip`、`HANDOFF_SHA256SUMS.txt`；只需人工安装时也可单独下载同页 Setup。保持草稿未发布。
+2. 用 SHA-256 对照外层校验文件验证 ZIP；解压到新目录，再按包内 `SHA256SUMS.txt` 校验文件。包内含 Setup、`stage-4` 的 VST3/Factory DB、`midi`、`evidence`、BUILD_INFO 和人工清单。原始产品交付源码提交 `963c9c7`，实际插件/Setup 构建提交 `86a8641`，版本 `0.10.0-dev.1`；后续交接提交不改变二进制身份。
+3. 新设备克隆现有仓库或先处理已有工作区未提交改动，再切到 `library/v4` 并 fast-forward 更新；核对 `git status -sb`、`git log -1` 和远端。不要强制重置或覆盖另一设备未提交内容。读取 NOW 的当前任务及 V4 人工清单；当前下一步只有 Cubase/FL Studio 人工验收，两者对此构建均 Pending。
+4. 直接验收使用统一 Setup，无需重编译。需要继续开发时按本 RUNBOOK 构建章节在该设备重新核实 MSVC/CMake/Ninja、Inno Setup、CRT 和离线 SDK 路径；SDK、工具链与本机构建缓存不在交接包内，不复制缓存来冒充可复现构建。不要为接手续跑全量回归；main/v0.9.0 和个人数据继续保护。
+
 明确源码 HEAD 与生成包的编译提交；包附版本、提交、配置、测试范围、SHA-256 和待测项。打包脚本生成 Setup 校验文件，分发 ZIP 还需自己的清单。未执行的步骤写未测。查 NOW 的授权与待同步状态后再提交/推送指定分支；发布、merge、tag 或正式升级需当前任务授权。完成后精简 NOW，按 AGENTS 规则更新相关记录。

@@ -14,6 +14,8 @@
 
 统一开发 Setup 及匹配 VST3 / DB / MIDI 位于 `build-installer/v4-0.10.0-dev.1/`。Release 构建与统一打包通过，21 项隔离安装检查通过。Build ID `0.10.0-dev.1 / 86a8641 / Release / Library 4`；随后仅补充隔离测试身份与结果文档。V4 PRODUCTIZATION READY，供人工验收。产品行为、兼容、审核及边界见 [V4 产品化](docs/FACTORY_V4_PRODUCTIZATION.md)，下一步仅为 [V4 人工验收](docs/V4_DAW_ACCEPTANCE.md)。本轮提交推送 library/v4，实时状态以 Git 为准；不合并 main、不打正式 Tag、不公开发布，不启动 v1.0 或卡池。
 
+跨设备交付：源码在 `origin/library/v4`；本开发版安装包及完整交接 ZIP 使用 [GitHub 未发布草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1) 分发，需登录有仓库写权限的账号。包的构建身份仍为上述 `86a8641`，不能把交接文档提交误认为重新编译。下载、校验及另一设备接手步骤见 [RUNBOOK](RUNBOOK.md#交付与同步)。不复制本机缓存、SDK、用户库或宿主工程。
+
 ## 发布与验证证据
 
 正式包：`build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`。构建版本、提交、VST3/Factory/Setup 哈希、依赖与验证范围保存在同目录 `BUILD_INFO.json`、`SHA256SUMS.txt` 与 `FILE_MANIFEST.sha256`。Setup SHA-256：`1ee1ba17a3b689ad7b8ea8f7ffe245c2fc08ac71226ae82eed441788628136f7`。

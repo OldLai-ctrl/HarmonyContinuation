@@ -30,3 +30,5 @@
 Git 同步代码、文档、固定测试输入、Factory 源 JSON 和安装脚本。未提交改动未经过 push 就不会到另一设备；接续前明确它们由谁保管。提交/推送由当前任务授权范围决定，更新 NOW 的待同步状态。
 
 SDK、编译工具、缓存、生成数据库、Setup、ZIP、运行日志不经 Git 自动同步；测试包单独分发并带提交和 SHA-256。用户数据库、宿主工程与私有音乐素材不自动复制或上传，不用机器间的绝对路径替代仓库相对链接。
+
+当前 V4 开发包与完整交接 ZIP 单独上传到 [GitHub 未发布草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)；有仓库写权限的账号登录后下载。源码仍通过 `library/v4` 同步；产物哈希与构建提交随包提供，操作步骤见 [RUNBOOK](RUNBOOK.md#交付与同步)。草稿不公开发布，不作为正式 Tag 或正式 Release。
