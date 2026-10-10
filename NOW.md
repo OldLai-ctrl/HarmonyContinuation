@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。计划一次 Release 编译及一个合并离屏像素冒烟，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`，不制作安装包，不覆盖旧 RC 产物。完成后推送并停止等待用户 Cubase 复验。
+RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。一次 Release 编译与一个合并离屏像素冒烟已通过，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`，不制作安装包，不覆盖旧 RC 产物。提交并推送指定开发分支后停止，等待用户 Cubase 复验。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -22,6 +22,13 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 证据
 
+2026-10-10 rc.4 色彩提示可见性：干净生产提交 `f71931774a385d1e15f68329e3699dbe8c3e686c` 一次 Release 编译插件及 WhyV2Smoke 通过（Validator 关闭），产物 `0.9.0-rc.4 / Release / f719317`。共用色条由低对比 2px 提示行短线改为卡片左缘固定 4 逻辑像素长线，橙金 #E8B85E、青蓝 #5FCADC、中性灰 #B4B9C2；原提示行文字保留，Unknown / Uncertain 明确色彩信息不足。未发现标准安装路径旧版：检查时为 RC3，其 SHA 与上一交付一致；Cubase 进程是否缓存旧模块无法从安装文件确认，重启后核对关于页。
+
+一个合并 `WhyV2Smoke rc-visibility` 离屏验证通过，复用同一普通暖色和多方向 Uncertain 代表候选到两模式，检查实际模型状态、色条四列像素、文字像素、中英资源及提示开关隐藏，排序设置独立保留。首次失败在检查 fixture 的右侧空白采样点，那里恰为原缩略和弦块；诊断确认四列色条已绘制，仅把边界采样移到缩略图下方。只增量编译冒烟工具并定向完成未通过检查，插件未重复编译；未运行旧套件或矩阵。证据为 `build-v3-plugin/rc4-color-visibility-configure.log`、`rc4-color-visibility-build.log`、`rc4-color-visibility-smoke.log`、`rc4-visibility-diagnostic.log`、`rc4-color-visibility-smoke-final.log`。
+
+独立 bundle 位于 `build-installer/rc-0.9.0-rc.4-color-visibility/HarmonyContinuation.vst3`，随附 CRT、中英文、原 Factory 数据、BUILD_INFO.json 与 SHA256SUMS.txt。插件二进制 SHA-256 `b87459334e0513a92afa091f2bd8932b27f563ee968a1d4f36f76f023a7fa6a3`，与本轮编译产物一致，Factory 与 RC3 逐字节相同。后续提交仅修改测试 fixture 与证据，不改变生产行为。RC1/2/3 原安装包保留，不生成 RC4 安装器，不合并 main 或创建 Tag。
+
+本轮修复的是视觉辨识度，不是扩大模型支持：OPEN/时值缺失继续按 RC2 规则显示静态信息且保持中性；缺低音、多方向或未覆盖结构继续回退。没有实际 Cubase/DPI 矩阵运行证据，真实 Cubase RC4 验收 Pending，FL 无新增结果。音乐公式、排序门槛/窗口、候选与原评分、MIDI、Factory、宿主、所有 Schema 冻结。定向自动关口通过，完成后停止等待用户人工复验。
 2026-10-10 rc.3 Unified Setup：从干净提交 `590897fddb064dba88de2d68fdb932044111ce6d` 一次 MSVC Release 编译插件和 library_manager，Validator 关闭，产物 `0.9.0-rc.3 / Release / 590897f`。一次生成唯一用户包 `build-installer/rc-0.9.0-rc.3-unified/HarmonyContinuation-Setup.exe`，SHA-256 `ab38e54bb4cacbdfedb2634a4ebde37872fd44642b8a88c51b17dabb18cdb02d`，重算匹配清单；VST3/moduleinfo/Setup 版本一致，暂存插件与编译二进制一致，Factory 与 RC2 逐字节相同（V3 / Schema 2 / 629）。中英资源、MSVC 导入依赖已随附，其余为 Windows 10+ 系统组件；暂存不含购买的原始或转换色彩数据。
 
 安装器脚本一次语法修复后编译通过（补充 Windows 文件属性 API 声明，未重编插件）。隔离测试首轮受沙箱注册表访问限制，在任何安装操作前停止；获得隔离运行权限后执行一次完整生命周期，28 项检查通过：全新双组件、独立增删 Factory/VST3、损坏官方库修复、旧双卸载记录合并、只更新所选组件、占用插件拒绝覆盖、完整卸载；专用个人数据哨兵、历史 Factory 2、其它插件和 bundle 中未管理文件均保留。测试包只使用工作区路径和独立 HKCU AppId，生产安装及真实 user.db 未变。旧版 fixture 和测试包不面向用户。未重复已通过流程。
@@ -86,7 +93,7 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 
 ## 开发完成边界
 
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.3 以一次 Release 构建、统一安装器隔离生命周期及打包文件核验为准备关口，真实验收留待用户。
+Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。rc.4 仅以一次 Release 编译及指定色彩显示冒烟为本轮关口，真实验收留待用户；RC3 安装器证据继续有效。
 
 User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
 

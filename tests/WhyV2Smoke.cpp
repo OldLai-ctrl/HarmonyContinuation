@@ -13,23 +13,28 @@ int main(int argc,char** argv) {
         if(!canvas)result=1;
         else if(argc>1&&std::string(argv[1])=="rc-visibility") {
             auto view=VSTGUI::owned(new harmony::ui::MainView({0,0,1100,900},{}));
+            int displays=0;
             const bool pass=view->runColorVisibilitySmoke(canvas.get(),[&](VSTGUI::CRect card,VSTGUI::CRect label,harmony::ui::ColorTone tone,bool shown){
+                ++displays;
                 auto pixels=VSTGUI::owned(VSTGUI::CBitmapPixelAccess::create(canvas->getBitmap()));if(!pixels)return false;
                 const auto expected=tone==harmony::ui::ColorTone::Warm?VSTGUI::CColor(232,184,94,255):
                     tone==harmony::ui::ColorTone::Cool?VSTGUI::CColor(95,202,220,255):VSTGUI::CColor(180,185,194,255);
                 const VSTGUI::CColor background(33,49,69,255);
                 const auto pixel=[&](int x,int y){VSTGUI::CColor c;pixels->setPosition(x,y);pixels->getColor(c);return c;};
                 for(int x=1;x<=4;++x)
-                    if(pixel(static_cast<int>(card.left)+x,static_cast<int>(card.top)+10)!=(shown?expected:background))return false;
-                if(pixel(static_cast<int>(card.left)+5,static_cast<int>(card.top)+10)!=background)return false;
+                    if(pixel(static_cast<int>(card.left)+x,static_cast<int>(card.top)+10)!=(shown?expected:background)){std::cout<<"edge mismatch, display="<<displays<<" x="<<x<<'\n';return false;}
+                // Below the mini timeline: its first block starts next to the stripe.
+                if(pixel(static_cast<int>(card.left)+5,static_cast<int>(card.top)+30)!=background){std::cout<<"edge width mismatch, display="<<displays<<'\n';return false;}
                 bool textPainted=false;
                 for(int y=static_cast<int>(label.top);y<static_cast<int>(label.bottom);++y)
                     for(int x=static_cast<int>(label.left);x<static_cast<int>(label.right);++x)
                         textPainted|=pixel(x,y)==expected;
+                if(textPainted!=shown)std::cout<<"label mismatch, display="<<displays<<'\n';
                 return textPainted==shown;
             });
             std::cout<<"Continuation + Enrichment: known warmth / ambiguous neutral / 4px edge + label pixels / hints toggle independent of ranking / zh+en "<<(pass?"PASS":"FAIL")<<'\n';
             if(!pass)result=1;
+            if(!pass)std::cout<<"Completed display checks: "<<displays<<'\n';
         }
         else if(argc>1&&std::string(argv[1])=="rc2-hints") {
             auto view=VSTGUI::owned(new harmony::ui::MainView({0,0,1100,900},{}));
