@@ -11,7 +11,7 @@
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
-| 构建与打包输出 | `<checkout>/build-v3/`、`build-v3-plugin/`、`build-installer/` | 正式输出 `build-installer/release-0.9.0/`，仅 HarmonyContinuation-0.9.0-Setup.exe；RC4 VST3 验证产物使用 `build-installer/rc-0.9.0-rc.4-color-visibility/`；追加 RC4 统一包使用 `build-installer/rc-0.9.0-rc.4-unified/`；统一 RC3 使用 `build-installer/rc-0.9.0-rc.3-unified/`，RC1/RC2 目录保留，不覆盖正式产物；`.gitignore` 排除，另一设备独立构建 |
+| 构建与打包输出 | `<checkout>/build*/` | 当前仅保留 `build-installer/release-0.9.0/` 正式包、其 `evidence/` 及 `build-installer/tools/Inno/`；旧构建/RC/隔离测试输出已清理。`.gitignore` 排除，另一设备独立构建 |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
 

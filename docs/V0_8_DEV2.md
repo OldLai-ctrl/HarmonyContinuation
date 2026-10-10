@@ -32,4 +32,4 @@ Session schema **5**、Library content **2**、SQLite schema **1**、Continuatio
 
 阶段末只集中运行一次 CTest、Validator、42 Continuation、30 Enrichment、16 Constraint、Import/Round-trip、Demo。具体结果见 `V0_8_DEV2_REPORT.md`。生成完整 Windows Setup 和 Library-2 Setup；本轮不自动替换用户系统安装。
 
-Cubase MIDI Part 私有直接拖入 **NOT IMPLEMENTED / NOT TESTED**。Cubase 是否接受标准文件拖出、产生的 MIDI Part 及实际听感均须人工验证，见 `V0_8_DEV2_MANUAL_TEST.md`。
+Cubase MIDI Part 私有直接拖入 **NOT IMPLEMENTED / NOT TESTED**。Cubase 是否接受标准文件拖出、产生的 MIDI Part 及实际听感均须人工验证，见 `RC_DAW_ACCEPTANCE.md`。

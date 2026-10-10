@@ -75,7 +75,7 @@ Ctrl+C 后显式检查未得到 VST-XML：VSTGUI 暴露 0 个剪贴板数据项�
 - 本轮只增加 AnnotatedFile / DAWClip 导出配置和七组共用的 ScrollableCandidateList。两个文件从同一 ExportSequence 写出；点击保存保留说明，拖出仅保留 PPQ、Note On/Off 和 End Of Track，单轨 Format 0，不写 tempo / meter / text / key / marker。
 - 候选生成、排名、质量/去重门槛保持原状；移除 MainView 的两行展示上限，使用既有策略默认最多 3 条，约两行高度独立滚动。滚轮在组内（包括边界）消费；空隙走父容器。无候选视图复用；绘制、点击映射共用原候选下标。
 - 本机针对性验证：MidiProfileTests 8/8，实际拖出临时文件事件精简，两个布局/三个范围音乐一致，保存 metadata 保留；Demo 七组 × 0/1/2/3/6 条 × 三种缩放，试听/拖動准备/Why/Snapshot/候选身份检查通过。实际宿主 drop、发声和 Marker Track 消失仍待用户复测，不由 Demo 推断。
-- 本轮未重复完整 CTest、Validator、音乐基线、Import fixtures 或 Round-trip。用户定向 PASS 后才运行最终集中回归并决定推进 RC，见 `V0_8_RC_TARGETED_MANUAL_TEST.md`。
+- 本轮未重复完整 CTest、Validator、音乐基线、Import fixtures 或 Round-trip。用户定向 PASS 后才运行最终集中回归并决定推进 RC，两项定向复测后来收到用户 PASS，现行清单见 `RC_DAW_ACCEPTANCE.md`。
 
 ### 0.8.0-rc.1 Gate
 

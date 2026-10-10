@@ -82,10 +82,6 @@ EditorUiState preserves the flag across editor recreation in the same plugin
 instance. It is not persisted across plugin/project reload; no existing DB,
 Session or Snapshot format is extended. Factory V3 and all schemas stay frozen.
 
-## Minimal validation
+## Validation history
 
-One Release build of the plugin and `HarmonyColorSmoke`; run that executable once
-for three calculation scenarios and one offscreen UI/Why smoke (both locales,
-toggle, recommendation identity and editor-state preservation). No CTest,
-Validator, benchmarks, MIDI suite, host matrix, installer or performance regression.
-Actual executed results belong in NOW.md. Stop after completion; dev.6 is separate.
+The dev.5 one-time smoke tool was removed during repository cleanup. Historical verification scope is summarized in NOW.md; runtime behavior is unchanged.

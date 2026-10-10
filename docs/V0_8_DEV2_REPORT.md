@@ -28,7 +28,7 @@
 26. Validator：最终 **47/47 PASS**，Release 构建。
 27. Demo：MIDI 工作流四类入口 × 三档缩放 **PASS**；含指纹、试听 / 保存 / 快照回调、拖动准备、原生 FilePath、详情关闭、实际文件导入 / OPEN。Zoom **9/9**；Resize **96/96**。这些检查不等于真实 Cubase drop / 发声通过。
 28. Installer/package：完整 `HarmonyContinuation-0.8.0-dev.2-Setup.exe`、独立 `HarmonyContinuation-Library-2-Setup.exe` 与 SHA-256 清单 **READY**，位于 `build-installer/output/`；包内版本及两份新增语言资源已核对，语言各 221 键。Library 2 / 161 条、SQLite 1、Session 5、两类快照 2/1 保持；安装器 / 用户库 / 回退设计未改。
-29. Cubase 人工待测：两种模式 More 试听 / 保存 / 快照，四处 MIDI 拖出产生 Part、音符与时值、scope、无保存框，文件选择 / Explorer 导入、完整 / OPEN、失败保留、工程重开、三档缩放与中英文；见 [简短清单](V0_8_DEV2_MANUAL_TEST.md)。
+29. Cubase 人工待测：两种模式 More 试听 / 保存 / 快照，四处 MIDI 拖出产生 Part、音符与时值、scope、无保存框，文件选择 / Explorer 导入、完整 / OPEN、失败保留、工程重开、三档缩放与中英文；见 [现行清单](RC_DAW_ACCEPTANCE.md)。
 30. Cubase MIDI Part 私有直接拖入：**NOT IMPLEMENTED / NOT TESTED**；仅支持宿主或 Explorer 提供标准 `.mid` 文件路径的情况。
 31. 当前 blocker：**无新增自动验证阻塞；dev.2 Cubase 人工 Gate 待验收**。已有 3 个结构质量问题保留。
 32. 未进入下一版本；完成后停止，等待 Cubase 人工验收。

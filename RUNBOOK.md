@@ -24,20 +24,6 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
 
-以下 RC3 为历史入口，本轮不执行：RC3 只构建一次 Release 插件和 library_manager；一次生成统一 Setup，运行 `tools/test-unified-installer.ps1` 的两个隔离生命周期，检查首次安装、组件独立更新/增删/修复、旧双记录迁移、文件占用及完整卸载。测试包只写编译进的项目内路径及独立 HKCU 测试 AppId，不操作生产数据；失败只定向修复和继续未通过步骤。打包说明见 [统一安装器](docs/INSTALLER_AND_LIBRARY.md)。不运行插件测试或回归。
-
-以下 RC2 为历史入口，本轮不执行：RC2 仅构建一次 Release 的插件、library_manager 与 WhyV2Smoke，直接运行 `WhyV2Smoke rc2-hints` 一次，合并普通完整路径、截图 OPEN 静态/时值回退、多方向中性回退、开关及 Continuation 色条像素检查；不运行旧冒烟入口。仅本轮定向项目通过后打包，复用已有 factory.db 与 dev.5–dev.8 证据；一次调用 build-installer.ps1，输出到独立 build-installer/rc-0.9.0-rc.2 目录，检查版本、Git 标识、关键文件、依赖和 SHA-256，不运行安装生命周期或测试程序。人工验收见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)。
-
-以下 dev.8 为历史入口，本轮不执行：只构建一次 Release 的 `HarmonyContinuation` 和 `WhyV2Smoke`，直接运行后者一次，合并一个 Continuation 与一个 Enrichment 的卡片/Why?/开关 UI 场景，顺带未知状态及 Preview/MIDI 身份。复用 dev.5–dev.7 算法证据；若失败仅指定 `continuation` 或 `enrichment` 定向重验。禁止扩大为历史回归或 UI 矩阵，通过后停止。详见 [Why? V2](docs/WHY_V2.md)。
-
-以下 dev.7 为历史入口，本轮不执行：只构建一次 Release 的 `HarmonyContinuation` 和 `EnrichmentColorSmoke`，直接运行后者一次，合并一个完整 Enrichment 张力目标、关闭恢复及重排卡片/Why/Preview/MIDI/比较身份的定向冒烟。复用 dev.5/dev.6，不执行下列历史入口，不扩展矩阵；通过即停止，不启动 dev.8。
-
-以下 dev.6 为历史入口，本轮不执行：只构建一次 Release 的 `HarmonyContinuation` 和 `ColorPreferenceSmoke`，直接运行后者，覆盖关闭身份/顺序、一个张力弧目标、Unknown/Uncertain 回退和恢复原排序；同一场景顺带绘制工具栏及 Why?，不额外扩展 UI 矩阵。dev.5 证据复用，详见 [色彩排序](docs/COLOR_PREFERENCE_RERANKER.md)。通过即停止，不启动 dev.7。
-
-以下 dev.5 为历史入口，本轮不执行：只构建一次 Release 的 `HarmonyContinuation` 和 `HarmonyColorSmoke`，直接运行 `HarmonyColorSmoke.exe`：三个色彩代表案例加一个中英 UI / Why? / 开关冒烟。该入口不注册 CTest，不触发历史套件；通过即停止。详见 [Color Analysis V1](docs/COLOR_ANALYSIS_V1.md)。
-
-以下 dev.4 主线集成步骤为历史入口，本轮不执行：只编译一次 Release，显式构建插件及 `FactoryCatalogTests`、`LibraryCompatibilityTests`，直接运行 `FactoryCatalogTests --smoke-one`（一例 Factory V3 加载/推荐）和 `LibraryCompatibilityTests user-smoke`（一个隔离旧 Schema 1 用户库恢复案例）。只在实际改动宿主连接入口时增加一次 Generic Host 加载；不因下面历史入口存在而执行它们。全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归。通过即停止，本次不重做安装包或安装验证。
-
 前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：
 
 Factory V3 兼容桥只构建 `LibraryCompatibilityTests`，运行 `ctest --test-dir <build> -R '^LibraryV3_' --output-on-failure`。Library 2/3 数据 fixture 和 user.db 均在该测试独有的临时目录内创建、关闭、重新打开及清理，不读生产用户目录。具体格式、降级和测试边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。新生产 DB 目标 `factory_database` 默认 Library 3；`factory_legacy_database` 只用于历史 Library 2 测试。
@@ -60,7 +46,7 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 统一安装逻辑变动时按 `tools/test-unified-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
 
-旧 V3 九项和 RC3 28 项安装证据保留。安装维护逻辑未改时复用，不重复生命周期；本轮正式版只版本化输出文件名。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；正式版只生成 `HarmonyContinuation-0.9.0-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
+正式包复用的 RC3 28 项安装结果保留于 `build-installer/release-0.9.0/evidence/`，旧 V3 过程记录可查 Git 历史。安装维护逻辑未改时复用，不重复生命周期；本轮正式版只版本化输出文件名。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；正式版只生成 `HarmonyContinuation-0.9.0-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
 
 ## 交付与同步
 

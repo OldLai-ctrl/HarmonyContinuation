@@ -71,14 +71,9 @@ EditorUiState retains the preference within the plugin instance, including
 editor recreation. It does not persist across project/plugin reload. No schema
 changes are made. Original indices restore exactly when Off is selected.
 
-## Minimal verification
+## Validation history
 
-One Release build of HarmonyContinuation and ColorPreferenceSmoke. Directly run
-ColorPreferenceSmoke once for Off identity/order, one complete tension-arc goal,
-Unknown/Uncertain fallback and Off restoration; the same scenario also draws the
-modified UI/Why and checks no regeneration callback and independent hint toggle.
-Reuse dev.5 evidence. No CTest, Validator, benchmark, host matrix, MIDI suite or
-installer regression. Actual execution and artifact commit are recorded in NOW.
+The dev.6 one-time smoke tool was removed during repository cleanup. Historical verification is summarized in NOW.md.
 
 ## Enrichment Color Guidance — dev.7
 
@@ -127,9 +122,4 @@ sentence only when enabled; hints remain independently switchable. A symbolic-ba
 note distinguishes model information from final sound. Preferences remain instance
 local without database/session/snapshot format changes.
 
-Validation is one Release build and one combined EnrichmentColorSmoke scenario:
-a qualified complete tension-arc target actually moves, Off restores indices,
-and reordered card/Why/Preview/MIDI/comparison/snapshot identity remains consistent.
-It also checks explicit inversion bass and missing-bass uncertainty in that scenario.
-The MIDI check is callback/payload identity, not a MIDI protocol or DAW test. Reuse
-dev.5/dev.6 evidence; no historical suite or additional matrix is run.
+The dev.7 one-time smoke tool was removed during repository cleanup. Historical verification is summarized in NOW.md; production ranking behavior is unchanged.

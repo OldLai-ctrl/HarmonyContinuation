@@ -28,7 +28,7 @@ The 1k and 10k corpora repeat and shift the seed catalogue for load testing. The
 
 ## Music cases
 
-Eight CLI runs with all available Resolve, Develop, Loop, and Color candidates, scores, concrete durations, OPEN holds, key interpretation, style, cadence, support counts, and source template IDs are in [PHASE3_CASES.md](PHASE3_CASES.md). The final section there lists results requiring human music review. Empty groups are intentional when no candidate clears the threshold.
+The eight reusable cases remain in `tests/fixtures/recommendations/` and are consumed by the development CLI. The generated Phase 3 transcript was removed during repository cleanup. Empty groups are intentional when no candidate clears the threshold.
 
 ## Remaining host gate
 

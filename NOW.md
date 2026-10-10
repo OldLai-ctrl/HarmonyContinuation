@@ -2,103 +2,33 @@
 
 ## 功能基线
 
-- 开发主线：`v0.9/dev`；原基线 `1ecef083a2b49d3c31ec5f13503cf79aed6a63ef` 是 `library/v3` 的祖先，两分支无分叉改动或合并冲突。本次使用显式 merge 保留兼容桥 `33732b3` 和内容收口 `dcda0092688291550495cc132d754935188474a3` 的历史；`library/v3` 分支保留。
-- 当前源码版本：`0.9.0`，Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。冻结边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。FL Studio HostCompatibilityLayer 和宿主连接入口未改，不修改音乐 Core。
-- 主目录与旧版本恢复关系只在 [MAP](MAP.md) 维护。跨设备导航文档已合入本轮改动，不再作为独立未完成任务。
+- 当前正式版本：`0.9.0`；发布提交与 `v0.9.0` Tag 均为 `ddc4f89babd4520daac3eae74824d6f581ce0e75`。源码清理提交不改变该正式包的构建身份。
+- Factory Library 3 / Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。音乐算法、宿主适配、MIDI 和生产数据本轮未改。
+- Factory V3 为 155 条 canonical 历史记录加 474 条新进行，共 629 条；六条 QUESTIONABLE 留在非生产清单。统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)，兼容与降级边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。
 
 ## 当前任务
 
-v0.9.0 正式发布：接手 `v0.9/dev` HEAD `2714e6078d0a6dbc45697cc5cbd4a3e84b7d4c1c`，工作区干净，RC4 安装包与 f719317 修复二进制一致，Factory V3 / Schema 2 / 629。通过现有系统代理获取远端：main 为 `5082eb0133df3d87d21b2a3cf671aedcad463200`，是开发分支祖先，没有独立未合入改动；不存在 v0.9.0 Tag 或 GitHub Release。仅变更正式版本、About 中旧 Schema 显示常量、安装包文件名和说明，音乐算法/数据/MIDI/适配/Schema 冻结。正式包为 `build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`；保留 RC3/RC4 原产物。用户已确认 Cubase Pro 15 核心功能与 RC4 色彩显示通过，正式构建复用该证据；FL Studio Not Verified / Pending，不要求执行。不新增功能、不启动后续版本。
+2026-10-10 按用户要求清理本地与远程仓库：移除四个阶段专用色彩/Why 冒烟工具、三个已被统一安装器测试取代的旧脚本、过期人工清单/交接材料和 Phase 3 生成报告及其脚本；同步删除构建目标和失效引用。保留常规回归测试、测试输入、迁移 fixture、数据生成工具、音乐基准、现行安装器和打包工具。
 
-Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
+本地只保留正式版 `build-installer/release-0.9.0/` 与可复用 Inno 编译器；旧开发/RC 包、隔离安装目录、缓存和中间产物清除。正式包依赖的最低历史证据集中至正式目录 `evidence/`。这些本地输出不进入 Git。
 
-兼容桥已有六个旧 ID 的查询/快照/固定候选恢复、canonical 写入、Library 2/3 共存，以及完整和弦保存和 additive User Schema 2 迁移。本次收口补齐旧重复条目的元数据合并、整个生产库统一音乐指纹去重和简短统计；原 `data/factory/` 的 161 条数据未改。六个旧 ID 的 Style、Intent、Technique、Aliases、Search Tags、中英文名称全部保留，`ROCK_001` 的 Rock / Loop 合入 `COMMON_MAJOR_020`，canonical 主意图保持不变。
+清理检查：完整插件配置的 CMake 生成通过，剩余源码入口与文档引用检查通过，正式 Setup 校验和保持不变。本轮不重新编译产品、不运行音乐或宿主全量回归。清理提交同步到 `main` 与 `v0.9/dev`；实际提交/推送状态以 Git HEAD 与远程引用为准。旧版本分支、Tag 与 Git 历史保留。
 
-三个旧 checkout 已整体移入同级归档，保留 Git 历史、未提交文档及构建产物；主开发目录为独立仓库，已安装插件、Factory 历史和生产 user.db 未移动、未覆盖。
+## 发布与验证证据
 
-`library/v3` 已推送到 `dcda009`，其干净提交的 `0.9.0-dev.3` 开发包及 SHA-256 已核验，记录位于 `build-installer/v3-final-output/BUILD_INFO.json` 和 `SHA256SUMS.txt`。本次仅将它集成到 `v0.9/dev` 并统一开发版本；不修改 main、不移动 v0.8.0 tag、不创建正式 Release Tag、不重新制作安装器。
+正式包：`build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`。构建版本、提交、VST3/Factory/Setup 哈希、依赖与验证范围保存在同目录 `BUILD_INFO.json`、`SHA256SUMS.txt` 与 `FILE_MANIFEST.sha256`。Setup SHA-256：`1ee1ba17a3b689ad7b8ea8f7ffe245c2fc08ac71226ae82eed441788628136f7`。
 
-合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
+正式发布原有一次 Release 构建与一次打包通过；对应配置、构建、打包及依赖日志保留在正式目录 `evidence/`。此次清理没有重做发布验证。
 
-## 证据
+复用的历史结果（本轮未重跑）：
 
-v0.9.0 正式发布证据入口：最终 main 提交从干净源码执行一次 Release 编译及一次统一安装器打包。实际构建提交/Build ID、main/Tag 对应关系、VST3/Setup 哈希、版本/Factory/依赖核验、推送结果均记录在正式目录 BUILD_INFO.json、SHA256SUMS.txt 和 FILE_MANIFEST.sha256；构建与打包日志为 build-v3-plugin/v090-release-*.log、build-installer/v090-package.log。复用 RC3 的 28 项隔离安装生命周期和 RC4 的定向显示证据，安装组件/卸载/迁移逻辑不变，仅外部输出文件名版本化；不重跑旧验证、全量回归或真实宿主。本轮新增实际宿主事实只来自用户确认，详见 docs/HOST_SPIKE.md。正式门槛满足后推送 main、v0.9/dev 与 v0.9.0 Tag，随后停止。
+- RC3：28 项隔离安装生命周期通过，覆盖组件增删/修复、旧双安装迁移、占用拒绝与卸载，保留个人哨兵、历史库及未管理文件。原始结果为 `evidence/rc3-unified-lifecycle.log`；可复用入口保留在 `tools/test-unified-installer.ps1`。
+- RC4：两种模式已知/Uncertain 色条、文字、中英资源、独立提示开关的定向离屏检查通过，原始结果为 `evidence/rc4-color-visibility-smoke-final.log`。
+- Library V3：四组兼容桥 406 检查通过，原始结果为 `evidence/LastTest.log`。内容收口校验记录为 629 条、六个 legacy 合并 6/6、Exact Musical Duplicate 0、Missing Metadata 0；旧过程记录可在 Git 历史查阅。
+- dev.5–dev.8：色彩计算、展示排序/恢复、候选身份和双语 Why 的定向冒烟曾通过；一次性工具及旧日志已清理，历史范围可从清理前 Git 版本追溯，不宣称当前重新验证。
 
-2026-10-10 RC4 追加统一安装包：按用户明确请求，沿用已通过 RC3 隔离生命周期的 Unified Setup 与已验证 RC4 插件 f719317，不重复编译、不重复安装回归。一次生成独立目录 build-installer/rc-0.9.0-rc.4-unified，Setup 与 VST3 版本均为 0.9.0-rc.4，暂存二进制哈希与定向验证产物一致。Setup SHA-256：8de24d52decb54ef1b8dfd766d80d9619460b60f2196cbcf55c4189e60523e9d，重算匹配 SHA256SUMS.txt；打包日志 build-installer/rc4-unified-package.log。仅更新安装前说明及交付文档，不改变安装逻辑；真实 Cubase 复验 Pending。
+## 待验收与边界
 
-2026-10-10 rc.4 色彩提示可见性：干净生产提交 `f71931774a385d1e15f68329e3699dbe8c3e686c` 一次 Release 编译插件及 WhyV2Smoke 通过（Validator 关闭），产物 `0.9.0-rc.4 / Release / f719317`。共用色条由低对比 2px 提示行短线改为卡片左缘固定 4 逻辑像素长线，橙金 #E8B85E、青蓝 #5FCADC、中性灰 #B4B9C2；原提示行文字保留，Unknown / Uncertain 明确色彩信息不足。未发现标准安装路径旧版：检查时为 RC3，其 SHA 与上一交付一致；Cubase 进程是否缓存旧模块无法从安装文件确认，重启后核对关于页。
+Cubase 核心功能与 RC4 色彩显示由用户报告通过，正式构建未重新实机测试；宿主证据见 [HOST_SPIKE](docs/HOST_SPIKE.md)。FL Studio Not Verified / Pending。人工逐条试听未执行；全量回归按既有约定留到 v1.0 正式发布前。现行人工清单见 [RC_DAW_ACCEPTANCE](docs/RC_DAW_ACCEPTANCE.md)。
 
-一个合并 `WhyV2Smoke rc-visibility` 离屏验证通过，复用同一普通暖色和多方向 Uncertain 代表候选到两模式，检查实际模型状态、色条四列像素、文字像素、中英资源及提示开关隐藏，排序设置独立保留。首次失败在检查 fixture 的右侧空白采样点，那里恰为原缩略和弦块；诊断确认四列色条已绘制，仅把边界采样移到缩略图下方。只增量编译冒烟工具并定向完成未通过检查，插件未重复编译；未运行旧套件或矩阵。证据为 `build-v3-plugin/rc4-color-visibility-configure.log`、`rc4-color-visibility-build.log`、`rc4-color-visibility-smoke.log`、`rc4-visibility-diagnostic.log`、`rc4-color-visibility-smoke-final.log`。
-
-独立 bundle 位于 `build-installer/rc-0.9.0-rc.4-color-visibility/HarmonyContinuation.vst3`，随附 CRT、中英文、原 Factory 数据、BUILD_INFO.json 与 SHA256SUMS.txt。插件二进制 SHA-256 `b87459334e0513a92afa091f2bd8932b27f563ee968a1d4f36f76f023a7fa6a3`，与本轮编译产物一致，Factory 与 RC3 逐字节相同。后续提交仅修改测试 fixture 与证据，不改变生产行为。RC1/2/3 原安装包保留，不生成 RC4 安装器，不合并 main 或创建 Tag。
-
-本轮修复的是视觉辨识度，不是扩大模型支持：OPEN/时值缺失继续按 RC2 规则显示静态信息且保持中性；缺低音、多方向或未覆盖结构继续回退。没有实际 Cubase/DPI 矩阵运行证据，真实 Cubase RC4 验收 Pending，FL 无新增结果。音乐公式、排序门槛/窗口、候选与原评分、MIDI、Factory、宿主、所有 Schema 冻结。定向自动关口通过，完成后停止等待用户人工复验。
-2026-10-10 rc.3 Unified Setup：从干净提交 `590897fddb064dba88de2d68fdb932044111ce6d` 一次 MSVC Release 编译插件和 library_manager，Validator 关闭，产物 `0.9.0-rc.3 / Release / 590897f`。一次生成唯一用户包 `build-installer/rc-0.9.0-rc.3-unified/HarmonyContinuation-Setup.exe`，SHA-256 `ab38e54bb4cacbdfedb2634a4ebde37872fd44642b8a88c51b17dabb18cdb02d`，重算匹配清单；VST3/moduleinfo/Setup 版本一致，暂存插件与编译二进制一致，Factory 与 RC2 逐字节相同（V3 / Schema 2 / 629）。中英资源、MSVC 导入依赖已随附，其余为 Windows 10+ 系统组件；暂存不含购买的原始或转换色彩数据。
-
-安装器脚本一次语法修复后编译通过（补充 Windows 文件属性 API 声明，未重编插件）。隔离测试首轮受沙箱注册表访问限制，在任何安装操作前停止；获得隔离运行权限后执行一次完整生命周期，28 项检查通过：全新双组件、独立增删 Factory/VST3、损坏官方库修复、旧双卸载记录合并、只更新所选组件、占用插件拒绝覆盖、完整卸载；专用个人数据哨兵、历史 Factory 2、其它插件和 bundle 中未管理文件均保留。测试包只使用工作区路径和独立 HKCU AppId，生产安装及真实 user.db 未变。旧版 fixture 和测试包不面向用户。未重复已通过流程。
-
-证据：`build-v3-plugin/rc3-unified-configure.log`、`rc3-unified-build.log`，`build-installer/rc3-unified-package.log`、`rc3-unified-lifecycle.log`、`rc3-unified-dependencies.log`，`build-installer/unified-smoke/result.txt` 与分步安装日志。随包记录 `BUILD_INFO.json`、`FILE_MANIFEST.sha256`、`SHA256SUMS.txt` 和人工清单。后续仅提交本文证据，不重编或重打包生产代码。提交并推送指定 `v0.9/dev`，同步以 tracking ref 为准；保留 main、正式 Tag 和 RC1/RC2。
-
-限制：真实管理员标准目录/UAC、交互界面及 Cubase/FL 的 RC3 人工验收 Pending；用户报告 RC2 Enrichment 修复完成，不能代替新包验收。未知旧卸载身份/路径不自动迁移；仅库迁移的旧插件需更新/修复后才能通过组件页移除；系统断电/崩溃不支持自动跨进程事务恢复，必要时重新修复。RC 未签名。音乐算法、排序窗口、Factory/User 内容、MIDI、宿主和所有 Schema 未改，不执行音乐/宿主全量回归。达到发布候选准备关口，停止并等待用户人工验收。
-2026-10-10 RC2：干净生产提交 `a8e3847a286702e7b2982d2fe64dac77b8cf6857`，一次 Release 构建插件、library_manager、WhyV2Smoke 通过，产物 `0.9.0-rc.2 / Release / a8e3847`，Validator 关闭，沿用 `_CL_=/Z7`。直接运行一次 `WhyV2Smoke rc2-hints` 通过：普通完整 Enrichment 候选、截图对应 Dmin → C/E → Bb → A OPEN 的可靠静态/未知时值分开展示、多方向中性回退、独立提示开关、开启偏好时保留具体时值解释、Continuation 原提示及实际色条像素；同一运行覆盖中英文。OPEN path 的 status 仍 Unknown、meanW 缺失，原末事件仍 OPEN/无时值，没有补值或改变色彩排序资格。FULL/SKELETON 和档位不参与新增提示判断，使用同一个实际候选 PathColor；未扩大成矩阵。
-
-复用原脚本一次生成独立 RC2 目录 `build-installer/rc-0.9.0-rc.2/`。完整 Setup SHA-256：`8737ff9af4935501325db9b3ffdba521c96937625281d43aa903e19a4e5044f2`；独立库更新包：`d719b04526b5778ab6c2f44769bbb016bf13c758e431c9cb2dd117f0c640bd1f`。校验和重算匹配，完整 Setup ProductVersion、VST3 moduleinfo 均为 rc.2；暂存二进制与构建源一致，Factory 两份 DB 与 RC1 逐字节相同，中英资源与源码一致。附 BUILD_INFO.json / FILE_MANIFEST.sha256 / SHA256SUMS.txt、README、版本说明及人工清单，RC1 产物保留。日志为 `build-v3-plugin/rc2-release-configure.log`、`rc2-release-build.log`、`rc2-hints-smoke.log`、`build-installer/rc2-package-build.log`。
-
-后续证据提交只改 NOW，不重编。生产和证据提交推送 `v0.9/dev`；同步以 tracking ref 为准。数学公式、权重、两位窗口、候选生成/原评分、VoiceLeading、旋律约束、MIDI、Factory/User 数据及所有 Schema 未改；不运行旧冒烟、CTest、Validator、Benchmark、宿主矩阵、完整 MIDI 或安装回归。真实 Cubase RC2 定向复验交给用户，FL 无新增证据，停止等待结果。
-
-2026-10-09 rc.1：从干净提交 `da1fd6d08ab20771f8696944bdaa4b027e4ca7b9` 一次 MSVC Release 构建插件及 library_manager 通过，沿用 `_CL_=/Z7`，Validator 关闭；产物 `0.9.0-rc.1 / Release / da1fd6d`，VST3 moduleinfo 与完整 Setup ProductVersion 一致。后续证据提交仅改本文档，不重编生产代码。
-
-一次调用现有 build-installer.ps1 生成完整 Setup 和其所需的独立 Library 3 更新包。包暂存插件/语言资源/Factory 与构建源哈希一致，库元数据为 `library_version=3 schema=2 progressions=629`，MSVC 导入依赖已随附（其余为 Windows 10+ 系统组件）；暂存仅插件、图标/元数据、项目双语资源、Factory DB、更新工具及 CRT，不含购买的 PDF/Excel/付费转换数据。安装/卸载路径与数据保留逻辑未改，复用既有九项隔离安装证据，不执行新安装生命周期。
-
-完整包 `HarmonyContinuation-0.9.0-rc.1-Setup.exe` SHA-256：`5a8fbe9a1842b297b65420077239fb3ec569c9227a1b6faaa43aec0861b6b751`；独立库 `HarmonyContinuation-Library-3-Setup.exe`：`b558ed64090ef324d710f4ac4d249f20959c6184b272201b243da924b91c9740`。两项均重算匹配 SHA256SUMS.txt。原始证据为 `build-v3-plugin/rc1-release-configure.log`、`rc1-release-build.log`、`build-installer/rc1-package-build.log`、`rc1-dependencies.log`；RC 目录附 `BUILD_INFO.json`、`FILE_MANIFEST.sha256`、README、版本说明及人工清单。构建/包/日志不随 Git 推送，须单独分发。
-
-本轮未发现安装准备、编译或打包阻断；没有实际 DAW 通过证据，不能据此正式发布。偏好实例内保留、详情前八位置、Unknown/Uncertain 和最终听感/输出限制沿用 dev.8。复用 dev.5–dev.8 证据，不运行测试程序、CTest、Validator、42/30 基准、MIDI、宿主矩阵、性能或安装回归。全量回归仍留到 v1.0 正式发布前。
-
-2026-10-09 dev.8：生产提交 `825b8fc9325154b7fd14399664e8338a47bddad1` 的干净源码一次 MSVC Release 编译通过，目标仅 `HarmonyContinuation` 和 `WhyV2Smoke`，Validator 关闭，沿用 `_CL_=/Z7`。产物 `0.9.0-dev.8 / Release / 825b8fc`，moduleinfo 版本一致；后续仅提交本证据，生产源码未改。直接运行一次 WhyV2Smoke，Continuation 与 Enrichment 两个场景均通过：完整卡片/默认三句 Why?/高级详情的离屏绘制，中英资源，Unknown/Uncertain 中性文案与缺失低音原因，提示与排序独立，关闭恢复原索引，实例内偏好恢复；排序后卡片/Why/Preview/MIDI payload 指向同一原始候选，设置未触发重生成回调。日志为 `build-v3-plugin/dev8-why-configure.log`、`dev8-why-build.log`、`dev8-why-smoke.log`。
-
-本轮改动仅 UI、本地化、版本/构建入口和文档；HarmonyColorAnalyzer、ColorPreferenceReranker、候选生成/评分、Matcher、VoiceLeading、旋律约束、Factory/User 库、FULL/SKELETON、档位预算、MIDI 和宿主代码未改，Schema 保持 Factory 2 / User 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2。复用 dev.5–dev.7 算法证据，未重跑旧测试、CTest、Validator、42/30 基准、宿主矩阵、MIDI、安装器或性能回归，未制作安装包或 Tag。验证通过后停止，不进入 v0.9 发布阶段。
-
-限制：偏好仍仅当前实例保存；缺失时值、低音及模型支持范围继续限制色彩结论。短卡片不足以容纳双标签时省略次标签，完整路径及细节可在 Why? 查看。高级色彩数字只列前八位置并明示截断。离屏绘制与模拟 MIDI payload 身份不替代实际导出、缩放矩阵或真实 DAW 验收；真实 DAW 保持 Pending。功能及证据提交一同推送 `v0.9/dev`，同步状态以 tracking ref 为准。
-
-2026-10-09 dev.7：生产提交 `fe6be3783b4246cb1d97ba0ef9af2b8c6f9f29c4` 的干净源码一次 MSVC Release 编译通过，目标仅插件和 `EnrichmentColorSmoke`，Validator 关闭，沿用 `_CL_=/Z7`。插件产物为 `0.9.0-dev.7 / Release / fe6be37`，moduleinfo 版本一致。后续仅调整测试 fixture 和验证记录，未改生产代码、未重编整个项目。
-
-合并冒烟覆盖一个完整 Enrichment 张力弧目标、关闭恢复及重排后卡片/Why/Preview/MIDI payload/比较/快照身份；首次四位置 fixture 未换位，保留生产门槛，调整同一示例后身份与恢复通过。随后修正 fixture 的原进行和真实两次扩展音操作对应关系，其声部评价损失超过 0.02，正确保留原位；扩展该单一示例的共同位置以满足同一声部质量门槛后，只使用 `--target-only` 重验目标，排序及显式转位/缺失低音断言通过。没有放宽生产资格或改变色彩权重，已通过的身份与恢复项不重复运行。证据为 `build-v3-plugin/dev7-color-configure.log`、`dev7-color-build.log`、`dev7-color-smoke.log`、`dev7-color-smoke-fix.log`、`dev7-color-target-final.log`；定向工具增量编译日志为 `dev7-color-smoke-build-fix.log`。身份检查使用模拟 payload 观察候选对象，不代表实际 MIDI 导出或 DAW 听感验收。
-
-复用 dev.5/dev.6 证据，未跑 CTest、Validator、音乐基准、完整 Host Harness、MIDI 套件、安装或性能测试，未制作安装包。所有要求通过后停止，不启动 dev.8。限制：原时值不完整、低音缺失、模型 Unknown/Uncertain 或声部标签与明确低音不一致时不参与重排；质量窗口保守可能不换位，暖收束还需原功能分析支持。偏好仍仅实例内保存；最终 MIDI 配音与真实 DAW 听感未验收。Factory V3、生成/评分/音乐预算、宿主/MIDI 及全部 Schema 未改。功能及后续工具/证据提交一同推送 `v0.9/dev`，同步状态以 tracking ref 为准。
-
-2026-10-09 dev.6：生产功能提交 `0ab87b8d6a50357bfd522705797d78a008cd11dd` 的干净源码一次 MSVC Release 编译通过（沿用 `_CL_=/Z7`），目标仅插件和 `ColorPreferenceSmoke`，Validator 关闭。产物版本 `0.9.0-dev.6 / Release / 0ab87b8`，moduleinfo 版本一致；后续仅提交此验证记录，未更改生产源码。直接运行一次最小冒烟：关闭时原候选身份/顺序保持、一个完整张力弧目标在同质量窗口前移且低质量候选不越级、Unknown/Uncertain 固定位置、短前段自动模式回退、关闭恢复原顺序，全部通过。同一代表场景离屏绘制工具栏/卡片/Why? 中英文字，并验证提示开关独立、实例内偏好恢复、原索引选择不变和未发送重生成回调。证据在 `build-v3-plugin/dev6-color-configure.log`、`dev6-color-build.log`、`dev6-color-smoke.log`。复用 dev.5 分析证据，没有重跑旧检查、CTest、Validator、音乐基准、宿主矩阵、MIDI、安装或性能测试，未制作安装包。通过后停止，不启动 dev.7。
-
-当前限制：只重排原展示策略已接受的集合；三位置/五分质量带/三分分差及原质量子项门槛较保守，可能保持原次序。分析器的 Unknown/Uncertain 和缺失时值继续限制可排序范围；自动模式需要三个可靠前段位置。设置仅当前插件实例保存，真实 DAW 显示未实测。Enrichment、Factory V3、全部 Schema 及音乐生成路径未改。本次指定的代表排序目标为张力弧，没有扩展成五预设测试矩阵。实现和本文档证据提交一同推送 `v0.9/dev`，最终同步状态以 tracking ref 为准。
-
-2026-10-09 dev.5：功能提交 `3a4c3268e0f8386ae3328aa5f19e466dd9f340a1`（以 Git 完整 hash 为准）的只读色彩模块、卡片及 Why? 已完成。一次 MSVC Release 构建首次在新冒烟工具遇到 Windows `near` 宏冲突和缺少 COM 头文件；仅修复该工具并增量完成剩余目标，未重跑整个项目。修复提交 `e0b8a818dba72ff11146208c3ae3c36662c71d77` 只改冒烟工具。插件版本 `0.9.0-dev.5 / Release`，生成 Git 标识 `3a4c326`，对应生产功能提交且不是 dirty/unknown；后续测试修复未改生产源码。插件及直接运行的 `HarmonyColorSmoke` 成功；三个案例覆盖普通和弦、转位/时值/完整路径接缝、角度跨界/多方向，另一个离屏 UI / Why? 冒烟覆盖中英、隐藏提示、推荐身份及功能解释保持、实例内开关恢复，全部通过。日志为 `build-v3-plugin/dev5-color-configure.log`、`dev5-color-build.log`、`dev5-color-build-finish.log`、`dev5-color-smoke.log`。未运行任何历史套件、Validator、音乐基准、宿主矩阵或安装器测试，未打包安装器；通过后停止测试。
-
-限制：V1 数学子集及阈值见专题文档；宽跨度、未覆盖等级/音集返回 Unknown，多方向返回 Uncertain；缺失时值不生成整段结论。开关不跨插件/工程重载保存。真实 DAW 显示未验收。本轮未改推荐排序、权重、Factory V3、用户库、宿主入口、MIDI 或任何 Schema。dev.6 可使用只读完整路径接口，但本轮不开始该阶段。
-
-2026-10-09 主线集成：`0.9.0-dev.4 / 32a0d64 / Release` 一次编译通过，复用本机 `_CL_=/Z7` 构建方式，Validator 关闭。直接运行 `FactoryCatalogTests --smoke-one`，仅 `V3_DUSK_001` 加载→推荐→MIDI 通过；`LibraryCompatibilityTests user-smoke` 仅一个隔离 Schema 1 用户库恢复案例通过，名称、备注、标签、收藏及进行条数保留，未触发迁移、未访问生产 user.db。宿主连接入口未改，Generic Host 检查跳过。未重审 629 条内容或六个旧 ID 合并，未运行历史测试套件、基准或安装检查，未制作 dev.4 安装器。原始结果为 `build-v3-plugin/v09-integration-build.log`、`v09-integration-factory-smoke.log`、`v09-integration-user-smoke.log`。通过后停止测试。
-
-以下为已完成 Library V3 的历史证据，本次集成不重复执行。
-
-2026-10-09 精简收口内容校验执行一次，通过 Catalog 严格解析、合法和弦、DB 读回、全生产库去重及源元数据逐条保留检查：629 条、474 条新增、六个 legacy 合并 6/6、Exact Musical Duplicate 0、Missing Metadata 0。仅运行两条消费者冒烟 `V3_DUSK_001`（新增小调）和 `V3_OPEN_001`（新增 Develop），均通过加载→推荐→MIDI；低音/转位/扩展音复用兼容桥 18 类通过证据，未重跑。原始结果为 `build-v3-plugin/v3-closeout-content.log`、`v3-closeout-smoke.log`。冻结覆盖统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
-
-2026-10-09 本目录 `0.9.0-dev.3 / 33732b3-dirty` 的集中内容验收：插件、Demo、MIDI CLI 与 FactoryCatalogTests 的 MSVC Release 构建完成。生产编译器执行格式、元数据、音乐重复和 DB 读回校验；唯一运行的 `FactoryV3Catalog` 测试通过，覆盖全部 474 条新增进行的试听结构、音符范围/时值及 MIDI 字节生成，并核对 Library 2 的 161 个引用与音乐内容。原始结果在 `build-v3-plugin/catalog-build.log`、`catalog-test.log` 和 `Testing/Temporary/LastTest.log`。步骤见 [RUNBOOK](RUNBOOK.md)。
-
-首轮构建在插件 `/Zi` 编译处遇到 MSVC C1902，测试未启动；改用本机 `_CL_=/Z7` 保留对象内调试信息后增量完成构建。没有重跑已通过的测试，没有改变 SDK 或安装工具链。这是本机构建方式，不是产品 schema 改动。
-
-兼容桥基线证据仍为 2026-10-08 的四组 406 检查（resolver 30、snapshot 75、user 265、factory 36），保存在 `build-v3/Testing/Temporary/LastTest.log`；本轮未重跑这四组。下面两项迁移结论属于该基线：
-
-- 18 类用户和弦保存、关闭、重开后，完整内容/元数据、试听音高结构和 MIDI 字节一致。旧 Schema 1 fixture 的 raw payload、名称/标签/风格/意图/收藏/备注/时间戳不因迁移改变。
-- 注入迁移失败及 typed data 写失败，确认事务回滚且无部分行；一次性备份保留且不重复生成。未操作真实 user.db。
-- 当前生产 V3 DB 为 `library_version=3 schema=2 progressions=629`；历史 V2 DB 保持 `library_version=2 schema=1 progressions=161`。兼容桥的 155 条 canonical fixture 不因扩库重写。
-- 未跑全 CTest、42 Continuation、30 Enrichment、FL Host Harness 或 Validator，未做 DAW 验收。历史宿主报告不替代本轮真机验收。
-
-2026-10-09 本目录后续打包阶段：编译 `library_manager`，复用上述插件/DB 产物，生成完整 `HarmonyContinuation-0.9.0-dev.3-Setup.exe` 与独立 `HarmonyContinuation-Library-3-Setup.exe`，均附 SHA-256 文件，位于 `build-installer/v3-output/`。本机从官方发布下载并核验 Pyrsys 签名，以 portable 模式准备 Inno Setup 6.7.3；运行库来自本机 MSVC x64 可分发 CRT。编译器与 CRT 不进入 Git。
-
-仅完成一次隔离完整包安装→卸载生命周期，9 项检查通过：实际插件字节与打包暂存一致，独立活动库为 Library 3 / Schema 2 / 629 条；安装和卸载保留旧 Library 2、Library 3、活动指针及个人数据哨兵文件。使用独立 AppId、项目内路径、无安装注册项/快捷方式的测试包；未读取、迁移或修改真实 user.db。独立库 Setup 已编译，本轮未额外运行其安装流程。此前扩库与兼容桥测试不重复运行。日志为 `build-installer/v3-package-build.log`、`v3-smoke/result.txt`、`v3-smoke/install.log`、`v3-smoke/uninstall.log`。
-
-## 开发完成边界
-
-Factory V3 保持约 629 条及 DEVELOPMENT READY 状态，不继续批量扩库；六条 QUESTIONABLE 继续留在非生产清单。v0.9.0 仅以一次正式构建、一次打包及版本/内容/哈希相关核验为本轮关口；RC3 安装器和 RC4 显示证据继续有效。
-
-User Schema 2 需要本桥接构建或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险，保留用户数据备份；这是版本边界，不是本轮执行阻塞。
-
-人工逐条试听未执行；Cubase 核心功能与 RC4 显示用户验收通过，正式构建未重新实机测试；FL Not Verified / Pending。用户本次明确全量测试统一推迟到 v1.0 正式发布前，v0.9 正式版也不执行全量回归；该规则取代此前 v0.9 最终收口安排。本轮不跑全 CTest、Validator、基准、宿主矩阵、MIDI/迁移全套、性能或完整安装回归；本次仅运行统一安装器定向隔离检查。RC 打包及推送完成后停止，等待人工 DAW 结果。
+User Schema 2 需要本兼容桥或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险并保留用户数据备份。已安装插件、生产 Factory 历史、真实 user.db 和同级旧 checkout 归档不属于本次仓库工作区清理。

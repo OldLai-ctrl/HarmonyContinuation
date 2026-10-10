@@ -73,13 +73,6 @@ cross-project preference store was found in the inspected controller/session pat
 Cross-project persistence is therefore not added: host/session serialization and
 schemas remain frozen. No new settings I/O, dependency or thread is introduced.
 
-## Minimal verification
+## Validation history
 
-One Release build of HarmonyContinuation and WhyV2Smoke; run the latter once for
-one Continuation and one Enrichment UI scenario. Each combines card/Why rendering,
-Chinese/English text, advanced details, independent toggles, neutral fallbacks and
-Preview/MIDI callback identity. Off restores the original indices; preference
-switches do not generate candidates. Optional continuation/enrichment argument
-allows only the failing scenario to be retried. No historical suite or UI matrix.
-Offscreen rendering is not real-DAW acceptance; real DAW remains Pending. Actual
-execution and artifact source commit are recorded in NOW.md.
+The dev.8 and RC one-time UI smoke tool was removed during repository cleanup. Historical RC4 verification is summarized in NOW.md; real-host evidence remains in docs/HOST_SPIKE.md.
