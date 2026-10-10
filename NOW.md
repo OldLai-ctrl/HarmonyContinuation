@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-RC2 定向修复：用户确认 Cubase Pro 15 的 RC1 加载、自动推荐、排序切换、Why?、Preview、MIDI 导出和 Continuation 提示通过；Enrichment 是显示灰色「不足以判断」，并非渲染缺失。截图 Dmin → C → Bb → A 的末和弦 OPEN。原因是整段汇总要求完整时值，Enrichment 保留 OPEN，UI 却同时隐藏了可靠静态指标；Continuation 具有候选建议时值。修复仅在 Enrichment 展示层保留可靠逐和弦静态信息，并明确整段信息不足及原因，不补时值、不改变分析与排序资格。最小定向验证和 RC2 打包待记录；真实 Cubase 定向复验 Pending，FL 无新增证据。RC1 产物保留，完成后停止等待用户复验。
+RC2 定向修复：用户确认 Cubase Pro 15 的 RC1 加载、自动推荐、排序切换、Why?、Preview、MIDI 导出和 Continuation 提示通过；Enrichment 是显示灰色「不足以判断」，并非渲染缺失。截图 Dmin → C → Bb → A 的末和弦 OPEN。原因是整段汇总要求完整时值，Enrichment 保留 OPEN，UI 却同时隐藏了可靠静态指标；Continuation 具有候选建议时值。修复仅在 Enrichment 展示层保留可靠逐和弦静态信息，并明确整段信息不足及原因，不补时值、不改变分析与排序资格。一次 Release 构建、一次合并定向冒烟及 RC2 打包通过，标记 RELEASE CANDIDATE READY；真实 Cubase 定向复验 Pending，FL 无新增证据。RC1 产物保留，完成后停止等待用户复验。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,12 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-10 RC2：干净生产提交 `a8e3847a286702e7b2982d2fe64dac77b8cf6857`，一次 Release 构建插件、library_manager、WhyV2Smoke 通过，产物 `0.9.0-rc.2 / Release / a8e3847`，Validator 关闭，沿用 `_CL_=/Z7`。直接运行一次 `WhyV2Smoke rc2-hints` 通过：普通完整 Enrichment 候选、截图对应 Dmin → C/E → Bb → A OPEN 的可靠静态/未知时值分开展示、多方向中性回退、独立提示开关、开启偏好时保留具体时值解释、Continuation 原提示及实际色条像素；同一运行覆盖中英文。OPEN path 的 status 仍 Unknown、meanW 缺失，原末事件仍 OPEN/无时值，没有补值或改变色彩排序资格。FULL/SKELETON 和档位不参与新增提示判断，使用同一个实际候选 PathColor；未扩大成矩阵。
+
+复用原脚本一次生成独立 RC2 目录 `build-installer/rc-0.9.0-rc.2/`。完整 Setup SHA-256：`8737ff9af4935501325db9b3ffdba521c96937625281d43aa903e19a4e5044f2`；独立库更新包：`d719b04526b5778ab6c2f44769bbb016bf13c758e431c9cb2dd117f0c640bd1f`。校验和重算匹配，完整 Setup ProductVersion、VST3 moduleinfo 均为 rc.2；暂存二进制与构建源一致，Factory 两份 DB 与 RC1 逐字节相同，中英资源与源码一致。附 BUILD_INFO.json / FILE_MANIFEST.sha256 / SHA256SUMS.txt、README、版本说明及人工清单，RC1 产物保留。日志为 `build-v3-plugin/rc2-release-configure.log`、`rc2-release-build.log`、`rc2-hints-smoke.log`、`build-installer/rc2-package-build.log`。
+
+后续证据提交只改 NOW，不重编。生产和证据提交推送 `v0.9/dev`；同步以 tracking ref 为准。数学公式、权重、两位窗口、候选生成/原评分、VoiceLeading、旋律约束、MIDI、Factory/User 数据及所有 Schema 未改；不运行旧冒烟、CTest、Validator、Benchmark、宿主矩阵、完整 MIDI 或安装回归。真实 Cubase RC2 定向复验交给用户，FL 无新增证据，停止等待结果。
 
 2026-10-09 rc.1：从干净提交 `da1fd6d08ab20771f8696944bdaa4b027e4ca7b9` 一次 MSVC Release 构建插件及 library_manager 通过，沿用 `_CL_=/Z7`，Validator 关闭；产物 `0.9.0-rc.1 / Release / da1fd6d`，VST3 moduleinfo 与完整 Setup ProductVersion 一致。后续证据提交仅改本文档，不重编生产代码。
 
