@@ -1,5 +1,10 @@
 # Factory Library V4 development
 
+Current installable development candidate: **0.10.0-dev.1**. See
+[productization results](FACTORY_V4_PRODUCTIZATION.md) and
+[current DAW checklist](V4_DAW_ACCEPTANCE.md). The initial verification below is
+historical; the productization batch supersedes its limited discoverability scope.
+
 ## Scope and compatibility
 
 V4 is opt-in development content on `library/v4`, based on the reliable post-release
@@ -11,14 +16,15 @@ major/minor sevenths, extension masks and semantic target annotations for that c
 
 Storage formats remain Factory 2, User 2, Session 5, Continuation Snapshot 3 and
 Enrichment Snapshot 2. **Use V4 with the engine on this branch, identified as
-0.9.0-factory-v4.1 or a subsequent compatible build.** The released v0.9.0 loader
+0.10.0-dev.1 or a subsequent compatible build.** The released v0.9.0 loader
 can parse Schema 2 but lacks the explicit-bass matching and complete exact-mask
 voicing changes. V4 is not approved as a drop-in replacement for its production DB.
-Do not activate this development DB in the production ProgramData store.
+Use the unified development Setup to install the matching engine and versioned DB.
 
 Only builds configured with `HC_FACTORY_LIBRARY_VERSION=4` prefer their bundled V4
-over an older installed Factory. Production defaults remain Library 3. No global
-active pointer or installed package is changed. No second user-facing installer.
+over an older installed Factory. This development branch now defaults to Library 4;
+released main remains Library 3. Setup manages the selected versioned library and
+active pointer. No second user-facing installer.
 
 ## Sources and build
 
@@ -119,7 +125,7 @@ C07: fixed voicing and exact parallel voice movement.
 C08: phrase boundary and cross-phrase resolution association.
 These remain eight deferred proposals, not effective additions.
 
-## Verification results
+## Initial development verification (historical)
 
 The opt-in development build compiles Library 4 / Schema 2: 629 inherited + 28 new,
 zero exact duplicates and zero new connection-family duplicates. All inherited

@@ -14,6 +14,16 @@
 #ifndef LibraryVersion
  #define LibraryVersion "3"
 #endif
+#ifndef FactoryEntryCount
+ #define FactoryEntryCount "629"
+#endif
+#ifndef MinimumPluginVersion
+ #if LibraryVersion == "4"
+  #define MinimumPluginVersion "0.10.0-dev.1"
+ #else
+  #define MinimumPluginVersion "0.9.0-dev.2"
+ #endif
+#endif
 #ifdef TestRoot
  #define TestSuffix "-IsolatedTest"
 #else
@@ -59,7 +69,7 @@ Name: "full"; Description: "VST3 + Factory Library"
 Name: "custom"; Description: "Custom"; Flags: iscustom
 [Components]
 Name: "plugin"; Description: "HarmonyContinuation VST3 (x64)"; Types: full
-Name: "library"; Description: "Factory Library V3 (629)"; Types: full
+Name: "library"; Description: "Factory Library V{#LibraryVersion} ({#FactoryEntryCount})"; Types: full
 [Files]
 Source: "{#StageDir}\library_manager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -402,12 +412,12 @@ begin
     SkipLibrary:=True; Log('Newer Factory retained; downgrade not performed.');
     if not WizardSilent then MsgBox(Text('检测到较新 Factory，保持原库，不降级。','Newer Factory retained; no downgrade.'),mbInformation,MB_OK);
   end;
-  if Selection('library') and not Selection('plugin') and PluginWasPresent and
-      ((VersionOrder(DetectedVersion)<0) or (VersionOrder(DetectedVersion)<VersionOrder('0.9.0-dev.2'))) then begin
-    Result:=Text('Factory Schema 2 需要 0.9.0-dev.2 或更新插件，请同时更新主程序。','Factory Schema 2 requires plugin 0.9.0-dev.2 or newer; select plugin update too.'); Exit;
+  if Selection('library') and not Selection('plugin') and
+      (not PluginWasPresent or RemovePlugin or (VersionOrder(DetectedVersion)<0) or
+       (VersionOrder(DetectedVersion)<VersionOrder('{#MinimumPluginVersion}'))) then begin
+    Result:=Text('Factory V{#LibraryVersion} 需要 {#MinimumPluginVersion} 或更新主程序，请同时勾选主程序升级。',
+      'Factory V{#LibraryVersion} requires plugin {#MinimumPluginVersion} or newer; select the plugin component too.'); Exit;
   end;
-  if Selection('library') and not Selection('plugin') and not PluginWasPresent and not WizardSilent then
-    MsgBox(Text('仅安装数据；使用 Factory V3 需另装 0.9.0-dev.2 或更新插件。','Data-only installation: Factory V3 requires a 0.9.0-dev.2 or newer plugin to use it.'),mbInformation,MB_OK);
   if (Selection('plugin') or RemoveLibrary) and not KnownBundledFactory then begin Result:='Unrecognized bundled Factory file preserved. Back it up and move it before maintenance.'; Exit; end;
   if Selection('library') and not SkipLibrary and FileExists(LibraryDatabase) then begin
     Hash:=GetSHA256OfFile(LibraryDatabase);

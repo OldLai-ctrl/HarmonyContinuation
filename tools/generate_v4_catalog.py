@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PHRASES = """
 A01|major|I bII ii bIII iii IV V I|pop,functional|resolve|authentic|ChromaticRootAsc,ModalMixture|Two chromatic root approaches followed by a clear tonic return.
 A02|major|I VII bVII VI bVI V I|rock,pop|resolve|authentic|ChromaticRootDesc,SameQualityMotion|Descending major-chord roots; no fixed parallel voicing is promised.
-A03|major|I iii biiidim7 ii V7 I|jazz,rnb|resolve|authentic|PassingDiminishedDesc,CommonToneConnection|Eb diminished connects E minor down to D minor; shared notes are available, not voice-locked.
+A03|major|I iii biiidim7 ii V7 I|jazz,rnb|resolve|authentic|PassingDiminishedDesc|Eb diminished connects E minor down to D minor by chromatic motion; no common-tone voice is promised.
 A04|major|I vi bvidim7 V7 I|jazz,functional|resolve|authentic|PassingDiminishedDesc|Ab diminished shares B D F with G7 while its root descends.
 A05|major|I IV #ivdim7 V vi ii V7 I|pop,functional|resolve|authentic|SecondaryLeadingTone,DeceptiveResolution|Approach V, evade to vi, then recover through ii-V-I.
 A06|major|I #idim7 ii #iidim7 iii V7 I|jazz,functional|resolve|authentic|SecondaryLeadingTone,PassingDiminishedAsc,ChromaticRootAsc|Two separate ascending diminished approaches resolve to ii and iii.
@@ -139,7 +139,7 @@ def author(line):
     durations = [4]*len(events)
     if code in ('A03','A04','A05','A06','B09'):
         for i,e in enumerate(events):
-            if e['quality']==7: durations[i]=1; durations[i+1]=3
+            if e['quality']==7: durations[i-1]=3; durations[i]=1; durations[i+1]=4
     if code=='B01': durations=[2,2,2,2,8]
     if code=='B11': durations=[3,1,4,4,4,4,8]
     if code=='B08': durations=[2,2,2,2,2,2,4,8]

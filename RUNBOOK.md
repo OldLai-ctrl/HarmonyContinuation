@@ -22,13 +22,13 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
-Factory V4 独立开发：在新的 `build-v4-dev` 中配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=factory-v4.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实的离线 SDK。构建 `HarmonyContinuation` 和 `FactoryV4Tests`，直接运行后者；必要时仅运行修改对应的 Matcher / Continuation / Preview / MIDI / Enrichment 测试。数据库与维护 TSV 留在该构建目录，不写入正式 staging、不刷新 V3 统计、不切换生产 active.txt。候选、兼容性、实际测试输入和结果见 [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md)。V4 Schema 2 数据可解析不等于能直接替换 v0.9.0 的生产库。
+Factory V4 产品化：在 `build-v4-dev` 配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=dev.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实离线 SDK。从实现提交构建 Release 的 `HarmonyContinuation`、`library_manager`、`FactoryV4Tests`；运行 `FactoryV4Tests <证据目录>` 得到 28 条可发现性 TSV 和 4 份 MIDI，再运行无参数契约。必要时只运行相关 Matcher / Continuation / Enrichment 检查，TEMP/TMP 指向工作区测试目录。版本 0.10.0-dev.1，默认 Factory 4；V3 源数据与正式 staging 不改。用 `tools/build-installer.ps1 -BuildDirectory build-v4-dev -OutputDirectory build-installer/v4-0.10.0-dev.1 -RuntimeDirectory <已核实CRT> -Iscc <已核实ISCC>` 制作统一包，复制 MIDI/证据和人工清单，记录构建提交与哈希。使用 `tools/test-v4-installer.ps1` 的全新隔离路径验证此次兼容拦截与独立组件保护；不操作生产安装。详见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)。
 
 v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
 
 前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：
 
-Factory V3 兼容桥只构建 `LibraryCompatibilityTests`，运行 `ctest --test-dir <build> -R '^LibraryV3_' --output-on-failure`。Library 2/3 数据 fixture 和 user.db 均在该测试独有的临时目录内创建、关闭、重新打开及清理，不读生产用户目录。具体格式、降级和测试边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。新生产 DB 目标 `factory_database` 默认 Library 3；`factory_legacy_database` 只用于历史 Library 2 测试。
+Factory V3 兼容桥只构建 `LibraryCompatibilityTests`，运行 `ctest --test-dir <build> -R '^LibraryV3_' --output-on-failure`。Library 2/3 数据 fixture 和 user.db 均在该测试独有的临时目录内创建、关闭、重新打开及清理，不读生产用户目录。具体格式、降级和测试边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。正式 main 默认 Library 3；当前 library/v4 默认 Library 4。`factory_legacy_database` 只用于历史 Library 2 测试。
 
 V3 收口只运行一次已有编译器：`db_compiler data/factory <build>/factory.db 3 data/factory-v3 LIBRARY_V3_SUMMARY.md`。它校验字段、和弦、统一音乐去重、元数据合并和 DB 读回，并输出短统计；不要另跑相同 lint。必要的新增内容冒烟运行 `FactoryCatalogTests --smoke`，仅两条代表案例走加载→推荐→MIDI；低音/转位/扩展音路径未改时复用已有 18 类证据。此前全新增内容消费者检查已通过，不因入口存在而重跑 `FactoryV3Catalog`、兼容桥四组或音乐基准。失败只修复受影响内容，再按当前任务授权校验。
 

@@ -13,7 +13,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | 接续进度、待验收、安排下一步 | [NOW.md](NOW.md) 的对应章节 | `当前任务`、`待验收`、`证据` |
 | RC 说明与六项真实 DAW 人工验收 | [版本记录](docs/V0_9_RELEASE_NOTES.md)、[人工清单](docs/RC_DAW_ACCEPTANCE.md) | `rc.1`、`Pending` |
 | 冻结 Factory V3 的内容覆盖 | [LIBRARY_V3_SUMMARY.md](LIBRARY_V3_SUMMARY.md) | `Total`、`Major`、`Missing Metadata` |
-| Factory V4 开发与表达能力 | [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md) | `Phase 1`、`Verification`、`Deferred` |
+| Factory V4 开发、产品化及人工验收 | [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)、[V4 人工清单](docs/V4_DAW_ACCEPTANCE.md)、[初始开发](docs/FACTORY_V4_DEVELOPMENT.md) | `可发现性`、`安装`、`Deferred` |
 | 设备路径、分支、产物及同步边界 | [MAP.md](MAP.md) | `本机`、`同步`、`构建` |
 | 构建、运行、局部测试、安装、交付 | [RUNBOOK.md](RUNBOOK.md) | `构建`、`验收`、`交付` |
 | 设计取舍或已有约束冲突 | [DECISIONS.md](DECISIONS.md) | 决策 ID、模块名 |

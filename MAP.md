@@ -12,7 +12,7 @@
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
 | 正式构建与打包输出 | `<checkout>/build-installer/release-0.9.0/`、其 `evidence/` 及 `build-installer/tools/Inno/` | 保留正式产物；`.gitignore` 排除，另一设备独立构建 |
-| V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；同目录 `factory-v4-maintenance.tsv`、`VST3/Release/` | 仅适配后的 V4 开发引擎使用；不覆盖生产 ProgramData；详见 [V4 开发说明](docs/FACTORY_V4_DEVELOPMENT.md) |
+| V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
 

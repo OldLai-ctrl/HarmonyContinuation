@@ -458,7 +458,11 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
         const auto ts = skeleton(t.full, t.skeletonIndices);
         for (const auto& q : query.interpretations) {
             if (q.key.key.mode != t.mode || q.full.empty()) continue;
-            const auto qs = skeleton(q.full, q.skeletonIndices);
+            // V4 phrases may deliberately retain every defining connector.
+            // Compare the supplied FULL path in that case: generic input
+            // simplification must not erase the evidence this template requires.
+            const auto qs = t.version >= 4 && t.skeletonIndices.size() == t.full.size()
+                ? q.full : skeleton(q.full, q.skeletonIndices);
             const auto full = align(q.full, t.full, w, t.mode);
             const auto structural = align(qs, ts, w, t.mode);
             if (!full.pairCount || !structural.pairCount) continue;

@@ -58,27 +58,27 @@
     "name": "Descending Diminished Approach to ii",
     "nameZh": "下降减七连接至 ii",
     "nameEn": "Descending Diminished Approach to ii",
-    "aliases": "A03,PassingDiminishedDesc,CommonToneConnection",
+    "aliases": "A03,PassingDiminishedDesc",
     "builtInTags": "common-major,resolve",
-    "techniques": "PassingDiminishedDesc,CommonToneConnection",
+    "techniques": "PassingDiminishedDesc",
     "complexityLevel": "rich",
-    "description": "Eb diminished connects E minor down to D minor; shared notes are available, not voice-locked.",
+    "description": "Eb diminished connects E minor down to D minor by chromatic motion; no common-tone voice is promised.",
     "mode": "major",
     "sequence": "I iii biiidim7 ii V7 I",
-    "rhythm": "4 4 1 3 4 4",
+    "rhythm": "4 3 1 4 4 4",
     "intent": "resolve",
     "cadence": "authentic",
     "loopable": false,
     "skeleton": "0,1,2,3,4,5",
     "meter": "4/4",
     "styles": "jazz:0.8,rnb:0.8",
-    "tags": "PassingDiminishedDesc,CommonToneConnection",
+    "tags": "PassingDiminishedDesc",
     "sourceType": "factory",
     "priorWeight": 0.55,
     "complexity": 0.55,
     "version": 4,
     "phraseLength": 6,
-    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,-1],\"target\":null,\"quality\":7,\"function\":0,\"roles\":13,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"PassingDiminishedDesc\",\"CommonToneConnection\"],\"aliases\":[\"A03\",\"PassingDiminishedDesc\",\"CommonToneConnection\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"PassingDiminishedDesc\",\"CommonToneConnection\"]}"
+    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,-1],\"target\":null,\"quality\":7,\"function\":0,\"roles\":13,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"PassingDiminishedDesc\"],\"aliases\":[\"A03\",\"PassingDiminishedDesc\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"PassingDiminishedDesc\"]}"
   },
   {
     "id": "V4_A04",
@@ -92,7 +92,7 @@
     "description": "Ab diminished shares B D F with G7 while its root descends.",
     "mode": "major",
     "sequence": "I vi bvidim7 V7 I",
-    "rhythm": "4 4 1 3 4",
+    "rhythm": "4 3 1 4 4",
     "intent": "resolve",
     "cadence": "authentic",
     "loopable": false,
@@ -105,7 +105,7 @@
     "complexity": 0.55,
     "version": 4,
     "phraseLength": 5,
-    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,-1],\"target\":null,\"quality\":7,\"function\":0,\"roles\":13,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"PassingDiminishedDesc\"],\"aliases\":[\"A04\",\"PassingDiminishedDesc\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"PassingDiminishedDesc\"]}"
+    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,-1],\"target\":null,\"quality\":7,\"function\":0,\"roles\":13,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"PassingDiminishedDesc\"],\"aliases\":[\"A04\",\"PassingDiminishedDesc\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"PassingDiminishedDesc\"]}"
   },
   {
     "id": "V4_A05",
@@ -119,7 +119,7 @@
     "description": "Approach V, evade to vi, then recover through ii-V-I.",
     "mode": "major",
     "sequence": "I IV #ivdim7 V vi ii V7 I",
-    "rhythm": "4 4 1 3 4 4 4 4",
+    "rhythm": "4 3 1 4 4 4 4 4",
     "intent": "resolve",
     "cadence": "authentic",
     "loopable": false,
@@ -132,7 +132,7 @@
     "complexity": 0.55,
     "version": 4,
     "phraseLength": 8,
-    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,0],\"target\":null,\"quality\":1,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,1],\"target\":[5,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":7,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"SecondaryLeadingTone\",\"DeceptiveResolution\"],\"aliases\":[\"A05\",\"SecondaryLeadingTone\",\"DeceptiveResolution\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"SecondaryLeadingTone\",\"DeceptiveResolution\"]}"
+    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,0],\"target\":null,\"quality\":1,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,1],\"target\":[5,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":7,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"SecondaryLeadingTone\",\"DeceptiveResolution\"],\"aliases\":[\"A05\",\"SecondaryLeadingTone\",\"DeceptiveResolution\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"SecondaryLeadingTone\",\"DeceptiveResolution\"]}"
   },
   {
     "id": "V4_A06",
@@ -146,7 +146,7 @@
     "description": "Two separate ascending diminished approaches resolve to ii and iii.",
     "mode": "major",
     "sequence": "I #idim7 ii #iidim7 iii V7 I",
-    "rhythm": "4 1 3 1 3 4 4",
+    "rhythm": "3 1 3 1 4 4 4",
     "intent": "resolve",
     "cadence": "authentic",
     "loopable": false,
@@ -159,7 +159,7 @@
     "complexity": 0.55,
     "version": 4,
     "phraseLength": 7,
-    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,1],\"target\":[2,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,1],\"target\":[3,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"],\"aliases\":[\"A06\",\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"]}"
+    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":0,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,1],\"target\":[2,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,0],\"target\":null,\"quality\":2,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[2,1],\"target\":[3,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[3,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":3,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"],\"aliases\":[\"A06\",\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"SecondaryLeadingTone\",\"PassingDiminishedAsc\",\"ChromaticRootAsc\"]}"
   },
   {
     "id": "V4_A07",
@@ -605,7 +605,7 @@
     "description": "Bass E F F# G A B C; only its first section is chromatic.",
     "mode": "major",
     "sequence": "I IV #ivdim7 V vi V I",
-    "rhythm": "4 4 1 3 4 4 4",
+    "rhythm": "4 3 1 4 4 4 4",
     "intent": "resolve",
     "cadence": "authentic",
     "loopable": false,
@@ -618,7 +618,7 @@
     "complexity": 0.55,
     "version": 4,
     "phraseLength": 7,
-    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":257,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":4,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,0],\"target\":null,\"quality\":1,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,1],\"target\":[5,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":257,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":4,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"],\"aliases\":[\"B09\",\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"]}"
+    "typedData": "{\"events\":[],\"key\":[],\"full\":[{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":257,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":0,\"bassInterval\":4,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,0],\"target\":null,\"quality\":1,\"function\":3,\"roles\":1,\"weight\":0.85,\"durationQN\":3,\"sourceIndex\":1,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[4,1],\"target\":[5,0],\"quality\":7,\"function\":6,\"roles\":45,\"weight\":0.85,\"durationQN\":1,\"sourceIndex\":2,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":3,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[6,0],\"target\":null,\"quality\":2,\"function\":2,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":4,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[5,0],\"target\":null,\"quality\":1,\"function\":4,\"roles\":257,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":5,\"bassInterval\":4,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"},{\"degree\":[1,0],\"target\":null,\"quality\":1,\"function\":1,\"roles\":1,\"weight\":0.85,\"durationQN\":4,\"sourceIndex\":6,\"bassInterval\":null,\"intervalMask\":0,\"colorMask\":0,\"suffix\":\"\"}],\"tags\":[\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"],\"aliases\":[\"B09\",\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"],\"builtInTags\":[\"common-major\",\"resolve\"],\"techniques\":[\"ChromaticBassAsc\",\"SlashBass\",\"SecondaryLeadingTone\"]}"
   },
   {
     "id": "V4_B10",

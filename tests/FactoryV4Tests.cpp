@@ -10,6 +10,7 @@
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "ui/WhyExplanation.h"
 #include "product/ProductVersion.h"
+#include "session/ProductServices.h"
 #include <algorithm>
 #include <cmath>
 #include <chrono>
@@ -92,7 +93,7 @@ void reachable(const library::LoadResult& db,const CandidateIndex& index,const c
     std::cout<<id<<" tonic="<<static_cast<int>(tonic)<<" perGroup="<<limit<<" rank="<<rank<<" full path -> preview -> exact MIDI PASS\n";
 }
 }
-int main(){try{
+int main(int argc,char** argv){try{
     require(product::factoryLibraryVersion==4,"development product library identity");
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(db&&db.templates.size()==657&&db.libraryVersion==4&&db.storageSchemaVersion==2,"V4 load");
     std::size_t added{};for(const auto& t:db.templates)if(t.id.starts_with("V4_")){
@@ -129,12 +130,65 @@ int main(){try{
     const auto& preserved=find(db,"COMMON_MAJOR_018");require(preserved.skeletonIndices.size()==preserved.full.size(),"leading connector still removed");
     require(std::find(find(db,"JAZZ_010").techniques.begin(),find(db,"JAZZ_010").techniques.end(),"Backdoor")!=find(db,"JAZZ_010").techniques.end(),"Backdoor tag");
     const CandidateIndex index(db.templates);
+    if(argc==2){
+        const std::filesystem::path output(argv[1]);std::filesystem::create_directories(output);
+        std::ofstream table(output/"discoverability.tsv");
+        table<<"id\tprefix_length\tstyle\tintent\tgroup_rank\tstatus\tprefix\tcontinuation\n";
+        std::size_t defaults{},more{},blocked{};
+        for(const auto& t:db.templates)if(t.id.starts_with("V4_")){
+            const KeySignature key{PitchClass::C,t.mode};
+            // Feature-bearing prefixes, rather than a generic final V-I query.
+            std::size_t prefix=3;
+            if(t.id=="V4_B01"||t.id=="V4_B02"||t.id=="V4_B08"||t.id=="V4_B11")prefix=2;
+            if(t.id=="V4_B09"||t.id=="V4_A05"||t.id=="V4_A06"||t.id=="V4_A10"||t.id=="V4_A14")prefix=4;
+            Progression input;double at{};std::string labels;
+            for(std::size_t i=0;i<prefix;++i){auto c=chord(t.full[i],key,at);at+=*c.durationQN;labels+=(i?" - ":"")+c.name;input.push_back(c);}
+            input.back().durationQN.reset();input.back().openEnded=true;
+            AnalysisContext ctx;ctx.forcedKey=key;
+            const auto style=t.styleWeights.front().first;
+            RecommendationWeights weights;weights.perGroup=10; // Actual RecommendationWorker retention limit.
+            const auto results=recommendContinuations(makeMatchQuery(input,ctx),index,{style,t.intent,{}},weights);
+            const auto shown=session::presentationIndices(results,{});
+            const ContinuationCandidate* candidate{};std::size_t rank{};bool visible{};
+            for(std::size_t g=0;g<results.groups.size();++g)for(std::size_t i=0;i<results.groups[g].size();++i){
+                const auto& c=results.groups[g][i];
+                if(c.primaryTemplate==t.id||std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),t.id)!=c.supportingTemplates.end()){
+                    candidate=&c;rank=i+1;visible=std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end();}}
+            const char* status=candidate?(visible?"DEFAULT_VISIBLE":"MORE_ACCESSIBLE"):"BLOCKED";
+            std::string suffix;
+            if(candidate){
+                require(candidate->continuationStart==prefix&&candidate->continuation.size()==t.full.size()-prefix+(t.loopable?1:0),"batch alignment: "+t.id);
+                for(std::size_t i=0;i<candidate->continuation.size();++i){const auto& c=candidate->continuation[i];
+                    const auto expected=chordPitches(chord(t.full[(prefix+i)%t.full.size()],key,0));
+                    const auto actual=c.harmonicData?chordPitches(*c.harmonicData):chordPitches(c.label,c.quality);
+                    require(expected.root==actual.root&&expected.bass==actual.bass&&expected.intervals==actual.intervals,"batch identity: "+t.id);
+                    suffix+=(i?" - ":"")+c.label;}
+                ImportedProgressionSession imported;require(imported.replace(input,TimelineCoordinateMode::RelativeToSelection),"batch input");
+                const auto sequence=preview::buildSequence(imported,candidate,120);require(bool(sequence),"batch preview");exactOutput(sequence.sequence);
+                if(t.id=="V4_B01"||t.id=="V4_B08"||t.id=="V4_B09"||t.id=="V4_B11"){
+                    const auto clip=midi::buildClip(sequence.sequence,midi::ArrangementMode::VoiceLed,midi::ExportScope::FullPhrase,{});
+                    const auto bytes=midi::writeToMemory(clip.sequence);std::string error;
+                    require(midi::writeToFile(bytes.bytes,output/(t.id+".mid"),error),error);}
+                visible?++defaults:++more;
+            }else {++blocked;
+                for(const auto& k:makeMatchQuery(input,ctx).interpretations){std::cout<<"  skeleton=";for(auto i:k.skeletonIndices)std::cout<<i<<',';std::cout<<'\n';for(const auto& e:k.full)std::cout<<"  "<<formatMatchEvent(e)<<" fn="<<int(e.function)<<" roles="<<e.roles<<'\n';}
+                for(const auto& m:results.matches)if(m.templateId==t.id)std::cout<<"  match="<<m.similarity<<" end="<<m.templateMatchEnd<<" suffix="<<m.continuationLength<<'\n';
+                weights.perGroup=100;const auto diagnostic=recommendContinuations(makeMatchQuery(input,ctx),index,{style,t.intent,{}},weights);
+                if(t.id=="V4_B02")for(const auto& g:diagnostic.groups)for(const auto& c:g){std::cout<<"  "<<c.primaryTemplate<<" score="<<c.rankingScore<<" : ";for(const auto& e:c.continuation)std::cout<<e.label<<' ';std::cout<<'\n';}
+                for(const auto& g:diagnostic.groups)for(std::size_t i=0;i<g.size();++i)if(g[i].primaryTemplate==t.id||std::find(g[i].supportingTemplates.begin(),g[i].supportingTemplates.end(),t.id)!=g[i].supportingTemplates.end())std::cout<<"  diagnostic rank="<<i+1<<" score="<<g[i].rankingScore<<'\n';
+            }
+            table<<t.id<<'\t'<<prefix<<'\t'<<static_cast<unsigned>(style)<<'\t'<<intentName(t.intent)<<'\t'<<rank<<'\t'<<status<<'\t'<<labels<<'\t'<<suffix<<'\n';
+            std::cout<<t.id<<' '<<status<<" rank="<<rank<<'\n';
+        }
+        std::cout<<"DEFAULT_VISIBLE="<<defaults<<" MORE_ACCESSIBLE="<<more<<" BLOCKED="<<blocked<<'\n';
+        return blocked?2:0;
+    }
     reachable(db,index,"V4_B01",2,PitchClass::C);
     reachable(db,index,"V4_B02",3,PitchClass::C);
     reachable(db,index,"V4_B08",2,PitchClass::C);
     reachable(db,index,"V4_B08",2,PitchClass::D);
-    // B09 matches and renders, but this prefix is below the default top three.
-    reachable(db,index,"V4_B09",4,PitchClass::C,100);
+    // The UI worker retains ten choices for More candidates, normally shows three.
+    reachable(db,index,"V4_B09",4,PitchClass::C,10);
     reachable(db,index,"V4_B10",3,PitchClass::C);
     reachable(db,index,"V4_B11",2,PitchClass::C);
     reachable(db,index,"V4_B04",3,PitchClass::C);

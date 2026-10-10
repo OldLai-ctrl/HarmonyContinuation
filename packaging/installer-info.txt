@@ -1,33 +1,26 @@
-HarmonyContinuation 本地安装与更新
+HarmonyContinuation 0.10.0-dev.1 开发候选版 / Development Candidate
 
-HarmonyContinuation 0.9.0 正式版 / Factory Library 3，包含 629 条内置进行。
-HarmonyContinuation 0.9.0 / Factory Library 3 (629 entries).
-Cubase Pro 15 的主要功能及 RC4 色彩提示修复已由用户人工确认；正式构建没有另行实机测试。
-FL Studio compatibility has not yet been verified with the v0.9.0 release.
-安装包未进行数字签名。The installer is not digitally signed.
-Factory 数据组件需要支持 Factory Schema 2 的 0.9.0-dev.2 或更新插件。
-新版插件首次写入旧个人库时会升级到 User Schema 2，并保留一次性 user.db.v1-backup。
-v0.8.0 和旧 0.9.0-dev.1 无法读取新版个人库；升级前请关闭宿主并另存个人数据备份。
+Factory Library V4：657 条（629 条继承 + 28 条新增）。
+This development candidate includes the matching V4 engine and 657-entry Factory Library V4.
+Cubase / FL Studio：本开发构建尚待用户人工验收 / Pending manual DAW acceptance.
+安装包未进行数字签名 / The installer is not digitally signed.
 
-安装：把 VST3 插件放入系统标准插件目录，并安装本地内置进行库。
-更新、修复和修改组件：运行同一个 HarmonyContinuation-Setup.exe。取消勾选更新项不会卸载，删除组件必须使用明确移除操作。
-Unified Setup manages independent VST3 and Factory components. Skipping an update does not uninstall; removal is explicit.
-卸载：在 Windows「已安装的应用」中卸载，或使用开始菜单中的卸载入口。
+主程序和 Factory 曲库是两个独立可选组件，均由此统一安装器管理。
+Factory V4 requires plugin 0.10.0-dev.1 or newer. Library-only installation is blocked with an absent, unknown or older plugin.
+单独勾选 V4 时，缺少主程序或版本过低会被阻止；同时勾选主程序即可安装匹配版本。
+仅更新主程序会保留已有受支持的 Factory 库。此包不适合作为 v0.9.0 的单独曲库更新。
 
-个人进行、收藏和配置保存在原来的本地位置。安装、更新和卸载都不会删除个人数据。
-官方库独立保存。明确移除库或完整卸载时，只删除本安装器管理的 Factory V3；其它历史库保留。只安装插件而未安装库时，官方推荐不可用。
-进行库更新后，请重新打开插件实例以载入新版本。
+安装、更新、修改组件、修复和卸载均使用同一个 Setup。
+未勾选更新不表示删除；删除组件必须选择明确移除操作。
+个人库、收藏、设置及不属于当前管理版本的历史 Factory 数据会保留。
+不同内容的同版本 Factory 不会被直接覆盖；请保留旧开发库备份再处理版本冲突。
+新版插件写入旧个人库时仍沿用 User Schema 2 迁移及一次性备份规则。
 
-更新插件前请关闭 Cubase 及其他正在使用此插件的宿主。
-已知旧双安装器按身份与标准路径安全合并；无法识别时保留并提示，不强删注册信息。
-验收记录请参阅对应版本说明；安装成功本身不等于完成宿主人工验收。
+升级前关闭 Cubase、FL Studio 及其它占用插件/曲库的程序。安装后重新打开插件实例。
+此包使用标准系统 VST3 路径，会更新已安装的插件；v0.9.0 原始安装包和数据备份应保留以便回退。
+安装成功并不等于完成宿主验收；请使用随包 V4 人工验收清单。
 
-FL Studio 20+：Not Verified / Pending，尚待真实 FL Studio 验收。
-安装后在 Options → Manage plugins 中扫描并启用 Verify plugins。
-文件拖入插件需要 Wrapper 的 Accept dropped files 设置；安装器不会修改它。
-如 MIDI 拖出目标不接受，可点击保存 MIDI 后使用宿主的标准文件导入。
-
-FL Studio 20+: Not Verified / Pending for v0.9.0.
-After installation, scan in Options → Manage plugins with Verify plugins enabled.
-Check Wrapper Accept dropped files if files do not reach the editor. Setup does not change FL settings.
-Use Save MIDI and standard host file import if a MIDI drag target rejects the file.
+FL Studio 20+ remains Not Verified / Pending.
+Scan in Options → Manage plugins with Verify plugins enabled.
+Check Wrapper Accept dropped files if files do not reach the editor; Setup does not change FL settings.
+Use Save MIDI and standard host file import if MIDI drag is rejected.

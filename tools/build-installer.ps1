@@ -41,8 +41,12 @@ if (!(Test-Path -LiteralPath $manager)) {
 $info = & $manager inspect $FactoryDatabase
 if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw '进行库检查失败。' }
 $libraryVersion = $Matches[1]
+if ($info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
+$factoryEntryCount = $Matches[1]
 if ($header -notmatch 'HC_PRODUCT_VERSION\s+"([^"]+)"') { throw '无法读取产品版本。' }
 $productVersion = $Matches[1]
+if ($header -notmatch ('HC_PRODUCT_FACTORY_LIBRARY_VERSION\s+'+$libraryVersion+'\b')) { throw 'Plugin/Factory content versions differ.' }
+if ($libraryVersion -eq '4' -and [version]($productVersion.Split('-')[0]) -lt [version]'0.10.0') { throw 'Factory V4 requires a compatible 0.10+ engine build.' }
 $stage = Join-Path $outputPath ('stage-' + $libraryVersion)
 New-Item -ItemType Directory -Force -Path $stage,(Join-Path $stage 'runtime') | Out-Null
 Copy-Item -LiteralPath $manager -Destination (Join-Path $stage 'library_manager.exe')
@@ -73,8 +77,9 @@ $factoryHash = (Get-FileHash -LiteralPath $FactoryDatabase -Algorithm SHA256).Ha
 $legacyFactoryHash = ''
 $legacyDb = Join-Path $buildPath 'factory-v2.db'
 if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -LiteralPath $legacyDb -Algorithm SHA256).Hash.ToLowerInvariant() }
-$setupFileStem = if ($productVersion -match '^\d+\.\d+\.\d+$') { "HarmonyContinuation-$productVersion-Setup" } else { 'HarmonyContinuation-Setup' }
+$setupFileStem = "HarmonyContinuation-$productVersion-Setup"
 $common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
+$common += '/DFactoryEntryCount='+$factoryEntryCount
 if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
 & $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }
