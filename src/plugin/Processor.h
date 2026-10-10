@@ -8,6 +8,8 @@ public:
     Processor();
     static Steinberg::FUnknown* create(void*) { return static_cast<Steinberg::Vst::IAudioProcessor*>(new Processor); }
     Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown*) override;
+    // Stateless bypass needs no processing buffers or reset work.
+    Steinberg::tresult PLUGIN_API setProcessing(Steinberg::TBool) override { return Steinberg::kResultOk; }
     Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData&) override;
     Steinberg::tresult PLUGIN_API setBusArrangements(Steinberg::Vst::SpeakerArrangement*, Steinberg::int32, Steinberg::Vst::SpeakerArrangement*, Steinberg::int32) override;
     Steinberg::tresult PLUGIN_API canProcessSampleSize(Steinberg::int32) override;

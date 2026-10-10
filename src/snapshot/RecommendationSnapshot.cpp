@@ -1,4 +1,6 @@
 #include "RecommendationSnapshot.h"
+#include "library/LegacyFactoryIdResolver.h"
+#include "persistence/ChordData.h"
 #include "product/ProductVersion.h"
 #include "preview/PreviewSequence.h"
 #include <algorithm>
@@ -135,7 +137,7 @@ KeySignature keyIn(const Value& value) {
     return {static_cast<PitchClass>(pair[0].integer(0,11)),static_cast<Mode>(pair[1].integer(0,1))};
 }
 void validate(const RecommendationSnapshot& s) {
-    if (s.schemaVersion!=1 && s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion)
+    if (s.schemaVersion<1 || s.schemaVersion>RecommendationSnapshot::currentSchemaVersion)
         throw std::runtime_error("UnsupportedVersion");
     if (s.imported.events.empty()||s.imported.events.size()>64||s.candidate.continuation.size()>64||
         s.candidate.id.empty()||s.imported.events.front().startQN!=0||
@@ -165,10 +167,19 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
     validate(s);
     return s;
 }
-std::string serialize(const RecommendationSnapshot& s) {
+std::string serialize(const RecommendationSnapshot& input) {
+    auto s=input;s.schemaVersion=RecommendationSnapshot::currentSchemaVersion;
+    if(s.factoryLibraryVersion>=3) {
+        auto& c=s.candidate;
+        if(c.id==c.primaryTemplate)c.id=library::canonicalFactoryId(c.id);
+        c.primaryTemplate=library::canonicalFactoryId(c.primaryTemplate);
+        for(auto& id:c.supportingTemplates)id=library::canonicalFactoryId(id);
+        if(s.match)s.match->templateId=library::canonicalFactoryId(s.match->templateId);
+    }
     validate(s);
     std::ostringstream out; out.imbue(std::locale::classic()); out << std::setprecision(17);
     out << "{\"schemaVersion\":" << s.schemaVersion << ",\"productVersion\":";
+    // The historical fields remain readable; chordData carries all raw fields.
     quoted(out,s.productVersion);
     out << ",\"tempoBPM\":" << s.tempoBPM << ",\"meter\":[" << s.meterNumerator << ',' << s.meterDenominator
         << "],\"key\":";
@@ -191,7 +202,9 @@ std::string serialize(const RecommendationSnapshot& s) {
         out << '}';
     }
     const auto& c=s.candidate;
-    out << "],\"candidate\":{\"id\":"; quoted(out,c.id);
+    out << "],\"factoryLibraryVersion\":" << s.factoryLibraryVersion << ",\"chordData\":";
+    quoted(out,persistence::encodeChords(s.imported.events));
+    out << ",\"candidate\":{\"id\":"; quoted(out,c.id);
     out << ",\"primaryTemplate\":"; quoted(out,c.primaryTemplate);
     out << ",\"melodyConstraints\":"; quoted(out,encodeConstraints(c.constraints));
     out << ",\"intent\":" << static_cast<int>(c.intent) << ",\"key\":"; keyOut(out,c.key);
@@ -208,7 +221,9 @@ std::string serialize(const RecommendationSnapshot& s) {
         out << "{\"label\":"; quoted(out,e.label);
         out << ",\"durationQN\":" << e.durationQN << ",\"degree\":" << e.degree.degree
             << ",\"alteration\":" << e.degree.alteration << ",\"quality\":" << static_cast<int>(e.quality)
-            << ",\"roles\":" << e.roles << '}';
+            << ",\"roles\":" << e.roles << ",\"harmonicData\":";
+        if(e.harmonicData)quoted(out,persistence::encodeChords({*e.harmonicData}));else out<<"null";
+        out << '}';
     }
     out << "]},\"match\":";
     if (!s.match) out<<"null";
@@ -232,14 +247,14 @@ std::string serialize(const RecommendationSnapshot& s) {
     out << '}';
     return out.str();
 }
-DecodeResult deserialize(std::string_view input) {
+DecodeResult deserialize(std::string_view input,const library::LoadResult* activeFactory) {
     DecodeResult result;
     try {
         if (input.empty()||input.size()>1024*1024) throw std::runtime_error("snapshot size invalid");
         Parser p{input}; const auto top=p.read(); p.space(); if(p.at!=input.size()) throw std::runtime_error("trailing snapshot data");
         auto& s=result.value;
         s.schemaVersion=top.at("schemaVersion").integer(0,1000000);
-        if (s.schemaVersion!=1 && s.schemaVersion!=RecommendationSnapshot::currentSchemaVersion)
+        if (s.schemaVersion<1 || s.schemaVersion>RecommendationSnapshot::currentSchemaVersion)
             throw std::runtime_error("UnsupportedVersion");
         if (s.schemaVersion>=2) s.productVersion=top.at("productVersion").text();
         s.tempoBPM=top.at("tempoBPM").finite();
@@ -263,6 +278,8 @@ DecodeResult deserialize(std::string_view input) {
             s.imported.events.push_back(std::move(e));
         }
         s.imported.coordinateMode=TimelineCoordinateMode::RelativeToSelection; s.imported.revision=1;
+        if(top.object.contains("factoryLibraryVersion"))s.factoryLibraryVersion=top.at("factoryLibraryVersion").integer(1,1000000);
+        if(top.object.contains("chordData"))s.imported.events=persistence::decodeChords(top.at("chordData").text());
         const auto& candidate=top.at("candidate"); auto& c=s.candidate;
         c.id=candidate.at("id").text(); c.primaryTemplate=candidate.at("primaryTemplate").text();
         if(candidate.object.contains("melodyConstraints"))c.constraints=decodeConstraints(candidate.at("melodyConstraints").text());
@@ -279,6 +296,10 @@ DecodeResult deserialize(std::string_view input) {
             e.degree.degree=item.at("degree").integer(0,7); e.degree.alteration=item.at("alteration").integer(-12,12);
             e.quality=static_cast<ChordQuality>(item.at("quality").integer(0,static_cast<int>(ChordQuality::Augmented)));
             e.roles=static_cast<RoleFlags>(item.at("roles").integer(0,0x7fffffff));
+            if(item.object.contains("harmonicData")&&item.at("harmonicData").kind!=Value::Kind::Null) {
+                const auto data=persistence::decodeChords(item.at("harmonicData").text());
+                if(data.size()!=1)throw std::runtime_error("invalid continuation chord data");e.harmonicData=data.front();
+            }
             c.continuation.push_back(std::move(e));
         }
         c.melodyCompatibility=evaluateMelody(continuationProgression(s.imported.events,c),c.constraints);
@@ -299,6 +320,8 @@ DecodeResult deserialize(std::string_view input) {
             }
             s.match=std::move(m);
         }
+        s.schemaVersion=RecommendationSnapshot::currentSchemaVersion;
+        if(activeFactory)restoreFactoryReferences(s,*activeFactory);
         validate(s);
     } catch(const std::exception& e) { result.value={}; result.error=e.what(); }
     return result;
@@ -313,10 +336,25 @@ bool saveFile(const RecommendationSnapshot& s,const std::filesystem::path& path,
         return true;
     } catch(const std::exception& e) {error=e.what();return false;}
 }
-DecodeResult loadFile(const std::filesystem::path& path) {
+void restoreFactoryReferences(RecommendationSnapshot& s,const library::LoadResult& active) {
+    if(!active||active.libraryVersion<1){s.candidateAvailable=false;return;}
+    s.factoryLibraryVersion=active.libraryVersion;
+    const auto primary=library::resolveFactoryId(s.candidate.primaryTemplate,active.templates);
+    s.candidateAvailable=static_cast<bool>(primary);
+    const auto old=s.candidate.primaryTemplate;
+    if(primary) {
+        s.candidate.primaryTemplate=primary.resolved;
+        if(s.candidate.id==old)s.candidate.id=primary.resolved;
+    }
+    for(auto& id:s.candidate.supportingTemplates) {
+        const auto ref=library::resolveFactoryId(id,active.templates);if(ref)id=ref.resolved;
+    }
+    if(s.match){const auto ref=library::resolveFactoryId(s.match->templateId,active.templates);if(ref)s.match->templateId=ref.resolved;}
+}
+DecodeResult loadFile(const std::filesystem::path& path,const library::LoadResult* activeFactory) {
     std::ifstream in(path,std::ios::binary);
     if(!in)return {{},"cannot open snapshot"};
     const std::string data(std::istreambuf_iterator<char>{in},{});
-    return deserialize(data);
+    return deserialize(data,activeFactory);
 }
 } // namespace harmony::snapshot

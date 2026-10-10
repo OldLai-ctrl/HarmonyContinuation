@@ -6,10 +6,13 @@
 
 namespace harmony::library {
 constexpr int schemaVersion = 1;
+constexpr int factorySchemaVersion = 2;
+constexpr int userSchemaVersion = 2;
 struct LoadResult {
     std::vector<ProgressionTemplate> templates;
     std::string error;
     int libraryVersion{};
+    int storageSchemaVersion{1};
     explicit operator bool() const noexcept { return error.empty(); }
 };
 bool compileFactory(const std::filesystem::path& output,

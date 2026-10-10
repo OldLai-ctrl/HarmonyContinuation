@@ -1,61 +1,164 @@
-# HarmonyContinuation
+# HarmonyContinuation 使用教程
 
-面向 Cubase 的本地 VST3 和声创作助手，支持和弦轨导入、和声分析、继续发展、升级进行、试听、MIDI 输出，以及内置和个人进行库。
+把已有和弦进行变成下一段音乐，或让它本身更丰富。
 
-界面默认简体中文，支持 English。当前开发版本为 `0.8.0-dev.1-installer.1`，增加旋律约束、和声倾向、缩放、独立进行库和 Windows 安装程序。尚未完成本轮 Cubase 人工验收。
+开发主线 `v0.9/dev` 已集成 `Factory Library 3`，正式版本为 `0.9.0`，共 629 条进行；内容说明见 [V3 新增库](data/factory-v3/README.md)，格式边界见 [兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md)。`library/v3` 保留完整内容开发历史。新增可关闭的[色彩提示](docs/COLOR_ANALYSIS_V1.md)，继续发展与升级进行共用默认关闭的[色彩偏好排序](docs/COLOR_PREFERENCE_RERANKER.md)；[Why? V2](docs/WHY_V2.md) 用简短说明统一功能、色彩与排序依据，推荐与 MIDI 工作流保持原样。正式版复用用户对 Cubase Pro 15 的核心功能及 RC4 色彩修复验收，正式构建未另行实机测试；FL Studio 为 Not Verified / Pending；不要用旧插件打开新版 Schema 2 用户库。
 
-## 早期验证记录（历史）
+HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手。你可以导入和弦片段，查看和声分析，选择「继续发展」或「升级进行」，试听方案，再输出 MIDI 给自己的乐器演奏。界面默认简体中文，也可以切换 English。
 
-- Phase 0A：基础设施 **通过**。
-- Phase 0B：Cubase 15.0.30 Build 287 的和弦轨拖放及 VST-XML 1.4 解析 **通过**。
-- Phase 0C：宿主接入 **通过并冻结**。用户于 2026-09-24 报告非零位置、前后跳转和循环播放测试均正常。工程关闭重开也报告正常；当前源码尚未保存导入和弦，自动恢复行为仍需与当时的测试方式核对。
-- Phase 1：独立和声核心、黄金测试、开发命令行工具和插件分析视图已实现。用户已在 Cubase 中验证拖入、调性显示、播放时文字与黄条，以及播放线刷新。
-- Phase 2：调性无关模板、可容错的双层进行匹配、50 条开发测试模板、命令行和 MATCH 视图已实现。自动测试和 Validator 通过；本阶段的 Cubase 实机烟测尚未进行。模型与测试见 [匹配模型](docs/MATCHING_MODEL.md)、[Phase 2 测试](docs/MATCHING_PHASE2_TESTS.md) 和 [八组 Top 3 回放](docs/MATCHING_PHASE2_TOP3.md)。
-- 2026-09-25 编辑器打开卡住的问题已修复，并安装了经校验的新版；原因与验证见 [排查记录](docs/EDITOR_OPEN_HANG_20260925.md)。
-- 2026-09-25 实测三和弦的调性分析与播放时文字／黄条显示问题已修复；详见 [修复记录](docs/CUBASE_TRIAD_UI_FIX_20260925.md)。
-- 用户已确认拖入的和弦 QN 对应 Cubase 工程绝对位置；当前输入模式为 `AbsoluteProjectQN`。
+**当前版本：0.9.0。** Cubase Pro 15 主要功能和 RC4 色彩提示修复已由用户人工确认，本次只复用既有证据，没有为正式构建重新实机测试。**FL Studio：Not Verified / Pending。** FL Studio compatibility has not yet been verified with the v0.9.0 release.
 
-详细实测见 [Cubase 宿主集成记录](docs/HOST_SPIKE.md)、[Cubase 基础实测](docs/CUBASE_REALITY_TEST.md) 与 [播放同步测试步骤](docs/CUBASE_TIMELINE_SYNC_TEST.md)。
+## 1. 安装与加载
 
-## 构建与测试
+正式统一安装包为 HarmonyContinuation-0.9.0-Setup.exe，保留 RC4 色彩显示修复。默认安装 VST3 与 Factory Library，也可只更新主程序；用户数据保留，旧 RC 包不覆盖。安装包未数字签名。
 
-项目使用本地 C++20、MSVC x64、CMake、Steinberg VST3 SDK 3.8.1 和 VSTGUI，不会自动联网下载依赖。源码包不含 SDK；在原开发机上 SDK 曾位于 `D:\VibeCoding\VST_SDK\vst3sdk`。新机器可通过 `VST3_SDK_ROOT` 环境变量或 CMake 参数指定完整 SDK 路径。
+### 安装
 
-在 **x64 Native Tools Command Prompt for Visual Studio** 或 **Developer PowerShell for VS** 中进入项目目录，先配置再构建：
+1. 使用 Windows x64 和支持 VST3 的 64 位宿主。本轮测试目标为 FL Studio 20+，也保留 Cubase 工作流。
+2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.9.0-Setup.exe**，允许安装程序请求管理员权限。
+3. 默认插件位置为 `C:\Program Files\Common Files\VST3\HarmonyContinuation.vst3`。这是一个插件文件夹，请保留完整内容。
+4. 统一 Setup 默认选择 VST3 和 Factory Library，可单独安装任一组件；安装 / 更新、修复、修改和完整卸载均使用同一入口，无需开发工具。安装和音乐处理均可离线进行。
 
-```powershell
-cmake -S . -B build-vst3 -G Ninja -DVST3_SDK_ROOT="C:/path/to/vst3sdk"
-cmake --build build-vst3 --parallel 4
-ctest --test-dir build-vst3 -C Debug --output-on-failure
-```
+测试 ZIP 由维护者分发。GitHub 的 **Code → Download ZIP 是源码，不是安装包**。
 
-只编译和测试和声核心时，不需要 VST3 SDK：
+### 在 FL Studio 中加载
 
-```powershell
-cmake -S . -B build-core -G Ninja -DHC_BUILD_PLUGIN=OFF
-cmake --build build-core
-ctest --test-dir build-core --output-on-failure
-./build-core/harmony_cli.exe tests/fixtures/harmony/secondary_dominant.json
-```
+1. 打开 **Options → File settings → Manage plugins**，不同版本的入口可能略有不同。
+2. 启用 **Verify plugins**，点击 **Find installed plugins**。更新已有版本时，同时启用 **Rescan previously verified plugins**。
+3. 找到 **HarmonyContinuation**。当前它注册为 **Effect（效果器）**，从 Mixer 的效果器插槽加载；不要只在乐器列表查找。
+4. 打开插件，在 **更多 → 关于** 确认版本 **0.9.0**，提交应与正式发布目录中的 **BUILD_INFO.json** 一致。
 
-开发命令行还支持 `--key C:major` 一类调性指定。输入是扁平 JSON 和弦数组，字段及已知边界见 [和声模型](docs/HARMONIC_MODEL.md)、[黄金测试](docs/HARMONY_PHASE1_TESTS.md) 和 [Phase 1 回传报告](docs/PHASE1_HANDOFF.md)。
+扫描与分类步骤参考 [FL Studio 官方安装说明](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/basics_externalplugins.htm)。文件导入、试听和 MIDI 文件输出不要求设置 MIDI 端口。
 
-Phase 2 匹配回放与性能测量：
+### 在 Cubase 中加载
 
-```powershell
-./build-vst3/progression_match_cli.exe tests/fixtures/progressions/queries/A_exact_prefix.json tests/fixtures/progressions/templates.json
-./build-vst3/progression_match_bench.exe tests/fixtures/harmony/major_basic.json
-```
+安装后重新打开 Cubase，在效果器插槽加载插件。可以从 Cubase 和弦轨拖入和弦片段，也可使用下面的标准 MIDI 文件流程。
 
-VST3 Validator 在插件构建时运行。构建产物位于 `build-vst3\VST3\Debug\HarmonyContinuation.vst3`。构建不会自动复制到 Cubase 扫描目录。关闭 Cubase 后，可在管理员 PowerShell 中运行 `tools\install-debug.ps1` 安装并校验；也可运行 `tools\verify-installed-build.ps1` 只比较工作区与安装版 SHA-256。
+## 2. 第一次使用：导入 → 推荐 → 试听 → 输出
 
-## 目录
+### 准备片段
 
-- `src/core/`：不依赖 Steinberg SDK 的和弦数据、QN 定位与和声分析。
-- `src/plugin/`：VST3 音频快照、Cubase 拖放、VST-XML 解析与控制器消息。
-- `src/ui/`：简体中文界面、和弦时间轴、播放头与诊断面板。
-- `tests/`：核心定位、和声黄金测试和 VST-XML 解析测试。
-- `docs/`：宿主实测、同步手测和 fixture 说明。
-## Windows 安装与独立进行库
+优先使用和弦音符同时开始、节奏清楚的 **.mid / .midi** 文件。支持标准 MIDI **Format 0 / 1、PPQ 时基**，不支持 SMPTE。
 
-当前提供支持安装、更新和卸载的 Windows 安装程序，以及可单独分发的进行库更新包。安装和卸载保留个人进行及以前安装的库版本。见 [安装说明](docs/INSTALLER_AND_LIBRARY.md)。
+可先准备简单的 C → Am → F → G 和弦块 MIDI，使用自己的节奏。RC 安装包不附额外示例文件。
+
+### 导入
+
+1. 点击 **更多 → 导入 MIDI → 完整片段（默认）**，选择文件。
+2. 等待识别完成，核对「当前进行」中的和弦及时间信息。
+3. 如果这是尚未结束的乐句，重新导入时选择 **作为未完成进行**。最后和弦会标为 **OPEN**，表示其结束时间尚未确定。
+
+也可从 Windows 文件管理器把 MIDI 拖到「当前进行」区域。如果 FL 没把文件交给插件，检查 Wrapper 的 **Accept dropped files**，或改用文件选择器。该设置决定文件交给插件还是 FL，见 [官方 Wrapper 说明](https://www.image-line.com/fl-studio-learning-content/fl-studio-online-manual/html/plugins/wrapper.htm)。
+
+直接把 FL Piano Roll、Playlist 或 Cubase 内部 MIDI Part 拖入插件，并不是本版承诺支持的输入。先将片段导出为标准 MIDI 文件，再导入。
+
+### 推荐与试听
+
+导入后自动显示推荐；在 **继续发展** 中选择一个方案，点击 **试听**；也可以切换到 **升级进行**，听对原片段的改写。
+
+试听使用 **Windows 默认播放设备**，不经过 FL / Cubase 混音器。宿主无需播放才能试听；切换方案会替换当前声音。多个实例共享这一路试听。
+
+### 输出给自己的乐器
+
+- **保存：** 单击候选旁的 **MIDI ↗**，选择保存位置，再通过宿主的 MIDI 文件导入功能放入乐器轨或 Piano Roll。
+- **拖出：** 按住同一个 MIDI 按钮并拖动到宿主接受 MIDI 文件的位置。FL 的 Playlist / Piano Roll 接收行为是本轮待测项目；不接收时改用保存文件。
+- 输出设置提供范围选项时，核对需要「当前片段」「推荐片段」还是完整片段。升级进行输出的是完整变换后的进行。
+- 输出是音符数据。要在宿主中听到它，请为目标轨道选择钢琴、合成器等乐器。
+
+## 3. 两种模式怎么选
+
+| 模式 / 分组 | 用途 |
+|---|---|
+| 继续发展 · 收束 | 让乐句落到稳定位置，完成结束。 |
+| 继续发展 · 发展 | 延长乐句，继续向前走。 |
+| 继续发展 · 循环 | 接回开头，形成循环。 |
+| 继续发展 · 色彩 | 寻找有依据的和声色彩变化。 |
+| 升级进行 · 润色 | 对原进行做较轻的调整。 |
+| 升级进行 · 丰富 | 尝试更多和声细节。 |
+| 升级进行 · 进阶 | 尝试变化更明显的改写。 |
+
+某组显示「暂无高质量方案」是允许的结果，尤其是色彩组。收束只推荐一个和弦，也可能已完整完成目标。这两种情况不自动算故障。
+
+## 色彩提示与 Why? V2
+
+FULL 展示完整和弦信息，SKELETON 便于比较和声骨架。色彩提示默认开启，以细色条和文字呈现整段温度与张力趋势；Why? V2 用 1～3 句解释功能、色彩和启用后的排序理由。高级色彩详情只显示前八个位置。升级进行若只有 OPEN / 时值缺失，但各和弦静态指标可靠，显示中性「静态：…；整段信息不足」；Why? 说明静态色彩与时值缺失，不猜测整段平均或时间趋势。
+
+「色彩排序」默认关闭，两种模式共用六种选项：关闭、自动延续前段（升级时对应原进行）、逐渐温暖、逐渐偏冷、张力先升后降、先紧张最后温暖收束。仅对已有候选有限重排，关闭恢复原顺序；「显示色彩提示」独立控制显示，不会关闭排序。设置目前只在插件实例内保留，不保证跨工程重载恢复。
+
+色彩模型是创作辅助指标，不是客观情绪识别。未覆盖的结构或缺失可靠信息可能显示 Unknown / Uncertain（不足以判断），不影响原推荐。
+
+## 4. 候选操作
+
+| 操作 | 用途 |
+|---|---|
+| 试听 | 听当前方案。 |
+| 为什么？ / Why | 查看推荐理由及变化说明。 |
+| 对比 | 加入对比，切换试听、检查差别。 |
+| 固定 / Pin | 保留想继续比较的候选。 |
+| MIDI ↗ | 单击保存，按住拖动输出。 |
+| SNAP / 保存快照 | 保存方案快照，供记录和问题定位。 |
+| 查看更多 | 打开未直接展示的候选并使用对应操作。 |
+
+候选较多时，把鼠标放在相应分组列表内滚动。留意候选名称，确保试听和输出对应同一方案。
+
+## 5. 调性、风格与旋律约束
+
+初次可保持 **调性 / 风格 / 意图：自动**。如果调性分析与你的创作意图不同，再手动指定。
+
+- **风格：** Pop、Rock、R&B、Jazz、City Pop 等，为推荐提供方向。
+- **和声倾向：** 稳妥、均衡、大胆；初次可用均衡。
+- **旋律约束：** 输入音名，如 E4，并设置起点和持续时间。
+- **位置要求：** 「和弦内/可用音（Present）」检查音与和声的兼容性；「最高音（Top Voice）」要求它在最高声部。
+- **兼容要求：** 「柔和（Soft）」偏向兼容方案；「严格（Hard）」施加更强要求，可能减少候选。
+
+**QN = 一个四分音符拍**。4/4 中持续 4 QN 等于一小节。约束位置应对应插件显示的时间；Cubase 和弦轨输入使用工程绝对位置。
+
+MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配器或不完整和弦可能识别较保守；先用清楚的和弦块确认基础流程。
+
+## 6. 进行库、语言与界面
+
+- **更多 → 进行库：** 浏览内置和个人进行，按名称、标签、风格等搜索筛选，使用页码及上一页 / 下一页浏览。
+- **Factory Library V3** 含 **629 条**内置进行。内置条目只读；个人条目可保存名称、标签、收藏和备注。
+- 库条目可浏览、试听和导出 MIDI。需要把库进行作为输入时，先导出 MIDI，再导入「当前进行」。
+- **更多 → English / 简体中文：** 切换语言。
+- **更多 → 界面缩放：** 选择 100% / 125% / 150%，也可以调整窗口大小。
+- **更多 → 宿主诊断 / 导出宿主诊断：** 查看环境、库来源及运行状态，用于反馈问题。
+
+## 7. 保存工程、更新与卸载
+
+1. 按宿主正常方式保存工程，重新打开后核对片段、模式、设置和缩放。
+2. 更新前关闭占用插件的宿主，运行新版完整 Setup。当前更新方式是运行新包，不是联网自动下载。
+3. 再次运行 **HarmonyContinuation-0.9.0-Setup.exe**，只选 Factory Library 即可更新数据，不替换 VST3；删除组件请使用「修改组件」中的明确移除项。
+4. 从 Windows「已安装的应用」或开始菜单卸载入口卸载。
+
+更新时取消勾选不会卸载。统一管理器可单独移除 VST3 或本次管理的 Factory V3；完整卸载移除管理入口。个人进行库、收藏、配置和非本次管理的 Factory 历史始终保留。个人库位于 `%LOCALAPPDATA%\HarmonyContinuation\user.db`；如需备份，关闭宿主后复制该数据目录。
+
+## 8. 常见问题
+
+| 问题 | 处理方法 |
+|---|---|
+| 找不到插件 | 确认 Windows 64 位宿主，重新扫描 VST3，在 Effects 分类查找。 |
+| 仍显示旧版 | 重启宿主，重新验证扫描，核对加载路径和「更多 → 关于」。 |
+| 拖入无反应 | 检查 Accept dropped files，或用「更多 → 导入 MIDI」。 |
+| 拖出没有音符 | 单击保存 MIDI 再导入；反馈拖动到的具体位置。 |
+| 试听听不到 | 检查 Windows 默认播放设备和音量；声音不经过宿主混音器。 |
+| 导入失败 | 先试简单和弦块 MIDI；无有效和弦或损坏文件应保留原片段。 |
+| 某组没有推荐 | 可能无可靠方案，可试其他分组或输入。 |
+| 界面太小或点击错位 | 先试插件缩放，记录 Windows / FL 缩放并附截图。 |
+
+## 9. 给 RC 人工验收用户
+
+使用 RC 目录中的完整 Setup 安装，按 [RC 六项人工清单](docs/RC_DAW_ACCEPTANCE.md) 在 Cubase Pro 15 / FL Studio 验收。记录通过、失败或未测；安装成功不代表宿主验收通过。
+
+反馈附上 **宿主完整版本、Windows 版本、插件版本、复现步骤、预期与实际结果**，以及导出的宿主诊断。MIDI 识别问题可附愿意分享的最小 MIDI 示例。
+
+## 当前边界与开发资料
+
+跨设备开发与 AI 接手从 [PROJECT_INDEX.md](PROJECT_INDEX.md) 定位；按 [AGENTS.md](AGENTS.md) 搜索并读取当前任务相关内容。
+
+- 不提供音频和弦识别、实时键盘录入、私有 Piano Roll / Playlist 格式解析或完整歌曲生成。
+- 真实 FL 扫描、文件拖放、缩放、Detached、工程恢复和播放位置仍待验收。标准测试宿主通过不能替代 FL 实测。
+- [FL 兼容状态与中英文说明](docs/FL_STUDIO_COMPATIBILITY.md)
+- [0.9.0 更新说明](docs/V0_9_RELEASE_NOTES.md)
+
+源码使用 C++20、CMake、MSVC x64、Steinberg VST3 SDK 3.8.1、VSTGUI 和 SQLite。源码不含 Steinberg SDK；普通测试用户只需 Setup。

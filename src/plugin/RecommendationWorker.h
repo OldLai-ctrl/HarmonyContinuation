@@ -27,6 +27,7 @@ public:
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
     std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {},
                          bool rankingOnly = false, std::uint64_t phraseRevision = 0);
+    void cancel();
     void invalidateLibrary();
     std::optional<WorkerResult> takeLatest();
 private:

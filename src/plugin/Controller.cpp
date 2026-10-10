@@ -2,8 +2,7 @@
 #include "PluginIds.h"
 #include "HostContextAdapter.h"
 #include "DropCapture.h"
-#include "VstXmlDropAdapter.h"
-#include "VstXmlChordParser.h"
+#include "HostAdapters.h"
 #include "vstgui/lib/cclipboard.h"
 #include "PluginView.h"
 #include "../ui/MainView.h"
@@ -30,6 +29,7 @@
 #include <filesystem>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #if defined(_WIN32)
 #include <windows.h>
 #include <commdlg.h>
@@ -72,122 +72,6 @@ std::optional<std::filesystem::path> savePath(void* owner, const std::string& su
 std::filesystem::path factoryDatabasePath() { return "factory.db"; }
 
 #endif
-const char* qualityName(harmony::ChordQuality q) {
-    using Q = harmony::ChordQuality;
-    switch (q) {
-        case Q::Major: return "大三和弦"; case Q::Minor: return "小三和弦";
-        case Q::Dominant7: return "7"; case Q::Major7: return "Maj7";
-        case Q::Minor7: return "m7"; case Q::Diminished: return "dim";
-        case Q::Diminished7: return "dim7"; case Q::HalfDiminished7: return "m7b5";
-        case Q::Sus2: return "sus2"; case Q::Sus4: return "sus4";
-        case Q::Augmented: return "增三和弦"; default: return "未知";
-    }
-}
-
-const char* parseStatusName(VstXmlStatus status) {
-    switch (status) {
-        case VstXmlStatus::Success: return "解析成功";
-        case VstXmlStatus::InvalidXml: return "XML 格式错误";
-        case VstXmlStatus::UnsupportedSchema: return "不支持的 VST-XML 结构";
-        case VstXmlStatus::UnsupportedTimeDomain: return "不支持的时间单位";
-        case VstXmlStatus::InvalidChord: return "和弦数据无效";
-        case VstXmlStatus::MissingProjectTime: return "缺少工程位置";
-        case VstXmlStatus::ResourceLimit: return "超过安全限制";
-        default: return "内部错误";
-    }
-}
-
-std::string chordSummary(const harmony::Progression& events) {
-    std::ostringstream out;
-    for (const auto& chord : events) {
-        out << chord.name << " @ " << std::fixed << std::setprecision(3) << chord.startQN << " QN";
-        if (chord.keyNoteValue) out << "  keyNote=" << *chord.keyNoteValue;
-        else if (chord.root) out << "  rootPC=" << unsigned(*chord.root);
-        else out << "  根音=未知";
-        out << "  低音=";
-        if (chord.bassNoteValue) out << *chord.bassNoteValue;
-        else if (chord.bass) out << "PC " << unsigned(*chord.bass);
-        else out << "未知";
-        out << "  性质=" << qualityName(chord.quality) << "  时长=";
-        if (chord.durationQN) out << *chord.durationQN << " QN"; else out << "延续至后续编辑";
-        if (chord.extensions.mask) out << "  原始 mask=" << *chord.extensions.mask;
-        if (chord.extensions.pitches) out << "  原始 pitches=" << *chord.extensions.pitches;
-        if (chord.extensions.color) out << "  颜色=" << *chord.extensions.color;
-        out << '\n';
-    }
-    return out.str();
-}
-
-std::string parseDropItems(const std::vector<DropItemReport>& items, harmony::ChordSource source,
-                           harmony::Progression& events) {
-    std::ostringstream parsed;
-    const VstXmlChordParser parser;
-    bool anyCandidate{};
-    for (const auto& item : items) {
-        parsed << "数据项 " << item.index << " 解析：";
-        if (!item.looksLikeXml) {
-            parsed << (item.containsVstXml ? "VST-XML 标记位于数据内部；未尝试猜测并截取片段。\n"
-                                          : "数据开头不是 XML，未调用解析器。\n");
-            continue;
-        }
-        anyCandidate = true;
-        if (!item.fullPayloadReadable) {
-            parsed << "已跳过：只能读取受限预览，完整数据未交给解析器。\n";
-            continue;
-        }
-        const auto result = parser.parse(item.decodedText, source);
-        parsed << parseStatusName(result.status) << ": " << result.detail;
-        if (!result.rawTimeDomain.empty() || !result.rawTimeValue.empty())
-            parsed << "；原始 projectTime domain='" << result.rawTimeDomain << "' value='" << result.rawTimeValue << "'";
-        if (result.ok()) {
-            parsed << "；来源应用='" << result.sourceApp << "'；和弦数=" << result.chords.size();
-            events.insert(events.end(), result.chords.begin(), result.chords.end());
-        }
-        parsed << '\n';
-    }
-    if (!anyCandidate) parsed << "没有可交给 VST-XML 解析器的完整 XML 数据项。\n";
-    if (!events.empty()) {
-        if (!harmony::sortAndInferDurations(events)) {
-            events.clear();
-            parsed << "合并和弦时长推导失败，未保留时间轴数据。\n";
-        } else parsed << "解析出的和弦时间轴：\n" << chordSummary(events);
-    }
-    return parsed.str();
-}
-
-#if defined(_WIN32)
-std::string parseNativeClipboardItems(const windows::ClipboardInspection& report,
-                                     harmony::Progression& events) {
-    std::ostringstream parsed;
-    const VstXmlChordParser parser;
-    bool anyCandidate{};
-    for (const auto& item : report.formats) {
-        if (!item.looksLikeXml) {
-            if (item.containsVstXml)
-                parsed << "Windows 格式 " << item.formatId << "：VST-XML 标记不在文档开头，未猜测截取。\n";
-            continue;
-        }
-        anyCandidate = true;
-        parsed << "Windows 格式 " << item.formatId << "（" << item.formatName << "）解析：";
-        if (!item.fullPayloadReadable) { parsed << "已跳过：只能读取受限预览。\n"; continue; }
-        const auto result = parser.parse(item.decodedText, harmony::ChordSource::Clipboard);
-        parsed << parseStatusName(result.status) << ": " << result.detail;
-        if (!result.rawTimeDomain.empty() || !result.rawTimeValue.empty())
-            parsed << "；原始 projectTime domain='" << result.rawTimeDomain << "' value='" << result.rawTimeValue << "'";
-        if (result.ok()) {
-            parsed << "；来源应用='" << result.sourceApp << "'；和弦数=" << result.chords.size();
-            events.insert(events.end(), result.chords.begin(), result.chords.end());
-        }
-        parsed << '\n';
-    }
-    if (!anyCandidate) parsed << "没有可供解析器读取的原生剪贴板 XML 数据。\n";
-    if (!events.empty()) {
-        if (!harmony::sortAndInferDurations(events)) { events.clear(); parsed << "时间轴推导失败。\n"; }
-        else parsed << "解析出的和弦时间轴：\n" << chordSummary(events);
-    }
-    return parsed.str();
-}
-#endif
 } // namespace
 
 tresult PLUGIN_API Controller::initialize(FUnknown* context) {
@@ -198,7 +82,47 @@ tresult PLUGIN_API Controller::initialize(FUnknown* context) {
         String128 name{};
         if (host->getName(name) == kResultOk) hostName_ = StringConvert::convert(name, 128);
     }
+    hostEnvironment_.identify(hostName_);
+    hostAdapter_=makeHostAdapter(hostEnvironment_.family);
     return kResultOk;
+}
+tresult PLUGIN_API Controller::terminate(){
+    stopPreview();if(view_)view_->prepareForDetach();view_=nullptr;transportRateChanged_={};resizeRequest_={};
+    midiImportWorker_.reset();recommendationWorker_.reset();
+    return EditController::terminate();
+}
+std::string Controller::hostDiagnostics() const {
+    auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
+    copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
+    return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN);
+}
+std::string Controller::exportHostDiagnostics(void* owner) noexcept {
+    try {
+#if defined(_WIN32)
+        const auto path=savePath(owner,"HarmonyContinuation-HostDiagnostics.txt",L"Text files\0*.txt\0\0",L"txt");
+        if(!path)return "Cancelled";
+        auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
+        copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
+        std::ofstream file(*path,std::ios::binary);file<<copy.diagnostics(sessionState_.locale==session::Locale::ZhCN,true);
+        return file?"Host diagnostics exported":"Export failed";
+#else
+        return "Export unavailable";
+#endif
+    }catch(...){return "Export failed";}
+}
+void Controller::observeEditor(double scale,bool accepted,bool scaleObserved) noexcept {
+    hostEnvironment_.contentScaleFactor=scale;
+    // A scale callback alone does not prove that the host accepted a resize.
+    if(scaleObserved)hostEnvironment_.capabilities.contentScaleFactor=host::Observed::Available;
+    else hostEnvironment_.capabilities.editorResize=accepted?host::Observed::Available:host::Observed::Unavailable;
+}
+void Controller::observeDrop(bool file,bool supported) noexcept {
+    hostEnvironment_.lastDropType=file?(supported?"FilePath MIDI":"FilePath unsupported"):"legacy data";
+    if(file)hostEnvironment_.capabilities.filePathDrop=host::Observed::Available;
+}
+void Controller::observeMidiDrag(bool generated,bool accepted) noexcept {
+    hostEnvironment_.lastMidiDragGenerated=generated;
+    hostEnvironment_.capabilities.filePathDragSource=accepted?host::Observed::Available:host::Observed::Unavailable;
 }
 
 tresult PLUGIN_API Controller::getState(IBStream* stream) {
@@ -214,6 +138,8 @@ tresult PLUGIN_API Controller::getState(IBStream* stream) {
     } catch (...) { return kResultFalse; }
 }
 tresult PLUGIN_API Controller::setState(IBStream* stream) {
+    hostEnvironment_.stateRestoreStatus="rejected or incomplete";
+    hostEnvironment_.capabilities.stateRestore=host::Observed::Unavailable;
     if (!stream) return kInvalidArgument;
     try {
         char length[4]{}; int32 read{};
@@ -228,6 +154,11 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         auto restored=harmony::session::deserialize(bytes);
         if (!restored) return kResultFalse;
         stopPreview();
+        if(midiImportWorker_)midiImportWorker_->cancel();
+        if(recommendationWorker_)recommendationWorker_->cancel();
+        editorUiState_.reset();enrichments_={};
+        hostEnvironment_.stateRestoreStatus="restored";
+        hostEnvironment_.capabilities.stateRestore=host::Observed::Available;
         sessionState_=std::move(restored.state);
         importedProgression_=sessionState_.imported;
         recommendationRequest_.style=sessionState_.style;
@@ -238,7 +169,7 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         if (view_) {
             view_->setSessionState(sessionState_);
             view_->clearSessionDirty();
-            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);
+            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
         }
         if (resizeRequest_) resizeRequest_(static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight));
         submitRecommendation();
@@ -278,6 +209,7 @@ tresult Controller::pollTransport() noexcept {
 
 void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> transportRateChanged) noexcept {
     view_ = view;
+    hostEnvironment_.editorAttached(view!=nullptr);
     transportRateChanged_ = std::move(transportRateChanged);
     if (view_) {
         try {
@@ -286,8 +218,10 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
+            view_->setEnrichments(enrichments_);
+            if(editorUiState_)view_->restoreEditorUiState(*editorUiState_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
-            view_->setHostText("宿主：" + hostName_ + "\n格式：VST3 | 播放位置自动同步");
+            view_->setHostText(hostDiagnostics());
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
             reloadLibraries();
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
@@ -298,11 +232,13 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
 
 void Controller::pollRecommendation() noexcept {
     try {
+        pollMidiImport();
         if (!recommendationWorker_) return;
         auto latest = recommendationWorker_->takeLatest();
         if (!latest) return;
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
+        enrichments_=std::move(latest->enrichments);
         recommendationGeneration_=latest->generation;
         lastComputationMs_=latest->computationMs;
         if (latest->factoryCount) factoryCount_=latest->factoryCount;
@@ -315,7 +251,7 @@ void Controller::pollRecommendation() noexcept {
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
-            view_->setEnrichments(latest->enrichments);
+            view_->setEnrichments(enrichments_);
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
             if(!midiImportSummary_.empty()) {
                 view_->setActionStatus(midiImportSummary_+" · "+std::string(harmony::localization::text(sessionState_.locale,"midi.key"))+" "+
@@ -326,7 +262,7 @@ void Controller::pollRecommendation() noexcept {
 }
 
 void Controller::submitRecommendation(bool rankingOnly) {
-    if (importedProgression_.events.empty()) return;
+    if (importedProgression_.events.empty()) {if(recommendationWorker_)recommendationWorker_->cancel();return;}
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,sessionState_.analysisContext(),
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
@@ -344,10 +280,10 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
         recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
-        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={}; }
+        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};enrichments_={};editorUiState_.reset(); }
         if (view_) {
             view_->setSessionState(sessionState_);
-            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(recommendations_); }
+            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_); }
         }
         if (recompute!=harmony::session::RecomputeScope::None)
             submitRecommendation(recompute==harmony::session::RecomputeScope::Ranking);
@@ -363,6 +299,8 @@ void Controller::reloadLibraries() {
     if (!view_) return;
     auto selected=harmony::library::loadAvailableFactory(factoryDatabasePath());
     auto& factory=selected.library;
+    hostEnvironment_.factoryEntries=static_cast<unsigned>(factory.templates.size());
+    hostEnvironment_.librarySource=selected.path==factoryDatabasePath()?"bundled":"external";
     if(factory) sessionState_.factoryLibraryVersion=factory.libraryVersion;
     view_->setSessionState(sessionState_);
     auto user=harmony::library::UserLibrary(harmony::library::userDatabasePath()).loadAll();
@@ -399,7 +337,7 @@ std::string Controller::deleteUserProgression(const std::string& id) noexcept {
 
 void Controller::stopPreview() noexcept {
 #if defined(_WIN32)
-    if (!previewCandidateId_.empty()) PlaySoundW(nullptr,nullptr,0);
+    if (previewOwnership_.release()) PlaySoundW(nullptr,nullptr,0);
 #endif
     previewCandidateId_.clear();
     previewTotalQN_=previewSeconds_=0;
@@ -425,7 +363,11 @@ void Controller::playPreview(std::string id,const harmony::preview::BuildResult&
             (L"HarmonyContinuation-"+std::to_wstring(GetCurrentProcessId())+L"-"+
              std::to_wstring(reinterpret_cast<std::uintptr_t>(this))+L".wav");
         std::string error;
-        if (!harmony::preview::writeWav16(audio,previewFile_,error) ||
+        if (!harmony::preview::writeWav16(audio,previewFile_,error)) {
+            if(view_)view_->setActionStatus("Preview failed");stopPreview();return;
+        }
+        previewOwnership_.claim();
+        if (
             !PlaySoundW(previewFile_.c_str(),nullptr,SND_ASYNC|SND_FILENAME|SND_NODEFAULT)) {
             if (view_) view_->setActionStatus("试听失败："+(error.empty()?"系统播放设备不可用":error));
             stopPreview();
@@ -488,6 +430,7 @@ void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandida
 
 void Controller::pollPreview() noexcept {
     if (previewCandidateId_.empty()) return;
+    if (!previewOwnership_.owns()) {stopPreview();return;}
     const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-previewStarted_).count();
     if (elapsed>=previewSeconds_) { stopPreview(); return; }
     if (view_ && previewSeconds_>0)
@@ -547,10 +490,20 @@ std::string Controller::exportEnrichmentMidi(const harmony::enrichment::Enrichme
     try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
 void Controller::importMidi(bool openEnded,const std::filesystem::path& supplied,void* owner) noexcept {
-    try {
-        const auto path=supplied.empty()?harmony::midi::chooseMidiFile(owner):std::optional(supplied);
-        if(!path)return;
-        const auto loaded=harmony::midi::importFile(*path,openEnded);
+    try {const auto path=supplied.empty()?harmony::midi::chooseMidiFile(owner):std::optional(supplied);
+        if(path)importMidiFiles({*path},openEnded);
+    }catch(...){if(view_)view_->setActionStatus("MIDI import failed");}
+}
+void Controller::importMidiFiles(std::vector<std::filesystem::path> paths,bool openEnded) noexcept {
+    try {if(!midiImportWorker_)midiImportWorker_=std::make_unique<io::AsyncMidiImport>();
+        midiImportWorker_->submit(std::move(paths),openEnded);
+        if(view_)view_->setActionStatus(sessionState_.locale==session::Locale::ZhCN?"正在读取 MIDI…":"Reading MIDI…");
+    }catch(...){if(view_)view_->setActionStatus("MIDI import failed");}
+}
+void Controller::pollMidiImport(){
+    if(midiImportWorker_)if(auto ready=midiImportWorker_->takeLatest())applyMidiImport(ready->result);
+}
+void Controller::applyMidiImport(const harmony::midi::ImportResult& loaded){
         const auto text=[&](const char* key){return std::string(harmony::localization::text(sessionState_.locale,key));};
         if(!loaded){if(view_){view_->setDropReport(text("midi.failed"),loaded.midi.error+"\n"+loaded.extraction.error,false);view_->setActionStatus(text(loaded.midi.status==harmony::midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));}return;}
         auto next=sessionState_;if(!harmony::midi::applyImport(loaded,next.imported))return;
@@ -574,8 +527,7 @@ void Controller::importMidi(bool openEnded,const std::filesystem::path& supplied
             midiImportSummary_=summary;
             view_->setDropReport(summary,details.str(),false);view_->setActionStatus(summary);
         }
-    } catch(...){if(view_)view_->setActionStatus(std::string(harmony::localization::text(sessionState_.locale,"midi.failed")));}
-}
+ }
 std::string Controller::saveMidiPayload(const harmony::midi::MidiClipPayload& payload,void* owner) noexcept {
     try {return saveCandidatePayload({payload,{}},owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
 }
@@ -593,10 +545,11 @@ std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& it
 
 std::string Controller::saveSnapshot(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
     try {
-        const auto snapshot=harmony::snapshot::capture(importedProgression_,candidate,matches_,lastTempoBPM_,
+        auto snapshot=harmony::snapshot::capture(importedProgression_,candidate,matches_,lastTempoBPM_,
             sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4),
             sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
             sessionState_.style,sessionState_.intent);
+        snapshot.factoryLibraryVersion=static_cast<int>(sessionState_.factoryLibraryVersion);
 #if defined(_WIN32)
         const auto path=savePath(owner,candidate.id+".hcrec.json",
             L"Recommendation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0",L"json");
@@ -635,7 +588,9 @@ std::string Controller::saveEnrichmentSnapshot(const harmony::enrichment::Enrich
 }
 
 void Controller::detach(harmony::ui::MainView* view) noexcept {
-    if (view_ == view) {
+    if (view_ == view && view_) {
+        try{editorUiState_=view_->captureEditorUiState();}catch(...){editorUiState_.reset();}
+        hostEnvironment_.editorAttached(false);
         stopPreview();
         view_ = nullptr;
         transportRateChanged_ = {};
@@ -644,13 +599,15 @@ void Controller::detach(harmony::ui::MainView* view) noexcept {
 
 void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
     try {
-        auto report = inspectDrop(package, "Cubase 拖放（VSTGUI IDataPackage）");
+        auto report = inspectDrop(package, "宿主拖放（VSTGUI IDataPackage）");
         harmony::Progression chords;
         std::ostringstream parsed;
         parsed << "最近一次拖放 / VSTGUI IDataPackage\n数据项数：" << report.itemCount
                << "；已检查数据项的声明总大小：" << report.payloadBytes << " 字节\n";
-        parsed << parseDropItems(report.items, harmony::ChordSource::CubaseDrop, chords);
+        auto input=hostAdapter_->chordInput(report);chords=std::move(input.chords);parsed << input.details;
+        hostEnvironment_.lastDropType="VST-XML data";
         if (!chords.empty()) {
+            if(midiImportWorker_)midiImportWorker_->cancel();
             stopPreview();
             harmony::AnalysisContext analysisContext;
             analysisContext.timeSigNumerator = lastTimeSigNumerator_;
@@ -662,14 +619,14 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
                 sessionState_.meterDenominator=lastTimeSigDenominator_;
                 analysis_ = {};
                 matches_.clear();
-                recommendations_ = {};
+                recommendations_ = {};enrichments_={};editorUiState_.reset();
                 matchStatus_ = "RECOMMEND：后台分析中…";
                 submitRecommendation();
                 if (view_) {
                     view_->setSessionState(sessionState_);
                     view_->setAnalysis(analysis_);
                     view_->setMatches(matches_, matchStatus_);
-                    view_->setRecommendations(recommendations_);
+                    view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
                 }
             } else {
                 parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";
@@ -698,7 +655,7 @@ void Controller::inspectClipboard() noexcept {
             auto report = inspectDrop(package, "用户通过 VSTGUI CClipboard 主动检查");
             raw << report.summary << '\n';
             parsed << "VSTGUI 剪贴板解析结果：\n"
-                   << parseDropItems(report.items, harmony::ChordSource::Clipboard, vguiChords);
+                   << CubaseHostAdapter::parseXml(report.items, harmony::ChordSource::Clipboard, vguiChords);
         }
 
 #if defined(_WIN32)
@@ -706,7 +663,7 @@ void Controller::inspectClipboard() noexcept {
         const auto native = windows::inspectNativeClipboard();
         raw << native.summary << '\n';
         parsed << "\nWindows 原生剪贴板解析结果：\n"
-               << parseNativeClipboardItems(native, nativeChords);
+               << CubaseHostAdapter::parseClipboard(native, nativeChords);
 #else
         raw << "\nB. 原生剪贴板检查器：仅支持 Windows。\n";
 #endif
@@ -743,31 +700,19 @@ tresult PLUGIN_API Controller::notify(IMessage* message) {
             if (changed) {
                 unchangedTransportPolls_ = 0;
                 lastSnapshotGeneration_ = snapshot.generation;
-                const auto flags = snapshot.words[1];
-                if (snapshot.words[0] && (flags & ProcessContext::kProjectTimeMusicValid))
-                    lastProjectQN_ = std::bit_cast<double>(snapshot.words[4]);
-                else
-                    lastProjectQN_.reset();
-                if (snapshot.words[0] && (flags & ProcessContext::kTempoValid)) {
-                    const auto tempo=std::bit_cast<double>(snapshot.words[3]);
-                    if (std::isfinite(tempo) && tempo>=20.0 && tempo<=400.0) lastTempoBPM_=tempo;
-                }
-                if (snapshot.words[0] && (flags & ProcessContext::kTimeSigValid) &&
-                    snapshot.words[5] > 0 && snapshot.words[6] > 0 &&
-                    snapshot.words[5] <= 64 && snapshot.words[6] <= 64) {
-                    lastTimeSigNumerator_ = static_cast<int>(snapshot.words[5]);
-                    lastTimeSigDenominator_ = static_cast<int>(snapshot.words[6]);
-                } else {
-                    lastTimeSigNumerator_.reset();
-                    lastTimeSigDenominator_.reset();
-                }
-                lastPlaying_ = (flags & ProcessContext::kPlaying) != 0;
+                const auto context=HostContextAdapter::timeline(snapshot);
+                hostEnvironment_.observeTimeline(context);
+                lastProjectQN_=context.projectTimeMusic;
+                if(context.tempo)lastTempoBPM_=*context.tempo;
+                lastTimeSigNumerator_=context.timeSignature?std::optional(context.timeSignature->first):std::nullopt;
+                lastTimeSigDenominator_=context.timeSignature?std::optional(context.timeSignature->second):std::nullopt;
+                lastPlaying_=context.playing.value_or(false);
                 if (view_) view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
                 if (transportRateChanged_) transportRateChanged_(lastPlaying_);
             }
             if (view_ && manualRefresh) {
                 auto history = HostContextAdapter::summarize(snapshot);
-                view_->setHostText("宿主：" + hostName_ + "\n" + HostContextAdapter::describe(snapshot), std::move(history));
+                view_->setHostText(hostDiagnostics(), std::move(history));
             }
             return kResultOk;
         }

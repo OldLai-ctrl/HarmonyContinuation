@@ -155,17 +155,17 @@ int main() {
             const auto ignoredLayout=ui::computeLayout({width,900,2,session::Tab::Recommend,true,true});
             check(ignoredLayout.laneColumns>=1&&snapshot::serialize(snap)==json,"resize leaves snapshot unchanged");
         }
-        check(decoded && decoded.value.schemaVersion==2&&!decoded.value.productVersion.empty()&&
+        check(decoded && decoded.value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion&&!decoded.value.productVersion.empty()&&
             decoded.value.candidate.continuation.size()==2&&
             decoded.value.match&&decoded.value.match->alignmentTrace.size()==1,"snapshot round trip");
-        auto future=json;const auto pos=future.find("\"schemaVersion\":2");check(pos!=std::string::npos,"version field present");
-        future[pos+16]='3';check(snapshot::deserialize(future).error=="UnsupportedVersion","future snapshot rejected");
+        auto future=json;const auto pos=future.find("\"schemaVersion\":3");check(pos!=std::string::npos,"version field present");
+        future[pos+16]='4';check(snapshot::deserialize(future).error=="UnsupportedVersion","future snapshot rejected");
         auto legacy=json;legacy[pos+16]='1';
         const auto versionField=legacy.find(",\"productVersion\":");
         const auto tempoField=legacy.find(",\"tempoBPM\":",versionField);
         check(versionField!=std::string::npos&&tempoField!=std::string::npos,"legacy field layout");
         legacy.erase(versionField,tempoField-versionField);
-        check(snapshot::deserialize(legacy).value.schemaVersion==1,"v1 snapshot remains readable");
+        check(snapshot::deserialize(legacy).value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion,"v1 snapshot migrates and remains readable");
         const auto path=std::filesystem::path(HC_TEST_OUTPUT_DIR)/"midi-test-snapshot.hcrec.json";
         std::string error;check(snapshot::saveFile(snap,path,error),"snapshot file save");
         check(static_cast<bool>(snapshot::loadFile(path)),"snapshot file load");std::filesystem::remove(path);

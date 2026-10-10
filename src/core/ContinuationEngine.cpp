@@ -130,6 +130,22 @@ ConcreteChordEvent realizeContinuation(const MatchEvent& event, KeySignature key
         case ChordQuality::Augmented: concrete.label += "aug"; break;
         default: break;
     }
+    if (event.bassInterval || event.intervalMask || event.colorMask || !event.displaySuffix.empty()) {
+        if (!event.displaySuffix.empty()) concrete.label = std::string(flatKey ? flat[pc] : sharp[pc]) + event.displaySuffix;
+        ChordEvent data; data.root=static_cast<PitchClass>(pc); data.quality=event.quality;
+        if (event.bassInterval) {
+            const int bass=positiveMod(pc+*event.bassInterval,12);
+            data.bass=static_cast<PitchClass>(bass);
+            if (bass!=pc) concrete.label += std::string("/")+(flatKey?flat[bass]:sharp[bass]);
+        }
+        if (event.intervalMask || event.colorMask) {
+            const auto base=event.intervalMask?event.intervalMask:normalizeChord(data).intervalMask;
+            std::ostringstream mask; mask << "0x" << std::hex << (base|event.colorMask);
+            data.extensions.mask=mask.str();
+        }
+        data.name=concrete.label; data.durationQN=durationQN; data.openEnded=false;
+        concrete.harmonicData=std::move(data);
+    }
     return concrete;
 }
 
@@ -303,7 +319,7 @@ Progression continuationProgression(const Progression& source,const Continuation
         e.openEnded=false;end=std::max(end,e.startQN+*e.durationQN);
     }
     for(const auto& chord:candidate.continuation) {
-        ChordEvent e;e.name=chord.label;e.quality=chord.quality;e.startQN=end;
+        ChordEvent e=chord.harmonicData.value_or(ChordEvent{});e.name=chord.label;e.quality=chord.quality;e.startQN=end;
         e.durationQN=chord.durationQN;e.openEnded=false;path.push_back(std::move(e));end+=chord.durationQN;
     }
     return path;

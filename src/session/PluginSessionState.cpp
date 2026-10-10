@@ -1,5 +1,6 @@
 #include "PluginSessionState.h"
 #include "ProductServices.h"
+#include "library/LegacyFactoryIdResolver.h"
 #include <algorithm>
 #include <bit>
 #include <cmath>
@@ -21,7 +22,8 @@ bool PluginSessionState::unpin(const std::string& id) {
 }
 void PluginSessionState::resolvePins(const RecommendationSet& set) {
     std::vector<std::string> ids, fingerprints;
-    for (const auto& fingerprint:pinnedFingerprints) {
+    for (std::size_t pin=0;pin<pinnedFingerprints.size();++pin) {
+        const auto fingerprint=library::resolveFingerprint(pinnedFingerprints[pin],static_cast<int>(factoryLibraryVersion));
         if (fingerprint.empty()) continue;
         for (const auto& group:set.groups) for (const auto& candidate:group) {
             if (continuationFingerprint(candidate)!=fingerprint) continue;
@@ -29,6 +31,13 @@ void PluginSessionState::resolvePins(const RecommendationSet& set) {
                 ids.push_back(candidate.id); fingerprints.push_back(fingerprint);
             }
             goto matched;
+        }
+        // A missing reference must not discard the rest of the saved state.
+        if(pin<pinnedCandidateIds.size()) {
+            const auto id=factoryLibraryVersion>=3?library::canonicalFactoryId(pinnedCandidateIds[pin]):pinnedCandidateIds[pin];
+            bool changedPath{};
+            for(const auto& group:set.groups)for(const auto& c:group)if(c.id==id)changedPath=true;
+            if(!changedPath&&std::find(ids.begin(),ids.end(),id)==ids.end()){ids.push_back(id);fingerprints.push_back(fingerprint);}
         }
         matched:;
     }
@@ -72,7 +81,19 @@ struct Reader {
     std::optional<std::int32_t> optionalInt() { return u8() ? std::optional<std::int32_t>(static_cast<std::int32_t>(u32())) : std::nullopt; }
 };
 }
-std::string serialize(const PluginSessionState& state) {
+std::string serialize(const PluginSessionState& input) {
+    auto state=input;
+    if(state.factoryLibraryVersion>=3) {
+        for(auto& id:state.pinnedCandidateIds)id=library::canonicalFactoryId(id);
+        for(auto& value:state.pinnedFingerprints)value=library::resolveFingerprint(value,static_cast<int>(state.factoryLibraryVersion));
+        for(std::size_t i=0;i<state.pinnedCandidateIds.size();++i)
+            for(std::size_t j=i+1;j<state.pinnedCandidateIds.size();) {
+                if(state.pinnedCandidateIds[i]==state.pinnedCandidateIds[j]) {
+                    state.pinnedCandidateIds.erase(state.pinnedCandidateIds.begin()+j);
+                    if(j<state.pinnedFingerprints.size())state.pinnedFingerprints.erase(state.pinnedFingerprints.begin()+j);
+                }else ++j;
+            }
+    }
     if (state.imported.events.size()>64 || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
     if (state.editorWidth<900 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
         throw std::runtime_error("invalid editor size");

@@ -9,6 +9,10 @@
 #include "ui/UILayout.h"
 #include "ui/ScrollableCandidateList.h"
 #include "ui/OverlayPolicy.h"
+#include "ui/EffectiveScale.h"
+#include "ui/ColorHint.h"
+#include "ui/WhyExplanation.h"
+#include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
@@ -16,11 +20,24 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace VSTGUI { class CTextEdit; }
 namespace harmony::ui {
 class MainView final : public VSTGUI::CView, public VSTGUI::IDropTarget {
 public:
+    struct EditorUiState {
+        std::string continuationId,continuationFingerprint,enrichmentId,enrichmentFingerprint;
+        std::optional<std::size_t> chord;
+        std::array<double,4> continuationScroll{};std::array<double,3> enrichmentScroll{};
+        double contentScroll{},timelineScroll{},inspectorScroll{};
+        std::vector<std::string> pinnedEnrichmentIds;
+        bool showColorHints{true};
+        color::Preference colorPreference{color::Preference::Off};
+    };
+    void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
+    EditorUiState captureEditorUiState() const;
+    void restoreEditorUiState(const EditorUiState&);
     struct Actions {
         std::function<void(VSTGUI::IDataPackage*)> drop;
         std::function<void()> refresh;
@@ -40,6 +57,10 @@ public:
         std::function<midi::PayloadResult(const ContinuationCandidate&)> midiPayload;
         std::function<midi::PayloadResult(const enrichment::EnrichmentCandidate&)> enrichmentMidiPayload;
         std::function<void(bool,const std::filesystem::path&)> importMidi;
+        std::function<void(std::vector<std::filesystem::path>)> importMidiFiles;
+        std::function<std::string()> hostDiagnostics;
+        std::function<std::string()> exportHostDiagnostics;
+        std::function<void(bool,bool)> observeDrop,observeMidiDrag;
         std::function<std::string(const midi::MidiClipPayload&)> saveMidiPayload;
     };
     MainView(const VSTGUI::CRect&, Actions);
@@ -78,9 +99,16 @@ public:
     void resizeLayout(int width,int height);
     void setSimulatedContentScale(double scale);
     void setUserZoom(std::uint32_t percent);
+    bool runHostInteractionSmoke();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
+    bool runColorHintSmoke(VSTGUI::CDrawContext*);
+    bool runColorSortSmoke(VSTGUI::CDrawContext*,const Progression&,const RecommendationSet&);
+    bool runEnrichmentColorSmoke(VSTGUI::CDrawContext*,const Progression&,const enrichment::EnrichmentResult&);
+    bool runWhyV2Smoke(VSTGUI::CDrawContext*,bool enrichmentMode);
+    bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
+    bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
     Actions actions_;
     session::PluginSessionState state_;
@@ -89,6 +117,25 @@ private:
     HarmonicAnalysisResult analysis_;
     std::vector<MatchResult> matches_;
     RecommendationSet recommendations_;
+    color::Preference colorPreference_{color::Preference::Off};
+    bool colorRankDirty_{true};
+    std::array<color::ColorRankResult,4> colorRanks_;
+    bool enrichmentColorRankDirty_{true};
+    std::array<color::ColorRankResult,3> enrichmentColorRanks_;
+    void refreshEnrichmentColorRanking();
+    const std::vector<std::size_t>& enrichmentOrder(std::size_t);
+    void refreshColorRanking();
+    session::RecommendationPresentation continuationPresentation();
+    void setColorPreference(color::Preference);
+    void setColorHints(bool value){showColorHints_=value;invalid();}
+    bool showColorHints_{true}; // UI session preference; no persisted schema changes.
+    std::vector<color::TimedChord> colorSource_;
+    std::unordered_map<std::string,color::PathColor> colorPaths_;
+    const color::PathColor& candidateColor(const ContinuationCandidate&);
+    const color::PathColor& candidateColor(const enrichment::EnrichmentCandidate&);
+    ColorHint candidateHint(const ContinuationCandidate& c) {return showColorHints_?colorHint(candidateColor(c),state_.locale):ColorHint{};}
+    ColorHint candidateHint(const enrichment::EnrichmentCandidate& c) {return showColorHints_?enrichmentColorHint(candidateColor(c),state_.locale):ColorHint{};}
+    void drawColorHint(VSTGUI::CDrawContext*,const ColorHint&,VSTGUI::CRect,VSTGUI::CRect);
     enrichment::EnrichmentResult enrichments_;
     std::vector<ContinuationCandidate> pinnedSnapshots_;
     std::vector<std::string> pinnedEnrichmentIds_;
@@ -133,7 +180,7 @@ private:
     std::optional<midi::MidiClipPayload> midiPending_;
     bool armMidi(const ContinuationCandidate&,VSTGUI::CPoint);
     bool armMidi(const enrichment::EnrichmentCandidate&,VSTGUI::CPoint);
-    double userZoom() const noexcept { return state_.uiZoomPercent/100.0; }
+    double userZoom() const noexcept { return EffectiveScale(contentScale_,state_.uiZoomPercent/100.0).user; }
     VSTGUI::CRect editRect(VSTGUI::CRect) const;
     void notifyState();
     std::string t(std::string_view key) const { return std::string(localization::text(state_.locale,key)); }
