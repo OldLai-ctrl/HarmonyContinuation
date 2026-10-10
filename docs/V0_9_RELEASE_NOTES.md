@@ -2,7 +2,7 @@
 
 Continuation 与 Enrichment 共用固定卡片左缘 4px 色条，增强橙金、青蓝及中性灰对比度；文字在原提示行显示。Unknown / Uncertain 明确显示色彩不足以判断，提示关闭后色条与文字一起隐藏，排序开关独立。保留 RC2 的 OPEN 静态提示及可靠性边界；没有整段证据就不生成时间趋势。数学、排序、候选、Factory 及所有 Schema 不变。
 
-本轮仅 VST3 验证产物，无新安装器；构建标识及最小显示验证见 [NOW](../NOW.md#证据)，真实 Cubase 验收 Pending。
+按用户追加请求复用已验证 RC4 二进制生成统一安装器，安装逻辑不变，不重复编译或安装回归；构建标识及最小显示验证见 [NOW](../NOW.md#证据)，真实 Cubase 验收 Pending。
 
 # HarmonyContinuation 0.9.0-rc.3 — Unified Setup
 

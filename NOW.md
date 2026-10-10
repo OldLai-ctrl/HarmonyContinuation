@@ -8,7 +8,7 @@
 
 ## 当前任务
 
-RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。一次 Release 编译与一个合并离屏像素冒烟已通过，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`，不制作安装包，不覆盖旧 RC 产物。提交并推送指定开发分支后停止，等待用户 Cubase 复验。
+RC4 色彩提示可见性定向修复：接手 HEAD `4954531a2e229674c0f9572dec7b1d3ef716dffa`，工作区干净。只读核对标准安装为 RC3，二进制哈希与 RC3 交付一致；无法据此确认 Cubase 当前进程加载的模块，人工重启复验 Pending。原截图 OPEN 导致整段时间汇总不足，RC2 静态回退继续保留。本轮增强共用色条：固定卡片左缘 4 逻辑像素、橙金/青蓝/中性灰，并明确 Unknown 文案；不调整任何模型、排序、候选、MIDI 或 Schema。一次 Release 编译与一个合并离屏像素冒烟已通过，独立目录 `build-installer/rc-0.9.0-rc.4-color-visibility/`；用户追加要求统一安装包，复用 RC4 已验证二进制生成 `build-installer/rc-0.9.0-rc.4-unified/`，不重复编译或安装回归，不覆盖旧 RC 产物。提交并推送指定开发分支后停止，等待用户 Cubase 复验。
 
 Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 474 条新进行，总计 629 条。内容冻结，本次不重新审计 Catalog 或旧 ID 合并；六条 QUESTIONABLE 不进入生产库。来源见 [V3 数据说明](data/factory-v3/README.md)，统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)。
 
@@ -21,6 +21,8 @@ Factory V3 已收口为 DEVELOPMENT READY：155 条 canonical 历史记录加 47
 合并提交为 `32a0d64a71d34cca446b2e05a9cb2b5e32fa971d`，两个父提交分别为原 `v0.9/dev` 基线及 `dcda009`。该干净提交的一次 MSVC Release 编译及两个最小冒烟均通过；可进入 Color Analysis V1。该记录为 dev.4 历史证据；dev.5 附加色彩功能已完成，当前只增加 dev.6 展示排序。合并与本条证据记录一同推送至 `v0.9/dev`，最终同步状态以 Git 的分支和 tracking ref 为准。
 
 ## 证据
+
+2026-10-10 RC4 追加统一安装包：按用户明确请求，沿用已通过 RC3 隔离生命周期的 Unified Setup 与已验证 RC4 插件 f719317，不重复编译、不重复安装回归。一次生成独立目录 build-installer/rc-0.9.0-rc.4-unified，Setup 与 VST3 版本均为 0.9.0-rc.4，暂存二进制哈希与定向验证产物一致。Setup SHA-256：8de24d52decb54ef1b8dfd766d80d9619460b60f2196cbcf55c4189e60523e9d，重算匹配 SHA256SUMS.txt；打包日志 build-installer/rc4-unified-package.log。仅更新安装前说明及交付文档，不改变安装逻辑；真实 Cubase 复验 Pending。
 
 2026-10-10 rc.4 色彩提示可见性：干净生产提交 `f71931774a385d1e15f68329e3699dbe8c3e686c` 一次 Release 编译插件及 WhyV2Smoke 通过（Validator 关闭），产物 `0.9.0-rc.4 / Release / f719317`。共用色条由低对比 2px 提示行短线改为卡片左缘固定 4 逻辑像素长线，橙金 #E8B85E、青蓝 #5FCADC、中性灰 #B4B9C2；原提示行文字保留，Unknown / Uncertain 明确色彩信息不足。未发现标准安装路径旧版：检查时为 RC3，其 SHA 与上一交付一致；Cubase 进程是否缓存旧模块无法从安装文件确认，重启后核对关于页。
 

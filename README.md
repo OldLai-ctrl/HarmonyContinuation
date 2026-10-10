@@ -10,7 +10,7 @@ HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手
 
 ## 1. 安装与加载
 
-本轮 RC4 仅提供色彩提示可见性修复的 VST3 验证产物，不生成安装器。关闭宿主，备份现有插件 bundle 后用 RC4 bundle 替换；统一 Setup 仍为此前 RC3 包，不要用它替换 RC4 验证文件。
+RC4 已提供包含色彩提示可见性修复的统一安装包。关闭宿主后运行 RC4 目录中的 HarmonyContinuation-Setup.exe；默认同时安装 VST3 与 Factory Library，也可只更新主程序。旧 RC 包保留。
 
 ### 安装
 
