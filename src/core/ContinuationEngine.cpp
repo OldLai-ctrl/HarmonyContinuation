@@ -162,21 +162,21 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
     byId.reserve(index.templates().size());
     for (const auto& item : index.templates()) byId.emplace(item.id, &item);
-    for (const auto& match : result.matches) {
-        if (match.similarity < w.minimumMatch) continue;
+    for (auto& match : result.matches) {
+        if (match.similarity < w.minimumMatch) { match.disposition="minimum_match"; continue; }
         ++result.stats.similarityPassed;
         const auto found = byId.find(match.templateId);
-        if (found == byId.end()) continue;
+        if (found == byId.end()) { match.disposition="template_missing"; continue; }
         const auto& item = *found->second;
         const auto* selected = interpretationFor(query, match.key);
-        if (!selected || selected->full.empty()) continue;
+        if (!selected || selected->full.empty()) { match.disposition="interpretation_missing"; continue; }
         const auto lastQuery = selected->full.size() - 1;
         const bool tailAligned = std::any_of(match.alignmentTrace.begin(), match.alignmentTrace.end(),
             [&](const AlignmentStep& step) {
                 return step.queryIndex == lastQuery && step.templateIndex == match.templateMatchEnd &&
                     (step.operation == AlignmentOp::Match || step.operation == AlignmentOp::Substitute);
             });
-        if (!tailAligned) continue;
+        if (!tailAligned) { match.disposition="tail_not_aligned"; continue; }
         ++result.stats.tailPassed;
         // Only explicit V4 definitions are constraints. Unknown input bass is
         // allowed; an explicitly contradictory bass must not identify this path.
@@ -198,17 +198,17 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                         if((a&pair)&&(b&pair)&&!(a&b&pair))conflictingBass=true;
                 }
             }
-            if (conflictingBass) continue;
+            if (conflictingBass) { match.disposition="explicit_bass_or_defining_tone_conflict"; continue; }
         }
         ++result.stats.realizationPassed;
-        if (!match.hasContinuation && !item.loopable) continue;
+        if (!match.hasContinuation && !item.loopable) { match.disposition="no_continuation"; continue; }
         std::vector<MatchEvent> suffix;
         for (std::size_t i = match.continuationStartIndex; i < item.full.size(); ++i) suffix.push_back(item.full[i]);
         if (item.loopable) {
             const auto wrapEnd = match.templateMatchStart == 0 ? 1 : match.templateMatchStart;
             for (std::size_t i = 0; i < std::min(wrapEnd, item.full.size()); ++i) suffix.push_back(item.full[i]);
         }
-        if (suffix.empty()) continue;
+        if (suffix.empty()) { match.disposition="empty_suffix"; continue; }
         ++result.stats.pathPassed;
         auto rhythm = estimateRhythmScale(match, query, item);
         ContinuationCandidate candidate;
@@ -230,8 +230,8 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                 event.durationQN.value_or(4.0) * rhythm.scale));
         // A repeated copy of the current open chord offers no new harmonic step.
         const auto currentLabel = realizeContinuation(selected->full.back(), match.key, 1.0).label;
-        if (!candidate.continuation.empty() && candidate.continuation.front().label == currentLabel)
-            continue;
+        if (!candidate.continuation.empty() && candidate.continuation.front().label == currentLabel) {
+            match.disposition="repeated_current_chord"; continue; }
         if (!selected->full.back().durationQN) {
             for (const auto& step : match.alignmentTrace) {
                 if (step.queryIndex == lastQuery && step.templateIndex && *step.templateIndex < item.full.size() &&
@@ -264,7 +264,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         if(!request.constraints.melody.empty()) {
             candidate.constraints=request.constraints;
             candidate.melodyCompatibility=evaluateMelody(continuationProgression(query.source,candidate),request.constraints);
-            if(!candidate.melodyCompatibility.hardSatisfied)continue;
+            if(!candidate.melodyCompatibility.hardSatisfied){match.disposition="melody_constraint";continue;}
         }
         if(request.tendency!=HarmonicTendency::Balanced) {
             const auto& profile=tendencyProfile(request.tendency);
@@ -275,6 +275,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             candidate.rankingScore+=profile.colorBias*static_cast<float>(colors)/
                 static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
         }
+        match.disposition="candidate_generated";match.candidateRankingScore=candidate.rankingScore;
         const auto fingerprint = suffixFingerprint(candidate, false);
         auto [it, inserted] = distinct.try_emplace(fingerprint, std::move(candidate));
         if (!inserted) {
@@ -292,6 +293,9 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             }
         }
     }
+    const auto mark=[&](const ContinuationCandidate& c,const char* why) {
+        for(auto& m:result.matches)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),m.templateId)!=c.supportingTemplates.end()){m.disposition=why;m.candidateRankingScore=c.rankingScore;}
+    };
     result.stats.distinct=distinct.size();
     for (auto& [key, candidate] : distinct) {
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
@@ -299,6 +303,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         if (candidate.rankingScore >= w.minimumScore) {
             ++result.stats.scorePassed;
             result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        } else {mark(candidate,"minimum_score");
         }
     }
     for (auto& group : result.groups) {
@@ -319,9 +324,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                 if (shared >= 2 && shared * 2 >= common) candidate.rankingScore -= w.diversityPenalty;
             }
             if (!near && candidate.rankingScore >= w.minimumScore) diverse.push_back(std::move(candidate));
+            else mark(candidate,near?"equivalent_path_deduplication":"diversity_score");
         }
         std::sort(diverse.begin(), diverse.end(), [](const auto& a, const auto& b) { return a.rankingScore > b.rankingScore; });
+        for(std::size_t i=w.perGroup;i<diverse.size();++i)mark(diverse[i],"retained_limit");
         if (diverse.size() > w.perGroup) diverse.resize(w.perGroup);
+        for(const auto& c:diverse)mark(c,"TARGET_RETAINED");
         // Score only the already accepted cards: a diagnostic tie-break cannot
         // remove a valid option or pull a lower-quality option across the gate.
         for(auto& candidate:diverse)

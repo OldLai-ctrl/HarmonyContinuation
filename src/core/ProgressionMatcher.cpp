@@ -100,7 +100,7 @@ float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reas
     return (w.gapBase + w.structuralImportanceWeight * std::clamp(e.structuralWeight, 0.f, 1.f)) * factor;
 }
 
-float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tRhythm,
+float pairCost(const MatchEvent& q, const MatchEvent& t,
                const MatchWeights& w, MatchReasonFlags& reasons, bool queryFinal, Mode mode) {
     float cost{};
     // A stopped dominant has not revealed its destination. Do not treat the
@@ -160,12 +160,7 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
     if (t.intervalMask && q.intervalMask &&
         (t.intervalMask | t.colorMask) != (q.intervalMask | q.colorMask))
         cost += w.explicitPitchSetDifference;
-    // OPEN query durations never add a rhythmic penalty; their harmonic data remains.
-    if (qRhythm > 0.f && tRhythm > 0.f) {
-        const auto deviation = std::min(2.f, std::abs(std::log2(qRhythm / tRhythm)));
-        if (deviation > 0.25f) reasons |= flag(MatchReason::RhythmMismatch);
-        cost += w.rhythmWeight * deviation;
-    }
+    cost += q.sourceUncertainty;
     return cost;
 }
 
@@ -187,7 +182,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     LayerResult out;
     if (q.empty() || t.empty()) return out;
     const auto n = q.size(), m = t.size();
-    const auto qr = normalizedDurations(q), tr = normalizedDurations(t);
+    // Select the path by harmony; timing is measured on that path for ranking only.
     std::vector<Cell> dp((n + 1) * (m + 1));
     const auto at = [m, &dp](std::size_t i, std::size_t j) -> Cell& { return dp[i * (m + 1) + j]; };
     for (std::size_t j = 0; j <= m; ++j)
@@ -200,7 +195,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     }
     for (std::size_t i = 1; i <= n; ++i) for (std::size_t j = 1; j <= m; ++j) {
         MatchReasonFlags reasons{};
-        const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], qr[i - 1], tr[j - 1], w, reasons, i == n, mode);
+        const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], w, reasons, i == n, mode);
         auto insertGap = gapCost(q[i - 1], w, reasons, true);
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) insertGap *= w.queryTailStructuralFactor;
         const auto insert = at(i - 1, j).cost + insertGap;
@@ -240,7 +235,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::pair{i, j});
             step.queryIndex = q[i].sourceIndex;
             step.templateIndex = t[j].sourceIndex;
-            step.cost = pairCost(q[i], t[j], qr[i], tr[j], w, step.reasons, i + 1 == n, mode);
+            step.cost = pairCost(q[i], t[j], w, step.reasons, i + 1 == n, mode);
             step.operation = step.cost <= epsilon ? AlignmentOp::Match : AlignmentOp::Substitute;
             ++out.pairCount;
             functionSum += q[i].function == t[j].function ? 1.f : 0.f;
@@ -297,19 +292,9 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     for (std::size_t k = 0; k < out.trace.size(); ++k) if (pairPositions[k]) {
         const auto [qi, ti] = *pairPositions[k];
         if (!q[qi].durationQN || !t[ti].durationQN || *q[qi].durationQN <= 0 || *t[ti].durationQN <= 0) continue;
-        const auto oldDeviation = qr[qi] > 0.f && tr[ti] > 0.f
-            ? std::min(2.f, std::abs(std::log2(qr[qi] / tr[ti]))) : 0.f;
         const auto newDeviation = std::min(2.f, static_cast<float>(
             std::abs(std::log2(*q[qi].durationQN * tempoScale / *t[ti].durationQN))));
-        const auto correction = w.rhythmWeight * (newDeviation - oldDeviation);
-        out.cost += correction;
-        out.trace[k].cost += correction;
-        out.trace[k].reasons &= ~flag(MatchReason::RhythmMismatch);
         if (newDeviation > 0.25f) out.trace[k].reasons |= flag(MatchReason::RhythmMismatch);
-        if (out.trace[k].cost <= epsilon) {
-            out.trace[k].cost = 0.f;
-            out.trace[k].operation = AlignmentOp::Match;
-        }
         rhythmSum += std::max(0.f, 1.f - newDeviation / 2.f);
         ++rhythmCount;
     }
@@ -365,10 +350,13 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
                                            e.structuralWeight, source[i].durationQN, i});
             const auto tones = chordPitches(source[i]);
             auto& projected = interpretation.full.back();
-            projected.intervalMask = tones.intervals;
-            projected.colorMask = tones.colorMask;
-            if (source[i].bass || source[i].bassNoteValue || source[i].name.find('/') != std::string::npos)
-                projected.bassInterval = (tones.bass - tones.root + 12) % 12;
+            const auto& normalized=e.chord;
+            projected.intervalMask = normalized.symbolicHarmony?normalized.matchingIntervalMask:tones.intervals;
+            projected.colorMask = normalized.symbolicHarmony?0:tones.colorMask;
+            if(normalized.explicitBass && normalized.bass && normalized.root)
+                projected.bassInterval=(int(*normalized.bass)-int(*normalized.root)+12)%12;
+            if(normalized.symbolicHarmony && normalized.fieldConflict)
+                projected.sourceUncertainty=std::max(0.04f,normalized.compatibilityUncertainty);
         }
         interpretation.fingerprint = makeFingerprint(key.key.mode, interpretation.full,
                                                      interpretation.skeletonIndices, CadenceType::None);

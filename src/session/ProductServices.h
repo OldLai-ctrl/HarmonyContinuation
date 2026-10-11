@@ -14,6 +14,9 @@ struct RecommendationVisibilityPolicy {
 using RecommendationPresentation = std::array<std::vector<std::size_t>, 4>;
 RecommendationPresentation presentationIndices(const RecommendationSet&,
     const RecommendationVisibilityPolicy&);
+// Called only by the explicit local export action, off the audio thread.
+std::string recommendationDiagnostics(const Progression&,const AnalysisContext&,
+    const RecommendationRequest&,const RecommendationSet&);
 struct SaveMetadata {
     std::string name;
     std::optional<Style> style;

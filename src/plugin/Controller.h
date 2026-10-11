@@ -87,6 +87,7 @@ private:
     std::unique_ptr<RecommendationWorker> recommendationWorker_;
     std::string matchStatus_{"拖入和弦后显示匹配结果"};
     std::string midiImportSummary_;
+    std::string lastInputDiagnostic_; // bounded most recent drop summary; no automatic file output
     std::uint64_t lastSnapshotGeneration_{};
     unsigned unchangedTransportPolls_{};
     std::optional<double> lastProjectQN_;

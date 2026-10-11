@@ -37,6 +37,7 @@ struct MatchEvent {
     std::optional<int> bassInterval;
     std::uint16_t intervalMask{}, colorMask{};
     std::string displaySuffix;
+    float sourceUncertainty{}; // small compatibility cost for contradictory host fields
 };
 
 struct ProgressionFingerprint {
@@ -171,6 +172,8 @@ struct MatchResult {
     std::string templateName;
     float similarity{}; // 0..1 similarity, not a probability
     float rawCost{};
+    std::string disposition; // diagnostic only, never persisted
+    float candidateRankingScore{-1.f};
     KeySignature key;
     float keyPrior{};
     std::size_t templateMatchStart{};

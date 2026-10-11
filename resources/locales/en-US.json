@@ -226,7 +226,7 @@
   ,"midi.uncertain": "Recognition notices"
   ,"midi.unsupported": "Only Format 0/1 PPQ MIDI files are supported; SMPTE is not supported.",
   "nav.hostDiagnostics": "Host Diagnostics",
-  "nav.exportHostDiagnostics": "Export Host Diagnostics",
+  "nav.exportHostDiagnostics": "Export local input and recommendation diagnostics",
   "color.show": "Color Hints",
   "color.warm": "Warm",
   "color.cool": "Cool",

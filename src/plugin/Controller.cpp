@@ -104,7 +104,12 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
         auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
         copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
         std::ofstream file(*path,std::ios::binary);file<<copy.diagnostics(sessionState_.locale==session::Locale::ZhCN,true);
-        return file?"Host diagnostics exported":"Export failed";
+        const auto context=sessionState_.analysisContext();
+        file<<"\nLast input route: "<<hostEnvironment_.lastDropType<<"\nGeneration="<<recommendationGeneration_
+            <<" importedRevision="<<importedProgression_.revision<<" status="<<matchStatus_<<"\n"<<lastInputDiagnostic_;
+        file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,recommendations_);
+        if(view_)file<<view_->recommendationUiDiagnostics();
+        file.flush();return file?"Local input and recommendation diagnostics exported":"Export failed";
 #else
         return "Export unavailable";
 #endif
@@ -511,6 +516,9 @@ void Controller::applyMidiImport(const harmony::midi::ImportResult& loaded){
         if(!loaded.midi.file.meters.empty()){const auto meter=loaded.midi.file.meters.front();
             if(meter.numerator<=32&&meter.denominator<=32){next.meterNumerator=meter.numerator;next.meterDenominator=meter.denominator;}}
         importedProgression_=next.imported;
+        hostEnvironment_.lastDropType="MIDI file import";
+        lastInputDiagnostic_="SMF PPQ="+std::to_string(loaded.midi.file.ppq)+" notes="+std::to_string(loaded.midi.file.notes.size())+
+            " extractedChords="+std::to_string(loaded.extraction.chords.size())+"\n";
         if(view_)view_->setSnapshotMode(false);
         applySessionState(next);
         if(view_) {
@@ -632,6 +640,7 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
                 parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";
             }
         }
+        lastInputDiagnostic_=report.summary+"\n"+parsed.str();
         if (view_) view_->setDropReport(std::move(report.summary), parsed.str());
     } catch (...) {
         try { if (view_) view_->setDropReport("拖放检查时发生异常。", "拖放失败，请展开诊断面板查看详情。"); }

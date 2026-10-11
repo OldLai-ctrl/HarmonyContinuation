@@ -499,6 +499,9 @@ bool MainView::runStructureSmoke() {
     if(analysis_.skeletonIndices.size()>=phrase.size()||std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),2)!=analysis_.skeletonIndices.end())return false;
     RecommendationSet rec;ContinuationCandidate c;c.id="structure-view";c.intent=PhraseIntent::Resolve;c.rankingScore=90;
     c.continuation.push_back({"C",4,{1,0},ChordQuality::Major,{}});rec.groups[0].push_back(c);setRecommendations(rec);
+    const auto diagnostics=recommendationUiDiagnostics();
+    if(diagnostics.find("UI_DEFAULT group=0 rank=1 id=structure-view")==std::string::npos ||
+       diagnostics.find("UI_MORE group=0 rank=1 id=structure-view")==std::string::npos)return false;
     const auto before=session::continuationFingerprint(recommendations_.groups[0][0]);
     CPoint skeleton{160.,layout_.timeline.bottom+12};onMouseDownResponsive(skeleton);
     if(!state_.skeletonView||session::recomputeScope(input,state_)!=session::RecomputeScope::None)return false;
@@ -561,6 +564,15 @@ void MainView::refreshColorRanking() {
             recommendations_.groups[group],paths,colorPreference_);
     }
     colorRankDirty_=false;
+}
+std::string MainView::recommendationUiDiagnostics() {
+    std::ostringstream out;out<<"\nACTUAL_UI colorPreference="<<int(colorPreference_)<<"\n";
+    const auto shown=continuationPresentation();refreshColorRanking();
+    for(std::size_t g=0;g<4;++g) {
+        for(std::size_t i=0;i<shown[g].size();++i)out<<"UI_DEFAULT group="<<g<<" rank="<<i+1<<" id="<<recommendations_.groups[g][shown[g][i]].id<<'\n';
+        for(std::size_t i=0;i<colorRanks_[g].order.size();++i)out<<"UI_MORE group="<<g<<" rank="<<i+1<<" id="<<recommendations_.groups[g][colorRanks_[g].order[i]].id<<'\n';
+    }
+    return out.str();
 }
 session::RecommendationPresentation MainView::continuationPresentation() {
     auto result=session::presentationIndices(recommendations_,visibility_);

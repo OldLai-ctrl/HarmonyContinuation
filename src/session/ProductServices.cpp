@@ -6,8 +6,50 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
+#include <iomanip>
 
 namespace harmony::session {
+std::string recommendationDiagnostics(const Progression& p,const AnalysisContext& ctx,
+    const RecommendationRequest& request,const RecommendationSet& set) {
+    std::ostringstream out;out<<std::setprecision(17);
+    out<<"\nRECOMMENDATION_DIAGNOSTICS_V1\nOrigin: current instance input; synthetic status is not inferred from XML sourceApp.\n";
+    out<<"Key="<<(ctx.forcedKey?formatKey(*ctx.forcedKey):"AUTO")<<" Style="<<(request.style?std::to_string(int(*request.style)):"AUTO")
+        <<" Intent="<<(request.preferredIntent?std::to_string(int(*request.preferredIntent)):"AUTO")<<" Tendency="<<int(request.tendency)<<'\n';
+    for(std::size_t i=0;i<p.size();++i) {
+        const auto& e=p[i];const auto n=normalizeChord(e);
+        out<<"INPUT "<<i<<" source="<<int(e.source)<<" name="<<std::quoted(e.name)<<" rawName="<<std::quoted(e.rawName.value_or(""))
+            <<" keyNote="<<std::quoted(e.rawKeyNote.value_or(""))<<" bassNote="<<std::quoted(e.rawBassNote.value_or(""))
+            <<" pitches="<<std::quoted(e.extensions.pitches.value_or(""))<<" mask="<<std::quoted(e.extensions.mask.value_or(""))
+            <<" projectTime="<<std::quoted(e.rawProjectTime.value_or(""))<<" domain="<<std::quoted(e.rawTimeDomain.value_or(""))
+            <<" root="<<(n.root?int(*n.root):-1)<<" quality="<<int(n.quality)<<" bass="<<(n.bass?int(*n.bass):-1)
+            <<" intervalMask="<<n.intervalMask<<" colorMask="<<n.colorMask<<" matchingMask="<<n.matchingIntervalMask
+            <<" startQN="<<e.startQN<<" durationQN="<<e.durationQN.value_or(-1)<<" OPEN="<<e.openEnded
+            <<" symbolic="<<n.symbolicHarmony<<" rootSource="<<int(n.rootSource)<<" qualitySource="<<int(n.qualitySource)
+            <<" bassSource="<<int(n.bassSource)<<" performedBass="<<(n.performedBass?int(*n.performedBass):-1)
+            <<" confidence="<<n.confidence<<" uncertaintyCost="<<n.compatibilityUncertainty<<" conflict="<<n.fieldConflict<<'\n';
+        for(const auto& d:n.diagnostics)out<<"  warning="<<std::quoted(d)<<'\n';
+    }
+    const auto& s=set.stats;
+    out<<"STAGES imported="<<s.imported<<" analyzed="<<s.analyzed<<" keys="<<s.keys<<" shortlist="<<s.shortlistSize
+       <<" aligned="<<s.aligned<<" similarity="<<s.similarityPassed<<" tail="<<s.tailPassed<<" realization="<<s.realizationPassed
+       <<" path="<<s.pathPassed<<" distinct="<<s.distinct<<" score="<<s.scorePassed<<" workerOutput="<<s.output<<'\n';
+    for(const auto& m:set.matches) {
+        out<<"MATCH "<<m.templateId<<" key="<<formatKey(m.key)<<" similarity="<<m.similarity<<" rawCost="<<m.rawCost
+           <<" rhythmScore="<<m.subScores.rhythmSimilarity<<" continuationStartIndex="<<m.continuationStartIndex
+           <<" candidateScore="<<m.candidateRankingScore<<" disposition="<<m.disposition<<'\n';
+        for(const auto& a:m.alignmentTrace)out<<"  ALIGN q="<<(a.queryIndex?int(*a.queryIndex):-1)<<" t="<<(a.templateIndex?int(*a.templateIndex):-1)
+            <<" op="<<alignmentOpName(a.operation)<<" cost="<<a.cost<<" reasons="<<reasonNames(a.reasons)<<'\n';
+    }
+    const auto shown=presentationIndices(set,{});
+    for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
+        const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
+          <<" score="<<c.rankingScore<<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
+          <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())<<" MORE_ACCESSIBLE=1 sources=";
+        for(const auto& id:c.supportingTemplates)out<<id<<',';
+        out<<" path=";for(const auto& e:c.continuation)out<<e.label<<" -> ";out<<'\n';
+    }
+    return out.str();
+}
 std::string continuationFingerprint(const ContinuationCandidate& c) {
     std::ostringstream out;
     const auto sized=[&](const std::string& value){out << value.size() << ':' << value;};

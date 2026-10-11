@@ -101,6 +101,7 @@ public:
     void setUserZoom(std::uint32_t percent);
     bool runHostInteractionSmoke();
     bool runStructureSmoke();
+    std::string recommendationUiDiagnostics();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();

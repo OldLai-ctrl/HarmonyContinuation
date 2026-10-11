@@ -30,12 +30,20 @@ struct KeySignature { PitchClass tonic{PitchClass::C}; Mode mode{Mode::Major}; }
 struct KeyCandidate { KeySignature key; float score{}; float confidence{}; };
 struct ScaleDegree { int degree{}; int alteration{}; }; // degree 1..7, semitone alteration
 
+enum class FieldConfidence : std::uint8_t { Unknown, Performed, Symbolic, Explicit };
 struct NormalizedChord {
     std::optional<PitchClass> root;
     std::optional<PitchClass> bass;
     ChordQuality quality{ChordQuality::Unknown};
     std::uint16_t intervalMask{}; // bits 0..11 relative to root
     std::uint16_t colorMask{};    // non-essential extension tones
+    // Non-persisted interpretation: raw ChordEvent fields remain lossless.
+    std::uint16_t matchingIntervalMask{};
+    std::optional<PitchClass> performedBass;
+    FieldConfidence rootSource{FieldConfidence::Unknown}, bassSource{FieldConfidence::Unknown},
+        qualitySource{FieldConfidence::Unknown};
+    bool symbolicHarmony{}, explicitBass{}, fieldConflict{};
+    float compatibilityUncertainty{};
     bool inversion{};
     float confidence{};
     std::string rootSpelling;
