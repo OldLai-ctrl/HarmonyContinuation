@@ -61,4 +61,4 @@ Factory V4 的 28 条可发现性检查仍为 26 条默认显示、2 条通过 M
 
 Setup、主要组件校验和、逐文件包清单、`BUILD_INFO.json` 与测试材料均在包目录。新核心修复包隔离验证 **413 项通过**，涵盖全新安装、官方 v0.9.0、可信 RC/手动替换、未知 Factory 保护和官方内容物理布局差异；取消组件不会删除未选项，修改/修复/卸载后用户库、收藏、设置、个人进行、历史与未管理文件哨兵保持完整。可信旧 Factory 先备份并验证后迁移；未知 Factory 保持原样，中英文提示均核对路径、版本、原因与安全处理建议。49 份安装日志和逐文件结果记录在包内 `evidence/installer-cases/`、`installer-upgrade-result.txt` 与 `INSTALLER_UPGRADE_TESTS.json`。另有此前 installer-only 包的 704 项结果，见 [安装器升级修复](INSTALLER_DEV2_UPGRADE_FIX.md)。
 
-因此当前状态是核心修复、Release 包和定向安装验证均就绪；Cubase/FL Studio 人工验收 Pending，**READY FOR DAW RE-ACCEPTANCE = YES**。推送后等待用户重新安装并手动检查真实 Cubase 工作流；不自动开始其它功能。
+因此当前状态是核心修复、Release 包和定向安装验证均就绪；源码已推送至 `library/v4`。Cubase/FL Studio 人工验收 Pending，**READY FOR DAW RE-ACCEPTANCE = YES**。下一步等待用户重新安装并手动检查真实 Cubase 工作流；不自动开始其它功能。

@@ -18,7 +18,7 @@ Release 插件、V4 数据库和统一 Setup 已生成于 `build-installer/v4-0.
 
 新核心修复包的安装器隔离实跑也已通过 **413 项检查**：全新安装、官方 v0.9.0 标签重建夹具、可信 RC/手动替换、未知 Factory 文件保护、官方内容仅物理布局不同。测试涵盖更新、取消组件、修改、修复、卸载、先备份后替换、哈希验证及中英文未知文件提示；User Library、收藏、设置、个人进行、历史和未管理文件哨兵均保留。完整日志随包保存。先前安装器-only dev.2 包另有 704 项生命周期证据，见 [升级修复证据](docs/INSTALLER_DEV2_UPGRADE_FIX.md)。Cubase/FL Studio 人工验收仍 Pending。
 
-尚待：推送 `library/v4`，然后等待用户重新安装并进行 Cubase 人工验收。**READY FOR DAW RE-ACCEPTANCE = YES**。全量 CTest、Validator、DAW 矩阵及无关音乐基准未运行；不合并 `main`、不创建正式 Tag。细节见 [核心可靠性修复报告](docs/DEV2_CORE_RELIABILITY_FIX.md) 与 [V4 人工验收清单](docs/V4_DAW_ACCEPTANCE.md)。
+已推送 `library/v4`；下一步等待用户重新安装并进行 Cubase 人工验收。**READY FOR DAW RE-ACCEPTANCE = YES**。全量 CTest、Validator、DAW 矩阵及无关音乐基准未运行；不合并 `main`、不创建正式 Tag。细节见 [核心可靠性修复报告](docs/DEV2_CORE_RELIABILITY_FIX.md) 与 [V4 人工验收清单](docs/V4_DAW_ACCEPTANCE.md)。
 ## 发布与验证证据
 
 正式包：`build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`。构建版本、提交、VST3/Factory/Setup 哈希、依赖与验证范围保存在同目录 `BUILD_INFO.json`、`SHA256SUMS.txt` 与 `FILE_MANIFEST.sha256`。Setup SHA-256：`1ee1ba17a3b689ad7b8ea8f7ffe245c2fc08ac71226ae82eed441788628136f7`。
