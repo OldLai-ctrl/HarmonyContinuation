@@ -29,6 +29,7 @@ std::optional<PitchClass> spelledRoot(std::string_view name, std::string& spelli
 }
 
 ChordQuality namedQuality(std::string_view name, std::size_t rootLength) {
+    name=name.substr(0,name.find('/'));
     name.remove_prefix(std::min(rootLength, name.size()));
     std::string lower;
     lower.reserve(name.size());
@@ -50,6 +51,7 @@ ChordQuality namedQuality(std::string_view name, std::size_t rootLength) {
 }
 
 std::uint16_t namedColor(std::string_view name, std::size_t rootLength) {
+    name=name.substr(0,name.find('/'));
     name.remove_prefix(std::min(rootLength, name.size()));
     std::string lower;
     for (char c : name) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
@@ -137,7 +139,13 @@ NormalizedChord normalizeChord(const ChordEvent& event) {
     else result.root = fromName;
     if (event.bass) result.bass = event.bass;
     else if (event.bassNoteValue) result.bass = static_cast<PitchClass>(pc(*event.bassNoteValue));
-    else result.bass = result.root;
+    else {
+        result.bass=result.root;
+        if(const auto slash=event.name.find('/');slash!=std::string::npos) {
+            std::string bassSpelling;
+            if(const auto parsed=spelledRoot(std::string_view(event.name).substr(slash+1),bassSpelling))result.bass=parsed;
+        }
+    }
     if (result.root && fromName && *result.root != *fromName)
         result.diagnostics.push_back("name and structured root disagree");
     if (!result.root) {

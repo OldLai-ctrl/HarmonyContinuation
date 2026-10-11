@@ -1,4 +1,9 @@
 {
+  "structure.all": "全部和弦均为关键结构节点。",
+  "structure.view": "仅改变结构视图；不改变推荐排序或 MIDI。",
+  "enrich.protected": "此组暂无不改变原有音高或低音的安全操作。",
+  "enrich.constraints": "候选未满足当前旋律或保留程度约束。",
+
   "mode.continue": "继续发展",
   "mode.enrich": "升级进行",
   "nav.more": "更多",

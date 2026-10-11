@@ -99,6 +99,7 @@ struct MatchQuery {
 // All score-affecting constants live here. Values are dimensionless costs.
 struct MatchWeights {
     std::size_t maxKeyCandidates{3};
+    std::size_t shortPrefixKeyCandidates{24};
     float minKeyConfidence{0.005f};
     float degreeDifference{0.9f};
     float alteredDegree{0.28f};
@@ -183,6 +184,8 @@ struct MatchResult {
 };
 
 struct MatchRunStats {
+    std::size_t imported{}, analyzed{}, keys{}, aligned{}, similarityPassed{}, tailPassed{},
+        realizationPassed{}, pathPassed{}, distinct{}, scorePassed{}, output{};
     double prefilterMs{};
     double alignmentMs{};
     double totalMs{};

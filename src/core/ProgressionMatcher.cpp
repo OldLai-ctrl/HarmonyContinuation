@@ -342,17 +342,15 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
     query.timeSigNumerator = context.timeSigNumerator;
     query.timeSigDenominator = context.timeSigDenominator;
     if (source.empty()) return query;
-    const bool preserveRealizationPath = std::any_of(source.begin(), source.end(), [](const auto& e) {
-        const auto tones = chordPitches(e);
-        return e.name.find('/') != std::string::npos || tones.bass != tones.root ||
-               e.extensions.mask.has_value() || e.extensions.pitches.has_value();
-    });
     const auto initial = analyzeHarmony(source, context);
     std::vector<KeyCandidate> keys;
     if (context.forcedKey && initial.selectedKey) keys.push_back(*initial.selectedKey);
     else for (const auto& key : initial.keyCandidates) {
-        if (keys.size() >= w.maxKeyCandidates) break;
-        if (key.confidence >= w.minKeyConfidence || keys.empty()) keys.push_back(key);
+        // A two-chord chromatic prefix does not establish a global key. Keep
+        // all bounded hypotheses until the template supplies the missing context.
+        const auto limit = source.size() <= 4 ? std::max(w.shortPrefixKeyCandidates, w.maxKeyCandidates) : w.maxKeyCandidates;
+        if (keys.size() >= limit) break;
+        if (source.size() <= 4 || key.confidence >= w.minKeyConfidence || keys.empty()) keys.push_back(key);
     }
     for (const auto& key : keys) {
         auto selectedContext = context;
@@ -361,12 +359,6 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
         KeyInterpretation interpretation;
         interpretation.key = key;
         interpretation.skeletonIndices = analysis.skeletonIndices;
-        if (preserveRealizationPath) {
-            // A short connector can define an explicitly supplied bass/color path.
-            // Retain that path rather than inferring that its middle is disposable.
-            interpretation.skeletonIndices.resize(analysis.full.size());
-            std::iota(interpretation.skeletonIndices.begin(), interpretation.skeletonIndices.end(), 0);
-        }
         for (std::size_t i = 0; i < analysis.full.size(); ++i) {
             const auto& e = analysis.full[i];
             interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.roles,
@@ -375,7 +367,7 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
             auto& projected = interpretation.full.back();
             projected.intervalMask = tones.intervals;
             projected.colorMask = tones.colorMask;
-            if (e.chord.bass || source[i].name.find('/') != std::string::npos)
+            if (source[i].bass || source[i].bassNoteValue || source[i].name.find('/') != std::string::npos)
                 projected.bassInterval = (tones.bass - tones.root + 12) % 12;
         }
         interpretation.fingerprint = makeFingerprint(key.key.mode, interpretation.full,
@@ -499,6 +491,10 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
     if (results.size() > topN) results.resize(topN);
     const auto finished = Clock::now();
     if (stats) {
+        stats->imported=query.source.size();
+        stats->analyzed=query.interpretations.empty()?0:query.interpretations.front().full.size();
+        stats->keys=query.interpretations.size();
+        stats->aligned=results.size();
         stats->prefilterMs = std::chrono::duration<double, std::milli>(pref - started).count();
         stats->alignmentMs = std::chrono::duration<double, std::milli>(finished - pref).count();
         stats->totalMs = std::chrono::duration<double, std::milli>(finished - started).count();

@@ -56,6 +56,11 @@ struct EnrichmentCandidate {
     MelodyCompatibility melodyCompatibility;
 };
 struct EnrichmentResult {
+    struct Diagnostics {
+        std::size_t protectedChords{}, polish{}, inversion{}, rich{}, advanced{},
+            insertionAttempts{}, insertionFailed{}, bassConnectionBlocked{}, colorConnectionBlocked{},
+            rhythmBlocked{}, duplicates{}, hardFiltered{};
+    } diagnostics;
     std::array<std::vector<EnrichmentCandidate>, 3> groups;
     std::vector<EnrichmentOpportunity> opportunities;
     std::string error;

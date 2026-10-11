@@ -204,6 +204,10 @@ int main(int argc,char** argv){try{
     p={chord(colors.full[0],{PitchClass::C,Mode::Major},0),chord(colors.full[1],{PitchClass::C,Mode::Major},3)};
     const auto cm=matchProgression(makeMatchQuery(p,context),CandidateIndex({plain,colors}));
     require(cm.size()==2&&cm[0].templateId==colors.id&&cm[0].similarity>cm[1].similarity,"exact colors not discriminated");
+    auto contradictory=colors;contradictory.id="opposite-third";
+    for(auto& e:contradictory.full)e.intervalMask=(e.intervalMask&~(1u<<4))|(1u<<3);
+    const auto rejected=recommendContinuations(makeMatchQuery(p,context),CandidateIndex({contradictory}));
+    require(std::all_of(rejected.groups.begin(),rejected.groups.end(),[](const auto& g){return g.empty();}),"opposite defining third accepted");
     // An explicit phrase can be enriched elsewhere, but authored bass/mask events
     // and the adjacency between them cannot be destructively rewritten.
     for(const auto* id:{"V4_B08","V4_B11"}){
@@ -215,7 +219,8 @@ int main(int argc,char** argv){try{
             if(!e.bass&&!e.extensions.mask&&!e.extensions.pitches&&e.name.find('/')==std::string::npos)continue;
             const auto it=std::find_if(c.progression.begin(),c.progression.end(),[&](const auto& x){return std::abs(x.startQN-e.startQN)<1e-7;});
             require(it!=c.progression.end(),"enrichment removed exact node");const auto a=chordPitches(e),b=chordPitches(*it);
-            require(a.root==b.root&&a.bass==b.bass&&a.intervals==b.intervals&&it->durationQN==e.durationQN,"enrichment rewrote exact node");
+            require(a.root==b.root&&a.bass==b.bass&&(a.intervals&b.intervals)==a.intervals,"enrichment removed defining tones or bass");
+            if(a.bass!=a.root)require(it->durationQN==e.durationQN,"enrichment split defined bass connection");
         }
     }
     std::cout<<"V4 focused contracts PASS: 28 definitions, targets, metadata, skeleton, bass, colors, transpose, recommendation, preview and MIDI\n";return 0;

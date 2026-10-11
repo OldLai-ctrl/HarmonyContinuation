@@ -1,4 +1,5 @@
 #include "HarmonyAnalysis.h"
+#include "ChordPitchSet.h"
 
 #include <algorithm>
 #include <array>
@@ -315,7 +316,11 @@ HarmonicAnalysisResult analyzeHarmony(const Progression& events, const AnalysisC
         confidenceSum += event.analysisConfidence;
         // Preserve endpoints and cadence-bearing functional links. A short
         // chromatic approach can disappear without erasing its target.
-        if (i == 0 || i + 1 == events.size() || hasRole(event.roles, Role::Cadential) ||
+        const auto tones = chordPitches(events[i]);
+        // Preserve the actual defining node, not every chord in a phrase that
+        // happens to contain one explicit pitch list (as all Cubase drops do).
+        const bool definingRealization = tones.bass != tones.root || tones.colorMask != 0;
+        if (i == 0 || i + 1 == events.size() || definingRealization || hasRole(event.roles, Role::Cadential) ||
             event.structuralWeight >= context.skeletonThreshold) {
             event.roles |= flag(Role::Structural);
             result.skeletonIndices.push_back(i);

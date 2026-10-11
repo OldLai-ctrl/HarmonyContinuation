@@ -164,6 +164,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     for (const auto& item : index.templates()) byId.emplace(item.id, &item);
     for (const auto& match : result.matches) {
         if (match.similarity < w.minimumMatch) continue;
+        ++result.stats.similarityPassed;
         const auto found = byId.find(match.templateId);
         if (found == byId.end()) continue;
         const auto& item = *found->second;
@@ -176,6 +177,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                     (step.operation == AlignmentOp::Match || step.operation == AlignmentOp::Substitute);
             });
         if (!tailAligned) continue;
+        ++result.stats.tailPassed;
         // Only explicit V4 definitions are constraints. Unknown input bass is
         // allowed; an explicitly contradictory bass must not identify this path.
         if (item.version >= 4) {
@@ -187,9 +189,18 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                 const auto& expected=item.full[*step.templateIndex];
                 if (expected.bassInterval && input.bassInterval &&
                     *expected.bassInterval!=*input.bassInterval) conflictingBass=true;
+                if(expected.intervalMask && input.intervalMask) {
+                    // Extensions and omitted fifths are flexible; explicitly
+                    // opposite thirds or sevenths contradict the defining sonority.
+                    const auto a=expected.intervalMask|expected.colorMask;
+                    const auto b=input.intervalMask|input.colorMask;
+                    for(const auto pair:{(1u<<3)|(1u<<4),(1u<<10)|(1u<<11)})
+                        if((a&pair)&&(b&pair)&&!(a&b&pair))conflictingBass=true;
+                }
             }
             if (conflictingBass) continue;
         }
+        ++result.stats.realizationPassed;
         if (!match.hasContinuation && !item.loopable) continue;
         std::vector<MatchEvent> suffix;
         for (std::size_t i = match.continuationStartIndex; i < item.full.size(); ++i) suffix.push_back(item.full[i]);
@@ -198,6 +209,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             for (std::size_t i = 0; i < std::min(wrapEnd, item.full.size()); ++i) suffix.push_back(item.full[i]);
         }
         if (suffix.empty()) continue;
+        ++result.stats.pathPassed;
         auto rhythm = estimateRhythmScale(match, query, item);
         ContinuationCandidate candidate;
         candidate.id = item.id;
@@ -280,10 +292,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             }
         }
     }
+    result.stats.distinct=distinct.size();
     for (auto& [key, candidate] : distinct) {
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
         candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
         if (candidate.rankingScore >= w.minimumScore) {
+            ++result.stats.scorePassed;
             result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
         }
     }
@@ -324,6 +338,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             return a.rankingScore>b.rankingScore;
         });
         group = std::move(diverse);
+        result.stats.output+=group.size();
     }
     return result;
 }

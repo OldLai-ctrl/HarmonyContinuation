@@ -179,6 +179,9 @@ bool MainView::runCandidateScrollSmoke() {
                 recommendations_.groups[group].push_back(c);}
         }
         actions_={};std::string heard,exported,snapshot;
+        // This harness replaces candidate vectors directly. Invalidate the same
+        // caches as the production setters before testing a different row count.
+        colorRankDirty_=true;enrichmentColorRankDirty_=true;colorPaths_.clear();
         actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
         actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
         actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
@@ -233,6 +236,7 @@ bool MainView::runCandidateScrollSmoke() {
         contentScroll_=0;onMouseWheelEvent(outside);okay=okay&&outside.consumed&&contentScroll_==std::min(48.,layout_.laneScrollMax);
     }
     state_=savedState;actions_=savedActions;visibility_=savedPolicy;recommendations_=savedRecommendations;enrichments_=savedEnrichments;
+    colorRankDirty_=true;enrichmentColorRankDirty_=true;colorPaths_.clear();
     continuationScroll_=savedContinueScroll;enrichmentScroll_=savedEnrichScroll;contentScroll_=savedContentScroll;
     selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();
     return okay;
@@ -485,6 +489,27 @@ void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
 void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true; invalid(); }
+bool MainView::runStructureSmoke() {
+    session::PluginSessionState input;Progression phrase;
+    const char* names[]{"C","F","F#dim7","G","C"};const double durations[]{4,3.75,.25,4,4};double at{};
+    for(int i=0;i<5;++i){ChordEvent e;e.name=names[i];e.startQN=at;e.durationQN=durations[i];e.openEnded=false;at+=durations[i];phrase.push_back(e);}
+    input.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+    if(!input.imported.replace(phrase,TimelineCoordinateMode::RelativeToSelection))return false;
+    setSessionState(input);setAnalysis(analyzeHarmony(phrase,input.analysisContext()));refreshLayout();
+    if(analysis_.skeletonIndices.size()>=phrase.size()||std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),2)!=analysis_.skeletonIndices.end())return false;
+    RecommendationSet rec;ContinuationCandidate c;c.id="structure-view";c.intent=PhraseIntent::Resolve;c.rankingScore=90;
+    c.continuation.push_back({"C",4,{1,0},ChordQuality::Major,{}});rec.groups[0].push_back(c);setRecommendations(rec);
+    const auto before=session::continuationFingerprint(recommendations_.groups[0][0]);
+    CPoint skeleton{160.,layout_.timeline.bottom+12};onMouseDownResponsive(skeleton);
+    if(!state_.skeletonView||session::recomputeScope(input,state_)!=session::RecomputeScope::None)return false;
+    timelineScroll_=std::max(0.,timelineBlocks_[2].x-layout_.timeline.width()*.45);
+    const auto hidden=chordTileRect(2);CPoint invisible{(hidden.left+hidden.right)/2,(hidden.top+hidden.bottom)/2};onMouseDownResponsive(invisible);
+    if(selectedChord_)return false;
+    CPoint full{50.,layout_.timeline.bottom+12};onMouseDownResponsive(full);
+    if(state_.skeletonView||before!=session::continuationFingerprint(recommendations_.groups[0][0]))return false;
+    phrase.clear();at=0;for(const auto* label:{"C","Cmaj7/B","C7/Bb","F/A","Fm/Ab"}){ChordEvent e;e.name=label;e.startQN=at;e.durationQN=2;e.openEnded=false;at+=2;phrase.push_back(e);}
+    return analyzeHarmony(phrase,input.analysisContext()).skeletonIndices.size()==phrase.size();
+}
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
 void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
@@ -993,17 +1018,19 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
     (void)bounds;
     drawTimeline(dc,viewRect(layout_.timeline));
     const auto y=layout_.timeline.bottom+5;
-    line(dc,t("phrase.title")+" · "+std::to_string(state_.imported.events.size())+" "+t("phrase.count"),
-        CRect(24,y,layout_.timeline.right-220,y+24),pale);
-    if (timelineContentWidth_>layout_.timeline.width()+1)
-        line(dc,t("phrase.scroll"),CRect(layout_.timeline.right-215,y,layout_.timeline.right,y+24),muted,kRightText);
+    line(dc,"FULL · "+std::to_string(state_.imported.events.size()),CRect(24,y,132,y+24),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON · "+std::to_string(analysis_.skeletonIndices.size())+"/"+
+        std::to_string(state_.imported.events.size()),CRect(138,y,310,y+24),state_.skeletonView?accent:muted);
+    line(dc,t(analysis_.skeletonIndices.size()==state_.imported.events.size()?"structure.all":"structure.view"),
+        CRect(318,y,layout_.timeline.right-12,y+24),muted);
     if (state_.imported.events.empty()) return;
     if (selectedChord_ && *selectedChord_<analysis_.full.size()) {
         const auto& event=state_.imported.events[*selectedChord_];
         const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
         line(dc,event.name+" · "+duration+" · "+t("phrase.starts")+" "+fixed(event.startQN)+" QN",
              CRect(23,y+28,layout_.viewport.right-23,y+55),pale);
-    } else line(dc,t("phrase.select")+" · "+t("midi.help"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
+    } else line(dc,t("phrase.select")+" · "+t(timelineContentWidth_>layout_.timeline.width()+1?"phrase.scroll":"midi.help"),
+        CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -1114,7 +1141,8 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
         const auto& candidates=enrichments_.groups[group];
         if(candidates.size()>2)line(dc,t("candidate.more"),CRect(lane.right-120,lane.top+3,lane.right-8,lane.top+27),accent,kRightText);
         if (candidates.empty()) {
-            line(dc,workerBusy_?t("status.analyzing"):t("status.noEnrichment"),
+            line(dc,workerBusy_?t("status.analyzing"):t(enrichments_.diagnostics.hardFiltered?"enrich.constraints":
+                enrichments_.diagnostics.protectedChords?"enrich.protected":"status.noEnrichment"),
                  CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
@@ -1448,6 +1476,10 @@ CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
         refreshLayout();
+        if(form_==Form::None&&state_.tab==session::Tab::Recommend&&
+           where.y>=layout_.timeline.bottom+5&&where.y<layout_.timeline.bottom+29&&where.x>=24&&where.x<310) {
+            state_.skeletonView=where.x>=138;notifyState();return kMouseEventHandled;
+        }
         if(form_!=Form::None) {
             const double w=std::min(590.,layout_.viewport.width()-48),h=360;
             const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
@@ -1565,6 +1597,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
         }
         if(state_.tab==session::Tab::Recommend&&layout_.timeline.contains(where.x,where.y)) {
             for(const auto& b:timelineBlocks_) {
+                if(state_.skeletonView&&!analysis_.full.empty()&&
+                   std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),b.eventIndex)==analysis_.skeletonIndices.end())continue;
                 const auto r=chordTileRect(b.eventIndex);
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();
                     selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;refreshLayout();
@@ -1882,13 +1916,31 @@ void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
     box(dc,viewRect(area),panel);
     line(dc,t("diagnostics.title")+"    ["+t("diagnostics.refresh")+"]    ["+t("diagnostics.clipboard")+"]",
         CRect(area.left+10,area.top+7,area.right-10,area.top+34),accent);
-    line(dc,"FULL",CRect(area.left+12,area.top+39,area.left+120,area.top+66),state_.skeletonView?muted:accent);
-    line(dc,"SKELETON",CRect(area.left+125,area.top+39,area.left+280,area.top+66),state_.skeletonView?accent:muted);
+    line(dc,"FULL · "+std::to_string(analysis_.full.size()),CRect(area.left+12,area.top+39,area.left+120,area.top+66),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON · "+std::to_string(analysis_.skeletonIndices.size())+"/"+std::to_string(analysis_.full.size()),CRect(area.left+125,area.top+39,area.left+310,area.top+66),state_.skeletonView?accent:muted);
     line(dc,matchStatus_,CRect(area.left+10,area.top+72,area.right-10,area.top+98),pale);
     line(dc,t("diagnostics.generation")+" "+std::to_string(generation_)+"    "+t("diagnostics.worker")+" "+
         (workerBusy_?t("diagnostics.busy"):t("diagnostics.idle"))+"    "+t("diagnostics.last")+" "+
         fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+102,area.right-10,area.top+128),muted);
     double y=area.top+137;
+    line(dc,t("structure.view"),CRect(area.left+10,y,area.right-10,y+26),muted);y+=30;
+    if(state_.debugExpanded) {
+        const auto& s=recommendations_.stats;
+        const auto shown=continuationPresentation();std::size_t visible{};for(const auto& g:shown)visible+=g.size();
+        const std::string counts="Imported/analysis/keys "+std::to_string(s.imported)+"/"+std::to_string(s.analyzed)+"/"+std::to_string(s.keys)+
+            " Factory/User "+std::to_string(factoryCount_)+"/"+std::to_string(userCount_)+"\nShortlist/aligned/sim/tail/tones/path "+
+            std::to_string(s.shortlistSize)+"/"+std::to_string(s.aligned)+"/"+std::to_string(s.similarityPassed)+"/"+std::to_string(s.tailPassed)+"/"+
+            std::to_string(s.realizationPassed)+"/"+std::to_string(s.pathPassed)+"\nDedupe/score/worker/UI "+std::to_string(s.distinct)+"/"+
+            std::to_string(s.scorePassed)+"/"+std::to_string(s.output)+"/"+std::to_string(visible);
+        std::istringstream diagnostics(counts);std::string row;while(std::getline(diagnostics,row)) {line(dc,row,CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;}
+        const auto& e=enrichments_.diagnostics;
+        line(dc,"Protected/polish/inversion/rich/advanced "+std::to_string(e.protectedChords)+"/"+std::to_string(e.polish)+"/"+
+            std::to_string(e.inversion)+"/"+std::to_string(e.rich)+"/"+std::to_string(e.advanced),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+        line(dc,"Insertion attempts/blocked/dedupe/constraints "+std::to_string(e.insertionAttempts)+"/"+std::to_string(e.insertionFailed)+"/"+
+            std::to_string(e.duplicates)+"/"+std::to_string(e.hardFiltered),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+        line(dc,"Blocked bass connection/color connection/rhythm "+std::to_string(e.bassConnectionBlocked)+"/"+
+            std::to_string(e.colorConnectionBlocked)+"/"+std::to_string(e.rhythmBlocked),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+    }
     if(selectedChord_&&*selectedChord_<analysis_.full.size()){
         const auto& chord=analysis_.full[*selectedChord_];
         line(dc,t("inspector.chord")+" "+state_.imported.events[*selectedChord_].name+" · "+formatDegree(chord)+" · "+

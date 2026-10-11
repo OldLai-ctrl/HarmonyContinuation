@@ -20,6 +20,8 @@
 #include "pluginterfaces/vst/ivstcomponent.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/coffscreencontext.h"
+#include "vstgui/lib/cbitmap.h"
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
 #include <windows.h>
@@ -84,6 +86,23 @@ std::optional<io::CompletedMidiImport> wait(io::AsyncMidiImport& worker){
 }
 }
 int main(int argc,char** argv){
+    if(argc==2&&std::string(argv[1])=="--structure") {
+        CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);VSTGUI::init(GetModuleHandleW(nullptr));
+        auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
+        Window window;auto* frame=new VSTGUI::CFrame({0,0,1100,900},nullptr);auto* view=new ui::MainView({0,0,1100,900},{});frame->addView(view);
+        const bool opened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);
+        bool passed=opened&&view->runStructureSmoke();
+        if(passed)for(int skeleton=0;skeleton<2;++skeleton) {
+            if(skeleton){const auto layout=ui::computeLayout({1100,900,1,session::Tab::Recommend,false,false,1});VSTGUI::CPoint point{160,layout.timeline.bottom+12};view->onMouseDown(point,VSTGUI::CButtonState{VSTGUI::kLButton});}
+            const auto context=VSTGUI::COffscreenContext::create({1100,900});
+            if(!context){passed=false;break;}context->beginDraw();view->drawRect(context,{0,0,1100,900});context->endDraw();
+            const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
+            std::ofstream file(std::filesystem::path(HC_TEST_OUTPUT_DIR)/(skeleton?"structure-SKELETON.png":"structure-FULL.png"),std::ios::binary);
+            file.write(reinterpret_cast<const char*>(png.data()),png.size());passed=passed&&file.good()&&!png.empty();
+        }
+        passed=passed&&view->runMidiWorkflowSmoke();
+        frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / unchanged recommendation / More MIDI identity "<<(passed?"PASS":"FAIL")<<'\n';return passed?0:1;
+    }
     if(argc<3){std::cerr<<"usage: HostContractHarness plugin.vst3 host-name [report]\n";return 2;}
     std::cout<<std::unitbuf;
     CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);OleInitialize(nullptr);

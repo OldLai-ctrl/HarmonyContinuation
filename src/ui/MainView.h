@@ -100,6 +100,7 @@ public:
     void setSimulatedContentScale(double scale);
     void setUserZoom(std::uint32_t percent);
     bool runHostInteractionSmoke();
+    bool runStructureSmoke();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
