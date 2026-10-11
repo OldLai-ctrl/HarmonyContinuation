@@ -1,4 +1,5 @@
-param([string]$Iscc='build-installer/tools/Inno/ISCC.exe',
+param([string]$ProductVersion='0.10.0-dev.2',
+      [string]$Iscc='build-installer/tools/Inno/ISCC.exe',
       [string]$PackageDirectory='build-installer/v4-0.10.0-dev.2',
       [string]$OldPackageDirectory='build-installer/dev2-work/official-v09-package',
       [string]$TestRoot='build-installer/dev2-upgrade-tests',
@@ -55,7 +56,7 @@ function Matching {
  Check ((Hash $script:db4) -eq $factoryHash) 'Factory V4 bytes differ'
  $info=& $manager inspect $script:db4
  Check ($LASTEXITCODE -eq 0 -and "$info" -match 'library_version=4 schema=2 progressions=657') 'Wrong Factory version/schema/count'
- Check ((Get-Content -LiteralPath $script:module -Raw) -match '"Version": "0.10.0-dev.2"') 'Plugin version mismatch'
+ Check ((Get-Content -LiteralPath $script:module -Raw) -match ('"Version": "'+[regex]::Escape($ProductVersion)+'"')) 'Plugin version mismatch'
  $state=Get-Content -LiteralPath (Join-Path $script:app 'components.ini') -Raw
  Check ($state -match 'Plugin=1' -and $state -match 'Library=1' -and $state -match 'LibraryVersion=4' -and $state.ToUpperInvariant().Contains($factoryHash)) 'Component ownership record mismatch'
  PersonalIntact
@@ -78,7 +79,7 @@ foreach($name in $Cases) {
   $p=Join-Path $script:case $rel;New-Item -ItemType Directory -Force -Path (Split-Path $p) | Out-Null
   [IO.File]::WriteAllText($p,"$name/$rel personal sentinel");$script:sentinels[$p]=Hash $p
  }
- $new=Compile (Join-Path $repo 'packaging/UnifiedSetup.iss') $stage '0.10.0-dev.2' '4' 'new'
+ $new=Compile (Join-Path $repo 'packaging/UnifiedSetup.iss') $stage $ProductVersion '4' 'new'
  if($name -eq 'fresh') {
   $null=Run $new 'library-without-engine' @('/COMPONENTS=library') $false
   Check (!(Test-Path -LiteralPath $script:db4)) 'Library-only without engine was allowed'
@@ -184,4 +185,4 @@ foreach($name in $Cases) {
  Check (!(Test-Path -LiteralPath $binary) -and !(Test-Path -LiteralPath $script:db4) -and !(Test-Path -LiteralPath $reg)) 'Managed uninstall incomplete'
  PersonalIntact
 }
-"Dev.2 focused upgrade: $script:checks checks PASS ($($Cases -join ' / '); component maintenance, verified backups and personal protection)." | Tee-Object (Join-Path $root 'result.txt')
+"$ProductVersion focused upgrade: $script:checks checks PASS ($($Cases -join ' / '); component maintenance, verified backups and personal protection)." | Tee-Object (Join-Path $root 'result.txt')

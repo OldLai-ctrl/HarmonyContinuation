@@ -26,7 +26,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | --- | --- | --- |
 | 宿主、窗口、生命周期与诊断 | `src/host/`、`src/plugin/`、`src/ui/EffectiveScale.h` | `docs/V0_9_HOST_ARCHITECTURE.md`、`docs/FL_STUDIO_COMPATIBILITY.md` |
 | MIDI 读取、识别、输出及拖放 | `src/midi/`、`src/io/` | `docs/V0_8_DEV2.md`、`docs/MIDI_EXPORT.md` |
-| 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md` |
+| 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md`、`docs/DEV3_CUBASE_RELIABILITY_FIX.md` |
 | 继续发展与升级进行色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
 | 卡片、Why? V2 与色彩控件 | `src/ui/ColorHint.h`、`src/ui/WhyExplanation.h`、`src/ui/MainView.cpp` | `docs/WHY_V2.md` |
 | 只读色彩分析 | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |

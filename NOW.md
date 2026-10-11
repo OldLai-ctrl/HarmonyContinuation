@@ -8,17 +8,14 @@
 
 ## 当前任务
 
-2026-10-11：`library/v4` 的 **0.10.0-dev.2 核心推荐可靠性修复已完成**。先前独立的安装器修复已提交并推送（提交 `533eb46`），安装器-only 包 `build-installer/v4-0.10.0-dev.2` 保留，不覆盖。本轮源码构建提交为 `68b900d`，核心修复包独立保存；`main` 和正式标签未改。
+2026-10-11：`library/v4` 的 **0.10.0-dev.3 Cubase 输入兼容性开发包已完成，等待人工复验**。代码提交 `99017f596cef895f2024677120b7005fa7c4a98e` 已通过 GitHub 接口同步；本地与远端源码 tree 完全一致，未使用崩溃的 git-remote-https 推送。验证记录另行提交至同分支；不合并 main、不创建正式 Tag、不正式发布。
 
-根因已在定向跨版本矩阵中复现：dev.1 的五组普通输入继续发展数量与 v0.9.0 接近，但 Polish/Rich/Advanced 全为零；部分 Cubase XML 式精确音集合让整组和弦被过度保护，且基础 Polish 不成功会提前挡住 Rich/Advanced。短输入自动调性只看前三个假设，slash 和弦也可能未正确还原指定低音。本轮逐项修复操作级保护、短前缀调性覆盖、slash 解析与 MIDI 音集读取。
+缺五度造成七和弦身份丢失、节奏参与和声对齐及门槛的问题已在明确标记的模拟冲突输入中复现并修复。新 800 组覆盖中，500 组 B08/B11 目标均匹配、保留、默认可见且 More 可访问，300 组普通输入有推荐；原 1440 组及 12 个相关测试通过。界面专项、Preview/MIDI 和 Enrichment 回归通过；隔离安装 413 项通过，个人数据哨兵保留。Factory 数据库哈希与 dev.2 相同，657 条，Schema 2/2/5/3/2 未改。
 
-定向自动检查已通过：11 个相关测试目标全部通过；新的 1440 组合矩阵（15 组输入、8 种节奏、直接事件/实际 MIDI 文件导入/Cubase VST XML 解析夹具）无失败。FULL/SKELETON 离屏界面专项通过；V4 28 条可发现性为 26 条默认显示、2 条位于 More、0 条受阻，B09 仍可从 More 访问。v0.9.0、dev.1、修复代码对照显示普通输入升级候选恢复，五组 Polish 各 1 条，Rich 各 3 条；Factory 仍为 657 条，数据库及用户相关 Schema 未改。测试不是 Cubase 真机验收，人工验收仍待用户进行。
+开发包位于 `build-installer/v4-0.10.0-dev.3/`，Build ID `0.10.0-dev.3 / 99017f5 / Release / Library 4`；产物、SHA-256、对照、检查范围与局限见 [dev.3 可靠性报告](docs/DEV3_CUBASE_RELIABILITY_FIX.md) 和包内 BUILD_INFO / evidence。旧 dev.1/dev.2 目录未覆盖。安装器脚本逻辑未变，仅复用隔离检查并增加可选版本参数。
 
-Release 插件、V4 数据库和统一 Setup 已生成于 `build-installer/v4-0.10.0-dev.2-core-fix/`，Build ID 为 `0.10.0-dev.2 / 68b900d / Release / Library 4`。Setup SHA-256：`9ae63a721370f5210ba152caacc0f9be0636756055c8fb44c33223207a2c8a1d`；VST3 SHA-256：`ada5281ded29e615d2f05deafcee2f39b1b159b196ec8e8b2260fd3c2b7abe41`；Factory SHA-256：`74c529828f8c4b934bbaf4ada719aa95491ab498b58885522124ff6505671534`。16 个插件包文件的清单哈希均已核对，Factory 读回为 Library 4 / Schema 2 / 657。
+**READY FOR CUBASE RE-ACCEPTANCE：YES；Cubase 真实 B08/B11 仍 Pending。** 旧真实 VST-XML 协议证据存在，但用户这次失败的原始载荷尚未捕获，不能用模拟 XML 宣称真机已经修复。现有菜单已增加主动本地导出输入字段、模板过滤原因、后台结果和 UI 排名。下一步只按 [人工清单](docs/V4_DAW_ACCEPTANCE.md) 安装复验，必要时主动导出；完成后停止，不自动开发其它功能。dev.2 历史验证见 [旧报告](docs/DEV2_CORE_RELIABILITY_FIX.md)。
 
-新核心修复包的安装器隔离实跑也已通过 **413 项检查**：全新安装、官方 v0.9.0 标签重建夹具、可信 RC/手动替换、未知 Factory 文件保护、官方内容仅物理布局不同。测试涵盖更新、取消组件、修改、修复、卸载、先备份后替换、哈希验证及中英文未知文件提示；User Library、收藏、设置、个人进行、历史和未管理文件哨兵均保留。完整日志随包保存。先前安装器-only dev.2 包另有 704 项生命周期证据，见 [升级修复证据](docs/INSTALLER_DEV2_UPGRADE_FIX.md)。Cubase/FL Studio 人工验收仍 Pending。
-
-已推送 `library/v4`；下一步等待用户重新安装并进行 Cubase 人工验收。**READY FOR DAW RE-ACCEPTANCE = YES**。全量 CTest、Validator、DAW 矩阵及无关音乐基准未运行；不合并 `main`、不创建正式 Tag。细节见 [核心可靠性修复报告](docs/DEV2_CORE_RELIABILITY_FIX.md) 与 [V4 人工验收清单](docs/V4_DAW_ACCEPTANCE.md)。
 ## 发布与验证证据
 
 正式包：`build-installer/release-0.9.0/HarmonyContinuation-0.9.0-Setup.exe`。构建版本、提交、VST3/Factory/Setup 哈希、依赖与验证范围保存在同目录 `BUILD_INFO.json`、`SHA256SUMS.txt` 与 `FILE_MANIFEST.sha256`。Setup SHA-256：`1ee1ba17a3b689ad7b8ea8f7ffe245c2fc08ac71226ae82eed441788628136f7`。
