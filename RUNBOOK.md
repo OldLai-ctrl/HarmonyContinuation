@@ -22,9 +22,9 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ### dev.2 升级修复构建
 
-当前 V4 默认版本为 0.10.0-dev.2。使用独立 `build-v4-dev2` 与 `build-installer/v4-0.10.0-dev.2`；显式设置 `-DHC_PRERELEASE=dev.2 -DHC_FACTORY_LIBRARY_VERSION=4 -DSMTG_RUN_VST_VALIDATOR=OFF`。构建 `HarmonyContinuation library_manager` 时自动生成官方 V2/V3 参考库；统一打包需这些参考及同构建 V4 数据，不能用未知文件代替参考。完整内容比较只用于安装专用工具，不改音乐运行逻辑。
+当前 V4 开发版本为 0.10.0-dev.2。使用 `build-v4-dev2`；本轮核心修复包单独放在 `build-installer/v4-0.10.0-dev.2-core-fix`，不要覆盖先前 installer-only 包 `build-installer/v4-0.10.0-dev.2`。配置时显式设置 `-DHC_PRERELEASE=dev.2 -DHC_FACTORY_LIBRARY_VERSION=4 -DSMTG_RUN_VST_VALIDATOR=OFF`。构建 `HarmonyContinuation library_manager` 时自动生成官方 V2/V3 参考库；统一打包需这些参考及同构建 V4 数据，不能用未知文件代替参考。完整内容比较只用于安装专用工具，不改音乐运行逻辑。
 
-`tools/test-dev2-upgrade.ps1` 要求全新工作区内 TestRoot、已核实 ISCC、当前 stage-4，以及从官方 v0.9.0 标签重建的 stage-3 / 旧安装器源码。RC V3 原包解压夹具位于测试工作目录的 rc09，可信 RC V2 通过 RCV2Factory 指定；来源校验见升级修复证据。只选择受影响的 Cases；该脚本会在独立路径/HKCU 运行安装与卸载。已有正式 704 项结果见 [升级修复](docs/INSTALLER_DEV2_UPGRADE_FIX.md)，无新代码变化时无需重复。
+`tools/test-dev2-upgrade.ps1` 要求全新工作区内 TestRoot、已核实 ISCC、目标包的 stage-4，以及从官方 v0.9.0 标签重建的 stage-3 / 旧安装器源码。RC V3 原包解压夹具位于测试工作目录的 rc09，可信 RC V2 通过 RCV2Factory 指定；来源校验见升级修复证据。该脚本在独立路径/HKCU 运行安装与卸载。本轮核心修复包对 `fresh / official-v09 / rc-manual / unknown / official-content-layout` 验证 413 项通过，逐项日志随包 `evidence/` 保存；既有 installer-only 包的 704 项记录见 [升级修复](docs/INSTALLER_DEV2_UPGRADE_FIX.md)。
 ## 局部自动验收
 
 Factory V4 产品化：在 `build-v4-dev` 配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=dev.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实离线 SDK。从实现提交构建 Release 的 `HarmonyContinuation`、`library_manager`、`FactoryV4Tests`；运行 `FactoryV4Tests <证据目录>` 得到 28 条可发现性 TSV 和 4 份 MIDI，再运行无参数契约。必要时只运行相关 Matcher / Continuation / Enrichment 检查，TEMP/TMP 指向工作区测试目录。版本 0.10.0-dev.1，默认 Factory 4；V3 源数据与正式 staging 不改。用 `tools/build-installer.ps1 -BuildDirectory build-v4-dev -OutputDirectory build-installer/v4-0.10.0-dev.1 -RuntimeDirectory <已核实CRT> -Iscc <已核实ISCC>` 制作统一包，复制 MIDI/证据和人工清单，记录构建提交与哈希。使用 `tools/test-v4-installer.ps1` 的全新隔离路径验证此次兼容拦截与独立组件保护；不操作生产安装。详见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)。
