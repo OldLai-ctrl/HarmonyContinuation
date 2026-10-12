@@ -70,7 +70,15 @@ Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [�
 
 本机MSVC PDB工具不匹配时，构建进程设置 `_CL_=/Z7`，使用对象内调试信息；无需修改离线SDK。测试将TEMP/TMP设为独立工作区目录，避开沙箱临时目录的原子替换权限限制。当前构建提交、完整33项结果、21项隔离安装结果及日志入口见 [dev.5收尾报告](docs/DEV5_CLOSEOUT_20261012.md)。
 
-### Factory V4 另一设备接手
+### dev.5 另一设备接手
+
+1. 源码使用 `development/dev5-closeout-20261012`。新目录可运行 `git clone --branch development/dev5-closeout-20261012 https://github.com/OldLai-ctrl/HarmonyContinuation.git HarmonyContinuation-release`。已有checkout先确认并保管未提交内容，再fetch、切换该分支和 `git pull --ff-only`；不强制reset。
+2. 登录有仓库权限的账号，从 [既有未发布开发草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1) 下载 `HarmonyContinuation-dev5-Handoff-20261012.zip` 和 `HANDOFF_DEV5_SHA256SUMS.txt`。ZIP SHA-256为 `6c201735e87c34b6c6f967f70a9b717ce8070909bb1fbf82cebc7e82cefa65de`；解压后再核验内部 `SHA256SUMS.txt`。草稿继续保持未发布。
+3. 先读 AGENTS、NOW、`docs/DEV5_CLOSEOUT_20261012.md` 和 `docs/DEV5_CUBASE_ACCEPTANCE.md`。包内含OFF Setup、OFF/ON便携ZIP、原V4/657、候选V5/658、源码和811项交接文件及证据；二进制BuildCommit为 `730e819`，包内文档冻结于 `c117163`。最新设备接续记录通过Git补充，不改变冻结二进制身份。
+4. 本机ON安装被UAC取消，不能当作已经安装。新设备关闭宿主后备份完整旧bundle，只安装一个同身份OFF/ON版本；About核对dev.5 / `730e819` / HF实际状态 / P3 OFF，再按中文清单验收。现有个人库、真实工程、SDK与工具链不在包内，也不随Git同步；需要迁移个人数据时由用户单独处理。
+5. 当前自动化门禁已通过，不因换设备机械重跑。继续开发时重新核实本机MSVC/CMake/Ninja、Inno、CRT及离线SDK路径，使用独立构建目录；下一工作包以真实Cubase、R02两组本地诊断及音乐试听为主，不自动合并main、创建正式Tag或发布。
+
+### 历史 Factory V4/dev.1 另一设备接手
 
 1. 登录有仓库写权限的 GitHub 账号，打开 [未发布的 V4 交付草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)。下载 `HarmonyContinuation-0.10.0-dev.1-Handoff.zip`、`HANDOFF_SHA256SUMS.txt`；只需人工安装时也可单独下载同页 Setup。保持草稿未发布。
 2. 用 SHA-256 对照外层校验文件验证 ZIP；解压到新目录，再按包内 `SHA256SUMS.txt` 校验文件。包内含 Setup、`stage-4` 的 VST3/Factory DB、`midi`、`evidence`、BUILD_INFO 和人工清单。原始产品交付源码提交 `963c9c7`，实际插件/Setup 构建提交 `86a8641`，版本 `0.10.0-dev.1`；后续交接提交不改变二进制身份。

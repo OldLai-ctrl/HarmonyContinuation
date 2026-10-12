@@ -18,7 +18,11 @@ dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细
 
 ## 下一步：在另一台设备继续
 
-当前安全开发分支为 `development/dev5-closeout-20261012`，源码提交已通过本机代理推送到既有origin；最终文档提交与远端核验值见交付BUILD_INFO.json。交付目录为同级 `HarmonyContinuation-dev5-delivery-20261012`，完整日志为 `HarmonyContinuation-validation-20261012`，独立候选为 `HarmonyContinuation-candidates-20261012`。下一步为真实Cubase与音乐验收：截图A08身份、R02成功/失败原始诊断、候选试听与工程交互；R02 HOST ROOT CAUSE UNKNOWN。变拍map/复合分组仍未知，正式发布未授权且未执行。
+当前安全开发分支为 `development/dev5-closeout-20261012`，源码提交已通过本机代理推送到既有origin；验收包冻结源码 `730e819`、交接文档 `c117163`，见包内BUILD_INFO.json；后续设备接续记录以本分支最新HEAD为准。交付目录为同级 `HarmonyContinuation-dev5-delivery-20261012`，完整日志为 `HarmonyContinuation-validation-20261012`，独立候选为 `HarmonyContinuation-candidates-20261012`。下一步为真实Cubase与音乐验收：截图A08身份、R02成功/失败原始诊断、候选试听与工程交互；R02 HOST ROOT CAUSE UNKNOWN。变拍map/复合分组仍未知，正式发布未授权且未执行。
+
+本机 ON 安装未完成：便携包91项、旧bundle17项备份均核验通过，但Windows UAC返回“操作已被用户取消”，实际插件及独立Factory未改变。备份、暂存、安装脚本和回退说明保存在同级 `HarmonyContinuation-on-install-20261012/`，不随Git同步。另一设备不能假定ON已安装，应按dev.5清单选择一个模式安装并核实About的Build ID/HF/P3。
+
+dev.5完整交接ZIP及独立校验文件已上传至既有GitHub未发布草稿，远端SHA-256与本地一致，旧附件保留；下载入口见 [MAP](MAP.md#同步)，换设备操作见 [RUNBOOK](RUNBOOK.md#dev5-另一设备接手)。交接包冻结后补充的安装状态与设备步骤保存在本分支最新文档。
 
 ## 发布与验证证据
 
