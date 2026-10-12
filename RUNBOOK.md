@@ -48,6 +48,8 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 ## 真机验收
 
+Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [修复报告](docs/PHASE4D_CUBASE_FEEDBACK_FIX_20261012.md)。工程拍号可变，XML输入不以当前宿主拍号覆盖Session；时值比例由对齐输入duration/onset估计，拍号meta不等于实际时间适配。ON/OFF是独立编译包，高级分析显示实际结果模式，宿主诊断显示编译状态；两包Phase3A均OFF。R01/R02需主动导出本地输入与推荐诊断，再与模拟证据比较。该轮完整OFF/ON回归已获用户授权并完成，历史“留到v1.0”范围不限制本轮已授权门禁。
+
 前置：宿主已关闭并安装正确包，确认版本/提交/哈希与 Factory 版本。FL 使用 `docs/FL_STUDIO_TEST_GUIDE.md`；Cubase 按需求搜索 `docs/CUBASE_TIMELINE_SYNC_TEST.md` 和版本验收文档。记录宿主完整版本、操作、结果及最小复现，区分通过/失败/未测。模拟宿主、Demo、内存往返不能证明真实项目重开。更新 NOW 的待验收项，持久风险更新 RISKS。
 
 ## 打包与安装
@@ -59,6 +61,12 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 正式包复用的 RC3 28 项安装结果保留于 `build-installer/release-0.9.0/evidence/`，旧 V3 过程记录可查 Git 历史。安装维护逻辑未改时复用，不重复生命周期；本轮正式版只版本化输出文件名。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；正式版只生成 `HarmonyContinuation-0.9.0-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
 
 ## 交付与同步
+
+### dev.5 收尾验证
+
+使用独立 Release OFF/ON 构建，Factory 4、`HC_PRERELEASE=dev.5`，保留 dev.4 包。先初始化本机 MSVC x64 环境；核对缓存中 `CMAKE_CXX_FLAGS_RELEASE` 确实包含 `/O2 /Ob2 /DNDEBUG`，不能把空优化参数的缓存当最终性能基线。关闭自动安装链接和构建后 Validator，从实际源码提交生成 Build ID。
+
+最终运行所有已注册 CTest；33 项包含 1440 严格矩阵及 33×四组合专项。可选候选门禁复用 `Phase4DTests <独立证据目录> <隔离候选DB>`，插件默认仍使用 V4/657。候选 DB 编译方法见 `data/factory-proposals/20261012/README.md`。主报告与包内证据记录最终源码提交、逐项结果和已知限制；真实宿主清单见 `docs/DEV5_CUBASE_ACCEPTANCE.md`。
 
 ### Factory V4 另一设备接手
 

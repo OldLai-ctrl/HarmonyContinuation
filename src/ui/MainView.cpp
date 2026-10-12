@@ -5,6 +5,7 @@
 #include "session/ProductServices.h"
 #include "WeightBarGeometry.h"
 #include "product/ProductVersion.h"
+#include "plugin/DevelopmentMode.h"
 #include "preview/VoiceLeadingMetrics.h"
 #include "vstgui/lib/cdrawcontext.h"
 #include "vstgui/lib/cfont.h"
@@ -906,8 +907,8 @@ void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttemp
 void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<ProgressionTemplate> u,std::string e) {
     factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e); invalid();
 }
-void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc) {
-    generation_=g; computationMs_=ms; workerBusy_=busy;
+void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc,bool resultReady) {
+    generation_=g; computationMs_=ms; workerBusy_=busy; recommendationResultReady_=resultReady;
     if (!busy && std::all_of(recommendations_.groups.begin(),recommendations_.groups.end(),
             [](const auto& group){return group.empty();}) && !state_.pinnedCandidateIds.empty()) {
         state_.resolvePins(recommendations_);
@@ -961,7 +962,9 @@ void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
         const auto tile=chordTileRect(block.eventIndex);
         if (!(tile.right>update.left && tile.left<update.right && tile.bottom>update.top && tile.top<update.bottom)) continue;
         const bool active=currentLocation_.activeIndex==block.eventIndex;
-        box(dc,tile,colors[block.eventIndex%4]);
+        const bool weakened=!analysis_.full.empty() &&
+            std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),block.eventIndex)==analysis_.skeletonIndices.end();
+        box(dc,tile,weakened?CColor(49,57,67,255):colors[block.eventIndex%4]);
         dc->setFrameColor(active?accent:CColor(135,172,215,255)); dc->setLineWidth(active?2.4:1.0);
         if (block.openRightEdge) { const CCoord dash[]{4.,3.}; dc->setLineStyle(CLineStyle(CLineStyle::kLineCapButt,CLineStyle::kLineJoinMiter,0,2,dash)); }
         else dc->setLineStyle(CLineStyle{});
@@ -1575,12 +1578,22 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
                     session::Locale::EnUS:session::Locale::ZhCN;
                 else if(choice==3) {
-                    popup({"HarmonyContinuation "+std::string(product::version),
+                    const auto weights=plugin::developmentRecommendationWeights();
+                    std::vector<std::string> about{
+                        "HarmonyContinuation "+std::string(product::version),
                         t("about.build")+": "+std::string(product::buildType),
                         t("about.commit")+": "+std::string(product::commit),
                         t("about.factory")+": "+std::to_string(state_.factoryLibraryVersion),
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
-                        t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion)},where);
+                        t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion),
+                        "Build HarmonyFirst="+std::string(plugin::harmonyFirstBuild()?"ON":"OFF"),
+                        "Build Phase3A="+std::string(weights.diminishedPassingInsertionException?"ON":"OFF")};
+                    if(recommendationResultReady_)
+                        about.push_back("Actual recommendations: HarmonyFirst="+
+                            std::string(recommendations_.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
+                            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF"));
+                    else about.push_back("Actual recommendations: PENDING");
+                    popup(about,where);
                 }
                 else if(choice==4) {
                     const auto zoom=popup({"100%","125%","150%"},where);
@@ -1936,6 +1949,10 @@ void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
         fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+102,area.right-10,area.top+128),muted);
     double y=area.top+137;
     line(dc,t("structure.view"),CRect(area.left+10,y,area.right-10,y+26),muted);y+=30;
+    line(dc,recommendationResultReady_?"HarmonyFirst="+std::string(recommendations_.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
+        "  Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF"):
+        (state_.locale==session::Locale::ZhCN?"算法实际状态：待分析":"Actual algorithm state: PENDING"),
+        CRect(area.left+10,y,area.right-10,y+26),accent);y+=30;
     if(state_.debugExpanded) {
         const auto& s=recommendations_.stats;
         const auto shown=continuationPresentation();std::size_t visible{};for(const auto& g:shown)visible+=g.size();

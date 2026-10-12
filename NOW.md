@@ -12,13 +12,13 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 ## 当前接续状态
 
-2026-10-12：Phase 4B 离线审计、隔离构建、回归修复和 Cubase 验收包已完成。默认 OFF 全量 CTest 32/32 通过；HarmonyFirst ON 相关测试 9/9 通过，VST3 验证器 47/47 通过。七项旧失败均已通过当前回归。Factory V4 657 条及 SHA-256 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534` 未变；HarmonyFirst 与 Phase 3A 补偿默认均关闭。未安装插件、未运行 Cubase、未创建正式版本。
+2026-10-12：dev.5 收尾已实现 About/诊断的真实编译及推荐状态、未分析 PENDING、SMF 导入拍号残留修复、无时值证据时的一致 Session 拍号回退，以及相邻 DP gaps 对明确和弦性质检查的绕过修复。定向 MIDI Import/Phase4D 测试通过，原 V4/657 测试 13047 检查；隔离 V5/658 候选门禁 41104 检查通过。正在执行最终源码提交的 OFF/ON 全量构建与回归，尚未把旧结果计入新版本通过数。
 
-完整核销见 [Phase 4B 收尾报告](docs/PHASE4B_CLOSEOUT_RECONCILIATION_20261012.md)，离线实现与实验数据见 [Phase 4B 综合报告](docs/PHASE4B_INTEGRATED_IMPLEMENTATION_20261012.md)。OFF/ON 便携验收 ZIP 在忽略的 `build-phase4b/` 构建目录，不随 Git 提交；没有 Inno Setup 安装器。
+dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细核销与来源证据保存在同级 `HarmonyContinuation-validation-20261012/HISTORY_PROVENANCE.md`。dev.4 包保留在 `build-phase4d-delivery/`。新人工清单见 [dev.5 验收](docs/DEV5_CUBASE_ACCEPTANCE.md)。Factory V4 SHA-256 仍为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；独立候选及其音乐设计见 [候选说明](data/factory-proposals/20261012/README.md)。
 
 ## 下一步：在另一台设备继续
 
-拉取 `library/v4` 最新提交后，从 Phase 4B 收尾报告中的人工清单继续做 Cubase 验收。重点采集 R01 与 R02 两组真实 MIDI、宿主调性/拍号、插件识别、OPEN/FULL/SKELETON、候选来源和淘汰原因；当前模拟结果不能替代真机证据。另一台设备若需要相同的 OFF/ON 二进制，请单独转移本机忽略目录中的 ZIP，或在该设备按报告重新构建。保持默认 Legacy 与 Phase 3A 关闭；验收后再决定是否进入后续阶段。
+当前安全开发分支为 `development/dev5-closeout-20261012`，提交/同步及最终交付状态将在门禁结束后更新。输出目录为同级 `HarmonyContinuation-validation-20261012`，隔离候选为 `HarmonyContinuation-candidates-20261012`。真实截图的 A08 ID 及 R02 成功/失败原始输入仍需本地诊断；R02 HOST ROOT CAUSE UNKNOWN。当前宿主拍号不能证明历史选择区段，变拍 map/复合节拍分组仍未知。人工 Cubase 与音乐试听 Pending，正式发布未授权。
 
 ## 发布与验证证据
 

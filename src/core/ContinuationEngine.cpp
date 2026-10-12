@@ -82,24 +82,52 @@ RhythmScaleEstimate estimateRhythmScale(const MatchResult& match, const MatchQue
     RhythmScaleEstimate result;
     const auto* selected = interpretationFor(query, match.key);
     if (!selected) return result;
-    std::vector<float> ratios;
+    std::vector<float> ratios, allRatios;
     for (const auto& step : match.alignmentTrace) {
         if (!step.queryIndex || !step.templateIndex ||
             (step.operation != AlignmentOp::Match && step.operation != AlignmentOp::Substitute) ||
             *step.queryIndex >= selected->full.size() || *step.templateIndex >= item.full.size()) continue;
         const auto& current = selected->full[*step.queryIndex];
         const auto& reference = item.full[*step.templateIndex];
-        if (current.durationQN && reference.durationQN && current.structuralWeight >= 0.5f &&
-            reference.structuralWeight >= 0.5f && *reference.durationQN > 0)
-            ratios.push_back(static_cast<float>(*current.durationQN / *reference.durationQN));
+        auto duration=current.durationQN;
+        if(!duration && *step.queryIndex+1<query.source.size()) {
+            const auto delta=query.source[*step.queryIndex+1].startQN-query.source[*step.queryIndex].startQN;
+            if(std::isfinite(delta)&&delta>0)duration=delta;
+        }
+        if (duration && std::isfinite(*duration) && *duration>0 && reference.durationQN &&
+            std::isfinite(*reference.durationQN) && *reference.durationQN>0) {
+            const auto ratio=static_cast<float>(*duration / *reference.durationQN);
+            allRatios.push_back(ratio);
+            if(current.structuralWeight>=0.5f && reference.structuralWeight>=0.5f)ratios.push_back(ratio);
+        }
     }
+    // A short prefix ending OPEN may contain only one known matched duration.
+    // Its measured ratio is stronger evidence than a silent 4QN default. Use
+    // the other matched nodes only when structural evidence is insufficient.
+    if(ratios.size()<2)ratios=std::move(allRatios);
     result.samples = ratios.size();
-    if (ratios.size() < 2) return result;
+    if (ratios.empty()) {
+        const auto validMeter=[](int n,int d) {return n>0&&n<=32&&d>0&&d<=32&&(d&(d-1))==0;};
+        if(query.timeSigNumerator && query.timeSigDenominator &&
+           validMeter(*query.timeSigNumerator,*query.timeSigDenominator) &&
+           validMeter(item.meterNumerator,item.meterDenominator)) {
+            // Session metadata covers the imported region. Preserve all relative
+            // prototype durations; this says nothing about beat grouping.
+            const double inputBar=*query.timeSigNumerator*4.0 / *query.timeSigDenominator;
+            const double prototypeBar=item.meterNumerator*4.0 / item.meterDenominator;
+            result.scale=std::clamp(static_cast<float>(inputBar/prototypeBar),0.25f,4.f);
+            result.source="session-meter-fallback";
+        }
+        return result;
+    }
     std::sort(ratios.begin(), ratios.end());
     const auto middle = ratios.size() / 2;
     const auto median = ratios.size() % 2 ? ratios[middle] : (ratios[middle - 1] + ratios[middle]) * 0.5f;
-    if (ratios.size() == 2 && ratios.back() / std::max(0.01f, ratios.front()) > 1.3f)
+    if (ratios.size() == 2 && ratios.back() / std::max(0.01f, ratios.front()) > 1.3f) {
+        result.source="prototype-conflicting-input";
         return result;
+    }
+    result.source="matched-input-QN";
     result.scale = std::clamp(median, 0.25f, 4.f);
     std::vector<float> deviation;
     for (auto ratio : ratios) deviation.push_back(std::abs(ratio - median));
@@ -237,6 +265,8 @@ DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
 RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
                                          const RecommendationRequest& request, const RecommendationWeights& w) {
     RecommendationSet result;
+    result.retrievalTimingMode=query.retrievalTimingMode;
+    result.phase3aEnabled=w.diminishedPassingInsertionException;
     result.matches = matchProgression(query, index, {}, index.templates().size(), &result.stats);
     std::map<std::string, ContinuationCandidate> distinct;
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
@@ -262,21 +292,36 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         // allowed; an explicitly contradictory bass must not identify this path.
         if (item.version >= 4) {
             bool conflictingBass=false;
+            const auto definingConflict=[](const MatchEvent& input,const MatchEvent& expected) {
+                if(expected.bassInterval && input.bassInterval && *expected.bassInterval!=*input.bassInterval)return true;
+                const auto a=expected.intervalMask|expected.colorMask;
+                const auto b=input.intervalMask|input.colorMask;
+                for(const auto pair:{(1u<<3)|(1u<<4),(1u<<10)|(1u<<11)})
+                    if((a&pair)&&(b&pair)&&!(a&b&pair))return true;
+                return false;
+            };
             for (const auto& step:match.alignmentTrace) {
                 if (!step.queryIndex || !step.templateIndex ||
                     (step.operation!=AlignmentOp::Match && step.operation!=AlignmentOp::Substitute)) continue;
                 const auto& input=selected->full[*step.queryIndex];
                 const auto& expected=item.full[*step.templateIndex];
-                if (expected.bassInterval && input.bassInterval &&
-                    *expected.bassInterval!=*input.bassInterval) conflictingBass=true;
-                if(expected.intervalMask && input.intervalMask) {
-                    // Extensions and omitted fifths are flexible; explicitly
-                    // opposite thirds or sevenths contradict the defining sonority.
-                    const auto a=expected.intervalMask|expected.colorMask;
-                    const auto b=input.intervalMask|input.colorMask;
-                    for(const auto pair:{(1u<<3)|(1u<<4),(1u<<10)|(1u<<11)})
-                        if((a&pair)&&(b&pair)&&!(a&b&pair))conflictingBass=true;
-                }
+                if(definingConflict(input,expected))conflictingBass=true;
+            }
+            // A same-root replacement can be represented by adjacent DP gaps.
+            // Preserve the same explicit identity constraints on that path;
+            // otherwise a cheap deletion+insertion bypasses a conflicting third.
+            const auto pitch=[&](ScaleDegree d) {
+                constexpr int major[]{0,2,4,5,7,9,11},minor[]{0,2,3,5,7,8,10};
+                return positiveMod((match.key.mode==Mode::Major?major:minor)[d.degree-1]+d.alteration,12);
+            };
+            for(std::size_t i=1;i<match.alignmentTrace.size();++i) {
+                const auto& a=match.alignmentTrace[i-1];const auto& b=match.alignmentTrace[i];
+                const AlignmentStep* inserted{};const AlignmentStep* deleted{};
+                if(a.operation==AlignmentOp::QueryInsertion&&b.operation==AlignmentOp::TemplateDeletion){inserted=&a;deleted=&b;}
+                if(b.operation==AlignmentOp::QueryInsertion&&a.operation==AlignmentOp::TemplateDeletion){inserted=&b;deleted=&a;}
+                if(!inserted||!inserted->queryIndex||!deleted->templateIndex)continue;
+                const auto& input=selected->full[*inserted->queryIndex];const auto& expected=item.full[*deleted->templateIndex];
+                if(input.degree&&expected.degree&&pitch(*input.degree)==pitch(*expected.degree)&&definingConflict(input,expected))conflictingBass=true;
             }
             if (conflictingBass) { match.disposition="explicit_bass_or_defining_tone_conflict"; continue; }
         }
@@ -291,6 +336,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         if (suffix.empty()) { match.disposition="empty_suffix"; continue; }
         ++result.stats.pathPassed;
         auto rhythm = estimateRhythmScale(match, query, item);
+        match.timingSource=rhythm.source;
         ContinuationCandidate candidate;
         candidate.id = item.id;
         candidate.primaryTemplate = item.id;

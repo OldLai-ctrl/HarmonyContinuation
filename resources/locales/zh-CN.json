@@ -1,6 +1,6 @@
 {
-  "structure.all": "全部和弦均为关键结构节点。",
-  "structure.view": "仅改变结构视图；不改变推荐排序或 MIDI。",
+  "structure.all": "本次全部保留；短和弦不一定是装饰音。",
+  "structure.view": "FULL 全部 · SKELETON 骨架；灰色为弱化节点，试听/MIDI仍保留。",
   "enrich.protected": "此组暂无不改变原有音高或低音的安全操作。",
   "enrich.constraints": "候选未满足当前旋律或保留程度约束。",
 

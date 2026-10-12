@@ -13,6 +13,19 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     const RecommendationRequest& request,const RecommendationSet& set) {
     std::ostringstream out;out<<std::setprecision(17);
     out<<"\nRECOMMENDATION_DIAGNOSTICS_V1\nOrigin: current instance input; synthetic status is not inferred from XML sourceApp.\n";
+    out<<"ACTUAL retrievalMode="<<int(set.retrievalTimingMode)<<" HarmonyFirst="
+        <<(set.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst)<<" Phase3A="<<set.phase3aEnabled
+        <<" contextMode="<<int(ctx.retrievalTimingMode)<<" meter="<<ctx.timeSigNumerator.value_or(0)<<'/'<<ctx.timeSigDenominator.value_or(0)
+        <<" timingPolicy=matched input QN, then uniform session meter when no QN evidence, then prototype; live host meter is reference only; beat grouping unknown\n";
+    const auto analysis=analyzeHarmony(p,ctx);
+    out<<"SELECTED_KEY "<<(analysis.selectedKey?formatKey(analysis.selectedKey->key):"UNKNOWN")<<'\n';
+    for(const auto& k:analysis.keyCandidates)out<<"KEY "<<formatKey(k.key)<<" score="<<k.score<<" confidence="<<k.confidence<<'\n';
+    for(std::size_t i=0;i<analysis.full.size();++i) {
+        const auto& e=analysis.full[i];
+        out<<"STRUCTURE "<<i<<" weight="<<e.structuralWeight<<" retrievalWeight="<<e.retrievalStructuralWeight
+            <<" roles="<<e.roles<<" retrievalRoles="<<e.retrievalRoles<<" skeleton="
+            <<(std::find(analysis.skeletonIndices.begin(),analysis.skeletonIndices.end(),i)!=analysis.skeletonIndices.end())<<'\n';
+    }
     out<<"Key="<<(ctx.forcedKey?formatKey(*ctx.forcedKey):"AUTO")<<" Style="<<(request.style?std::to_string(int(*request.style)):"AUTO")
         <<" Intent="<<(request.preferredIntent?std::to_string(int(*request.preferredIntent)):"AUTO")<<" Tendency="<<int(request.tendency)<<'\n';
     for(std::size_t i=0;i<p.size();++i) {
@@ -36,7 +49,9 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     for(const auto& m:set.matches) {
         out<<"MATCH "<<m.templateId<<" key="<<formatKey(m.key)<<" similarity="<<m.similarity<<" rawCost="<<m.rawCost
            <<" rhythmScore="<<m.subScores.rhythmSimilarity<<" continuationStartIndex="<<m.continuationStartIndex
-           <<" candidateScore="<<m.candidateRankingScore<<" disposition="<<m.disposition<<'\n';
+           <<" candidateScore="<<m.candidateRankingScore<<" eligibility="<<m.candidateEligibilityScore
+           <<" full="<<m.subScores.fullHarmony<<" skeleton="<<m.subScores.skeletonHarmony<<" disposition="<<m.disposition
+           <<" timingSource="<<m.timingSource<<'\n';
         for(const auto& a:m.alignmentTrace)out<<"  ALIGN q="<<(a.queryIndex?int(*a.queryIndex):-1)<<" t="<<(a.templateIndex?int(*a.templateIndex):-1)
             <<" op="<<alignmentOpName(a.operation)<<" cost="<<a.cost<<" reasons="<<reasonNames(a.reasons)<<'\n';
     }
@@ -44,9 +59,13 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
         const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
           <<" score="<<c.rankingScore<<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
-          <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())<<" MORE_ACCESSIBLE=1 sources=";
+          <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
+          // Show More lists every retained worker candidate (MainView), without
+          // the default presentation's score/diversity/path filtering.
+          <<" MORE_ACCESSIBLE=1 sources=";
         for(const auto& id:c.supportingTemplates)out<<id<<',';
-        out<<" path=";for(const auto& e:c.continuation)out<<e.label<<" -> ";out<<'\n';
+        out<<" rhythmScale="<<c.rhythmScale<<" rhythmConfidence="<<c.rhythmConfidence<<" OPENhold="<<c.suggestedCurrentChordDurationQN.value_or(-1)
+            <<" path=";for(const auto& e:c.continuation)out<<e.label<<'@'<<e.durationQN<<"QN -> ";out<<'\n';
     }
     return out.str();
 }

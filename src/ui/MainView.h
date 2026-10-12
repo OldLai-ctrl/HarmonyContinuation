@@ -89,7 +89,7 @@ public:
     void setLibrary(std::vector<ProgressionTemplate> factory, std::vector<ProgressionTemplate> user,
                     std::string error = {});
     void setWorkerStatus(std::uint64_t generation, double ms, bool busy, std::size_t factoryCount,
-                         std::size_t userCount);
+                         std::size_t userCount, bool recommendationResultReady = false);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
     VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
@@ -148,7 +148,7 @@ private:
     std::optional<VSTGUI::CCoord> playheadX_;
     std::string previewCandidateId_;
     double previewQN_{}, previewTotalQN_{};
-    bool playing_{}, workerBusy_{}, sessionDirty_{};
+    bool playing_{}, workerBusy_{}, recommendationResultReady_{}, sessionDirty_{};
     std::uint64_t generation_{};
     double computationMs_{};
     std::size_t factoryCount_{}, userCount_{};

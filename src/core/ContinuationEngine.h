@@ -71,6 +71,8 @@ struct DiminishedInsertionDiagnostic {
     float totalInsertionPenalty{}, originalPenalty{}, refund{}, scoreBefore{}, scoreAfter{};
 };
 struct RecommendationSet {
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Legacy};
+    bool phase3aEnabled{}; // actual invocation, diagnostic only; never persisted
     std::array<std::vector<ContinuationCandidate>, 4> groups; // Resolve, Develop, Loop, Color
     std::vector<MatchResult> matches;
     MatchRunStats stats;
@@ -78,7 +80,10 @@ struct RecommendationSet {
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     const MatchQuery&, const MatchResult&, const ProgressionTemplate&);
-struct RhythmScaleEstimate { float scale{1.f}; float confidence{}; std::size_t samples{}; };
+struct RhythmScaleEstimate {
+    float scale{1.f}; float confidence{}; std::size_t samples{};
+    const char* source{"prototype-no-evidence"};
+};
 RhythmScaleEstimate estimateRhythmScale(const MatchResult&, const MatchQuery&, const ProgressionTemplate&);
 ConcreteChordEvent realizeContinuation(const MatchEvent&, KeySignature, double durationQN);
 IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate&,

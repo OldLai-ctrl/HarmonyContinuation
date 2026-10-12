@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "DevelopmentMode.h"
 #include "library/LibraryStore.h"
 #include <memory>
 #include <iterator>
@@ -45,6 +46,7 @@ void RecommendationWorker::run() {
     std::optional<MatchQuery> cachedQuery;
     HarmonicAnalysisResult cachedAnalysis;
     std::uint64_t cachedPhraseRevision{};
+    std::optional<AnalysisContext> cachedContext;
     while (true) {
         Task task;
         bool reload{};
@@ -61,7 +63,13 @@ void RecommendationWorker::run() {
         const auto start=std::chrono::steady_clock::now();
         try {
             result.analysisReused=task.rankingOnly && task.progression.size()<=64 && cachedQuery && task.phraseRevision!=0 &&
-                task.phraseRevision==cachedPhraseRevision;
+                task.phraseRevision==cachedPhraseRevision && cachedContext &&
+                cachedContext->forcedKey.has_value()==task.context.forcedKey.has_value() &&
+                (!cachedContext->forcedKey || (cachedContext->forcedKey->tonic==task.context.forcedKey->tonic &&
+                    cachedContext->forcedKey->mode==task.context.forcedKey->mode)) &&
+                cachedContext->timeSigNumerator==task.context.timeSigNumerator &&
+                cachedContext->timeSigDenominator==task.context.timeSigDenominator &&
+                cachedContext->retrievalTimingMode==task.context.retrievalTimingMode;
             if (result.analysisReused) result.analysis=cachedAnalysis;
             else {
                 result.analysis=analyzeHarmony(task.progression,task.context);
@@ -70,6 +78,7 @@ void RecommendationWorker::run() {
                     cachedQuery=makeMatchQuery(task.progression,task.context);
                     cachedAnalysis=result.analysis;
                     cachedPhraseRevision=task.phraseRevision;
+                    cachedContext=task.context;
                 }
             }
             if (task.progression.size() <= 64) {
@@ -100,8 +109,7 @@ void RecommendationWorker::run() {
                     }
                 }
                 if (index) {
-                    RecommendationWeights weights;
-                    weights.perGroup=10; // Retain choices for Show More; UI normally shows three.
+                    const auto weights=developmentRecommendationWeights();
                     result.recommendations = recommendContinuations(*cachedQuery, *index, task.request, weights);
                 } else result.error = loadError;
             } else result.error = "超过 64 个和弦；推荐暂不计算。";

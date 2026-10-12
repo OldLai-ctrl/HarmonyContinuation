@@ -174,6 +174,7 @@ struct MatchResult {
     float similarity{}; // 0..1 similarity, not a probability
     float rawCost{};
     std::string disposition; // diagnostic only, never persisted
+    std::string timingSource; // effective output timing evidence, never persisted
     float candidateRankingScore{-1.f};
     float candidateEligibilityScore{-1.f};
     KeySignature key;

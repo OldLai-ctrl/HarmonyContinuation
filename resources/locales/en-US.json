@@ -1,6 +1,6 @@
 {
-  "structure.all": "All chords are structural nodes.",
-  "structure.view": "View only; ranking and MIDI stay the same.",
+  "structure.all": "All nodes retained; short chords may still carry structure.",
+  "structure.view": "FULL: all; SKELETON: core. Gray nodes remain in preview/MIDI.",
   "enrich.protected": "No safe operation for this group preserves the defined tones or bass.",
   "enrich.constraints": "Candidates do not satisfy the melody or preservation constraints.",
 

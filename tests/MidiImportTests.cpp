@@ -61,6 +61,25 @@ int main() {
         run("Format 1 meta and chord track",[]{Bytes meta{0,255,3,4,'T','e','s','t',0,255,81,3,7,161,32,0,255,88,4,3,2,24,8,0,255,127,2,1,2,0,240,2,1,247,0,255,47,0};
             const auto r=readFromMemory(smf(1,{meta,blockTrack()}));check(bool(r)&&r.file.tracks.size()==2&&r.file.notes[0].track==1,"format1 identity");check(r.file.tracks[0].name=="Test"&&near(r.file.tempos[0].bpm,120)&&r.file.meters[0].numerator==3,"metadata");});
         run("Running status velocity zero",[]{Bytes t;event(t,0,{144,60,80});event(t,0,{64,80});event(t,0,{67,80});event(t,480,{60,0});event(t,0,{64,0});event(t,0,{67,0});event(t,0,{255,47,0});const auto r=readFromMemory(smf(0,{t}));check(bool(r)&&r.file.notes.size()==3,"running status");});
+        run("Imported region meter provenance",[]{
+            ImportResult input;input.midi.file=notes({60,64,67},3);
+            input.extraction=extractHarmony(input.midi.file);
+            check(!uniformImportedMeter(input),"absent metadata remains unknown");
+            input.midi.file.meters={{0,3,4}};
+            check(uniformImportedMeter(input)==std::pair(3,4),"3/4 covers imported region");
+            input.midi.file.meters.push_back({1,6,8});
+            check(!uniformImportedMeter(input),"equal bar lengths do not equate 3/4 and 6/8");
+            input.midi.file.meters={{0,4,4},{4,7,8}};
+            for(auto& c:input.extraction.chords)c.startQN+=4;
+            for(auto& s:input.extraction.slices)s.startQN+=4;
+            check(uniformImportedMeter(input)==std::pair(7,8),"meter active at selected region, not first in file");
+            input.midi.file.meters.push_back({7,9,8});
+            check(uniformImportedMeter(input)==std::pair(7,8),"change after region does not rewrite its meter");
+            input.midi.file.meters.clear();
+            check(!uniformImportedMeter(input),"next input cannot retain previous metadata");
+            input.midi.file.meters={{4,3,3}};
+            check(!uniformImportedMeter(input),"invalid denominator remains unknown");
+        });
         run("Overlap retrigger FIFO",[]{Bytes t;event(t,0,{144,60,80});event(t,120,{144,60,70});event(t,120,{128,60,0});event(t,120,{128,60,0});event(t,0,{255,47,0});const auto r=readFromMemory(smf(0,{t}));check(bool(r)&&r.file.notes.size()==2&&near(r.file.notes[0].durationQN,.5)&&near(r.file.notes[1].startQN,.25),"overlap pair");});
         run("Unclosed note warning",[]{Bytes t;event(t,0,{144,60,80});event(t,480,{255,47,0});const auto r=readFromMemory(smf(0,{t}));check(bool(r)&&r.file.notes.size()==1&&!r.file.warnings.empty(),"unclosed");});
         run("Unmatched and zero-length notes",[]{Bytes t;event(t,0,{128,62,0});event(t,0,{144,60,80});event(t,0,{128,60,0});event(t,0,{255,47,0});const auto r=readFromMemory(smf(0,{t}));check(bool(r)&&r.file.notes.empty()&&r.file.warnings.size()==2,"safe abnormal notes");});

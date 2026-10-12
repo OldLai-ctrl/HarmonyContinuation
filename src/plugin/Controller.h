@@ -83,6 +83,7 @@ private:
     harmony::HarmonicAnalysisResult analysis_;
     std::vector<harmony::MatchResult> matches_;
     harmony::RecommendationSet recommendations_;
+    bool recommendationResultReady_{};
     harmony::RecommendationRequest recommendationRequest_;
     std::unique_ptr<RecommendationWorker> recommendationWorker_;
     std::string matchStatus_{"拖入和弦后显示匹配结果"};

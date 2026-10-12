@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "DevelopmentMode.h"
 #include "PluginIds.h"
 #include "HostContextAdapter.h"
 #include "DropCapture.h"
@@ -94,7 +95,12 @@ tresult PLUGIN_API Controller::terminate(){
 std::string Controller::hostDiagnostics() const {
     auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
     copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
-    return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN);
+    const auto weights=harmony::plugin::developmentRecommendationWeights();
+    return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN)+
+        "\nBuild HarmonyFirst="+(harmony::plugin::harmonyFirstBuild()?std::string("ON"):std::string("OFF"))+"; Build Phase3A="+
+        (weights.diminishedPassingInsertionException?std::string("ON"):std::string("OFF"))+"; Actual recommendations="+
+        (recommendationResultReady_ ? "HarmonyFirst="+std::string(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
+            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF") : "PENDING");
 }
 std::string Controller::exportHostDiagnostics(void* owner) noexcept {
     try {
@@ -104,10 +110,22 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
         auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
         copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
         std::ofstream file(*path,std::ios::binary);file<<copy.diagnostics(sessionState_.locale==session::Locale::ZhCN,true);
-        const auto context=sessionState_.analysisContext();
+        const auto context=harmony::plugin::developmentContext(sessionState_.analysisContext());
+        const auto weights=harmony::plugin::developmentRecommendationWeights();
+        file<<"\nBuild HarmonyFirst="<<(harmony::plugin::harmonyFirstBuild()?"ON":"OFF")
+            <<" Phase3A="<<(weights.diminishedPassingInsertionException?"ON":"OFF")<<"; Actual recommendations=";
+        if(recommendationResultReady_)
+            file<<"HarmonyFirst="<<(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")
+                <<" Phase3A="<<(recommendations_.phase3aEnabled?"ON":"OFF")<<'\n';
+        else file<<"PENDING\n";
+        file<<"Meter source=MIDI/session; live host is reference only (meter may change). Host="
+            <<lastTimeSigNumerator_.value_or(0)<<'/'<<lastTimeSigDenominator_.value_or(0)
+            <<" session="<<sessionState_.meterNumerator.value_or(0)<<'/'<<sessionState_.meterDenominator.value_or(0)<<'\n';
         file<<"\nLast input route: "<<hostEnvironment_.lastDropType<<"\nGeneration="<<recommendationGeneration_
             <<" importedRevision="<<importedProgression_.revision<<" status="<<matchStatus_<<"\n"<<lastInputDiagnostic_;
-        file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,recommendations_);
+        if(recommendationResultReady_)
+            file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,recommendations_);
+        else file<<"\nRECOMMENDATION_DIAGNOSTICS=PENDING\n";
         if(view_)file<<view_->recommendationUiDiagnostics();
         file.flush();return file?"Local input and recommendation diagnostics exported":"Export failed";
 #else
@@ -170,7 +188,7 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         recommendationRequest_.preferredIntent=sessionState_.intent;
         recommendationRequest_.constraints=sessionState_.constraints;
         recommendationRequest_.tendency=sessionState_.tendency;
-        analysis_={}; matches_.clear(); recommendations_={};
+        analysis_={}; matches_.clear(); recommendations_={}; recommendationResultReady_=false;
         if (view_) {
             view_->setSessionState(sessionState_);
             view_->clearSessionDirty();
@@ -227,7 +245,7 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
             if(editorUiState_)view_->restoreEditorUiState(*editorUiState_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
             view_->setHostText(hostDiagnostics());
-            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
             reloadLibraries();
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
         }
@@ -243,6 +261,7 @@ void Controller::pollRecommendation() noexcept {
         if (!latest) return;
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
+        recommendationResultReady_=latest->error.empty();
         enrichments_=std::move(latest->enrichments);
         recommendationGeneration_=latest->generation;
         lastComputationMs_=latest->computationMs;
@@ -257,7 +276,7 @@ void Controller::pollRecommendation() noexcept {
             view_->setMatches(matches_, matchStatus_);
             view_->setRecommendations(recommendations_);
             view_->setEnrichments(enrichments_);
-            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_);
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
             if(!midiImportSummary_.empty()) {
                 view_->setActionStatus(midiImportSummary_+" · "+std::string(harmony::localization::text(sessionState_.locale,"midi.key"))+" "+
                     (analysis_.selectedKey?harmony::formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();
@@ -267,16 +286,18 @@ void Controller::pollRecommendation() noexcept {
 }
 
 void Controller::submitRecommendation(bool rankingOnly) {
-    if (importedProgression_.events.empty()) {if(recommendationWorker_)recommendationWorker_->cancel();return;}
+    recommendationResultReady_=false;
+    if (importedProgression_.events.empty()) {
+        if(recommendationWorker_)recommendationWorker_->cancel();
+        if(view_)view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,false);
+        return;
+    }
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
-    auto analysisContext=sessionState_.analysisContext();
-#if defined(HC_EXPERIMENT_HARMONY_FIRST_PLUGIN)
-    analysisContext.retrievalTimingMode=harmony::RetrievalTimingMode::HarmonyFirst;
-#endif
+    auto analysisContext=harmony::plugin::developmentContext(sessionState_.analysisContext());
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
-    if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_); }
+    if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_,recommendationResultReady_); }
 }
 void Controller::applySessionState(const harmony::session::PluginSessionState& next) noexcept {
     try {
@@ -289,7 +310,7 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
         recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
-        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};enrichments_={};editorUiState_.reset(); }
+        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset(); }
         if (view_) {
             view_->setSessionState(sessionState_);
             if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_); }
@@ -517,12 +538,23 @@ void Controller::applyMidiImport(const harmony::midi::ImportResult& loaded){
         if(!loaded){if(view_){view_->setDropReport(text("midi.failed"),loaded.midi.error+"\n"+loaded.extraction.error,false);view_->setActionStatus(text(loaded.midi.status==harmony::midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));}return;}
         auto next=sessionState_;if(!harmony::midi::applyImport(loaded,next.imported))return;
         next.tab=harmony::session::Tab::Recommend;
-        if(!loaded.midi.file.meters.empty()){const auto meter=loaded.midi.file.meters.front();
-            if(meter.numerator<=32&&meter.denominator<=32){next.meterNumerator=meter.numerator;next.meterDenominator=meter.denominator;}}
+        next.meterNumerator.reset();next.meterDenominator.reset();
+        if(const auto meter=harmony::midi::uniformImportedMeter(loaded)) {
+            next.meterNumerator=meter->first;next.meterDenominator=meter->second;
+        }
         importedProgression_=next.imported;
         hostEnvironment_.lastDropType="MIDI file import";
         lastInputDiagnostic_="SMF PPQ="+std::to_string(loaded.midi.file.ppq)+" notes="+std::to_string(loaded.midi.file.notes.size())+
             " extractedChords="+std::to_string(loaded.extraction.chords.size())+"\n";
+        std::ostringstream original;original<<std::setprecision(17);
+        for(std::size_t i=0;i<std::min<std::size_t>(4096,loaded.midi.file.notes.size());++i) {
+            const auto& n=loaded.midi.file.notes[i];original<<"SMF_NOTE pitch="<<n.pitch<<" startQN="<<n.startQN
+                <<" durationQN="<<n.durationQN<<" velocity="<<n.velocity<<" channel="<<n.channel<<" track="<<n.track<<'\n';
+        }
+        if(loaded.midi.file.notes.size()>4096)original<<"SMF_NOTE truncated after 4096 notes\n";
+        for(const auto& m:loaded.midi.file.meters)original<<"SMF_METER qn="<<m.qn<<" meter="<<m.numerator<<'/'<<m.denominator<<'\n';
+        for(const auto& t:loaded.midi.file.tempos)original<<"SMF_TEMPO qn="<<t.qn<<" bpm="<<t.bpm<<'\n';
+        lastInputDiagnostic_+=original.str();
         if(view_)view_->setSnapshotMode(false);
         applySessionState(next);
         if(view_) {
@@ -621,17 +653,15 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
         if (!chords.empty()) {
             if(midiImportWorker_)midiImportWorker_->cancel();
             stopPreview();
-            harmony::AnalysisContext analysisContext;
-            analysisContext.timeSigNumerator = lastTimeSigNumerator_;
-            analysisContext.timeSigDenominator = lastTimeSigDenominator_;
             if (importedProgression_.replace(std::move(chords), harmony::TimelineCoordinateMode::AbsoluteProjectQN)) {
                 sessionState_.imported=importedProgression_;
                 sessionState_.pinnedCandidateIds.clear();
-                sessionState_.meterNumerator=lastTimeSigNumerator_;
-                sessionState_.meterDenominator=lastTimeSigDenominator_;
+                // XML contains absolute QN positions, not a meter map. The
+                // current playhead's host meter cannot describe this selection.
+                sessionState_.meterNumerator.reset();sessionState_.meterDenominator.reset();
                 analysis_ = {};
                 matches_.clear();
-                recommendations_ = {};enrichments_={};editorUiState_.reset();
+                recommendations_ = {};recommendationResultReady_=false;enrichments_={};editorUiState_.reset();
                 matchStatus_ = "RECOMMEND：后台分析中…";
                 submitRecommendation();
                 if (view_) {
