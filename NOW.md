@@ -12,13 +12,13 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 ## 当前接续状态
 
-2026-10-12：dev.5 收尾已实现 About/诊断的真实编译及推荐状态、未分析 PENDING、SMF 导入拍号残留修复、无时值证据时的一致 Session 拍号回退，以及相邻 DP gaps 对明确和弦性质检查的绕过修复。定向 MIDI Import/Phase4D 测试通过，原 V4/657 测试 13047 检查；隔离 V5/658 候选门禁 41104 检查通过。正在执行最终源码提交的 OFF/ON 全量构建与回归，尚未把旧结果计入新版本通过数。
+2026-10-12：dev.5 工程收尾完成，源码构建提交 `730e819`。OFF/ON 各 CTest 33/33、VST3 Validator 47/47、V4 专项13047检查、隔离V5/658专项41104检查通过；1440严格矩阵与dev.4哈希相同。隔离安装生命周期21项通过。实现 About/诊断真实开关与PENDING、导入拍号残留修复、缺时值时一致Session拍号回退、明确性质检查的相邻DP gaps绕过修复。完整核销、性能、版本策略与发布边界见 [dev.5 收尾报告](docs/DEV5_CLOSEOUT_20261012.md)。
 
 dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细核销与来源证据保存在同级 `HarmonyContinuation-validation-20261012/HISTORY_PROVENANCE.md`。dev.4 包保留在 `build-phase4d-delivery/`。新人工清单见 [dev.5 验收](docs/DEV5_CUBASE_ACCEPTANCE.md)。Factory V4 SHA-256 仍为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；独立候选及其音乐设计见 [候选说明](data/factory-proposals/20261012/README.md)。
 
 ## 下一步：在另一台设备继续
 
-当前安全开发分支为 `development/dev5-closeout-20261012`，提交/同步及最终交付状态将在门禁结束后更新。输出目录为同级 `HarmonyContinuation-validation-20261012`，隔离候选为 `HarmonyContinuation-candidates-20261012`。真实截图的 A08 ID 及 R02 成功/失败原始输入仍需本地诊断；R02 HOST ROOT CAUSE UNKNOWN。当前宿主拍号不能证明历史选择区段，变拍 map/复合节拍分组仍未知。人工 Cubase 与音乐试听 Pending，正式发布未授权。
+当前安全开发分支为 `development/dev5-closeout-20261012`，源码提交已通过本机代理推送到既有origin；最终文档提交与远端核验值见交付BUILD_INFO.json。交付目录为同级 `HarmonyContinuation-dev5-delivery-20261012`，完整日志为 `HarmonyContinuation-validation-20261012`，独立候选为 `HarmonyContinuation-candidates-20261012`。下一步为真实Cubase与音乐验收：截图A08身份、R02成功/失败原始诊断、候选试听与工程交互；R02 HOST ROOT CAUSE UNKNOWN。变拍map/复合分组仍未知，正式发布未授权且未执行。
 
 ## 发布与验证证据
 

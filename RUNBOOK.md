@@ -68,6 +68,8 @@ Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [�
 
 最终运行所有已注册 CTest；33 项包含 1440 严格矩阵及 33×四组合专项。可选候选门禁复用 `Phase4DTests <独立证据目录> <隔离候选DB>`，插件默认仍使用 V4/657。候选 DB 编译方法见 `data/factory-proposals/20261012/README.md`。主报告与包内证据记录最终源码提交、逐项结果和已知限制；真实宿主清单见 `docs/DEV5_CUBASE_ACCEPTANCE.md`。
 
+本机MSVC PDB工具不匹配时，构建进程设置 `_CL_=/Z7`，使用对象内调试信息；无需修改离线SDK。测试将TEMP/TMP设为独立工作区目录，避开沙箱临时目录的原子替换权限限制。当前构建提交、完整33项结果、21项隔离安装结果及日志入口见 [dev.5收尾报告](docs/DEV5_CLOSEOUT_20261012.md)。
+
 ### Factory V4 另一设备接手
 
 1. 登录有仓库写权限的 GitHub 账号，打开 [未发布的 V4 交付草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)。下载 `HarmonyContinuation-0.10.0-dev.1-Handoff.zip`、`HANDOFF_SHA256SUMS.txt`；只需人工安装时也可单独下载同页 Setup。保持草稿未发布。
