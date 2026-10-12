@@ -30,6 +30,15 @@ struct KeySignature { PitchClass tonic{PitchClass::C}; Mode mode{Mode::Major}; }
 struct KeyCandidate { KeySignature key; float score{}; float confidence{}; };
 struct ScaleDegree { int degree{}; int alteration{}; }; // degree 1..7, semitone alteration
 
+// Internal retrieval experiment. Legacy remains the production default and is
+// intentionally not persisted in sessions or snapshots.
+enum class RetrievalTimingMode : std::uint8_t {
+    Legacy,
+    BarPositionIndependent,
+    ContinuousStructure,
+    HarmonyFirst
+};
+
 enum class FieldConfidence : std::uint8_t { Unknown, Performed, Symbolic, Explicit };
 struct NormalizedChord {
     std::optional<PitchClass> root;
@@ -58,6 +67,8 @@ struct HarmonicEvent {
     HarmonicFunction function{HarmonicFunction::Unknown};
     RoleFlags roles{};
     float structuralWeight{};
+    RoleFlags retrievalRoles{};
+    float retrievalStructuralWeight{};
     float analysisConfidence{};
     std::size_t sourceChordIndex{};
 };
@@ -105,6 +116,7 @@ struct AnalysisContext {
     std::optional<int> timeSigNumerator; // used only when the project meter is known
     std::optional<int> timeSigDenominator;
     float skeletonThreshold{0.55f};
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Legacy};
 };
 
 NormalizedChord normalizeChord(const ChordEvent& event);

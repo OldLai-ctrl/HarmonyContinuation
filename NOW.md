@@ -1,20 +1,24 @@
 # 当前接续状态
 
+## 已完成阶段
+
+Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分析及 Phase 4B 节奏/和声检索审计均已形成报告。Phase 3A 补偿保持默认关闭；相关历史范围和证据边界见各阶段报告。
+
 ## 功能基线
 
 - 当前正式版本：`0.9.0`；发布提交与 `v0.9.0` Tag 均为 `ddc4f89babd4520daac3eae74824d6f581ce0e75`。源码清理提交不改变该正式包的构建身份。
 - 正式版为 Factory Library 3；本轮独立开发版本为 Library 4。Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2 保持；生产数据与宿主适配未改。
 - Factory V3 为 155 条 canonical 历史记录加 474 条新进行，共 629 条；六条 QUESTIONABLE 留在非生产清单。统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)，兼容与降级边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。
 
-## 当前任务
+## 当前接续状态
 
-2026-10-11：`library/v4` 的 **0.10.0-dev.3 Cubase 输入兼容性开发包已完成，等待人工复验**。代码提交 `99017f596cef895f2024677120b7005fa7c4a98e` 已通过 GitHub 接口同步；本地与远端源码 tree 完全一致，未使用崩溃的 git-remote-https 推送。验证记录另行提交至同分支；不合并 main、不创建正式 Tag、不正式发布。
+2026-10-12：Phase 4B 离线审计、隔离构建、回归修复和 Cubase 验收包已完成。默认 OFF 全量 CTest 32/32 通过；HarmonyFirst ON 相关测试 9/9 通过，VST3 验证器 47/47 通过。七项旧失败均已通过当前回归。Factory V4 657 条及 SHA-256 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534` 未变；HarmonyFirst 与 Phase 3A 补偿默认均关闭。未安装插件、未运行 Cubase、未创建正式版本。
 
-缺五度造成七和弦身份丢失、节奏参与和声对齐及门槛的问题已在明确标记的模拟冲突输入中复现并修复。新 800 组覆盖中，500 组 B08/B11 目标均匹配、保留、默认可见且 More 可访问，300 组普通输入有推荐；原 1440 组及 12 个相关测试通过。界面专项、Preview/MIDI 和 Enrichment 回归通过；隔离安装 413 项通过，个人数据哨兵保留。Factory 数据库哈希与 dev.2 相同，657 条，Schema 2/2/5/3/2 未改。
+完整核销见 [Phase 4B 收尾报告](docs/PHASE4B_CLOSEOUT_RECONCILIATION_20261012.md)，离线实现与实验数据见 [Phase 4B 综合报告](docs/PHASE4B_INTEGRATED_IMPLEMENTATION_20261012.md)。OFF/ON 便携验收 ZIP 在忽略的 `build-phase4b/` 构建目录，不随 Git 提交；没有 Inno Setup 安装器。
 
-开发包位于 `build-installer/v4-0.10.0-dev.3/`，Build ID `0.10.0-dev.3 / 99017f5 / Release / Library 4`；产物、SHA-256、对照、检查范围与局限见 [dev.3 可靠性报告](docs/DEV3_CUBASE_RELIABILITY_FIX.md) 和包内 BUILD_INFO / evidence。旧 dev.1/dev.2 目录未覆盖。安装器脚本逻辑未变，仅复用隔离检查并增加可选版本参数。
+## 下一步：在另一台设备继续
 
-**READY FOR CUBASE RE-ACCEPTANCE：YES；Cubase 真实 B08/B11 仍 Pending。** 旧真实 VST-XML 协议证据存在，但用户这次失败的原始载荷尚未捕获，不能用模拟 XML 宣称真机已经修复。现有菜单已增加主动本地导出输入字段、模板过滤原因、后台结果和 UI 排名。下一步只按 [人工清单](docs/V4_DAW_ACCEPTANCE.md) 安装复验，必要时主动导出；完成后停止，不自动开发其它功能。dev.2 历史验证见 [旧报告](docs/DEV2_CORE_RELIABILITY_FIX.md)。
+拉取 `library/v4` 最新提交后，从 Phase 4B 收尾报告中的人工清单继续做 Cubase 验收。重点采集 R01 与 R02 两组真实 MIDI、宿主调性/拍号、插件识别、OPEN/FULL/SKELETON、候选来源和淘汰原因；当前模拟结果不能替代真机证据。另一台设备若需要相同的 OFF/ON 二进制，请单独转移本机忽略目录中的 ZIP，或在该设备按报告重新构建。保持默认 Legacy 与 Phase 3A 关闭；验收后再决定是否进入后续阶段。
 
 ## 发布与验证证据
 

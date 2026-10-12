@@ -127,15 +127,15 @@ int main() {
           goodFactory.groups[0][0].rankingScore > badFactory.groups[0][0].rankingScore + 5.f,
           "unexplained input does not rank like resolved secondary chord");
     auto custom = basic.front(); custom.id = "user1"; custom.sourceType = "user";
-    library::UserLibrary user(userPath);
-    check(user.addProgression(custom, error), "R user save");
-    check(!library::loadFactory(userPath), "factory/user database type isolation");
-    check(user.loadAll().templates.size() == 1, "R user reload");
-    check(library::compileFactory(factoryPath, circle, error), "S factory rebuild");
-    check(user.loadAll().templates.size() == 1, "S user isolated");
-    custom.name = "revised";
-    check(user.updateProgression(custom, error) && user.loadAll().templates.front().name == "revised", "user update");
     {
+        library::UserLibrary user(userPath);
+        check(user.addProgression(custom, error), "R user save");
+        check(!library::loadFactory(userPath), "factory/user database type isolation");
+        check(user.loadAll().templates.size() == 1, "R user reload");
+        check(library::compileFactory(factoryPath, circle, error), "S factory rebuild");
+        check(user.loadAll().templates.size() == 1, "S user isolated");
+        custom.name = "revised";
+        check(user.updateProgression(custom, error) && user.loadAll().templates.front().name == "revised", "user update");
         plugin::RecommendationWorker worker(factoryPath, userPath);
         AnalysisContext ctx; ctx.forcedKey = KeySignature{PitchClass::C, Mode::Major};
         worker.submit(ended, ctx);
@@ -146,9 +146,12 @@ int main() {
             latest = worker.takeLatest();
         }
         check(latest && latest->generation == latestGeneration, "T stale worker result discarded");
+        check(user.removeProgression(custom.id, error) && user.loadAll().templates.empty(), "user delete");
     }
-    check(user.removeProgression(custom.id, error) && user.loadAll().templates.empty(), "user delete");
-    std::filesystem::remove(factoryPath); std::filesystem::remove(userPath);
-    std::filesystem::remove(temp);
+    for(const auto& path:{factoryPath,userPath,temp}) {
+        std::error_code cleanupError;
+        for(int attempt=0;attempt<20;++attempt){cleanupError.clear();std::filesystem::remove(path,cleanupError);if(!cleanupError)break;std::this_thread::sleep_for(std::chrono::milliseconds(25));}
+        if(cleanupError)throw std::filesystem::filesystem_error("test cleanup failed",path,cleanupError);
+    }
     std::cout << checks << '/' << checks << " PASS\n";
 }

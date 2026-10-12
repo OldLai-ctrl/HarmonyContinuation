@@ -67,6 +67,14 @@ float cadenceScore(PhraseIntent intent, CadenceType cadence) {
         cadence == CadenceType::PerfectAuthentic || cadence == CadenceType::Plagal ? 1.f : 0.4f;
     return 0.5f;
 }
+float rhythmNeutralEligibility(const RecommendationSubScores& s, const RecommendationWeights& w) {
+    const float weights = w.match + w.skeleton + w.style + w.intent + w.cadence +
+        w.continuation + w.prior + w.support;
+    if (weights <= 0.f) return 0.f;
+    return 100.f * (w.match*s.match + w.skeleton*s.skeleton + w.style*s.style +
+        w.intent*s.intent + w.cadence*s.cadence + w.continuation*s.continuation +
+        w.prior*s.prior) / weights;
+}
 } // namespace
 
 RhythmScaleEstimate estimateRhythmScale(const MatchResult& match, const MatchQuery& query,
@@ -152,6 +160,78 @@ ConcreteChordEvent realizeContinuation(const MatchEvent& event, KeySignature key
         concrete.harmonicData=std::move(data);
     }
     return concrete;
+}
+
+DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
+    const MatchQuery& query, const MatchResult& match, const ProgressionTemplate& item) {
+    DiminishedInsertionDiagnostic d;
+    d.templateId = item.id;
+    d.validContinuation = match.templateMatchStart <= match.templateMatchEnd &&
+        match.templateMatchEnd < item.full.size() &&
+        match.continuationStartIndex == match.templateMatchEnd + 1 &&
+        match.continuationStartIndex <= item.full.size() &&
+        match.hasContinuation == (match.continuationStartIndex < item.full.size()) &&
+        (match.continuationStartIndex < item.full.size() || (item.loopable && !item.full.empty()));
+    const auto* selected = interpretationFor(query, match.key);
+    if (!selected || selected->full.size() != query.source.size()) return d;
+    std::size_t count{}, insertion{}, position{};
+    for (std::size_t i=0;i<match.alignmentTrace.size();++i) {
+        const auto& step=match.alignmentTrace[i];
+        if(step.operation==AlignmentOp::QueryInsertion) {
+            ++count; position=i;
+            if(step.queryIndex) insertion=*step.queryIndex;
+            d.alreadyExplained=hasReason(step.reasons,MatchReason::ResolvesToMatchedTarget);
+        }
+    }
+    d.singleInsertion=count==1;
+    if(!d.singleInsertion || insertion==0 || insertion+1>=query.source.size())return d;
+    // Require a complete, one-to-one query trace and a contiguous Factory window.
+    // A Substitute may describe borrowed function even with identical actual cores.
+    if(match.alignmentTrace.size()!=query.source.size())return d;
+    std::size_t nextTemplate=match.templateMatchStart;
+    d.compatibleCore=true;
+    for(std::size_t i=0;i<match.alignmentTrace.size();++i) {
+        const auto& step=match.alignmentTrace[i];
+        if(step.queryIndex!=i || selected->full[i].sourceIndex!=i)return d;
+        if(i==position) {if(step.templateIndex || i!=insertion)return d;continue;}
+        if((step.operation!=AlignmentOp::Match && step.operation!=AlignmentOp::Substitute) ||
+           step.templateIndex!=nextTemplate || nextTemplate>=item.full.size())return d;
+        const auto& expected=item.full[nextTemplate++];
+        const auto actual=normalizeChord(query.source[i]);
+        // Secondary targets and unknown identities need additional evidence.
+        if(!expected.degree || expected.target || expected.quality==ChordQuality::Unknown || !actual.root || actual.fieldConflict ||
+           actual.quality!=expected.quality) {d.compatibleCore=false;continue;}
+        constexpr int major[]{0,2,4,5,7,9,11},minor[]{0,2,3,5,7,8,10};
+        const auto degree=*expected.degree;
+        if(degree.degree<1 || degree.degree>7) {d.compatibleCore=false;continue;}
+        const int root=positiveMod(static_cast<int>(match.key.tonic)+
+            (match.key.mode==Mode::Major?major:minor)[degree.degree-1]+degree.alteration,12);
+        if(root!=static_cast<int>(*actual.root))d.compatibleCore=false;
+    }
+    d.reliableAlignment=nextTemplate==match.templateMatchEnd+1;
+    const auto left=normalizeChord(query.source[insertion-1]);
+    const auto mid=normalizeChord(query.source[insertion]);
+    const auto right=normalizeChord(query.source[insertion+1]);
+    // Half-diminished is deliberately excluded from this narrow exception.
+    d.diminished=!mid.fieldConflict &&
+        (mid.quality==ChordQuality::Diminished || mid.quality==ChordQuality::Diminished7);
+    if(left.root && mid.root && right.root) {
+        const int a=positiveMod(static_cast<int>(*mid.root)-static_cast<int>(*left.root),12);
+        const int b=positiveMod(static_cast<int>(*right.root)-static_cast<int>(*mid.root),12);
+        d.chromaticMotion=(a==1 || a==11) && a==b;
+        const auto tones=chordPitches(query.source[insertion]);
+        const auto l=chordPitches(query.source[insertion-1]),r=chordPitches(query.source[insertion+1]);
+        const auto common=[&](const ChordPitchSet& side) {
+            int n{};for(int pitch=0;pitch<12;++pitch)
+                if((tones.intervals&(1<<positiveMod(pitch-tones.root,12))) &&
+                   (side.intervals&(1<<positiveMod(pitch-side.root,12))))++n;
+            return n;
+        };
+        d.sharedTones=common(l)>=2 || common(r)>=2;
+    }
+    d.eligible=d.singleInsertion && d.reliableAlignment && d.diminished && d.chromaticMotion &&
+        d.sharedTones && d.compatibleCore && d.validContinuation && !d.alreadyExplained;
+    return d;
 }
 
 RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
@@ -254,12 +334,32 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         candidate.rankingScore = 100.f * (w.match*s.match + w.skeleton*s.skeleton + w.style*s.style +
             w.intent*s.intent + w.cadence*s.cadence + w.continuation*s.continuation + w.prior*s.prior +
             w.rhythm*s.rhythm);
+        candidate.eligibilityScore = rhythmNeutralEligibility(s, w);
         for (const auto& step : match.alignmentTrace) {
             if (step.operation == AlignmentOp::QueryInsertion &&
-                !hasReason(step.reasons, MatchReason::ResolvesToMatchedTarget))
+                !hasReason(step.reasons, MatchReason::ResolvesToMatchedTarget)) {
                 candidate.rankingScore -= w.unexplainedInsertionPenalty;
-            else if (step.operation == AlignmentOp::TemplateDeletion)
+                candidate.eligibilityScore -= w.unexplainedInsertionPenalty;
+            } else if (step.operation == AlignmentOp::TemplateDeletion) {
                 candidate.rankingScore -= w.templateDeletionPenalty;
+                candidate.eligibilityScore -= w.templateDeletionPenalty;
+            }
+        }
+        if(w.diminishedPassingInsertionException) {
+            auto d=evaluateDiminishedPassingInsertion(query,match,item);
+            d.scoreBefore=candidate.rankingScore;
+            for(const auto& step:match.alignmentTrace)
+                if(step.operation==AlignmentOp::QueryInsertion &&
+                   !hasReason(step.reasons,MatchReason::ResolvesToMatchedTarget))
+                    d.totalInsertionPenalty+=w.unexplainedInsertionPenalty;
+            if(d.singleInsertion && !d.alreadyExplained)
+                d.originalPenalty=std::max(0.f,w.unexplainedInsertionPenalty);
+            // One event, one refund of the penalty actually charged. No bonus.
+            d.refund=d.eligible?d.originalPenalty:0.f;
+            candidate.rankingScore+=d.refund;
+            candidate.eligibilityScore+=d.refund;
+            d.scoreAfter=candidate.rankingScore;
+            result.insertionDiagnostics.push_back(std::move(d));
         }
         if(!request.constraints.melody.empty()) {
             candidate.constraints=request.constraints;
@@ -274,8 +374,11 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             });
             candidate.rankingScore+=profile.colorBias*static_cast<float>(colors)/
                 static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
+            candidate.eligibilityScore+=profile.colorBias*static_cast<float>(colors)/
+                static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
         }
         match.disposition="candidate_generated";match.candidateRankingScore=candidate.rankingScore;
+        match.candidateEligibilityScore=candidate.eligibilityScore;
         const auto fingerprint = suffixFingerprint(candidate, false);
         auto [it, inserted] = distinct.try_emplace(fingerprint, std::move(candidate));
         if (!inserted) {
@@ -294,13 +397,20 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         }
     }
     const auto mark=[&](const ContinuationCandidate& c,const char* why) {
-        for(auto& m:result.matches)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),m.templateId)!=c.supportingTemplates.end()){m.disposition=why;m.candidateRankingScore=c.rankingScore;}
+        for(auto& m:result.matches)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),m.templateId)!=c.supportingTemplates.end()){
+            m.disposition=why;m.candidateRankingScore=c.rankingScore;m.candidateEligibilityScore=c.eligibilityScore;
+        }
     };
     result.stats.distinct=distinct.size();
     for (auto& [key, candidate] : distinct) {
         candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
         candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
-        if (candidate.rankingScore >= w.minimumScore) {
+        const float coreWeight = w.match + w.skeleton + w.style + w.intent + w.cadence + w.continuation + w.prior + w.support;
+        if (coreWeight > 0.f)
+            candidate.eligibilityScore += 100.f * w.support * candidate.subscores.support / coreWeight;
+        const auto gateScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
+            ? candidate.eligibilityScore : candidate.rankingScore;
+        if (gateScore >= w.minimumScore) {
             ++result.stats.scorePassed;
             result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
         } else {mark(candidate,"minimum_score");
@@ -321,9 +431,15 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                 while (shared < common && chosen.continuation[shared].degree.degree == candidate.continuation[shared].degree.degree &&
                        chosen.continuation[shared].degree.alteration == candidate.continuation[shared].degree.alteration)
                     ++shared;
-                if (shared >= 2 && shared * 2 >= common) candidate.rankingScore -= w.diversityPenalty;
+                if (shared >= 2 && shared * 2 >= common) {
+                    candidate.rankingScore -= w.diversityPenalty;
+                    if (query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst)
+                        candidate.eligibilityScore -= w.diversityPenalty;
+                }
             }
-            if (!near && candidate.rankingScore >= w.minimumScore) diverse.push_back(std::move(candidate));
+            const auto candidateGateScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
+                ? candidate.eligibilityScore : candidate.rankingScore;
+            if (!near && candidateGateScore >= w.minimumScore) diverse.push_back(std::move(candidate));
             else mark(candidate,near?"equivalent_path_deduplication":"diversity_score");
         }
         std::sort(diverse.begin(), diverse.end(), [](const auto& a, const auto& b) { return a.rankingScore > b.rankingScore; });

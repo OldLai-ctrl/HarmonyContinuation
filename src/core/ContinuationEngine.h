@@ -35,6 +35,7 @@ struct ContinuationCandidate {
     float rhythmConfidence{};
     float matchSimilarity{};
     float rankingScore{}; // 0..100 ordinal score, not a probability
+    float eligibilityScore{}; // rhythm-neutral gate score for HarmonyFirst experiments
     RecommendationSubScores subscores;
     std::size_t matchStart{}, matchEnd{}, continuationStart{};
     CadenceType cadence{CadenceType::None};
@@ -54,6 +55,7 @@ struct RecommendationWeights {
     float templateDeletionPenalty{2.f};
     float intentCompletionTieBreak{0.005f}; // at most 0.25 points in either direction
     std::size_t perGroup{3};
+    bool diminishedPassingInsertionException{false}; // internal experiment, never persisted
 };
 struct RecommendationRequest {
     std::optional<Style> style;
@@ -61,11 +63,21 @@ struct RecommendationRequest {
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
 };
+struct DiminishedInsertionDiagnostic {
+    TemplateID templateId;
+    bool singleInsertion{}, reliableAlignment{}, diminished{}, chromaticMotion{};
+    bool sharedTones{}, compatibleCore{}, validContinuation{}, alreadyExplained{};
+    bool eligible{};
+    float totalInsertionPenalty{}, originalPenalty{}, refund{}, scoreBefore{}, scoreAfter{};
+};
 struct RecommendationSet {
     std::array<std::vector<ContinuationCandidate>, 4> groups; // Resolve, Develop, Loop, Color
     std::vector<MatchResult> matches;
     MatchRunStats stats;
+    std::vector<DiminishedInsertionDiagnostic> insertionDiagnostics; // enabled experiment only
 };
+DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
+    const MatchQuery&, const MatchResult&, const ProgressionTemplate&);
 struct RhythmScaleEstimate { float scale{1.f}; float confidence{}; std::size_t samples{}; };
 RhythmScaleEstimate estimateRhythmScale(const MatchResult&, const MatchQuery&, const ProgressionTemplate&);
 ConcreteChordEvent realizeContinuation(const MatchEvent&, KeySignature, double durationQN);

@@ -78,14 +78,19 @@ std::vector<MatchEvent> skeleton(const std::vector<MatchEvent>& full, const std:
     }
     return result;
 }
-float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reasons, bool insertion) {
-    const bool light = hasRole(e.roles, Role::Passing) || hasRole(e.roles, Role::Embellishing) ||
+float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reasons, bool insertion,
+              bool continuousStructure = false) {
+    const bool light = hasRole(e.roles, Role::Passing) ||
+                       (!continuousStructure && hasRole(e.roles, Role::Embellishing)) ||
                        hasRole(e.roles, Role::Approach);
     reasons |= flag(insertion ? (light ? MatchReason::EmbellishingInsertion : MatchReason::StructuralInsertion)
                               : (light ? MatchReason::EmbellishingDeletion : MatchReason::StructuralDeletion));
     float factor = 1.f;
-    if (hasRole(e.roles, Role::Passing) || hasRole(e.roles, Role::Embellishing)) factor *= w.passingGapFactor;
+    if (hasRole(e.roles, Role::Passing) ||
+        (!continuousStructure && hasRole(e.roles, Role::Embellishing))) factor *= w.passingGapFactor;
     else if (hasRole(e.roles, Role::Approach)) factor *= w.approachGapFactor;
+    else if (continuousStructure)
+        factor *= w.passingGapFactor + (1.f - w.passingGapFactor) * std::clamp(e.structuralWeight, 0.f, 1.f);
     else if (hasRole(e.roles, Role::SecondaryDominant) || hasRole(e.roles, Role::SecondaryLeadingTone))
         factor *= w.secondaryGapFactor;
     if (e.function == HarmonicFunction::TonicProlongation) factor *= w.tonicProlongationGapFactor;
@@ -178,7 +183,7 @@ struct LayerResult {
 struct Cell { float cost{std::numeric_limits<float>::infinity()}; std::uint8_t predecessor{}; std::size_t pairs{}; };
 
 LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent>& t,
-                  const MatchWeights& w, Mode mode) {
+                   const MatchWeights& w, Mode mode, bool continuousStructure = false) {
     LayerResult out;
     if (q.empty() || t.empty()) return out;
     const auto n = q.size(), m = t.size();
@@ -189,17 +194,17 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
         at(0, j) = {w.templatePrefixSkipCost * static_cast<float>(j), 0, 0}; // very low-cost template prefix
     for (std::size_t i = 1; i <= n; ++i) {
         MatchReasonFlags reasons{};
-        auto gap = gapCost(q[i - 1], w, reasons, true);
+        auto gap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) gap *= w.queryTailStructuralFactor;
         at(i, 0) = {at(i - 1, 0).cost + gap, 2, 0};
     }
     for (std::size_t i = 1; i <= n; ++i) for (std::size_t j = 1; j <= m; ++j) {
         MatchReasonFlags reasons{};
         const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], w, reasons, i == n, mode);
-        auto insertGap = gapCost(q[i - 1], w, reasons, true);
+        auto insertGap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) insertGap *= w.queryTailStructuralFactor;
         const auto insert = at(i - 1, j).cost + insertGap;
-        const auto erase = at(i, j - 1).cost + gapCost(t[j - 1], w, reasons, false);
+        const auto erase = at(i, j - 1).cost + gapCost(t[j - 1], w, reasons, false, continuousStructure);
         if (pair <= insert + epsilon && pair <= erase + epsilon)
             at(i, j) = {pair, 1, at(i - 1, j - 1).pairs + 1};
         else if (insert <= erase + epsilon)
@@ -245,7 +250,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::nullopt);
             step.queryIndex = q[i].sourceIndex;
             step.operation = AlignmentOp::QueryInsertion;
-            step.cost = gapCost(q[i], w, step.reasons, true);
+            step.cost = gapCost(q[i], w, step.reasons, true, continuousStructure);
             if (i + 1 == n && !hasReason(step.reasons, MatchReason::EmbellishingInsertion))
                 step.cost *= w.queryTailStructuralFactor;
         } else {
@@ -253,7 +258,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::nullopt);
             step.templateIndex = t[j].sourceIndex;
             step.operation = AlignmentOp::TemplateDeletion;
-            step.cost = gapCost(t[j], w, step.reasons, false);
+            step.cost = gapCost(t[j], w, step.reasons, false, continuousStructure);
         }
         out.trace.push_back(step);
     }
@@ -326,6 +331,7 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
     query.forcedKey = context.forcedKey.has_value();
     query.timeSigNumerator = context.timeSigNumerator;
     query.timeSigDenominator = context.timeSigDenominator;
+    query.retrievalTimingMode = context.retrievalTimingMode;
     if (source.empty()) return query;
     const auto initial = analyzeHarmony(source, context);
     std::vector<KeyCandidate> keys;
@@ -346,8 +352,8 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
         interpretation.skeletonIndices = analysis.skeletonIndices;
         for (std::size_t i = 0; i < analysis.full.size(); ++i) {
             const auto& e = analysis.full[i];
-            interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.roles,
-                                           e.structuralWeight, source[i].durationQN, i});
+            interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.retrievalRoles,
+                                           e.retrievalStructuralWeight, source[i].durationQN, i});
             const auto tones = chordPitches(source[i]);
             auto& projected = interpretation.full.back();
             const auto& normalized=e.chord;
@@ -441,10 +447,12 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
             // V4 phrases may deliberately retain every defining connector.
             // Compare the supplied FULL path in that case: generic input
             // simplification must not erase the evidence this template requires.
-            const auto qs = t.version >= 4 && t.skeletonIndices.size() == t.full.size()
-                ? q.full : skeleton(q.full, q.skeletonIndices);
-            const auto full = align(q.full, t.full, w, t.mode);
-            const auto structural = align(qs, ts, w, t.mode);
+            const auto qs = query.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure
+                ? q.full : (t.version >= 4 && t.skeletonIndices.size() == t.full.size()
+                    ? q.full : skeleton(q.full, q.skeletonIndices));
+            const bool continuousStructure = query.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure;
+            const auto full = align(q.full, t.full, w, t.mode, continuousStructure);
+            const auto structural = align(qs, ts, w, t.mode, continuousStructure);
             if (!full.pairCount || !structural.pairCount) continue;
             MatchResult r;
             r.templateId = t.id;

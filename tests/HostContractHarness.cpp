@@ -29,6 +29,7 @@
 #include <ole2.h>
 #include <fstream>
 #include <iostream>
+#include <string_view>
 #include <thread>
 #include <limits>
 #include <set>
@@ -38,6 +39,7 @@ using namespace Steinberg;
 using namespace Steinberg::Vst;
 namespace {
 void require(bool value){if(!value)throw std::runtime_error("contract assertion failed");}
+void require(bool value,std::string_view message){if(!value)throw std::runtime_error(std::string(message));}
 bool ok(tresult v){return v==kResultOk;}
 struct NamedHost final:HostApplication {
     std::string name;
@@ -113,8 +115,10 @@ int main(int argc,char** argv){
     const std::string profile=argv[2];host::HostEnvironment env;env.identify(profile);
     const auto fixtures=std::filesystem::path(HC_MIDI_FIXTURES),directory=std::filesystem::path(HC_TEST_OUTPUT_DIR)/("host-contract-"+std::to_string(GetCurrentProcessId()));
     std::filesystem::create_directories(directory);
+    const auto configuredFactory=library::loadFactory(HC_FACTORY_DB_PATH);
+    require(static_cast<bool>(configuredFactory),"configured Factory database must load");
     auto imported=midi::importFile(fixtures/"pop_block.mid");require(static_cast<bool>(imported));
-    session::PluginSessionState original;midi::applyImport(imported,original.imported);original.style=Style::Jazz;original.uiZoomPercent=125;
+    session::PluginSessionState original;midi::applyImport(imported,original.imported);original.factoryLibraryVersion=configuredFactory.libraryVersion;original.style=Style::Jazz;original.uiZoomPercent=125;
     original.locale=session::Locale::EnUS;original.productMode=session::ProductMode::Enrich;original.constraints.melody.push_back(*parseMelodyNote("E4"));
     auto initial=streamState(original);
     test("01 standard host name classification",[&]{require(env.name==profile);require(!env.version);});
@@ -160,7 +164,7 @@ int main(int argc,char** argv){
     test("24 actual SDK initialize state without view",[&]{instance=std::make_unique<Instance>(factory,*info);require(instance->restore(initial));require(instance->state().uiZoomPercent==125&&instance->state().imported.events.size()==4);});
     test("25 state before view attach",[&]{instance->create();instance->attach(window.handle);require(instance->state().style==Style::Jazz&&instance->state().constraints.melody.size()==1);});
     test("26 view before setState",[&]{auto changed=original;changed.uiZoomPercent=150;auto bytes=streamState(changed);require(instance->restore(bytes));require(instance->state().uiZoomPercent==150);});
-    test("27 remove reattach recreated parent",[&]{auto before=instance->save();for(int i=0;i<6;++i){require(ok(instance->view->removed()));instance->attach(i%2?window.handle:other.handle);}require(instance->save()==before);});
+    test("27 remove reattach recreated parent",[&]{auto before=instance->save();require(before.size()>4,"precondition: controller state is present");for(int i=0;i<6;++i){if(!ok(instance->view->removed()))throw std::runtime_error("view removal failed at cycle "+std::to_string(i));try{instance->attach(i%2?window.handle:other.handle);}catch(const std::exception& e){throw std::runtime_error("view reattach failed at cycle "+std::to_string(i)+": "+e.what());}const auto after=instance->save();if(after!=before)throw std::runtime_error("saved state changed at cycle "+std::to_string(i)+"; before="+before.substr(4)+"; after="+after.substr(4));}});
     test("28 resize before attach",[&]{Instance second(factory,*info);second.create();ViewRect r{0,0,1300,900};require(ok(second.view->onSize(&r)));second.attach(other.handle);require(second.state().editorWidth==1300);});
     test("29 host resize rejected rollback",[&]{auto before=instance->save();FUnknownPtr<IPlugViewContentScaleSupport> scale(instance->view);require(scale!=nullptr);instance->frame.reject=true;require(!ok(scale->setContentScaleFactor(1.5f)));instance->frame.reject=false;require(instance->save()==before);});
     test("30 host resize accepted returned geometry",[&]{FUnknownPtr<IPlugViewContentScaleSupport> scale(instance->view);instance->frame.mutate=true;require(ok(scale->setContentScaleFactor(1.5f)));instance->frame.mutate=false;require(instance->state().editorWidth==1200&&instance->state().editorHeight==667);require(ok(scale->setContentScaleFactor(1.f)));});
@@ -170,7 +174,7 @@ int main(int argc,char** argv){
     test("34 corrupt state preserves phrase",[&]{auto before=instance->save();std::string bad="xxxx";require(!instance->restore(bad)&&instance->save()==before);});
     auto multi=[&](int count){std::vector<std::unique_ptr<Instance>> many;std::vector<std::string> states;for(int i=0;i<count;++i){many.push_back(std::make_unique<Instance>(factory,*info));auto s=original;s.editorWidth=1000+i*25;s.style=i%2?Style::Pop:Style::Jazz;states.push_back(streamState(s));require(many.back()->restore(states.back()));}for(int i=0;i<count;++i)require(many[i]->save()==states[i]);};
     test("35 two actual plugin instances",[&]{multi(2);});test("36 four actual plugin instances",[&]{multi(4);});test("37 eight actual plugin instances",[&]{multi(8);});
-    test("38 isolated jobs shared read-only factory and user DB",[&]{const auto user=directory/"user.db";library::UserLibrary library(user);auto all=library.loadAll();require(static_cast<bool>(all));for(int count:{2,4,8}){std::vector<std::unique_ptr<plugin::RecommendationWorker>> workers;for(int i=0;i<count;++i){workers.push_back(std::make_unique<plugin::RecommendationWorker>(HC_FACTORY_DB_PATH,user));workers.back()->submit(original.imported.events,original.analysisContext(),{},false,original.imported.revision);}for(auto& worker:workers){bool ready=false;for(int i=0;i<1000;++i){if(auto r=worker->takeLatest()){require(r->error.empty()&&r->factoryCount==161);ready=true;break;}std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(ready);}}require(library.loadAll().templates.size()==all.templates.size());
+    test("38 isolated jobs shared read-only factory and user DB",[&]{const auto user=directory/"user.db";library::UserLibrary library(user);auto all=library.loadAll();require(static_cast<bool>(all));const auto expectedFactoryCount=configuredFactory.templates.size();for(int count:{2,4,8}){std::vector<std::unique_ptr<plugin::RecommendationWorker>> workers;for(int i=0;i<count;++i){workers.push_back(std::make_unique<plugin::RecommendationWorker>(HC_FACTORY_DB_PATH,user));workers.back()->submit(original.imported.events,original.analysisContext(),{},false,original.imported.revision);}for(auto& worker:workers){bool ready=false;for(int i=0;i<1000;++i){if(auto r=worker->takeLatest()){if(!r->error.empty())throw std::runtime_error("worker error: "+r->error);if(r->factoryCount!=expectedFactoryCount)throw std::runtime_error("worker Factory count="+std::to_string(r->factoryCount)+" expected="+std::to_string(expectedFactoryCount));ready=true;break;}std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(ready,"worker result timed out");}}require(library.loadAll().templates.size()==all.templates.size());
         auto templates=library::loadFactory(HC_FACTORY_DB_PATH);require(static_cast<bool>(templates));
         std::atomic<int> saved{};std::vector<std::thread> writers;
         for(int i=0;i<8;++i)writers.emplace_back([&,i]{auto item=templates.templates.front();item.sourceType="user";item.id="user-contract-"+std::to_string(i);item.name="Contract "+std::to_string(i);item.nameZh=item.nameEn=item.name;item.tags={"test"};item.favorite=true;item.note="kept";std::string error;

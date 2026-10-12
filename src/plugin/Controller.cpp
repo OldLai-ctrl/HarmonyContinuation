@@ -269,7 +269,11 @@ void Controller::pollRecommendation() noexcept {
 void Controller::submitRecommendation(bool rankingOnly) {
     if (importedProgression_.events.empty()) {if(recommendationWorker_)recommendationWorker_->cancel();return;}
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
-    recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,sessionState_.analysisContext(),
+    auto analysisContext=sessionState_.analysisContext();
+#if defined(HC_EXPERIMENT_HARMONY_FIRST_PLUGIN)
+    analysisContext.retrievalTimingMode=harmony::RetrievalTimingMode::HarmonyFirst;
+#endif
+    recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
     if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_); }

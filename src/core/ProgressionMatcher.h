@@ -95,6 +95,7 @@ struct MatchQuery {
     std::optional<StyleFlags> styleHint;
     bool forcedKey{};
     Progression source;
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Legacy};
 };
 
 // All score-affecting constants live here. Values are dimensionless costs.
@@ -174,6 +175,7 @@ struct MatchResult {
     float rawCost{};
     std::string disposition; // diagnostic only, never persisted
     float candidateRankingScore{-1.f};
+    float candidateEligibilityScore{-1.f};
     KeySignature key;
     float keyPrior{};
     std::size_t templateMatchStart{};
