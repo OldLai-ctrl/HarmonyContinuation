@@ -90,10 +90,10 @@ int initializeMetadata(Db& db, const char* kind) {
         throw std::runtime_error("wrong library_type");
     return schema;
 }
-int initialize(Db& db, const char* kind) {
+int initializeUser(Db& db) {
     db.exec("BEGIN IMMEDIATE");
     try {
-        const auto schema=initializeMetadata(db,kind);
+        const auto schema=initializeMetadata(db,"user");
         db.exec("COMMIT");
         return schema;
     } catch(...) {
@@ -232,7 +232,8 @@ bool compileFactory(const std::filesystem::path& output,
         std::filesystem::remove(temporary);
         {
             Db db(temporary, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-            initialize(db, "factory");
+            // The compiler owns this unpublished staging DB exclusively.
+            initializeMetadata(db, "factory");
             if(libraryVersion>=3)db.exec("UPDATE metadata SET value='2' WHERE key='schema_version'");
             db.exec(("UPDATE metadata SET value='"+std::to_string(libraryVersion)+"' WHERE key='library_version'").c_str());
             db.exec("BEGIN IMMEDIATE");
@@ -278,7 +279,7 @@ bool UserLibrary::addProgression(const ProgressionTemplate& input, std::string& 
         if(item.createdAt.empty())item.createdAt=utcNow();
         if(item.updatedAt.empty())item.updatedAt=item.createdAt;
         checkTemplate(item, "user");
-        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initialize(db, "user");
+        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initializeUser(db);
         ensureUserV2(db,path_);db.exec("BEGIN IMMEDIATE");
         try {
             Statement st(db, "INSERT INTO progressions VALUES (?,?)"); bindTemplate(st, item);
@@ -292,7 +293,7 @@ bool UserLibrary::updateProgression(const ProgressionTemplate& input, std::strin
     try {
         auto item=input;
         checkTemplate(item, "user");
-        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initialize(db, "user");
+        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initializeUser(db);
         ensureUserV2(db,path_);
         const auto current=readAll(db,true);
         const auto existing=std::find_if(current.templates.begin(),current.templates.end(),[&](const auto& t){return t.id==input.id;});
@@ -313,7 +314,7 @@ bool UserLibrary::updateProgression(const ProgressionTemplate& input, std::strin
 }
 bool UserLibrary::removeProgression(const TemplateID& id, std::string& error) {
     try {
-        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initialize(db, "user");
+        Db db(path_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); initializeUser(db);
         db.exec("BEGIN IMMEDIATE");try {
         if(storedSchema(db)==2) {
             Statement data(db,"DELETE FROM progression_data WHERE id=?");sqlite3_bind_text(data.value,1,id.c_str(),-1,SQLITE_TRANSIENT);
