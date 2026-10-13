@@ -7,7 +7,7 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `library/v4`；`main` / `v0.9/dev` 保留 | V4 独立开发，不合并正式分支 |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/phase5-20261013`；`library/v4`、dev.5、`main` / `v0.9/dev` 保留 | Phase5 独立开发，不合并正式分支 |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
@@ -32,3 +32,5 @@ Git 同步代码、文档、固定测试输入、Factory 源 JSON 和安装脚�
 SDK、编译工具、缓存、生成数据库、Setup、ZIP、运行日志不经 Git 自动同步；测试包单独分发并带提交和 SHA-256。用户数据库、宿主工程与私有音乐素材不自动复制或上传，不用机器间的绝对路径替代仓库相对链接。
 
 dev.5源码通过 `development/dev5-closeout-20261012` 同步；原 `library/v4` 保留历史基线。完整交接包 `HarmonyContinuation-dev5-Handoff-20261012.zip` 与 `HANDOFF_DEV5_SHA256SUMS.txt` 已上传到 [既有GitHub未发布草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)，2026-10-12读回远端digest与本地一致；原4个资产及草稿元信息保留。有仓库权限的账号登录下载，哈希、源码/构建身份和设备接续步骤见 [RUNBOOK](RUNBOOK.md#dev5-另一设备接手)。草稿保持未发布，不作为正式Tag或正式Release。
+
+Phase5源码使用 `development/phase5-20261013`，构建提交 `3a582e4`。同级 `HarmonyContinuation-phase5-delivery-20261013/` 提供三模式便携包、默认Setup、隔离V5评审包、源码、`HarmonyContinuation-Phase5-Handoff.zip` 与逐包SHA；原始证据位于同级 `HarmonyContinuation-phase5-validation-20261013/`。Git与远端交付状态见本轮 `git-proof.json` / 上传读回proof；操作见 [Phase5接手](RUNBOOK.md#phase5-dev6-另一设备接手)。不修改上述历史草稿元信息或旧附件。

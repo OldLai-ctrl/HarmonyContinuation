@@ -62,6 +62,16 @@ Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [�
 
 ## 交付与同步
 
+### Phase5 dev.6 另一设备接手
+
+1. 核实并保管现有未提交文件。新目录可 `git clone --branch development/phase5-20261013 https://github.com/OldLai-ctrl/HarmonyContinuation.git HarmonyContinuation-release`；已有目录 fetch 后切分支并 `git pull --ff-only`，不强制reset。GitHub推送仍须核实本机代理。
+2. 读取 AGENTS、NOW、[Phase5报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文清单](docs/PHASE5_CUBASE_ACCEPTANCE.md)。构建提交 `3a582e4`，后续 HEAD 为文档交接；以 BUILD_INFO/git-proof 核对差异仅为文档。已验证结果可在范围未变时复用。
+3. 从本轮交付目录或既有未发布开发草稿取得 `HarmonyContinuation-Phase5-Handoff.zip` 与独立校验文件；先核验ZIP SHA，再核验包内清单。草稿实际上传状态与远端digest需查本轮proof，不凭历史dev.5上传记录推断。
+4. 默认OFF Setup/便携包、HF-ON及ABSTRACT-ON共用VST3身份，关闭宿主并备份旧完整bundle，只保留一个扫描版本。About核对dev.6、`3a582e4`、HF/P3/Abstract真实状态；分析前PENDING。旧ON安装曾被UAC取消，不能假定安装已完成。
+5. V5/658评审包独立于默认V4/657，不覆盖正式Factory或user.db。个人库、宿主工程、SDK、工具链不在同步包内。按中文清单集中记录真实宿主与音乐结果，R02根因仍UNKNOWN，正式发布另行决策。
+
+Phase5构建沿用dev.5 Release/Ninja方法，`HC_PRERELEASE=dev.6`、Factory4、清空Git override。三个目录分别配置 `HC_EXPERIMENT_HARMONY_FIRST_PLUGIN` / `HC_EXPERIMENT_ABSTRACT_RETRIEVAL_PLUGIN` 为 OFF/OFF、ON/OFF、OFF/ON；P3默认OFF。每模式执行全CTest、实际VST3 validator及既有Phase4D候选模式。额外A/B/C入口为 `Phase4DTests <输出目录> <候选DB> phase5`；只读隔离候选，worker每组10。性能测量与大型构建/压缩分开。所有生成Factory先核对V4原哈希，再进入打包。
+
 ### dev.5 收尾验证
 
 使用独立 Release OFF/ON 构建，Factory 4、`HC_PRERELEASE=dev.5`，保留 dev.4 包。先初始化本机 MSVC x64 环境；核对缓存中 `CMAKE_CXX_FLAGS_RELEASE` 确实包含 `/O2 /Ob2 /DNDEBUG`，不能把空优化参数的缓存当最终性能基线。关闭自动安装链接和构建后 Validator，从实际源码提交生成 Build ID。

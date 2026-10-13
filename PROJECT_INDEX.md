@@ -6,6 +6,8 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 当前正式源码位于 `main`，Factory V4 独立开发分支为 `library/v4`，新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。V4 的局部引擎适配、维护和验证边界见专题说明。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。版本、提交及实际构建以当前 checkout 和产物为准，不能凭目录名推断。
 
+Phase5 / dev.6 接续入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)；开发分支及本轮状态见 NOW。
+
 ## 按任务定位
 
 | 当前需要 | 首选位置 | 搜索词示例 |

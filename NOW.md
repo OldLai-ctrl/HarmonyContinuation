@@ -12,17 +12,19 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 ## 当前接续状态
 
-2026-10-12：dev.5 工程收尾完成，源码构建提交 `730e819`。OFF/ON 各 CTest 33/33、VST3 Validator 47/47、V4 专项13047检查、隔离V5/658专项41104检查通过；1440严格矩阵与dev.4哈希相同。隔离安装生命周期21项通过。实现 About/诊断真实开关与PENDING、导入拍号残留修复、缺时值时一致Session拍号回退、明确性质检查的相邻DP gaps绕过修复。完整核销、性能、版本策略与发布边界见 [dev.5 收尾报告](docs/DEV5_CLOSEOUT_20261012.md)。
+2026-10-13：Phase 5 / dev.6 代码构建提交 `3a582e4`。新增默认关闭的 Abstract 方向性扩展和弦匹配，改善真实 Factory V4_B11 的简单输入召回；修复 UserLibrary 并发首次初始化，保持 Factory 确定性编译。默认 OFF、HF-ON、Abstract-ON 三模式各 CTest 33/33、Validator 47/47、V4 专项13,048、隔离候选专项41,105通过；原1440矩阵哈希不变。最终Phase5专项8,361检查，OFF同步首写20/20、隔离安装21/21通过。完整对照、性能、历史核销及边界见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)。
 
 dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细核销与来源证据保存在同级 `HarmonyContinuation-validation-20261012/HISTORY_PROVENANCE.md`。dev.4 包保留在 `build-phase4d-delivery/`。新人工清单见 [dev.5 验收](docs/DEV5_CUBASE_ACCEPTANCE.md)。Factory V4 SHA-256 仍为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；独立候选及其音乐设计见 [候选说明](data/factory-proposals/20261012/README.md)。
 
 ## 下一步：在另一台设备继续
 
-当前安全开发分支为 `development/dev5-closeout-20261012`，源码提交已通过本机代理推送到既有origin；验收包冻结源码 `730e819`、交接文档 `c117163`，见包内BUILD_INFO.json；后续设备接续记录以本分支最新HEAD为准。交付目录为同级 `HarmonyContinuation-dev5-delivery-20261012`，完整日志为 `HarmonyContinuation-validation-20261012`，独立候选为 `HarmonyContinuation-candidates-20261012`。下一步为真实Cubase与音乐验收：截图A08身份、R02成功/失败原始诊断、候选试听与工程交互；R02 HOST ROOT CAUSE UNKNOWN。变拍map/复合分组仍未知，正式发布未授权且未执行。
+当前安全开发分支为 `development/phase5-20261013`，构建提交为 `3a582e4`，后续源码 HEAD 仅补交付文档；同步与包冻结身份见交接包 `BUILD_INFO.json`、`git-proof.json`。交付目录为同级 `HarmonyContinuation-phase5-delivery-20261013`，原始日志为 `HarmonyContinuation-phase5-validation-20261013`，独立候选仍为 `HarmonyContinuation-candidates-20261012`。dev.5 冻结包及历史分支保留。
+
+下一步为 [Phase5 中文集中验收](docs/PHASE5_CUBASE_ACCEPTANCE.md)：A08截图身份、R02成功/失败原始诊断、扩展音和候选试听、真实工程交互。R01目标仅在V5隔离候选覆盖，默认V4未增加该条目；R02 HOST ROOT CAUSE UNKNOWN。HF/P3/Abstract均默认OFF。变拍map/复合分组仍未知，正式发布未授权且未执行。
 
 本机 ON 安装未完成：便携包91项、旧bundle17项备份均核验通过，但Windows UAC返回“操作已被用户取消”，实际插件及独立Factory未改变。备份、暂存、安装脚本和回退说明保存在同级 `HarmonyContinuation-on-install-20261012/`，不随Git同步。另一设备不能假定ON已安装，应按dev.5清单选择一个模式安装并核实About的Build ID/HF/P3。
 
-dev.5完整交接ZIP及独立校验文件已上传至既有GitHub未发布草稿，远端SHA-256与本地一致，旧附件保留；下载入口见 [MAP](MAP.md#同步)，换设备操作见 [RUNBOOK](RUNBOOK.md#dev5-另一设备接手)。交接包冻结后补充的安装状态与设备步骤保存在本分支最新文档。
+dev.5历史交接包已在既有GitHub未发布草稿，Phase5交付状态以 [MAP](MAP.md#同步) 和本轮交付proof为准。换设备步骤见 [RUNBOOK](RUNBOOK.md#phase5-dev6-另一设备接手)，可复制的接续说明见 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)。
 
 ## 发布与验证证据
 
