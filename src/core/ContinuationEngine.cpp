@@ -267,7 +267,10 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     RecommendationSet result;
     result.retrievalTimingMode=query.retrievalTimingMode;
     result.phase3aEnabled=w.diminishedPassingInsertionException;
-    result.matches = matchProgression(query, index, {}, index.templates().size(), &result.stats);
+    result.abstractChordCompatibility=w.abstractChordCompatibility;
+    MatchWeights matchWeights;
+    matchWeights.abstractChordCompatibility=w.abstractChordCompatibility;
+    result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats);
     std::map<std::string, ContinuationCandidate> distinct;
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
     byId.reserve(index.templates().size());

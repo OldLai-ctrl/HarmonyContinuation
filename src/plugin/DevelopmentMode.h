@@ -13,6 +13,9 @@ inline RecommendationWeights developmentRecommendationWeights() {
     RecommendationWeights weights;
     // Retain choices for Show More; the UI normally shows three.
     weights.perGroup=10;
+#if defined(HC_EXPERIMENT_ABSTRACT_RETRIEVAL_PLUGIN)
+    weights.abstractChordCompatibility=true;
+#endif
     return weights;
 }
 inline constexpr bool harmonyFirstBuild() {

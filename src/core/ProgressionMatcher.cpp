@@ -41,6 +41,56 @@ bool extensionVariant(ChordQuality a, ChordQuality b) {
            (a == Q::Major && b == Q::Dominant7) || (b == Q::Major && a == Q::Dominant7) ||
            (a == Q::Diminished && b == Q::Diminished7) || (b == Q::Diminished && a == Q::Diminished7);
 }
+std::uint16_t pitchSet(const MatchEvent& event) {
+    return static_cast<std::uint16_t>(event.intervalMask | event.colorMask);
+}
+bool supportedAbstractQuality(ChordQuality quality) {
+    using Q = ChordQuality;
+    return quality == Q::Major || quality == Q::Minor || quality == Q::Major7 ||
+           quality == Q::Minor7 || quality == Q::Dominant7;
+}
+int qualityThird(ChordQuality quality) {
+    using Q = ChordQuality;
+    switch (quality) {
+        case Q::Major: case Q::Major7: case Q::Dominant7: return 4;
+        case Q::Minor: case Q::Minor7: return 3;
+        default: return -1;
+    }
+}
+bool hasAlteredFifthWithoutPerfectFifth(std::uint16_t mask) {
+    constexpr auto perfectFifth = std::uint16_t{1u << 7};
+    constexpr auto alteredFifths = std::uint16_t{(1u << 6) | (1u << 8)};
+    return (mask & alteredFifths) != 0 && (mask & perfectFifth) == 0;
+}
+bool abstractExtensionCompatible(const MatchEvent& query, const MatchEvent& templ, Mode mode) {
+    const auto queryMask = pitchSet(query);
+    const auto templateMask = pitchSet(templ);
+    if (!queryMask || !templateMask || queryMask == templateMask) return false;
+    if (!query.degree || !templ.degree) return false;
+    const auto queryRoot = relativeSemitone(*query.degree, mode);
+    const auto templateRoot = relativeSemitone(*templ.degree, mode);
+    if (queryRoot < 0 || templateRoot < 0 || queryRoot != templateRoot) return false;
+    if (!supportedAbstractQuality(query.quality) || !supportedAbstractQuality(templ.quality)) return false;
+    const auto queryThird = qualityThird(query.quality);
+    const auto templateThird = qualityThird(templ.quality);
+    constexpr auto thirdMask = std::uint16_t{(1u << 3) | (1u << 4)};
+    const auto queryThirds = static_cast<std::uint16_t>(queryMask & thirdMask);
+    const auto templateThirds = static_cast<std::uint16_t>(templateMask & thirdMask);
+    if (queryThird < 0 || templateThird < 0 || queryThird != templateThird ||
+        queryThirds != (1u << queryThird) || templateThirds != (1u << templateThird)) return false;
+    if (hasAlteredFifthWithoutPerfectFifth(queryMask) ||
+        hasAlteredFifthWithoutPerfectFifth(templateMask)) return false;
+    if ((queryMask & templateMask) != queryMask) return false;
+    if (query.bassInterval && templ.bassInterval && *query.bassInterval != *templ.bassInterval) return false;
+    if (templ.quality == ChordQuality::Dominant7 && query.quality == ChordQuality::Major &&
+        !(isDominant(query.function) && isDominant(templ.function))) return false;
+    if ((queryMask & ((1u << 10) | (1u << 11))) != 0) {
+        const auto querySevenths = static_cast<std::uint16_t>(queryMask & ((1u << 10) | (1u << 11)));
+        const auto templateSevenths = static_cast<std::uint16_t>(templateMask & ((1u << 10) | (1u << 11)));
+        if (querySevenths != templateSevenths) return false;
+    }
+    return true;
+}
 float median(std::vector<double> values) {
     values.erase(std::remove_if(values.begin(), values.end(), [](double v) { return !std::isfinite(v) || v <= 0; }), values.end());
     if (values.empty()) return 1.f;
@@ -162,9 +212,12 @@ float pairCost(const MatchEvent& q, const MatchEvent& t,
     // Unspecified legacy template realizations keep their original scoring.
     if (t.bassInterval && q.bassInterval && *t.bassInterval != *q.bassInterval)
         cost += w.explicitBassDifference;
-    if (t.intervalMask && q.intervalMask &&
-        (t.intervalMask | t.colorMask) != (q.intervalMask | q.colorMask))
-        cost += w.explicitPitchSetDifference;
+    if (t.intervalMask && q.intervalMask && pitchSet(t) != pitchSet(q)) {
+        if (w.abstractChordCompatibility && abstractExtensionCompatible(q, t, mode)) {
+            cost += w.qualityExtensionDifference;
+            reasons |= flag(MatchReason::AbstractExtensionCompatibility);
+        } else cost += w.explicitPitchSetDifference;
+    }
     cost += q.sourceUncertainty;
     return cost;
 }
@@ -518,7 +571,8 @@ std::string reasonNames(MatchReasonFlags flags) {
         {MatchReason::EmbellishingDeletion,"EmbellishingDeletion"}, {MatchReason::StructuralDeletion,"StructuralDeletion"},
         {MatchReason::RhythmMismatch,"RhythmMismatch"}, {MatchReason::CadentialImportance,"CadentialImportance"},
         {MatchReason::LowStructuralPenalty,"LowStructuralPenalty"}, {MatchReason::ResolvesToMatchedTarget,"ResolvesToMatchedTarget"},
-        {MatchReason::EnharmonicDegree,"EnharmonicDegree"}
+        {MatchReason::EnharmonicDegree,"EnharmonicDegree"},
+        {MatchReason::AbstractExtensionCompatibility,"AbstractExtensionCompatibility"}
     };
     std::string out;
     for (const auto& [bit, name] : names) if (hasReason(flags, bit)) {

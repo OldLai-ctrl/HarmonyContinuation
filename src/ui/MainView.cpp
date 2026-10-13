@@ -1587,11 +1587,13 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
                         t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion),
                         "Build HarmonyFirst="+std::string(plugin::harmonyFirstBuild()?"ON":"OFF"),
-                        "Build Phase3A="+std::string(weights.diminishedPassingInsertionException?"ON":"OFF")};
+                        "Build Phase3A="+std::string(weights.diminishedPassingInsertionException?"ON":"OFF"),
+                        "Build Abstract="+std::string(weights.abstractChordCompatibility?"ON":"OFF")};
                     if(recommendationResultReady_)
                         about.push_back("Actual recommendations: HarmonyFirst="+
                             std::string(recommendations_.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
-                            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF"));
+                            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF")+
+                            " Abstract="+(recommendations_.abstractChordCompatibility?"ON":"OFF"));
                     else about.push_back("Actual recommendations: PENDING");
                     popup(about,where);
                 }
@@ -1950,7 +1952,7 @@ void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
     double y=area.top+137;
     line(dc,t("structure.view"),CRect(area.left+10,y,area.right-10,y+26),muted);y+=30;
     line(dc,recommendationResultReady_?"HarmonyFirst="+std::string(recommendations_.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
-        "  Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF"):
+        "  Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF")+"  Abstract="+(recommendations_.abstractChordCompatibility?"ON":"OFF"):
         (state_.locale==session::Locale::ZhCN?"算法实际状态：待分析":"Actual algorithm state: PENDING"),
         CRect(area.left+10,y,area.right-10,y+26),accent);y+=30;
     if(state_.debugExpanded) {

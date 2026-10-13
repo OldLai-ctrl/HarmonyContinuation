@@ -15,6 +15,7 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     out<<"\nRECOMMENDATION_DIAGNOSTICS_V1\nOrigin: current instance input; synthetic status is not inferred from XML sourceApp.\n";
     out<<"ACTUAL retrievalMode="<<int(set.retrievalTimingMode)<<" HarmonyFirst="
         <<(set.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst)<<" Phase3A="<<set.phase3aEnabled
+        <<" Abstract="<<set.abstractChordCompatibility
         <<" contextMode="<<int(ctx.retrievalTimingMode)<<" meter="<<ctx.timeSigNumerator.value_or(0)<<'/'<<ctx.timeSigDenominator.value_or(0)
         <<" timingPolicy=matched input QN, then uniform session meter when no QN evidence, then prototype; live host meter is reference only; beat grouping unknown\n";
     const auto analysis=analyzeHarmony(p,ctx);

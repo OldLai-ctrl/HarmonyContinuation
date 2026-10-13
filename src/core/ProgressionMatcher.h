@@ -136,6 +136,7 @@ struct MatchWeights {
     float minimumMatchedFraction{0.75f};
     float lowCoveragePenalty{0.80f};
     std::size_t shortlistLimit{800};
+    bool abstractChordCompatibility{false}; // directional explicit pitch-set experiment; default off
 };
 
 enum class AlignmentOp : std::uint8_t { Match, Substitute, QueryInsertion, TemplateDeletion };
@@ -147,7 +148,7 @@ enum class MatchReason : std::uint32_t {
     EmbellishingDeletion = 1u << 10, StructuralDeletion = 1u << 11,
     RhythmMismatch = 1u << 12, CadentialImportance = 1u << 13,
     LowStructuralPenalty = 1u << 14, ResolvesToMatchedTarget = 1u << 15,
-    EnharmonicDegree = 1u << 16
+    EnharmonicDegree = 1u << 16, AbstractExtensionCompatibility = 1u << 17
 };
 using MatchReasonFlags = std::uint32_t;
 constexpr MatchReasonFlags flag(MatchReason reason) noexcept { return static_cast<MatchReasonFlags>(reason); }

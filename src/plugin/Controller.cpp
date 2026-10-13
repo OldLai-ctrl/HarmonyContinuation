@@ -98,9 +98,11 @@ std::string Controller::hostDiagnostics() const {
     const auto weights=harmony::plugin::developmentRecommendationWeights();
     return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN)+
         "\nBuild HarmonyFirst="+(harmony::plugin::harmonyFirstBuild()?std::string("ON"):std::string("OFF"))+"; Build Phase3A="+
-        (weights.diminishedPassingInsertionException?std::string("ON"):std::string("OFF"))+"; Actual recommendations="+
+        (weights.diminishedPassingInsertionException?std::string("ON"):std::string("OFF"))+"; Build Abstract="+
+        (weights.abstractChordCompatibility?std::string("ON"):std::string("OFF"))+"; Actual recommendations="+
         (recommendationResultReady_ ? "HarmonyFirst="+std::string(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
-            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF") : "PENDING");
+            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF")+
+            " Abstract="+(recommendations_.abstractChordCompatibility?"ON":"OFF") : "PENDING");
 }
 std::string Controller::exportHostDiagnostics(void* owner) noexcept {
     try {
@@ -113,10 +115,12 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
         const auto context=harmony::plugin::developmentContext(sessionState_.analysisContext());
         const auto weights=harmony::plugin::developmentRecommendationWeights();
         file<<"\nBuild HarmonyFirst="<<(harmony::plugin::harmonyFirstBuild()?"ON":"OFF")
-            <<" Phase3A="<<(weights.diminishedPassingInsertionException?"ON":"OFF")<<"; Actual recommendations=";
+            <<" Phase3A="<<(weights.diminishedPassingInsertionException?"ON":"OFF")
+            <<" Abstract="<<(weights.abstractChordCompatibility?"ON":"OFF")<<"; Actual recommendations=";
         if(recommendationResultReady_)
             file<<"HarmonyFirst="<<(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")
-                <<" Phase3A="<<(recommendations_.phase3aEnabled?"ON":"OFF")<<'\n';
+                <<" Phase3A="<<(recommendations_.phase3aEnabled?"ON":"OFF")
+                <<" Abstract="<<(recommendations_.abstractChordCompatibility?"ON":"OFF")<<'\n';
         else file<<"PENDING\n";
         file<<"Meter source=MIDI/session; live host is reference only (meter may change). Host="
             <<lastTimeSigNumerator_.value_or(0)<<'/'<<lastTimeSigDenominator_.value_or(0)

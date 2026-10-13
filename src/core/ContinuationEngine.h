@@ -56,6 +56,7 @@ struct RecommendationWeights {
     float intentCompletionTieBreak{0.005f}; // at most 0.25 points in either direction
     std::size_t perGroup{3};
     bool diminishedPassingInsertionException{false}; // internal experiment, never persisted
+    bool abstractChordCompatibility{false}; // internal retrieval experiment, never persisted
 };
 struct RecommendationRequest {
     std::optional<Style> style;
@@ -77,6 +78,7 @@ struct RecommendationSet {
     std::vector<MatchResult> matches;
     MatchRunStats stats;
     std::vector<DiminishedInsertionDiagnostic> insertionDiagnostics; // enabled experiment only
+    bool abstractChordCompatibility{}; // actual invocation, diagnostic only; never persisted
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     const MatchQuery&, const MatchResult&, const ProgressionTemplate&);
