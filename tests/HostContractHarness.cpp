@@ -29,6 +29,8 @@
 #include <ole2.h>
 #include <fstream>
 #include <iostream>
+#include <chrono>
+#include <barrier>
 #include <string_view>
 #include <thread>
 #include <limits>
@@ -113,8 +115,16 @@ int main(int argc,char** argv){
         catch(const std::exception& e){std::cout<<"FAIL "<<name<<": "<<e.what()<<'\n';if(report)report<<"FAIL "<<name<<": "<<e.what()<<'\n';}};
     try{
     const std::string profile=argv[2];host::HostEnvironment env;env.identify(profile);
-    const auto fixtures=std::filesystem::path(HC_MIDI_FIXTURES),directory=std::filesystem::path(HC_TEST_OUTPUT_DIR)/("host-contract-"+std::to_string(GetCurrentProcessId()));
-    std::filesystem::create_directories(directory);
+    const auto fixtures=std::filesystem::path(HC_MIDI_FIXTURES);
+    const auto outputRoot=std::filesystem::path(HC_TEST_OUTPUT_DIR);
+    const auto processId=std::to_string(GetCurrentProcessId());
+    const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+    std::filesystem::path directory;
+    for(unsigned attempt=0;attempt<32&&directory.empty();++attempt){
+        const auto candidate=outputRoot/("host-contract-"+processId+"-"+std::to_string(stamp)+"-"+std::to_string(attempt));
+        if(std::filesystem::create_directory(candidate))directory=candidate;
+    }
+    require(!directory.empty(),"could not create unique host contract output directory");
     const auto configuredFactory=library::loadFactory(HC_FACTORY_DB_PATH);
     require(static_cast<bool>(configuredFactory),"configured Factory database must load");
     auto imported=midi::importFile(fixtures/"pop_block.mid");require(static_cast<bool>(imported));
@@ -174,12 +184,65 @@ int main(int argc,char** argv){
     test("34 corrupt state preserves phrase",[&]{auto before=instance->save();std::string bad="xxxx";require(!instance->restore(bad)&&instance->save()==before);});
     auto multi=[&](int count){std::vector<std::unique_ptr<Instance>> many;std::vector<std::string> states;for(int i=0;i<count;++i){many.push_back(std::make_unique<Instance>(factory,*info));auto s=original;s.editorWidth=1000+i*25;s.style=i%2?Style::Pop:Style::Jazz;states.push_back(streamState(s));require(many.back()->restore(states.back()));}for(int i=0;i<count;++i)require(many[i]->save()==states[i]);};
     test("35 two actual plugin instances",[&]{multi(2);});test("36 four actual plugin instances",[&]{multi(4);});test("37 eight actual plugin instances",[&]{multi(8);});
-    test("38 isolated jobs shared read-only factory and user DB",[&]{const auto user=directory/"user.db";library::UserLibrary library(user);auto all=library.loadAll();require(static_cast<bool>(all));const auto expectedFactoryCount=configuredFactory.templates.size();for(int count:{2,4,8}){std::vector<std::unique_ptr<plugin::RecommendationWorker>> workers;for(int i=0;i<count;++i){workers.push_back(std::make_unique<plugin::RecommendationWorker>(HC_FACTORY_DB_PATH,user));workers.back()->submit(original.imported.events,original.analysisContext(),{},false,original.imported.revision);}for(auto& worker:workers){bool ready=false;for(int i=0;i<1000;++i){if(auto r=worker->takeLatest()){if(!r->error.empty())throw std::runtime_error("worker error: "+r->error);if(r->factoryCount!=expectedFactoryCount)throw std::runtime_error("worker Factory count="+std::to_string(r->factoryCount)+" expected="+std::to_string(expectedFactoryCount));ready=true;break;}std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(ready,"worker result timed out");}}require(library.loadAll().templates.size()==all.templates.size());
-        auto templates=library::loadFactory(HC_FACTORY_DB_PATH);require(static_cast<bool>(templates));
-        std::atomic<int> saved{};std::vector<std::thread> writers;
-        for(int i=0;i<8;++i)writers.emplace_back([&,i]{auto item=templates.templates.front();item.sourceType="user";item.id="user-contract-"+std::to_string(i);item.name="Contract "+std::to_string(i);item.nameZh=item.nameEn=item.name;item.tags={"test"};item.favorite=true;item.note="kept";std::string error;
-            if(library::UserLibrary(user).addProgression(item,error))++saved;});
-        for(auto& writer:writers)writer.join();require(saved==8);auto rows=library.loadAll();require(rows.templates.size()==8);for(const auto& row:rows.templates)require(row.favorite&&row.note=="kept");
+    test("38 isolated jobs shared read-only factory and user DB",[&]{
+        const auto user=directory/"user.db";
+        library::UserLibrary library(user);
+        auto all=library.loadAll();
+        require(static_cast<bool>(all),"initial user DB read failed: "+all.error);
+        const auto expectedFactoryCount=configuredFactory.templates.size();
+        for(int count:{2,4,8}){
+            std::vector<std::unique_ptr<plugin::RecommendationWorker>> workers;
+            for(int i=0;i<count;++i){
+                workers.push_back(std::make_unique<plugin::RecommendationWorker>(HC_FACTORY_DB_PATH,user));
+                workers.back()->submit(original.imported.events,original.analysisContext(),{},false,original.imported.revision);
+            }
+            for(auto& worker:workers){
+                bool ready=false;
+                for(int i=0;i<1000;++i){
+                    if(auto r=worker->takeLatest()){
+                        if(!r->error.empty())throw std::runtime_error("worker error: "+r->error);
+                        if(r->factoryCount!=expectedFactoryCount)throw std::runtime_error("worker Factory count="+std::to_string(r->factoryCount)+" expected="+std::to_string(expectedFactoryCount));
+                        ready=true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                require(ready,"worker result timed out");
+            }
+        }
+        auto afterWorkers=library.loadAll();
+        require(static_cast<bool>(afterWorkers),"post-worker user DB read failed: "+afterWorkers.error);
+        require(afterWorkers.templates.size()==all.templates.size(),"post-worker user DB row count="+std::to_string(afterWorkers.templates.size())+" expected="+std::to_string(all.templates.size()));
+        auto templates=library::loadFactory(HC_FACTORY_DB_PATH);
+        require(static_cast<bool>(templates),"factory DB read failed: "+templates.error);
+        std::atomic<int> saved{};
+        std::vector<std::string> writerErrors(8);
+        std::vector<std::thread> writers;
+        std::barrier writerStart(8);
+        for(int i=0;i<8;++i)writers.emplace_back([&,i]{
+            auto item=templates.templates.front();
+            item.sourceType="user";
+            item.id="user-contract-"+std::to_string(i);
+            item.name="Contract "+std::to_string(i);
+            item.nameZh=item.nameEn=item.name;
+            item.tags={"test"};
+            item.favorite=true;
+            item.note="kept";
+            std::string error;
+            writerStart.arrive_and_wait();
+            if(library::UserLibrary(user).addProgression(item,error))++saved;
+            else writerErrors[i]=error.empty()?"<empty error>":error;
+        });
+        for(auto& writer:writers)writer.join();
+        std::string saveDiagnostic="concurrent writer saves="+std::to_string(saved.load())+"/8";
+        for(std::size_t i=0;i<writerErrors.size();++i){
+            if(!writerErrors[i].empty())saveDiagnostic+="; writer "+std::to_string(i)+": "+writerErrors[i];
+        }
+        require(saved==8,saveDiagnostic);
+        auto rows=library.loadAll();
+        require(static_cast<bool>(rows),"post-writer user DB read failed: "+rows.error);
+        require(rows.templates.size()==8,"post-writer user DB row count="+std::to_string(rows.templates.size())+" expected=8");
+        for(const auto& row:rows.templates)require(row.favorite&&row.note=="kept","persisted metadata mismatch for "+row.id);
     });
     instance.reset();factory.setHostContext(nullptr);PluginContextFactory::instance().setPluginContext(nullptr);
     VSTGUI::init(GetModuleHandleW(nullptr));

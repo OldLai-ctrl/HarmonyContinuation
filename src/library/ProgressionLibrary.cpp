@@ -64,7 +64,7 @@ struct Statement {
     }
     ~Statement() { sqlite3_finalize(value); }
 };
-int initialize(Db& db, const char* kind) {
+int initializeMetadata(Db& db, const char* kind) {
     db.exec("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
     db.exec("CREATE TABLE IF NOT EXISTS progressions (id TEXT PRIMARY KEY, payload TEXT NOT NULL);");
     Statement version(db, "SELECT value FROM metadata WHERE key='schema_version'");
@@ -89,6 +89,17 @@ int initialize(Db& db, const char* kind) {
         std::string(reinterpret_cast<const char*>(sqlite3_column_text(check.value, 0))) != kind)
         throw std::runtime_error("wrong library_type");
     return schema;
+}
+int initialize(Db& db, const char* kind) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+        const auto schema=initializeMetadata(db,kind);
+        db.exec("COMMIT");
+        return schema;
+    } catch(...) {
+        db.exec("ROLLBACK");
+        throw;
+    }
 }
 int validateReadOnly(Db& db, const char* kind) {
     Statement st(db, "SELECT key,value FROM metadata");
