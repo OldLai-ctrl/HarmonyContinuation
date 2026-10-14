@@ -1146,7 +1146,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     const auto sourceText=[](const Progression& progression){std::ostringstream out;out<<std::fixed<<std::setprecision(6);for(std::size_t i=0;i<progression.size();++i){if(i)out<<" | ";out<<progression[i].name<<'@'<<progression[i].durationQN.value_or(4.)<<"QN";}return out.str();};
     const auto labelsText=[](const Progression& progression){std::string out;for(const auto& event:progression){if(!out.empty())out+='|';out+=event.name;}return out;};
     const auto splitTabs=[](const std::string& line){std::vector<std::string> fields;std::size_t start{};for(;;){const auto end=line.find('\t',start);fields.push_back(line.substr(start,end==std::string::npos?end:end-start));if(end==std::string::npos)break;start=end+1;}return fields;};
-    const auto rankMatch=[](const RecommendationSet& rec,const TemplateID& id){
+    const auto rankMatch=[&](const RecommendationSet& rec,const TemplateID& id){
         struct Rank {int group{-1},rank{-1};bool visible{};std::string candidateId,primaryId,suffix;};Rank result;
         const auto shown=session::presentationIndices(rec,{});
         for(int pass=0;pass<2;++pass)for(std::size_t g=0;g<rec.groups.size();++g)for(std::size_t r=0;r<rec.groups[g].size();++r){const auto& candidate=rec.groups[g][r];
@@ -1441,7 +1441,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
                 f[8]==rank.primaryId&&f[10]==(rank.group<0?"NA":groupName(static_cast<std::size_t>(rank.group)))&&
                 std::stoi(f[11])==(rank.rank<0?0:rank.rank)&&(f[12]=="1")==rank.visible&&closeOld(15,currentScore,0.0001f);
             if(!same)++phase51Diffs;++phase51Rows;phase51OracleFile<<caseId<<'\t'<<plugin::algorithmPresetName(presets[p])<<'\t'<<f[0]<<'\t'<<f[3]<<'\t'<<f[4]<<'\t'<<(match?match->disposition:"MISSING")<<'\t'<<f[7]<<'\t'<<(match?std::to_string(match->similarity):"NA")<<'\t'<<f[6]<<'\t'<<(match?std::to_string(match->rawCost):"NA")<<'\t'<<f[8]<<'\t'<<(rank.group>=0?rank.primaryId:"NA")<<'\t'<<f[11]<<'\t'<<(rank.rank<0?0:rank.rank)<<'\t'<<f[15]<<'\t'<<currentScore<<'\t'<<(same?"MATCH":"DIFF")<<'\n';
-        }}}
+        }}
     require(phase51Rows==4,"Phase6 reads exactly the four Abstract OFF/ON Q1/Q2 historical worker rows");
     require(phase51Diffs==0,"Phase6 Abstract OFF/ON Q1/Q2 results agree with archived Phase5.1 worker rows");
 
