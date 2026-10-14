@@ -36,6 +36,8 @@ public:
     Steinberg::tresult pollTransport() noexcept;
     void pollRecommendation() noexcept;
     void setRecommendationPreferences(std::optional<harmony::Style>, std::optional<harmony::PhraseIntent>) noexcept;
+    void setAlgorithmPreset(DevelopmentAlgorithmPreset) noexcept;
+    DevelopmentAlgorithmPreset algorithmPreset() const noexcept { return algorithmPreset_; }
     void applySessionState(const harmony::session::PluginSessionState&) noexcept;
     std::string saveRecommendation(const harmony::ContinuationCandidate&, const harmony::session::SaveMetadata&) noexcept;
     std::string updateUserProgression(const harmony::ProgressionTemplate&) noexcept;
@@ -84,6 +86,8 @@ private:
     std::vector<harmony::MatchResult> matches_;
     harmony::RecommendationSet recommendations_;
     bool recommendationResultReady_{};
+    DevelopmentAlgorithmPreset algorithmPreset_{DevelopmentAlgorithmPreset::Legacy};
+    std::string factorySha256_{"PENDING"};
     harmony::RecommendationRequest recommendationRequest_;
     std::unique_ptr<RecommendationWorker> recommendationWorker_;
     std::string matchStatus_{"拖入和弦后显示匹配结果"};
@@ -107,6 +111,8 @@ private:
     std::chrono::steady_clock::time_point previewStarted_{};
     void playPreview(std::string id, const harmony::preview::BuildResult&) noexcept;
     void submitRecommendation(bool rankingOnly = false);
+    bool currentCandidate(const harmony::ContinuationCandidate&) const;
+    bool currentCandidate(const harmony::enrichment::EnrichmentCandidate&) const;
     void reloadLibraries();
 };
 }

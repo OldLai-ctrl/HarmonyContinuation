@@ -2,6 +2,7 @@
 #include "core/ContinuationEngine.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "library/ProgressionLibrary.h"
+#include "plugin/DevelopmentMode.h"
 #include <condition_variable>
 #include <filesystem>
 #include <mutex>
@@ -18,6 +19,9 @@ struct WorkerResult {
     double computationMs{};
     std::size_t factoryCount{}, userCount{};
     bool analysisReused{};
+    std::optional<DevelopmentAlgorithmPreset> algorithmPreset;
+    int factoryVersion{};
+    std::string factorySha256{"unavailable"};
 };
 class RecommendationWorker {
 public:
@@ -27,6 +31,9 @@ public:
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
     std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {},
                          bool rankingOnly = false, std::uint64_t phraseRevision = 0);
+    std::uint64_t submitPreset(Progression, AnalysisContext, DevelopmentAlgorithmPreset,
+                               RecommendationRequest = {}, bool rankingOnly = false,
+                               std::uint64_t phraseRevision = 0);
     void cancel();
     void invalidateLibrary();
     std::optional<WorkerResult> takeLatest();
@@ -38,7 +45,11 @@ private:
         RecommendationRequest request;
         bool rankingOnly{};
         std::uint64_t phraseRevision{};
+        std::optional<DevelopmentAlgorithmPreset> algorithmPreset;
     };
+    std::uint64_t submitImpl(Progression, AnalysisContext, RecommendationRequest,
+                             bool rankingOnly, std::uint64_t phraseRevision,
+                             std::optional<DevelopmentAlgorithmPreset>);
     void run();
     std::filesystem::path factoryPath_, userPath_;
     std::thread thread_;

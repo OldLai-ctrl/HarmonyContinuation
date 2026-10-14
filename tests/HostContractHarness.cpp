@@ -96,6 +96,7 @@ int main(int argc,char** argv){
         Window window;auto* frame=new VSTGUI::CFrame({0,0,1100,900},nullptr);auto* view=new ui::MainView({0,0,1100,900},{});frame->addView(view);
         const bool opened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);
         bool passed=opened&&view->runStructureSmoke();
+        if(passed)passed=view->runAlgorithmSwitchSmoke();
         if(passed)for(int skeleton=0;skeleton<2;++skeleton) {
             if(skeleton){const auto layout=ui::computeLayout({1100,900,1,session::Tab::Recommend,false,false,1});VSTGUI::CPoint point{160,layout.timeline.bottom+12};view->onMouseDown(point,VSTGUI::CButtonState{VSTGUI::kLButton});}
             const auto context=VSTGUI::COffscreenContext::create({1100,900});
@@ -104,8 +105,30 @@ int main(int argc,char** argv){
             std::ofstream file(std::filesystem::path(HC_TEST_OUTPUT_DIR)/(skeleton?"structure-SKELETON.png":"structure-FULL.png"),std::ios::binary);
             file.write(reinterpret_cast<const char*>(png.data()),png.size());passed=passed&&file.good()&&!png.empty();
         }
+        std::filesystem::path algorithmScreenshotDir;
+        if(passed) {
+            const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+            algorithmScreenshotDir=std::filesystem::path(HC_TEST_OUTPUT_DIR)/
+                ("algorithm-switch-ui-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(stamp));
+            std::filesystem::create_directories(algorithmScreenshotDir);
+            const auto savePreset=[&](plugin::DevelopmentAlgorithmPreset preset,const char* name) {
+                view->setAlgorithmPreset(preset);
+                const auto context=VSTGUI::COffscreenContext::create({1100,900});
+                if(!context)return false;
+                context->beginDraw();view->drawRect(context,{0,0,1100,900});context->endDraw();
+                const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
+                std::ofstream file(algorithmScreenshotDir/(std::string("algorithm-")+name+".png"),std::ios::binary);
+                file.write(reinterpret_cast<const char*>(png.data()),png.size());
+                return file.good()&&!png.empty();
+            };
+            passed=savePreset(plugin::DevelopmentAlgorithmPreset::Legacy,"Legacy")&&
+                savePreset(plugin::DevelopmentAlgorithmPreset::HarmonyFirst,"HarmonyFirst")&&
+                savePreset(plugin::DevelopmentAlgorithmPreset::Abstract,"Abstract");
+        }
         passed=passed&&view->runMidiWorkflowSmoke();
-        frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / unchanged recommendation / More MIDI identity "<<(passed?"PASS":"FAIL")<<'\n';return passed?0:1;
+        frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / algorithm switch / FULL-SKELETON / More MIDI identity "<<(passed?"PASS":"FAIL");
+        if(!algorithmScreenshotDir.empty())std::cout<<"; Legacy/HarmonyFirst/Abstract MainView PNGs: "<<algorithmScreenshotDir.string();
+        std::cout<<'\n';return passed?0:1;
     }
     if(argc<3){std::cerr<<"usage: HostContractHarness plugin.vst3 host-name [report]\n";return 2;}
     std::cout<<std::unitbuf;

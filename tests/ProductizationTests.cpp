@@ -1,4 +1,5 @@
 #include "demo/DemoScenario.h"
+#include "library/LibraryStore.h"
 #include "session/ProductServices.h"
 #include "plugin/RecommendationWorker.h"
 #include <chrono>
@@ -61,23 +62,129 @@ int main() {
         check(!session::deserialize("HCS1bad"),"corrupt state rejected");
         auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
         check(factory && factory.templates.size()==161,"factory load");
+        const auto selectedFactory=library::loadAvailableFactory(HC_FACTORY_DB_PATH);
+        check(selectedFactory.library && !selectedFactory.path.empty(),"selected Factory source load");
+        const int expectedFactoryVersion=selectedFactory.library.libraryVersion;
         const CandidateIndex index(std::move(factory.templates));
         {
             plugin::RecommendationWorker worker(HC_FACTORY_DB_PATH,
                 std::filesystem::temp_directory_path()/"hc-phase35-no-user.db");
-            auto waitResult=[&]() -> plugin::WorkerResult {
+            auto waitResult=[](plugin::RecommendationWorker& source) -> plugin::WorkerResult {
                 for (int i=0;i<200;++i) {
-                    if (auto ready=worker.takeLatest()) return std::move(*ready);
+                    if (auto ready=source.takeLatest()) return std::move(*ready);
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
                 throw std::runtime_error("worker timeout");
             };
+            const auto sameRecommendation=[](const RecommendationSet& left,const RecommendationSet& right) {
+                if (left.retrievalTimingMode!=right.retrievalTimingMode ||
+                    left.phase3aEnabled!=right.phase3aEnabled ||
+                    left.abstractChordCompatibility!=right.abstractChordCompatibility ||
+                    left.stats.output!=right.stats.output || left.matches.size()!=right.matches.size()) return false;
+                for (std::size_t i=0;i<left.matches.size();++i) {
+                    if (left.matches[i].templateId!=right.matches[i].templateId ||
+                        left.matches[i].similarity!=right.matches[i].similarity ||
+                        left.matches[i].candidateRankingScore!=right.matches[i].candidateRankingScore) return false;
+                }
+                for (std::size_t group=0;group<left.groups.size();++group) {
+                    if (left.groups[group].size()!=right.groups[group].size()) return false;
+                    for (std::size_t i=0;i<left.groups[group].size();++i) {
+                        const auto& a=left.groups[group][i];
+                        const auto& b=right.groups[group][i];
+                        if (a.id!=b.id || a.primaryTemplate!=b.primaryTemplate ||
+                            a.matchSimilarity!=b.matchSimilarity || a.rankingScore!=b.rankingScore) return false;
+                    }
+                }
+                return true;
+            };
+            const auto validFactoryHash=[](const std::string& value) {
+#if defined(_WIN32)
+                if (value.size()!=64) return false;
+                for (const auto ch:value)
+                    if (!((ch>='0'&&ch<='9')||(ch>='a'&&ch<='f'))) return false;
+                return true;
+#else
+                return value.find("unavailable")!=std::string::npos;
+#endif
+            };
             worker.submit(a.chords,{}, {},false,19);
-            const auto first=waitResult();
-            check(!first.analysisReused && first.error.empty(),"initial worker analysis");
+            const auto first=waitResult(worker);
+            check(!first.analysisReused && first.error.empty() && !first.algorithmPreset &&
+                first.factoryVersion==expectedFactoryVersion && validFactoryHash(first.factorySha256),
+                "initial worker analysis reports selected Factory identity");
             worker.submit(a.chords,{}, {Style::Pop,std::nullopt},true,19);
-            const auto ranked=waitResult();
+            const auto ranked=waitResult(worker);
             check(ranked.analysisReused && ranked.error.empty(),"ranking reuses analysis");
+
+            AnalysisContext baseContext;
+            auto legacyGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,20);
+            const auto legacy=waitResult(worker);
+            check(legacy.generation==legacyGeneration &&
+                legacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
+                legacy.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy &&
+                !legacy.recommendations.abstractChordCompatibility &&
+                !legacy.recommendations.phase3aEnabled &&
+                legacy.factoryVersion==first.factoryVersion && legacy.factorySha256==first.factorySha256 &&
+                sameRecommendation(first.recommendations,legacy.recommendations),
+                "runtime Legacy preset preserves the legacy worker recommendation");
+
+            const auto abstractGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},true,20);
+            const auto abstract=waitResult(worker);
+            check(abstract.generation==abstractGeneration && abstract.analysisReused &&
+                abstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract &&
+                abstract.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy &&
+                abstract.recommendations.abstractChordCompatibility &&
+                !abstract.recommendations.phase3aEnabled &&
+                abstract.factoryVersion==first.factoryVersion && abstract.factorySha256==first.factorySha256,
+                "Abstract reuses timing query and changes only its compatibility flag");
+
+            const auto hfGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},true,20);
+            const auto harmonyFirst=waitResult(worker);
+            check(harmonyFirst.generation==hfGeneration && !harmonyFirst.analysisReused &&
+                harmonyFirst.algorithmPreset==plugin::DevelopmentAlgorithmPreset::HarmonyFirst &&
+                harmonyFirst.recommendations.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst &&
+                !harmonyFirst.recommendations.abstractChordCompatibility &&
+                !harmonyFirst.recommendations.phase3aEnabled &&
+                harmonyFirst.factoryVersion==first.factoryVersion && harmonyFirst.factorySha256==first.factorySha256,
+                "HarmonyFirst switch invalidates the Legacy cached query");
+
+            const auto legacyAgainGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},true,20);
+            const auto legacyAgain=waitResult(worker);
+            check(legacyAgain.generation==legacyAgainGeneration && !legacyAgain.analysisReused &&
+                legacyAgain.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy,
+                "switching back invalidates the HarmonyFirst cached query");
+
+            const auto unique=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+            plugin::RecommendationWorker secondWorker(HC_FACTORY_DB_PATH,
+                std::filesystem::temp_directory_path()/("hc-phase6-instance-"+unique+".db"));
+            const auto instanceLegacyGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,21);
+            const auto instanceAbstractGeneration=secondWorker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,21);
+            const auto instanceLegacy=waitResult(worker);
+            const auto instanceAbstract=waitResult(secondWorker);
+            check(instanceLegacy.generation==instanceLegacyGeneration &&
+                instanceAbstract.generation==instanceAbstractGeneration &&
+                !instanceLegacy.recommendations.abstractChordCompatibility &&
+                instanceAbstract.recommendations.abstractChordCompatibility &&
+                instanceLegacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
+                instanceAbstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract,
+                "simultaneous workers keep preset state instance-local");
+
+            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::Legacy,{},false,22);
+            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},false,22);
+            const auto newestGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,22);
+            const auto newest=waitResult(worker);
+            check(newest.generation==newestGeneration &&
+                newest.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract &&
+                newest.recommendations.abstractChordCompatibility &&
+                newest.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy,
+                "rapid preset switches expose only the newest generation");
         }
         RecommendationWeights weights; weights.perGroup=10;
         for (char letter='A';letter<='H';++letter) {

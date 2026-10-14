@@ -103,6 +103,7 @@ bool PLUGIN_API PluginView::open(void* parent) {
         actions.refresh=[pluginController]() { pluginController->requestSnapshot(); };
         actions.clipboard=[pluginController]() { pluginController->inspectClipboard(); };
         actions.stateChanged=[pluginController](const harmony::session::PluginSessionState& state) { pluginController->applySessionState(state); };
+        actions.algorithmChanged=[pluginController](DevelopmentAlgorithmPreset preset) { pluginController->setAlgorithmPreset(preset); };
         actions.save=[pluginController](const harmony::ContinuationCandidate& candidate,const harmony::session::SaveMetadata& metadata) {
             return pluginController->saveRecommendation(candidate,metadata); };
         actions.updateUser=[pluginController](const harmony::ProgressionTemplate& item) { return pluginController->updateUserProgression(item); };

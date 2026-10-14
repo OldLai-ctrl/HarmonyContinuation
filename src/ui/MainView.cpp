@@ -490,6 +490,28 @@ void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
 void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true; invalid(); }
+void MainView::setAlgorithmPreset(plugin::DevelopmentAlgorithmPreset preset) {
+    if(algorithmPreset_!=preset) {
+        midiPending_.reset();midiClick_={};selectedCandidate_.reset();selectedEnrichment_.reset();
+    }
+    algorithmPreset_=preset;invalid();
+}
+bool MainView::runAlgorithmSwitchSmoke() {
+    const auto savedActions=actions_;const auto savedState=state_;const auto savedPreset=algorithmPreset_;
+    std::vector<plugin::DevelopmentAlgorithmPreset> selected;
+    actions_.algorithmChanged=[&](auto preset){selected.push_back(preset);setAlgorithmPreset(preset);};
+    refreshLayout();
+    for(const auto index:{1u,2u,0u}) {
+        const auto& rect=layout_.algorithmControls[index];
+        CPoint at{(rect.left+rect.right)*userZoom()/2,(rect.top+rect.bottom)*userZoom()/2};
+        onMouseDown(at,CButtonState{kLButton});
+    }
+    const bool passed=selected==std::vector<plugin::DevelopmentAlgorithmPreset>{
+        plugin::DevelopmentAlgorithmPreset::HarmonyFirst,plugin::DevelopmentAlgorithmPreset::Abstract,
+        plugin::DevelopmentAlgorithmPreset::Legacy} &&
+        session::serialize(state_)==session::serialize(savedState);
+    actions_=savedActions;setAlgorithmPreset(savedPreset);return passed;
+}
 bool MainView::runStructureSmoke() {
     session::PluginSessionState input;Progression phrase;
     const char* names[]{"C","F","F#dim7","G","C"};const double durations[]{4,3.75,.25,4,4};double at{};
@@ -1019,6 +1041,20 @@ void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
         state_.tab==session::Tab::Recommend?t("colorSort.labelShort")+": "+t(std::string(color::preferenceKey(colorPreference_))+"Short"):""};
     for(std::size_t i=0;i<constraints.size();++i)line(dc,constraints[i],viewRect(layout_.constraintControls[i]),
         i==0&&!state_.constraints.melody.empty()?accent:pale);
+    const auto& firstAlgorithm=layout_.algorithmControls.front();
+    line(dc,state_.locale==session::Locale::ZhCN?"开发测试模式":"Development test",
+        CRect(16,firstAlgorithm.top,170,firstAlgorithm.bottom),muted);
+    for(std::size_t i=0;i<layout_.algorithmControls.size();++i) {
+        const auto preset=static_cast<plugin::DevelopmentAlgorithmPreset>(i);
+        const auto selected=preset==algorithmPreset_;
+        const auto rect=viewRect(layout_.algorithmControls[i]);
+        box(dc,rect,selected?CColor(57,68,69,255):panel);
+        line(dc,plugin::algorithmPresetName(preset),rect,selected?accent:pale,kCenterText);
+    }
+    const auto endAlgorithm=layout_.algorithmControls.back().right;
+    if(layout_.viewport.right-endAlgorithm>200)
+        line(dc,state_.locale==session::Locale::ZhCN?"工程重开恢复 Legacy":"Reopen resets to Legacy",
+            CRect(endAlgorithm+10,firstAlgorithm.top,layout_.viewport.right-16,firstAlgorithm.bottom),muted);
     if(state_.tab!=session::Tab::Recommend)return;
     const auto titleY=layout_.phrase.top-31;
     line(dc,t("phrase.title"),CRect(20,titleY,235,titleY+27),pale);
@@ -1491,6 +1527,11 @@ CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
         refreshLayout();
+        if(form_==Form::None)for(std::size_t i=0;i<layout_.algorithmControls.size();++i)
+            if(layout_.algorithmControls[i].contains(where.x,where.y)) {
+                if(actions_.algorithmChanged)actions_.algorithmChanged(static_cast<plugin::DevelopmentAlgorithmPreset>(i));
+                return kMouseEventHandled;
+            }
         if(form_==Form::None&&state_.tab==session::Tab::Recommend&&
            where.y>=layout_.timeline.bottom+5&&where.y<layout_.timeline.bottom+29&&where.x>=24&&where.x<310) {
             state_.skeletonView=where.x>=138;notifyState();return kMouseEventHandled;
@@ -1578,7 +1619,7 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
                     session::Locale::EnUS:session::Locale::ZhCN;
                 else if(choice==3) {
-                    const auto weights=plugin::developmentRecommendationWeights();
+                    const auto weights=plugin::developmentRecommendationWeights(algorithmPreset_);
                     std::vector<std::string> about{
                         "HarmonyContinuation "+std::string(product::version),
                         t("about.build")+": "+std::string(product::buildType),
@@ -1586,9 +1627,11 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                         t("about.factory")+": "+std::to_string(state_.factoryLibraryVersion),
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
                         t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion),
-                        "Build HarmonyFirst="+std::string(plugin::harmonyFirstBuild()?"ON":"OFF"),
-                        "Build Phase3A="+std::string(weights.diminishedPassingInsertionException?"ON":"OFF"),
-                        "Build Abstract="+std::string(weights.abstractChordCompatibility?"ON":"OFF")};
+                        "Algorithm preset="+std::string(plugin::algorithmPresetName(algorithmPreset_)),
+                        "Requested HarmonyFirst="+std::string(algorithmPreset_==plugin::DevelopmentAlgorithmPreset::HarmonyFirst?"ON":"OFF"),
+                        "Requested Phase3A="+std::string(weights.diminishedPassingInsertionException?"ON":"OFF"),
+                        "Requested Abstract="+std::string(weights.abstractChordCompatibility?"ON":"OFF"),
+                        "Project reopen: Legacy (experimental selection is not saved)"};
                     if(recommendationResultReady_)
                         about.push_back("Actual recommendations: HarmonyFirst="+
                             std::string(recommendations_.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+

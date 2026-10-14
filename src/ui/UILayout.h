@@ -31,6 +31,7 @@ struct UILayoutResult {
     std::array<UiRect,4> lanes{};
     std::array<UiRect,6> topControls{}; // key, style, intent, advanced, recommend, library
     std::array<UiRect,4> constraintControls{};
+    std::array<UiRect,3> algorithmControls{};
     double laneHeight{}, laneScrollMax{};
 };
 struct CandidateRowGeometry {
@@ -70,7 +71,7 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
     o.viewport={0,0,w,h};
     o.mode=w<1050?LayoutMode::Compact:w<1600?LayoutMode::Standard:LayoutMode::Wide;
     const double controlsH=o.mode==LayoutMode::Compact?78:56;
-    const double topH=controlsH+34;
+    const double topH=controlsH+68;
     o.topBar={0,0,w,topH};
     if(o.mode==LayoutMode::Compact) {
         o.topControls={UiRect{16,5,w*0.43,35},UiRect{w*0.44,5,w-16,35},
@@ -80,9 +81,12 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
         const double unit=(w-32)/6;
         for(int i=0;i<6;++i)o.topControls[i]={16+i*unit,8,16+(i+1)*unit-4,46};
     }
-    o.constraintControls={UiRect{16,controlsH,w*0.42,topH-3},
-        UiRect{w*0.43,controlsH,w*0.59,topH-3},UiRect{w*0.60,controlsH,w*0.76,topH-3},
-        UiRect{w*0.77,controlsH,w-16,topH-3}};
+    o.constraintControls={UiRect{16,controlsH,w*0.42,controlsH+31},
+        UiRect{w*0.43,controlsH,w*0.59,controlsH+31},UiRect{w*0.60,controlsH,w*0.76,controlsH+31},
+        UiRect{w*0.77,controlsH,w-16,controlsH+31}};
+    const double algorithmWidth=std::min(135.,(w-190)/3);
+    for(int i=0;i<3;++i)o.algorithmControls[i]={174+i*algorithmWidth,controlsH+35,
+        170+(i+1)*algorithmWidth,topH-4};
     const double phraseTop=topH+34;
     o.phrase={16,phraseTop,w-16,phraseTop+160};
     o.timeline={24,phraseTop+20,w-24,phraseTop+89};

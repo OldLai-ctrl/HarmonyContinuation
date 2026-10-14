@@ -14,6 +14,7 @@
 #include "ui/WhyExplanation.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
+#include "plugin/DevelopmentMode.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -43,6 +44,7 @@ public:
         std::function<void()> refresh;
         std::function<void()> clipboard;
         std::function<void(const session::PluginSessionState&)> stateChanged;
+        std::function<void(plugin::DevelopmentAlgorithmPreset)> algorithmChanged;
         std::function<std::string(const ContinuationCandidate&, const session::SaveMetadata&)> save;
         std::function<std::string(const ProgressionTemplate&)> updateUser;
         std::function<std::string(const std::string&)> deleteUser;
@@ -70,6 +72,8 @@ public:
     void onDragLeave(VSTGUI::DragEventData) override;
     bool onDrop(VSTGUI::DragEventData) override;
     void setSessionState(const session::PluginSessionState&);
+    void setAlgorithmPreset(plugin::DevelopmentAlgorithmPreset preset);
+    bool runAlgorithmSwitchSmoke();
     void setEditorSizeState(int width,int height) noexcept {
         state_.editorWidth=static_cast<std::uint32_t>(width);
         state_.editorHeight=static_cast<std::uint32_t>(height);
@@ -113,6 +117,7 @@ public:
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
     Actions actions_;
+    plugin::DevelopmentAlgorithmPreset algorithmPreset_{plugin::DevelopmentAlgorithmPreset::Legacy};
     session::PluginSessionState state_;
     session::RecommendationVisibilityPolicy visibility_;
     std::string hostText_, rawText_, parseText_, matchStatus_, libraryError_, actionStatus_;
