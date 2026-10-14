@@ -8,12 +8,15 @@
 #include "midi/StandardMidiFileWriter.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "snapshot/RecommendationSnapshot.h"
+#include "color/ColorPreferenceReranker.h"
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <set>
@@ -1062,6 +1065,595 @@ int runPhase5(const std::filesystem::path& out,const std::filesystem::path& cand
     return 0;
 }
 }
+int runPhase6(const std::filesystem::path& out,const std::filesystem::path& factoryPath,
+              const std::filesystem::path& oracleRoot,
+              const std::filesystem::path& v5FactoryPath={}) {
+    std::filesystem::create_directories(out/"midi");
+    std::filesystem::create_directories(out/"blind");
+    std::filesystem::create_directories(out/"answer-key");
+    std::filesystem::remove(out/"blind"/"answer-key.tsv");
+    constexpr const char* factoryHash="74c529828f8c4b934bbaf4ada719aa95491ab498b58885522124ff6505671534";
+    struct Fixture {std::vector<std::string> names;KeySignature key;};
+    const std::map<std::string,Fixture> fixtures{
+        {"R01",{{"Am","G#dim","G","D/F#"},{PitchClass::A,Mode::Minor}}},
+        {"R01_D",{{"Am","G#dim","G","D"},{PitchClass::A,Mode::Minor}}},
+        {"R02_CMAJOR",{{"F","G","Am"},{PitchClass::C,Mode::Major}}},
+        {"R02_AMINOR",{{"F","G","Am"},{PitchClass::A,Mode::Minor}}},
+        {"B08",{{"C","Cmaj7/B","C7/Bb","F/A"},{PitchClass::C,Mode::Major}}},
+        {"B11",{{"Cmaj9","Dbmaj9","Cmaj9"},{PitchClass::C,Mode::Major}}},
+        {"DIATONIC",{{"C","Am","F","G"},{PitchClass::C,Mode::Major}}},
+        {"DIM_NOT_PASSING",{{"C","Ddim","Em","G"},{PitchClass::C,Mode::Major}}},
+        {"BORROWED",{{"C","Fm","G","C"},{PitchClass::C,Mode::Major}}},
+        {"COLOR",{{"Cmaj7","Am7","Dm7","G7"},{PitchClass::C,Mode::Major}}},
+        {"SECONDARY",{{"Dm","E7","Am"},{PitchClass::A,Mode::Minor}}},
+        {"SUS",{{"Gsus4","G","C"},{PitchClass::C,Mode::Major}}},
+        {"Q1",{{"C","E7","Am"},{PitchClass::C,Mode::Major}}},
+        {"Q2",{{"C","Am","A7","Dm","G"},{PitchClass::C,Mode::Major}}}
+    };
+    struct Case {
+        std::string id,fixture,oracleTrial;
+        int numerator{4},denominator{4},semitones{},octaves{};
+        double bpm{120.};
+        std::vector<double> durations;
+        bool open{},midiRoundTrip{true};
+        std::optional<PhraseIntent> requestedIntent;
+    };
+    std::vector<Case> cases;
+    const auto add=[&](std::string fixture,int n,int d,std::string variant,std::vector<double> durations,
+                       bool open=false,double bpm=120.,int semitones=0,int octaves=0,
+                       std::optional<PhraseIntent> intent={},std::string explicitId={}) {
+        std::ostringstream trial;trial<<fixture<<'_'<<n<<'-'<<d<<'_'<<variant;
+        if(bpm!=120.)trial<<'_'<<static_cast<int>(bpm)<<"bpm";
+        if(semitones)trial<<"_transpose"<<semitones;
+        if(octaves)trial<<"_octave"<<octaves;
+        const auto id=explicitId.empty()?trial.str():std::move(explicitId);
+        cases.push_back({id,std::move(fixture),trial.str(),n,d,semitones,octaves,bpm,
+                         std::move(durations),open,true,intent});
+    };
+    const auto fixed=[](std::size_t size,double qn){return std::vector<double>(size,qn);};
+    for(const auto& [name,fixture]:fixtures)if(name!="Q1"&&name!="Q2")add(name,4,4,"fixed-4qn",fixed(fixture.names.size(),4.));
+    add("R01",3,4,"fixed-4qn",fixed(4,4.));
+    add("R01",7,8,"fixed-4qn",fixed(4,4.));
+    add("B08",5,4,"fixed-4qn",fixed(4,4.));
+    add("B11",7,8,"fixed-4qn",fixed(3,4.));
+    add("DIATONIC",6,8,"fixed-4qn",fixed(4,4.));
+    add("SUS",9,8,"fixed-4qn",fixed(3,4.));
+    add("R01",4,4,"open",fixed(4,4.),true);
+    add("R02_CMAJOR",4,4,"R02-3-5-4",{3.,5.,4.});
+    add("R02_AMINOR",4,4,"R02-open",{4.,4.,4.},true);
+    add("R02_CMAJOR",4,4,"R02-color-intent-fixed",{4.,4.,4.},false,120.,0,0,PhraseIntent::Color);
+    cases.push_back({"B11_PLAIN_C_DB_C","B11","",4,4,0,0,120.,{4,4,4},false,false,{}});
+    cases.push_back({"R01_2QN_OPEN","R01","",4,4,0,0,120.,{2,2,2,2},true,true,{}});
+    add("R01",4,4,"fixed-4qn",fixed(4,4.),false,90.);
+    add("R01",4,4,"equal-seconds-2qn",fixed(4,2.),false,90.);
+    add("R01",4,4,"transposed",fixed(4,4.),false,120.,2);
+    cases.push_back({"R01_OMIT_DIM","R01","",4,4,0,0,120.,{4,4,4},true,false,{}});
+    // Two explicit negative controls are intentionally outside the archived exact-input oracle.
+    cases.push_back({"R01_CONFLICT_BASS","R01","",4,4,0,0,120.,{4,4,4,4},true,true,{}});
+    cases.push_back({"R01_NON_DIM_CHROMATIC","R01","",4,4,0,0,120.,{4,4,4,4},true,true,{}});
+    cases.push_back({"INTENT_RESOLVE_R01","R01","",4,4,0,0,120.,{4,4,4,4},true,true,PhraseIntent::Resolve});
+    cases.push_back({"INTENT_DEVELOP_B08","B08","",4,4,0,0,120.,{4,4,4,4},false,true,PhraseIntent::Develop});
+    cases.push_back({"INTENT_LOOP_R02","R02_CMAJOR","",4,4,0,0,120.,{4,4,4},true,true,PhraseIntent::Loop});
+    // Exact Phase 5.1 worker inputs retained for the archived Abstract OFF/ON comparison.
+    cases.push_back({"Q1_PHASE51","Q1","",4,4,0,0,120.,{4,4,4},false,false,{}});
+    cases.push_back({"Q2_PHASE51","Q2","",4,4,0,0,120.,{4,2,1,2,2},false,false,{}});
+    require(cases.size()==35,"Phase6 freezes 35 cases within the requested 24-36 range");
+
+    const auto groupName=[](std::size_t group){constexpr const char* names[]{"RESOLVE","DEVELOP","LOOP","COLOR"};return group<4?names[group]:"UNKNOWN";};
+    const auto safe=[](std::string value){for(auto& c:value)if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='-'||c=='_'))c='_';return value;};
+    const auto joinIds=[](const std::vector<TemplateID>& ids){std::string out;for(const auto& id:ids){if(!out.empty())out+=',';out+=id;}return out;};
+    const auto suffixText=[](const std::vector<ConcreteChordEvent>& events){std::ostringstream out;out<<std::fixed<<std::setprecision(6);for(std::size_t i=0;i<events.size();++i){if(i)out<<" | ";out<<events[i].label<<'@'<<events[i].durationQN<<"QN";}return out.str();};
+    const auto sourceText=[](const Progression& progression){std::ostringstream out;out<<std::fixed<<std::setprecision(6);for(std::size_t i=0;i<progression.size();++i){if(i)out<<" | ";out<<progression[i].name<<'@'<<progression[i].durationQN.value_or(4.)<<"QN";}return out.str();};
+    const auto labelsText=[](const Progression& progression){std::string out;for(const auto& event:progression){if(!out.empty())out+='|';out+=event.name;}return out;};
+    const auto splitTabs=[](const std::string& line){std::vector<std::string> fields;std::size_t start{};for(;;){const auto end=line.find('\t',start);fields.push_back(line.substr(start,end==std::string::npos?end:end-start));if(end==std::string::npos)break;start=end+1;}return fields;};
+    const auto rankMatch=[](const RecommendationSet& rec,const TemplateID& id){
+        struct Rank {int group{-1},rank{-1};bool visible{};std::string candidateId,primaryId,suffix;};Rank result;
+        const auto shown=session::presentationIndices(rec,{});
+        for(int pass=0;pass<2;++pass)for(std::size_t g=0;g<rec.groups.size();++g)for(std::size_t r=0;r<rec.groups[g].size();++r){const auto& candidate=rec.groups[g][r];
+            const bool hit=pass==0?candidate.primaryTemplate==id:std::find(candidate.supportingTemplates.begin(),candidate.supportingTemplates.end(),id)!=candidate.supportingTemplates.end();
+            if(!hit)continue;
+            result={static_cast<int>(g),static_cast<int>(r+1),std::find(shown[g].begin(),shown[g].end(),r)!=shown[g].end(),candidate.id,candidate.primaryTemplate,suffixText(candidate.continuation)};return result;
+        }return result;
+    };
+    const auto findMatch=[](const RecommendationSet& rec,const TemplateID& id)->const MatchResult*{const auto it=std::find_if(rec.matches.begin(),rec.matches.end(),[&](const auto& m){return m.templateId==id;});return it==rec.matches.end()?nullptr:&*it;};
+    const auto checkVoicing=[&](const preview::Sequence& whole,const midi::ReadResult& decoded,bool suffixOnly){
+        require(bool(decoded)&&!decoded.file.notes.empty(),"Phase6 MIDI parses and contains notes");
+        require(!whole.events.empty()&&(!suffixOnly||whole.recommendationBoundary<whole.events.size()),"Phase6 MIDI source preview has a continuation boundary");
+        preview::ChordVoicer voicer;const double firstSuffix=whole.events[whole.recommendationBoundary].startQN;
+        for(std::size_t i=0;i<whole.events.size();++i){const auto& event=whole.events[i];const auto voiced=voicer.voice(event.chord,event.topVoice);if(suffixOnly&&i<whole.recommendationBoundary)continue;
+            std::vector<int> expected{voiced.bass};for(int j=0;j<voiced.upperCount;++j)expected.push_back(voiced.upper[j]);std::vector<int> actual;
+            const double start=event.startQN-(suffixOnly?firstSuffix:0.);
+            for(const auto& note:decoded.file.notes)if(closeQN(note.startQN,start)&&closeQN(note.durationQN,event.durationQN))actual.push_back(note.pitch);
+            std::sort(expected.begin(),expected.end());std::sort(actual.begin(),actual.end());require(actual==expected,"Phase6 MIDI bass and upper voices equal preview voicing");
+        }
+    };
+    struct Run {Case test;Progression progression;std::array<plugin::WorkerResult,3> results;};
+    std::vector<Run> runs;runs.reserve(cases.size());
+    plugin::RecommendationWorker worker(factoryPath,out/"isolated-user.db",out/"isolated-factory-store");
+    auto db=library::loadFactory(factoryPath);require(bool(db)&&db.templates.size()==657,"Phase6 reads frozen V4/657 Factory");CandidateIndex continuousIndex(db.templates);
+    const std::array<plugin::DevelopmentAlgorithmPreset,3> presets{plugin::DevelopmentAlgorithmPreset::Legacy,
+        plugin::DevelopmentAlgorithmPreset::HarmonyFirst,plugin::DevelopmentAlgorithmPreset::Abstract};
+    std::ofstream caseFile(out/"cases.tsv"),matchFile(out/"matches.tsv"),candidateFile(out/"top3.tsv"),continuousFile(out/"continuous-control.tsv"),performanceFile(out/"performance.tsv"),
+        traceFile(out/"traces.txt"),midiFile(out/"midi-index.tsv"),colorFile(out/"color-ranking.tsv"),colorExportFile(out/"color-export.tsv"),
+        ablationFile(out/"ablation.tsv"),inputOracleFile(out/"input-oracle-comparison.tsv"),oracleFile(out/"oracle-comparison.tsv"),phase51OracleFile(out/"phase51-oracle-comparison.tsv"),
+        blindAnswer(out/"answer-key"/"answer-key.tsv"),blindInstructions(out/"blind"/"listening-instructions.txt"),
+        blindMidiCheck(out/"blind-midi-readback.tsv"),r02RuntimeFile(out/"r02-runtime.tsv"),r01V5File(out/"r01-v5-isolated.tsv"),phase51MidiFile(out/"phase51-midi-oracle.tsv");
+    require(caseFile&&matchFile&&candidateFile&&continuousFile&&performanceFile&&traceFile&&midiFile&&colorFile&&colorExportFile&&ablationFile&&inputOracleFile&&oracleFile&&phase51OracleFile&&blindAnswer&&blindInstructions&&blindMidiCheck&&r02RuntimeFile&&r01V5File&&phase51MidiFile,
+        "Phase6 TSV and review files open");
+    caseFile<<"case\toracleTrial\tfixture\tinput\tkey\tmeter\tbpm\tQN\tOPEN\trequestedIntent\timportRoute\n";
+    matchFile<<"case\tpreset\tfactoryVersion\tfactorySha256\tFactoryID\tdisposition\treasons\tsimilarity\trawCost\tfullHarmony\tskeletonHarmony\trhythmSimilarity\trankingScore\teligibilityScore\tmatchWindow\tcontinuationStart\tcontinuationLength\tgroup\trank\tdefaultPresented\tcandidateID\tfullSuffix\talignmentTrace\n";
+    candidateFile<<"case\tpreset\tfactoryVersion\tfactorySha256\tgroup\trank\tdefaultPresented\tcandidateID\tprimaryID\tsupportingIDs\tintent\tscore\teligibilityScore\tsimilarity\tfullPath\tfullSuffix\tfullMidi\tsuffixMidi\n";
+    continuousFile<<"case\tgroup\trank\tcandidateID\tprimaryID\tintent\tscore\tsimilarity\tfullSuffix\tmatchCount\tpathPassed\tscorePassed\n";
+    performanceFile<<"case\tpreset\tcacheState\tcomputationMs\tanalysisReused\tfactoryVersion\tfactorySha256\n";
+    midiFile<<"case\tpreset\tgroup\trank\tcandidateID\tprimaryID\tscope\tpath\tnoteCount\tvoicingCheck\n";
+    colorFile<<"case\tpreset\tgroup\tpreference\tpostDefaultRank\tcandidateID\tpreRank\tdefaultBefore\tdefaultAfter\tcost\treason\tbeforeDefaultIDs\tafterDefaultIDs\n";
+    colorExportFile<<"case\tpreset\tgroup\tpreference\tbeforeDefaultIDs\tafterDefaultIDs\tselectedCandidateID\tselectedPrimaryID\tpreviewCandidateID\tfullMidi\tsuffixMidi\tvoicingCheck\n";
+    ablationFile<<"case\tparameter\tdefault\tablated\tFactoryID\tdefaultScore\tablatedScore\tdelta\tdefaultDisposition\tablatedDisposition\tdefaultRank\tablatedRank\trankDelta\tminimumMatch\tminimumScore\tstatus\n";
+    inputOracleFile<<"case\toracleTrial\toldMeter\tnewMeter\toldBPM\tnewBPM\toldOPEN\tnewOPEN\toldQN\tnewQN\toldInput\tnewInput\toldKey\tnewKey\tstatus\n";
+    oracleFile<<"case\tpreset\tbuild\tFactoryID\toldDisposition\tnewDisposition\toldMatchKey\tnewMatchKey\toldSimilarity\tnewSimilarity\toldRankingScore\tnewRankingScore\toldEligibilityScore\tnewEligibilityScore\toldRankGroup\tnewRankGroup\toldRank\tnewRank\toldVisible\tnewVisible\toldSuffix\tnewSuffix\tstatus\n";
+    phase51OracleFile<<"case\tpreset\tpair\tFactoryID\toldDisposition\tnewDisposition\toldSimilarity\tnewSimilarity\toldRawCost\tnewRawCost\toldPrimaryID\tnewPrimaryID\toldRank\tnewRank\toldScore\tnewScore\tstatus\n";
+    blindAnswer<<"pair\tcase\tscope\talias\tpreset\tcandidateID\tprimaryID\tcontinuation\twav\tfullMidi\tsuffixMidi\n";
+    blindMidiCheck<<"pair\talias\tscope\tmidiPath\tnoteCount\tdecodedVoicing\n";
+    r02RuntimeFile<<"cell\tkeySetting\tdurationsQN\tOPEN\tpreset\tselectedAnalysisKey\tfactoryVersion\tfactorySha256\tmatchFound\tmatchKey\tsimilarity\trawCost\trankingScore\teligibilityScore\tactiveGateScore\tdisposition\tsuffixStageReached\tvalidCompleteSuffix\tsuffix\tgroup\tworkerRank\tdefaultCard\tminimumMatch\tminimumScore\n";
+    r01V5File<<"factoryPath\tfactoryVersion\tfactorySha256\tfactoryCount\tQN\tmeter\tOPEN\tpreset\tselectedAnalysisKey\tinputDurationsQN\ttemplateID\tmatchFound\tmatchKey\tsimilarity\trankingScore\teligibilityScore\tactiveGateScore\tdisposition\teligible\tcardCandidateID\tprimaryID\tgroup\tworkerRank\tdefaultCard\tfullPath\tfullSuffix\tsuffixDurationsQN\tsnapshotSuffixPreserved\tfullMidi\tsuffixMidi\tfullDecodedLowestNotes\tsuffixDecodedLowestNotes\tvoicingCheck\n";
+    phase51MidiFile<<"pair\tabstract\tscope\tpreset\tfactoryVersion\tfactorySha256\tmatchedTemplateID\tselectedCardPrimaryID\tworkerRank\toldMidiPath\truntimeMidiPath\tbytesEqual\tbyteComparisonNote\tnoteEventsEqual\ttempoEqual\toldNoteCount\truntimeNoteCount\toldTempoBPM\truntimeTempoBPM\toldVoicing\truntimeVoicing\tstatus\n";
+    blindInstructions<<"Phase 6 anonymized preview pairs. Full WAVs and suffix excerpts are rule-based built-in PreviewSynth renders at 48 kHz and the case tempo; they are not recordings or GM-patch renders. Each pair uses the same source progression and renderer. Pair aliases A/B and their files are not mapped to a preset here; the answer key is stored separately under ../answer-key/answer-key.tsv. Automatic scores describe implementation output only and do not rate musical quality.\n";
+    caseFile<<std::setprecision(9);matchFile<<std::setprecision(9);candidateFile<<std::setprecision(9);continuousFile<<std::setprecision(9);
+    const auto makeSequence=[&](const Case& c,const Fixture& fixture){
+        auto rawProgression=phrase(fixture.names,c.durations,c.open);
+        if(c.id=="B11_PLAIN_C_DB_C")rawProgression=phrase({"C","Db","C"},c.durations,c.open);
+        if(c.id=="R01_CONFLICT_BASS")rawProgression=phrase({"Am","G#dim","G","D/A"},{4,4,4,4},true);
+        if(c.id=="R01_NON_DIM_CHROMATIC")rawProgression=phrase({"Am","G#","G","D/F#"},{4,4,4,4},true);
+        if(c.id=="R01_OMIT_DIM")rawProgression=phrase({"Am","G","D/F#"},{4,4,4},true);
+        if(!c.midiRoundTrip)return rawProgression;
+        midi::ExportSequence sequence;sequence.totalQN=rawProgression.back().startQN+rawProgression.back().durationQN.value_or(4.);sequence.chordCount=rawProgression.size();sequence.tempoBPM=c.bpm;sequence.meter={c.numerator,c.denominator};
+        for(const auto& event:rawProgression){const auto tones=chordPitches(event);const int root=(tones.root+c.semitones+120)%12,bass=(tones.bass+c.semitones+120)%12,octave=c.octaves*12;
+            sequence.notes.push_back({36+bass+octave,event.startQN,event.durationQN.value_or(4.),90,0,true});
+            for(int n=0;n<12;++n)if(tones.intervals&(1<<n))sequence.notes.push_back({60+(root+n)%12+octave,event.startQN,event.durationQN.value_or(4.),80,0,false});}
+        const auto bytes=midi::writeToMemory(sequence);require(bool(bytes),"Phase6 fixed-case MIDI encodes");const auto raw=midi::readFromMemory(bytes.bytes);require(bool(raw),"Phase6 fixed-case MIDI parses");
+        midi::MidiHarmonyExtractionConfig config;config.openEnded=c.open;const auto extraction=midi::extractHarmony(raw.file,config);require(bool(extraction)&&extraction.chords.size()==fixture.names.size(),"Phase6 fixed-case MIDI recognition returns expected chord count");return extraction.chords;
+    };
+    const auto presetIndex=[](plugin::DevelopmentAlgorithmPreset p){return p==plugin::DevelopmentAlgorithmPreset::Legacy?0u:p==plugin::DevelopmentAlgorithmPreset::HarmonyFirst?1u:2u;};
+    std::set<std::string> nonExactCoverageCases;std::size_t performanceRows{};bool coldWorkerSample=true;
+    for(const auto& test:cases){
+        const auto fit=fixtures.find(test.fixture);require(fit!=fixtures.end(),"Phase6 fixture exists");auto progression=makeSequence(test,fit->second);
+        if(test.id=="Q1_PHASE51")progression=phrase({"C","E7","Am"},{4,4,4});
+        if(test.id=="Q2_PHASE51")progression=phrase({"C","Am","A7","Dm","G"},{4,2,1,2,2});
+        AnalysisContext base;base.forcedKey=fit->second.key;if(test.semitones&&base.forcedKey)base.forcedKey->tonic=static_cast<PitchClass>((static_cast<int>(base.forcedKey->tonic)+test.semitones+12)%12);
+        base.timeSigNumerator=test.numerator;base.timeSigDenominator=test.denominator;
+        if(test.id=="Q1_PHASE51"||test.id=="Q2_PHASE51")base.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+        RecommendationRequest request;request.preferredIntent=test.requestedIntent;
+        const auto input=sourceText(progression);caseFile<<test.id<<'\t'<<test.oracleTrial<<'\t'<<test.fixture<<'\t'<<input<<'\t'<<(base.forcedKey?formatKey(*base.forcedKey):"Auto")<<'\t'<<test.numerator<<'/'<<test.denominator<<'\t'<<test.bpm<<'\t';double totalQN{};for(const auto& e:progression)totalQN+=e.durationQN.value_or(4.);caseFile<<totalQN<<'\t'<<test.open<<'\t'<<(test.requestedIntent?intentName(*test.requestedIntent):"neutral")<<'\t'<<(test.midiRoundTrip?"MIDI roundtrip":"direct structured input")<<'\n';
+        Run run;run.test=test;run.progression=progression;
+        for(const auto preset:presets){const auto pi=presetIndex(preset);worker.submitPreset(progression,base,preset,request,false,pi+1);auto result=wait(worker);
+            require(result.algorithmPreset&&*result.algorithmPreset==preset,"Phase6 worker returns the explicitly requested preset");
+            require(result.factoryCount==657&&result.factoryVersion==4&&result.factorySha256==factoryHash,"Phase6 worker confirms exact frozen V4/657 Factory metadata");
+            require(std::isfinite(result.computationMs)&&result.computationMs>=0.,"Phase6 worker provides a finite computation time");
+            performanceFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<(coldWorkerSample?"cold_factory_load_and_sha256":"hot_loaded_index")<<'\t'
+                <<std::setprecision(9)<<result.computationMs<<'\t'<<result.analysisReused<<'\t'<<result.factoryVersion<<'\t'<<result.factorySha256<<'\n';
+            coldWorkerSample=false;++performanceRows;
+            const auto weights=plugin::developmentRecommendationWeights(preset);require(weights.minimumMatch==0.60f&&weights.minimumScore==60.f&&weights.perGroup==10&&!weights.diminishedPassingInsertionException,"Phase6 preset retains existing gates and only the documented preset flags");
+            const auto& rec=result.recommendations;require(rec.stats.shortlistSize==657&&rec.groups.size()==4,"Phase6 worker scans the V4 library and emits four intent groups");
+            const auto shown=session::presentationIndices(rec,{});
+            for(std::size_t m=0;m<rec.matches.size();++m){const auto& match=rec.matches[m];const auto rank=rankMatch(rec,match.templateId);
+                if(std::any_of(match.alignmentTrace.begin(),match.alignmentTrace.end(),[](const auto& step){return step.operation!=AlignmentOp::Match;}))nonExactCoverageCases.insert(test.id);
+                matchFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<result.factoryVersion<<'\t'<<result.factorySha256<<'\t'<<match.templateId<<'\t'<<match.disposition<<'\t'<<phase5ReasonString(match)<<'\t'<<match.similarity<<'\t'<<match.rawCost<<'\t'<<match.subScores.fullHarmony<<'\t'<<match.subScores.skeletonHarmony<<'\t'<<match.subScores.rhythmSimilarity<<'\t'<<match.candidateRankingScore<<'\t'<<match.candidateEligibilityScore<<'\t'<<match.templateMatchStart<<'-'<<match.templateMatchEnd<<'\t'<<match.continuationStartIndex<<'\t'<<match.continuationLength<<'\t'<<(rank.group<0?"NA":groupName(rank.group))<<'\t'<<rank.rank<<'\t'<<rank.visible<<'\t'<<rank.candidateId<<'\t'<<rank.suffix<<'\t';
+                for(std::size_t s=0;s<match.alignmentTrace.size();++s){if(s)matchFile<<'|';const auto& step=match.alignmentTrace[s];matchFile<<(step.queryIndex?std::to_string(*step.queryIndex):"-")<<':'<<(step.templateIndex?std::to_string(*step.templateIndex):"-")<<':'<<alignmentOpName(step.operation);}matchFile<<'\n';}
+            traceFile<<"\nCASE="<<test.id<<" PRESET="<<plugin::algorithmPresetName(preset)<<" FACTORY=v"<<result.factoryVersion<<"/"<<result.factorySha256<<session::recommendationDiagnostics(progression,plugin::developmentContext(base,preset),request,rec);
+            midi::CandidateExportContext exportContext;exportContext.imported=imported(progression);exportContext.tempo=test.bpm;exportContext.meter={test.numerator,test.denominator};exportContext.mode=midi::ArrangementMode::VoiceLed;
+            const auto builtFirst=[&](const ContinuationCandidate& c){return preview::buildSequence(exportContext.imported,&c,test.bpm);};
+            for(std::size_t g=0;g<rec.groups.size();++g)for(std::size_t rank=0;rank<std::min<std::size_t>(3,rec.groups[g].size());++rank){const auto& candidate=rec.groups[g][rank];const bool defaultPresented=std::find(shown[g].begin(),shown[g].end(),rank)!=shown[g].end();
+                const auto stem=safe(test.id+"_"+plugin::algorithmPresetName(preset)+"_"+groupName(g)+"_r"+std::to_string(rank+1));const auto fullPath=out/"midi"/(stem+"_full.mid"),suffixPath=out/"midi"/(stem+"_suffix.mid");
+                auto fullContext=exportContext;fullContext.scope=midi::ExportScope::FullPhrase;auto fullPayload=midi::candidatePayload(fullContext,candidate);require(bool(fullPayload),"Phase6 top3 full-phrase MIDI exports");
+                auto suffixContext=exportContext;suffixContext.scope=midi::ExportScope::ContinuationOnly;auto suffixPayload=midi::candidatePayload(suffixContext,candidate);require(bool(suffixPayload),"Phase6 top3 suffix-only MIDI exports");
+                const auto previewBuilt=builtFirst(candidate);require(bool(previewBuilt)&&previewBuilt.sequence.recommendationBoundary==progression.size(),"Phase6 top3 preview preserves input boundary");
+                const auto fullRead=midi::readFromMemory(fullPayload.payload.smfBytes),suffixRead=midi::readFromMemory(suffixPayload.payload.smfBytes);checkVoicing(previewBuilt.sequence,fullRead,false);checkVoicing(previewBuilt.sequence,suffixRead,true);
+                std::string error;require(midi::writeToFile(fullPayload.payload.smfBytes,fullPath,error),"Phase6 top3 full MIDI writes");error.clear();require(midi::writeToFile(suffixPayload.payload.smfBytes,suffixPath,error),"Phase6 top3 suffix MIDI writes");
+                const auto suffix=suffixText(candidate.continuation);candidateFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<result.factoryVersion<<'\t'<<result.factorySha256<<'\t'<<groupName(g)<<'\t'<<rank+1<<'\t'<<defaultPresented<<'\t'<<candidate.id<<'\t'<<candidate.primaryTemplate<<'\t'<<joinIds(candidate.supportingTemplates)<<'\t'<<intentName(candidate.intent)<<'\t'<<candidate.rankingScore<<'\t'<<candidate.eligibilityScore<<'\t'<<candidate.matchSimilarity<<'\t'<<input<<" -> "<<suffix<<'\t'<<suffix<<'\t'<<fullPath.string()<<'\t'<<suffixPath.string()<<'\n';
+                midiFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<groupName(g)<<'\t'<<rank+1<<'\t'<<candidate.id<<'\t'<<candidate.primaryTemplate<<"\tfull\t"<<fullPath.string()<<'\t'<<fullRead.file.notes.size()<<"\tPASS\n";
+                midiFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<groupName(g)<<'\t'<<rank+1<<'\t'<<candidate.id<<'\t'<<candidate.primaryTemplate<<"\tsuffix\t"<<suffixPath.string()<<'\t'<<suffixRead.file.notes.size()<<"\tPASS\n";
+            }
+            // Mirror the UI: sort the existing default-visible indices inside each intent group,
+            // then apply the preference order only to those visible cards.
+            const auto sourceTimed=color::HarmonyColorAnalyzer::prepare(progression);
+            const std::array<color::Preference,6> preferences{color::Preference::Off,color::Preference::ContinueSource,color::Preference::Warmer,color::Preference::Cooler,color::Preference::TensionArc,color::Preference::TensionWarmClose};
+            const bool selectedForMidi=test.id=="R01_4-4_fixed-4qn"||test.id=="B11_4-4_fixed-4qn"||test.id=="R02_CMAJOR_4-4_fixed-4qn";
+            for(std::size_t colorGroup=0;colorGroup<rec.groups.size();++colorGroup){const auto& groupCandidates=rec.groups[colorGroup];std::vector<color::PathColor> paths;
+                for(const auto& candidate:groupCandidates)paths.push_back(color::HarmonyColorAnalyzer::analyzeContinuation(sourceTimed,candidate));
+                const std::set<std::size_t> visibleBefore(shown[colorGroup].begin(),shown[colorGroup].end());std::string beforeDefaultIds;
+                for(const auto index:shown[colorGroup]){require(index<groupCandidates.size(),"MainView presentation indices refer to a card in this group");if(!beforeDefaultIds.empty())beforeDefaultIds+=',';beforeDefaultIds+=groupCandidates[index].id;}
+                for(const auto preference:preferences){const auto ranked=color::ColorPreferenceReranker::rank(sourceTimed,result.analysis.keyCandidates,
+                        result.analysis.selectedKey?std::optional<KeySignature>{result.analysis.selectedKey->key}:std::nullopt,groupCandidates,paths,preference);
+                    std::set<std::size_t> allIndices;std::vector<std::size_t> afterVisibleIndices;std::string afterDefaultIds;
+                    for(const auto index:ranked.order){require(index<groupCandidates.size()&&allIndices.insert(index).second,"Color reranker returns each valid group index once");
+                        if(visibleBefore.count(index)){afterVisibleIndices.push_back(index);if(!afterDefaultIds.empty())afterDefaultIds+=',';afterDefaultIds+=groupCandidates[index].id;}}
+                    require(allIndices.size()==groupCandidates.size(),"Color reranker returns every candidate in the current intent group");
+                    for(std::size_t position=0;position<ranked.order.size();++position){const auto original=ranked.order[position];const auto visibleRank=std::find(afterVisibleIndices.begin(),afterVisibleIndices.end(),original);
+                        const bool visibleAfter=visibleRank!=afterVisibleIndices.end();const auto postRank=visibleAfter?static_cast<std::size_t>(std::distance(afterVisibleIndices.begin(),visibleRank))+1:0;
+                        const auto& decision=ranked.decisions[original];colorFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<groupName(colorGroup)<<'\t'
+                            <<color::preferenceKey(preference)<<'\t'<<postRank<<'\t'<<groupCandidates[original].id<<'\t'<<original+1<<'\t'
+                            <<visibleBefore.count(original)<<'\t'<<visibleAfter<<'\t'<<(decision.cost?std::to_string(*decision.cost):"NA")<<'\t'
+                            <<color::rankReasonKey(decision.reason)<<'\t'<<beforeDefaultIds<<'\t'<<afterDefaultIds<<'\n';}
+                    if(selectedForMidi){if(!afterVisibleIndices.empty()){const auto& chosen=groupCandidates[afterVisibleIndices.front()];auto fullContext=exportContext;fullContext.scope=midi::ExportScope::FullPhrase;
+                            auto fullPayload=midi::candidatePayload(fullContext,chosen);require(bool(fullPayload),"Phase6 preference-selected visible card full MIDI exports");auto suffixContext=exportContext;suffixContext.scope=midi::ExportScope::ContinuationOnly;
+                            auto suffixPayload=midi::candidatePayload(suffixContext,chosen);require(bool(suffixPayload),"Phase6 preference-selected visible card suffix MIDI exports");auto built=builtFirst(chosen);require(bool(built),"Phase6 preference-selected visible card previews");
+                            const auto fullDecoded=midi::readFromMemory(fullPayload.payload.smfBytes),suffixDecoded=midi::readFromMemory(suffixPayload.payload.smfBytes);checkVoicing(built.sequence,fullDecoded,false);checkVoicing(built.sequence,suffixDecoded,true);
+                            const auto stem=safe(test.id+"_"+plugin::algorithmPresetName(preset)+"_"+groupName(colorGroup)+"_"+color::preferenceKey(preference)+"_ranked");
+                            const auto fullPath=out/"midi"/(stem+"_full.mid"),suffixPath=out/"midi"/(stem+"_suffix.mid");std::string error;
+                            require(midi::writeToFile(fullPayload.payload.smfBytes,fullPath,error),"Phase6 preference-selected full MIDI writes");error.clear();require(midi::writeToFile(suffixPayload.payload.smfBytes,suffixPath,error),"Phase6 preference-selected suffix MIDI writes");
+                            colorExportFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<groupName(colorGroup)<<'\t'<<color::preferenceKey(preference)<<'\t'
+                                <<beforeDefaultIds<<'\t'<<afterDefaultIds<<'\t'<<chosen.id<<'\t'<<chosen.primaryTemplate<<'\t'<<chosen.id<<'\t'
+                                <<fullPath.string()<<'\t'<<suffixPath.string()<<"\tPASS\n";
+                        }else colorExportFile<<test.id<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'<<groupName(colorGroup)<<'\t'<<color::preferenceKey(preference)<<'\t'
+                            <<beforeDefaultIds<<'\t'<<afterDefaultIds<<"\tNA\tNA\tNA\tNA\tNA\tNO_DEFAULT_VISIBLE_CARD\n";}
+                }
+            }
+            run.results[pi]=std::move(result);
+        }
+        AnalysisContext continuousContext=base;continuousContext.retrievalTimingMode=RetrievalTimingMode::ContinuousStructure;const auto continuousWeights=plugin::developmentRecommendationWeights(plugin::DevelopmentAlgorithmPreset::Legacy);
+        const auto continuous=recommendContinuations(makeMatchQuery(progression,continuousContext),continuousIndex,request,continuousWeights);require(continuous.retrievalTimingMode==RetrievalTimingMode::ContinuousStructure,"ContinuousStructure is exercised through its actual core mode");
+        for(std::size_t g=0;g<continuous.groups.size();++g)for(std::size_t r=0;r<std::min<std::size_t>(3,continuous.groups[g].size());++r){const auto& candidate=continuous.groups[g][r];continuousFile<<test.id<<'\t'<<groupName(g)<<'\t'<<r+1<<'\t'<<candidate.id<<'\t'<<candidate.primaryTemplate<<'\t'<<intentName(candidate.intent)<<'\t'<<candidate.rankingScore<<'\t'<<candidate.matchSimilarity<<'\t'<<suffixText(candidate.continuation)<<'\t'<<continuous.matches.size()<<'\t'<<continuous.stats.pathPassed<<'\t'<<continuous.stats.scorePassed<<'\n';}
+        runs.push_back(std::move(run));
+    }
+
+    // The archived Phase 5.1 R02 target table covered Legacy/HarmonyFirst;
+    // this Phase 6 grid uses the production worker for all three presets.
+    constexpr std::array<TemplateID,5> r02Targets{
+        "V3_SHADE_002","V3_SHADE_008","V3_SHADE_019","V3_SHADE_024","V3_SHADE_031"};
+    struct KeySetting {const char* name;std::optional<KeySignature> forced;};
+    const std::array<KeySetting,3> keySettings{{
+        {"Auto",std::nullopt},{"Cmajor",KeySignature{PitchClass::C,Mode::Major}},
+        {"Aminor",KeySignature{PitchClass::A,Mode::Minor}}}};
+    const std::array<std::vector<double>,2> r02Durations{{{4.,4.,4.},{3.,5.,4.}}};
+    const std::array<const char*,2> r02DurationNames{"4,4,4","3,5,4"};
+    std::size_t runtimeRevision=1000,r02CellCount{},r02TargetRows{};
+    for(const auto& keySetting:keySettings)for(std::size_t timing=0;timing<r02Durations.size();++timing)
+    for(const bool open:{false,true})for(const auto preset:presets) {
+        const auto cell=std::string(keySetting.name)+"|"+r02DurationNames[timing]+"|OPEN"+(open?"1":"0")+"|"+plugin::algorithmPresetName(preset);
+        const auto progression=phrase({"F","G","Am"},r02Durations[timing],open);
+        AnalysisContext context;context.timeSigNumerator=4;context.timeSigDenominator=4;context.forcedKey=keySetting.forced;
+        const auto runtimeContext=plugin::developmentContext(context,preset);RecommendationRequest request;
+        worker.submitPreset(progression,context,preset,request,false,runtimeRevision++);const auto result=wait(worker);
+        require(result.algorithmPreset&&*result.algorithmPreset==preset,"R02 runtime grid returns the requested worker preset");
+        require(result.factoryCount==657&&result.factoryVersion==4&&result.factorySha256==factoryHash,"R02 runtime grid confirms the frozen V4 Factory identity");
+        const auto weights=plugin::developmentRecommendationWeights(preset);
+        require(weights.minimumMatch==0.60f&&weights.minimumScore==60.f,"R02 runtime grid preserves both existing gates");
+        const auto& rec=result.recommendations;const auto shown=session::presentationIndices(rec,{});
+        const auto query=makeMatchQuery(progression,runtimeContext);
+        require(rec.retrievalTimingMode==runtimeContext.retrievalTimingMode,"R02 worker uses the requested preset retrieval route");
+        const auto selectedKey=result.analysis.selectedKey?formatKey(result.analysis.selectedKey->key):"UNKNOWN";
+        require(result.analysis.selectedKey.has_value(),"R02 runtime cell has a selected analysis key");
+        for(const auto& id:r02Targets) {
+            ++r02TargetRows;
+            const auto item=std::find_if(db.templates.begin(),db.templates.end(),[&](const auto& t){return t.id==id;});
+            require(item!=db.templates.end()&&item->mode==Mode::Major,"R02 fixed Color target exists as a Major V4 template");
+            const auto* match=findMatch(rec,id);
+            const ContinuationCandidate* card{};std::size_t cardGroup{},cardRank{};bool defaultCard{};
+            for(std::size_t g=0;g<rec.groups.size()&&!card;++g)for(std::size_t r=0;r<rec.groups[g].size();++r) {
+                const auto& candidate=rec.groups[g][r];
+                if(std::find(candidate.supportingTemplates.begin(),candidate.supportingTemplates.end(),id)==candidate.supportingTemplates.end())continue;
+                card=&candidate;cardGroup=g;cardRank=r;defaultCard=std::find(shown[g].begin(),shown[g].end(),r)!=shown[g].end();break;
+            }
+            std::string suffix;bool suffixStageReached=card!=nullptr;bool validSuffix=card&&!card->continuation.empty();
+            if(card)suffix=suffixText(card->continuation);
+            else if(match) {
+                suffixStageReached=match->disposition=="minimum_score"||match->disposition=="repeated_current_chord"||
+                    match->disposition=="melody_constraint"||match->disposition=="candidate_generated"||
+                    match->disposition=="equivalent_path_deduplication"||match->disposition=="diversity_score"||
+                    match->disposition=="retained_limit"||match->disposition=="TARGET_RETAINED";
+                if(suffixStageReached) {
+                    const auto rhythm=estimateRhythmScale(*match,query,*item);std::vector<ConcreteChordEvent> realized;
+                    for(std::size_t i=match->continuationStartIndex;i<item->full.size();++i)
+                        realized.push_back(realizeContinuation(item->full[i],match->key,item->full[i].durationQN.value_or(4.)*rhythm.scale));
+                    if(item->loopable) {const auto wrapEnd=match->templateMatchStart==0?1:match->templateMatchStart;
+                        for(std::size_t i=0;i<std::min(wrapEnd,item->full.size());++i)
+                            realized.push_back(realizeContinuation(item->full[i],match->key,item->full[i].durationQN.value_or(4.)*rhythm.scale));}
+                    validSuffix=!realized.empty()&&match->disposition!="repeated_current_chord";suffix=suffixText(realized);
+                }
+            }
+            const float activeScore=match?(rec.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst?match->candidateEligibilityScore:match->candidateRankingScore):-1.f;
+            r02RuntimeFile<<cell<<'\t'<<keySetting.name<<'\t'<<r02DurationNames[timing]<<'\t'<<open<<'\t'
+                <<plugin::algorithmPresetName(preset)<<'\t'<<selectedKey<<'\t'<<result.factoryVersion<<'\t'<<result.factorySha256<<'\t'
+                <<bool(match)<<'\t'<<(match?formatKey(match->key):"NA")<<'\t'<<(match?match->similarity:-1.f)<<'\t'
+                <<(match?match->rawCost:-1.f)<<'\t'<<(match?match->candidateRankingScore:-1.f)<<'\t'
+                <<(match?match->candidateEligibilityScore:-1.f)<<'\t'<<activeScore<<'\t'
+                <<(match?match->disposition:"NO_MATCH_RESULT")<<'\t'<<suffixStageReached<<'\t'<<validSuffix<<'\t'<<(suffix.empty()?"NA":suffix)<<'\t'
+                <<(card?groupName(cardGroup):"NA")<<'\t'<<(card?cardRank+1:0)<<'\t'<<defaultCard<<'\t'
+                <<weights.minimumMatch<<'\t'<<weights.minimumScore<<'\n';
+        }
+        ++r02CellCount;
+    }
+    require(r02CellCount==36&&r02TargetRows==180,"Phase6 R02 runtime covers 36 orthogonal worker cells and five fixed IDs each");
+    require(!nonExactCoverageCases.empty(),"Phase6 fixed corpus includes non-exact match alignment coverage");
+    require(performanceRows==cases.size()*presets.size(),"Phase6 writes one real WorkerResult performance sample for every case and preset");
+
+    // Historical three-build oracle: exact source cases and original match rows, never regenerated by this implementation.
+    struct OldRow {std::vector<std::string> fields;};
+    const std::array<std::string,3> oracleFiles{"phase4b-off-matches-selected.tsv","phase4b-hf-on-matches-selected.tsv","phase4b-abstract-matches-selected.tsv"};
+    std::array<std::map<std::string,std::map<std::string,OldRow>>,3> oldRows;
+    std::map<std::string,std::vector<std::string>> oldCases;
+    {std::ifstream input(oracleRoot/"phase4b-off-cases.tsv");if(input){std::string line;std::getline(input,line);while(std::getline(input,line)){auto fields=splitTabs(line);if(fields.size()>=29&&fields[2]=="Legacy")oldCases[fields[0]]=std::move(fields);}}}
+    std::size_t inputOracleRows{},inputOracleMismatches{};
+    for(const auto& run:runs)if(!run.test.oracleTrial.empty()){
+        const auto found=oldCases.find(run.test.oracleTrial);if(found==oldCases.end()){++inputOracleMismatches;inputOracleFile<<run.test.id<<'\t'<<run.test.oracleTrial<<"\tNA\tNA\tNA\t"<<run.test.bpm<<"\tNA\t"<<run.test.open<<"\tNA\tNA\tNA\t"<<labelsText(run.progression)<<"\tNA\tNA\tMISSING_ORACLE_CASE\n";continue;}
+        const auto& f=found->second;double qn{};for(const auto& event:run.progression)qn+=event.durationQN.value_or(4.);const auto meter=std::to_string(run.test.numerator)+"/"+std::to_string(run.test.denominator);
+        const auto key=run.results[0].analysis.selectedKey?formatKey(run.results[0].analysis.selectedKey->key):"UNKNOWN";const auto intent=run.test.requestedIntent?std::string(intentName(*run.test.requestedIntent)):"neutral";
+        const bool same=f[3]==meter&&std::abs(std::stod(f[4])-run.test.bpm)<0.01&&f[5]==intent&&((f[7]=="1")==run.test.open)&&std::abs(std::stod(f[8]))<0.001&&std::abs(std::stod(f[9])-qn)<0.001&&f[11]==labelsText(run.progression)&&f[12]==key;
+        if(!same)++inputOracleMismatches;++inputOracleRows;inputOracleFile<<run.test.id<<'\t'<<run.test.oracleTrial<<'\t'<<f[3]<<'\t'<<meter<<'\t'<<f[4]<<'\t'<<run.test.bpm<<'\t'<<f[7]<<'\t'<<run.test.open<<'\t'<<f[9]<<'\t'<<qn<<'\t'<<f[11]<<'\t'<<labelsText(run.progression)<<'\t'<<f[12]<<'\t'<<key<<'\t'<<(same?"MATCH":"DIFF")<<'\n';
+    }
+    require(inputOracleRows==25,"Phase6 verifies all 25 exact inputs against archived Phase4B cases");
+    require(inputOracleMismatches==0,"Phase6 exact historical input, intent, meter, QN, OPEN and key fields agree");
+    const std::array<std::string,3> oracleModes{"Legacy","HarmonyFirst","Legacy"};
+    const std::array<std::string,26> expectedMatchHeader{"trial","mode","meter","bpm","FactoryID","Factory_intent","Factory_cadence","Factory_path","Factory_harmonic_path","key","start_index","end_index","continuation_index","continuation_length","trace","disposition","match_similarity","full_harmony","skeleton_harmony","rhythm_similarity","eligibility_score","ranking_score","rank_group","rank","visible","continuation"};
+    std::map<std::string,std::size_t> matchColumn;
+    std::size_t stagedMatchRows{};
+    std::array<std::size_t,3> stagedRowsByBuild{};
+    for(std::size_t b=0;b<oracleFiles.size();++b){std::ifstream input=std::ifstream(oracleRoot/oracleFiles[b]);require(bool(input),"Phase6 opens each staged historical match oracle");std::string line;require(bool(std::getline(input,line)),"Phase6 historical match oracle has a header");const auto header=splitTabs(line);
+        require(header.size()==expectedMatchHeader.size(),"Phase6 historical match oracle has the reviewed 26-column schema");
+        for(std::size_t i=0;i<expectedMatchHeader.size()&&i<header.size();++i){require(header[i]==expectedMatchHeader[i],"Phase6 historical oracle column order matches its header semantics");if(b==0)matchColumn[header[i]]=i;}
+        while(std::getline(input,line)){auto fields=splitTabs(line);require(fields.size()==expectedMatchHeader.size(),"Phase6 historical match row has all 26 columns");if(fields.size()!=expectedMatchHeader.size())continue;
+            if(fields[matchColumn.at("mode")]!=oracleModes[b])continue;
+            const auto trialId=fields[matchColumn.at("trial")],factoryId=fields[matchColumn.at("FactoryID")];
+            const bool inserted=oldRows[b][trialId].emplace(factoryId,OldRow{std::move(fields)}).second;
+            require(inserted,"Phase6 staged historical oracle has no duplicate trial/FactoryID rows");if(inserted){++stagedMatchRows;++stagedRowsByBuild[b];}
+        }
+    }
+    for(const auto rows:stagedRowsByBuild)require(rows==8643,"Phase6 stages all 8,643 selected historical comparisons for each reviewed build");
+    // The old Abstract build's Phase4B direct-core rows use default RecommendationWeights (Abstract OFF).
+    // Its Legacy rows are a build-consistency oracle; Phase 5.1 below is the actual Abstract ON oracle.
+    const std::array<std::size_t,3> currentPresetForBuild{0,1,0};const std::array<std::string,3> buildNames{"build-off","build-hf-on","build-abstract"};std::size_t oracleRows{},oracleMismatches{};
+    const auto compact=[](std::string text){text.erase(std::remove_if(text.begin(),text.end(),[](unsigned char c){return std::isspace(c)!=0;}),text.end());return text;};
+    std::size_t expectedOracleRows{};
+    for(const auto& run:runs)if(!run.test.oracleTrial.empty())for(std::size_t b=0;b<3;++b){const auto p=currentPresetForBuild[b];const auto& rows=oldRows[b][run.test.oracleTrial];
+        require(!rows.empty(),"Phase6 historical oracle includes every exact trial in all three baseline builds");expectedOracleRows+=rows.size();const auto& rec=run.results[p].recommendations;
+        for(const auto& [id,old]:rows){const auto* now=findMatch(rec,id);const auto rank=rankMatch(rec,id);const auto& f=old.fields;const auto field=[&](const char* name)->const std::string&{return f[matchColumn.at(name)];};
+            const auto nearFloat=[&](const char* name,float value,float tol){try{return std::abs(std::stof(field(name))-value)<=tol;}catch(...){return false;}};
+            const bool present=now!=nullptr;const int nowRank=rank.rank<0?0:rank.rank;
+            const bool disposition=present&&field("disposition")==now->disposition;
+            const bool matchKey=present&&field("key")==formatKey(now->key);
+            const bool similarity=present&&nearFloat("match_similarity",now->similarity,0.00001f);
+            const bool rankingScore=present&&nearFloat("ranking_score",now->candidateRankingScore,0.0001f);
+            const bool eligibilityScore=present&&nearFloat("eligibility_score",now->candidateEligibilityScore,0.0001f);
+            const bool group=(field("rank_group")=="-"?rank.group<0:(rank.group>=0&&field("rank_group")==groupName(static_cast<std::size_t>(rank.group))));
+            const bool visible=(field("visible")=="1")==rank.visible;const bool rankSame=std::stoi(field("rank"))==nowRank;
+            const bool suffix=compact(field("continuation"))==compact(rank.suffix);
+            const bool starts=present&&std::stoi(field("start_index"))==now->templateMatchStart&&std::stoi(field("end_index"))==now->templateMatchEnd&&
+                std::stoi(field("continuation_index"))==now->continuationStartIndex&&std::stoi(field("continuation_length"))==now->continuationLength;
+            const bool equal=present&&disposition&&matchKey&&similarity&&rankingScore&&eligibilityScore&&group&&visible&&rankSame&&suffix&&starts;
+            if(!equal)++oracleMismatches;++oracleRows;
+            oracleFile<<run.test.id<<'\t'<<plugin::algorithmPresetName(presets[p])<<'\t'<<buildNames[b]<<'\t'<<id<<'\t'<<field("disposition")<<'\t'<<(present?now->disposition:"MISSING")<<'\t'<<field("key")<<'\t'<<(present?formatKey(now->key):"NA")<<'\t'
+                <<field("match_similarity")<<'\t'<<(present?std::to_string(now->similarity):"NA")<<'\t'<<field("ranking_score")<<'\t'<<(present?std::to_string(now->candidateRankingScore):"NA")<<'\t'
+                <<field("eligibility_score")<<'\t'<<(present?std::to_string(now->candidateEligibilityScore):"NA")<<'\t'<<field("rank_group")<<'\t'<<(rank.group<0?"-":groupName(static_cast<std::size_t>(rank.group)))<<'\t'
+                <<field("rank")<<'\t'<<nowRank<<'\t'<<field("visible")<<'\t'<<rank.visible<<'\t'<<field("continuation")<<'\t'<<rank.suffix<<'\t'<<(equal?"MATCH":"DIFF")<<'\n';
+        }
+    }
+    require(oracleRows==expectedOracleRows&&oracleRows==25929&&stagedMatchRows==25929,
+        "Phase6 compares all 25,929 selected historical match rows; missing trials or rows cannot pass as present");
+    require(oracleMismatches==0,"Phase6 exact-input match/disposition/rank results agree with the three historical build oracles");
+
+    // Phase 5.1 selected Abstract comparisons use the archived Q1/Q2 rows as their independent direct-core oracle.
+    const auto abstractFile=oracleRoot/"phase51"/"abstract-comparison.tsv";std::size_t phase51Rows{},phase51Diffs{},phase51MidiRows{},phase51ExactByteRows{};
+    {std::ifstream input(abstractFile);require(bool(input),"Phase6 opens archived Phase5.1 selected-card table");std::string line;require(bool(std::getline(input,line)),"Phase5.1 selected-card table has a header");while(std::getline(input,line)){const auto f=splitTabs(line);require(f.size()==21,"Phase5.1 selected-card rows preserve all 21 named fields");const std::string caseId=f[0]=="Q1"?"Q1_PHASE51":f[0]=="Q2"?"Q2_PHASE51":"";require(!caseId.empty(),"Phase5.1 selected-card oracle contains only Q1/Q2 targets");
+            const auto runIt=std::find_if(runs.begin(),runs.end(),[&](const auto& r){return r.test.id==caseId;});require(runIt!=runs.end(),"Phase5.1 target exists in the fixed Phase6 corpus");const auto p=std::stoi(f[2])?2u:0u;const auto& rec=runIt->results[p].recommendations;const auto* match=findMatch(rec,f[3]);const auto rank=rankMatch(rec,f[3]);
+            const auto closeOld=[&](std::size_t i,float value,float tolerance){try{return std::abs(std::stof(f[i])-value)<=tolerance;}catch(...){return false;}};
+            const float currentScore=rank.group>=0&&rank.rank>0?rec.groups[rank.group][rank.rank-1].rankingScore:-1.f;
+            const bool same=match&&f[4]==match->disposition&&closeOld(6,match->rawCost,0.0001f)&&closeOld(7,match->similarity,0.0001f)&&
+                f[8]==rank.primaryId&&f[10]==(rank.group<0?"NA":groupName(static_cast<std::size_t>(rank.group)))&&
+                std::stoi(f[11])==(rank.rank<0?0:rank.rank)&&(f[12]=="1")==rank.visible&&closeOld(15,currentScore,0.0001f);
+            if(!same)++phase51Diffs;++phase51Rows;phase51OracleFile<<caseId<<'\t'<<plugin::algorithmPresetName(presets[p])<<'\t'<<f[0]<<'\t'<<f[3]<<'\t'<<f[4]<<'\t'<<(match?match->disposition:"MISSING")<<'\t'<<f[7]<<'\t'<<(match?std::to_string(match->similarity):"NA")<<'\t'<<f[6]<<'\t'<<(match?std::to_string(match->rawCost):"NA")<<'\t'<<f[8]<<'\t'<<(rank.group>=0?rank.primaryId:"NA")<<'\t'<<f[11]<<'\t'<<(rank.rank<0?0:rank.rank)<<'\t'<<f[15]<<'\t'<<currentScore<<'\t'<<(same?"MATCH":"DIFF")<<'\n';
+        }}}
+    require(phase51Rows==4,"Phase6 reads exactly the four Abstract OFF/ON Q1/Q2 historical worker rows");
+    require(phase51Diffs==0,"Phase6 Abstract OFF/ON Q1/Q2 results agree with archived Phase5.1 worker rows");
+
+    // Re-export the four archived Phase5.1 selected cards through the actual runtime worker result,
+    // then compare both full and suffix SMFs to the staged historical files event by event.
+    std::filesystem::create_directories(out/"phase51-runtime");
+    const auto fileBytes=[&](const std::filesystem::path& path){std::ifstream input(path,std::ios::binary);require(bool(input),"Phase5.1 historical/runtime MIDI opens");return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(input),{});};
+    const auto noteEventsEqual=[](const midi::ReadResult& oldFile,const midi::ReadResult& current){
+        if(!oldFile||!current||oldFile.file.notes.size()!=current.file.notes.size())return false;
+        std::vector<bool> used(current.file.notes.size());
+        for(const auto& oldNote:oldFile.file.notes){bool found{};for(std::size_t i=0;i<current.file.notes.size();++i){if(used[i])continue;const auto& note=current.file.notes[i];
+                if(oldNote.pitch==note.pitch&&oldNote.velocity==note.velocity&&oldNote.channel==note.channel&&
+                   std::abs(oldNote.startQN-note.startQN)<0.00001&&std::abs(oldNote.durationQN-note.durationQN)<0.00001){used[i]=true;found=true;break;}}
+            if(!found)return false;
+        }
+        return true;
+    };
+    const auto tempoEventsEqual=[](const midi::ReadResult& oldFile,const midi::ReadResult& current){
+        if(oldFile.file.tempos.size()!=current.file.tempos.size())return false;
+        for(std::size_t i=0;i<oldFile.file.tempos.size();++i)if(std::abs(oldFile.file.tempos[i].qn-current.file.tempos[i].qn)>=0.00001||
+            std::abs(oldFile.file.tempos[i].bpm-current.file.tempos[i].bpm)>=0.001)return false;
+        return true;
+    };
+    {
+        std::ifstream input(abstractFile);require(bool(input),"Phase6 reopens Phase5.1 selected-card table for SMF comparison");std::string line;
+        require(bool(std::getline(input,line)),"Phase5.1 SMF oracle header exists");
+        while(std::getline(input,line)){
+            const auto f=splitTabs(line);require(f.size()==21,"Phase5.1 SMF oracle row retains all fields");
+            const std::string caseId=f[0]=="Q1"?"Q1_PHASE51":f[0]=="Q2"?"Q2_PHASE51":"";require(!caseId.empty(),"Phase5.1 MIDI oracle pair is Q1 or Q2");
+            const auto runIt=std::find_if(runs.begin(),runs.end(),[&](const auto& r){return r.test.id==caseId;});require(runIt!=runs.end(),"Phase5.1 MIDI oracle query is in the Phase6 run set");
+            const auto presetIndexValue=std::stoi(f[2])?2u:0u;const auto preset=presets[presetIndexValue];const auto& rec=runIt->results[presetIndexValue].recommendations;
+            const auto* match=findMatch(rec,f[3]);require(match!=nullptr,"Phase5.1 MIDI target retains its actual worker match");
+            const auto cardIt=std::find_if(rec.groups.begin(),rec.groups.end(),[&](const auto& group){return std::any_of(group.begin(),group.end(),[&](const auto& c){return c.primaryTemplate==f[8];});});
+            require(cardIt!=rec.groups.end(),"Phase5.1 selected primary ID exists in the actual runtime worker result");
+            const auto candidateIt=std::find_if(cardIt->begin(),cardIt->end(),[&](const auto& c){return c.primaryTemplate==f[8];});
+            require(candidateIt!=cardIt->end(),"Phase5.1 selected primary card is found");
+            const auto selectedRank=rankMatch(rec,f[8]);require(selectedRank.primaryId==f[8]&&selectedRank.rank==std::stoi(f[11]),
+                "Phase5.1 MIDI export uses the reviewed selected-card rank");
+            const auto session=imported(runIt->progression);auto previewResult=preview::buildSequence(session,&*candidateIt,runIt->test.bpm);
+            require(bool(previewResult),"Phase5.1 runtime candidate produces a preview sequence");
+            midi::CandidateExportContext exportContext;exportContext.imported=session;exportContext.tempo=runIt->test.bpm;
+            exportContext.meter={runIt->test.numerator,runIt->test.denominator};exportContext.mode=midi::ArrangementMode::VoiceLed;
+            const std::array<std::string,2> scopes{"full","suffix"};const std::array<std::string,2> oldPaths{f[19],f[20]};
+            for(std::size_t scopeIndex=0;scopeIndex<scopes.size();++scopeIndex){const bool suffixOnly=scopeIndex==1;const auto oldPath=oracleRoot/"phase51"/oldPaths[scopeIndex];
+                require(std::filesystem::is_regular_file(oldPath),"Phase5.1 archived MIDI was staged under oracle/phase51/blind");
+                exportContext.scope=suffixOnly?midi::ExportScope::ContinuationOnly:midi::ExportScope::FullPhrase;
+                const auto payload=midi::candidatePayload(exportContext,*candidateIt);require(bool(payload),"Phase5.1 actual worker card exports to MIDI");
+                const auto runtimePath=out/"phase51-runtime"/(f[0]+"-"+(std::stoi(f[2])?"abstract":"legacy")+"-"+scopes[scopeIndex]+".mid");
+                std::string error;require(midi::writeToFile(payload.payload.smfBytes,runtimePath,error),"Phase5.1 runtime full/suffix MIDI is saved for review");
+                const auto oldBytes=fileBytes(oldPath),currentBytes=payload.payload.smfBytes;const auto oldDecoded=midi::readFromMemory(oldBytes),currentDecoded=midi::readFromMemory(currentBytes);
+                require(bool(oldDecoded)&&bool(currentDecoded),"Phase5.1 historical and current SMFs both decode");
+                checkVoicing(previewResult.sequence,oldDecoded,suffixOnly);checkVoicing(previewResult.sequence,currentDecoded,suffixOnly);
+                const bool noteEqual=noteEventsEqual(oldDecoded,currentDecoded),tempoEqual=tempoEventsEqual(oldDecoded,currentDecoded),exactBytes=oldBytes==currentBytes;
+                require(noteEqual&&tempoEqual,"Phase5.1 old/current MIDI pitch, start, duration, velocity, channel, and tempo events agree");
+                if(exactBytes)++phase51ExactByteRows;
+                phase51MidiFile<<f[0]<<'\t'<<f[2]<<'\t'<<scopes[scopeIndex]<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'
+                    <<runIt->results[presetIndexValue].factoryVersion<<'\t'<<runIt->results[presetIndexValue].factorySha256<<'\t'<<f[3]<<'\t'<<f[8]<<'\t'<<selectedRank.rank<<'\t'
+                    <<oldPath.string()<<'\t'<<runtimePath.string()<<'\t'<<exactBytes<<'\t'<<(exactBytes?"identical SMF bytes":"serialized SMF differs; all decoded note and tempo values match")<<'\t'
+                    <<noteEqual<<'\t'<<tempoEqual<<'\t'
+                    <<oldDecoded.file.notes.size()<<'\t'<<currentDecoded.file.notes.size()<<'\t'
+                    <<(oldDecoded.file.tempos.empty()?0.:oldDecoded.file.tempos.front().bpm)<<'\t'
+                    <<(currentDecoded.file.tempos.empty()?0.:currentDecoded.file.tempos.front().bpm)<<"\tPASS\tPASS\tPASS\n";
+                ++phase51MidiRows;
+            }
+        }
+    }
+    require(phase51MidiRows==8,"Phase6 compares all eight historical Phase5.1 Q1/Q2 full/suffix SMFs");
+
+    // These are offline, one-parameter-at-a-time controls over existing weights only.
+    // The six fixed cases and both hard gates stay unchanged; no ablated values are adopted.
+    std::size_t ablationCases{};
+    for(const auto& run:runs){if(run.test.id!="R01_4-4_fixed-4qn"&&run.test.id!="R02_CMAJOR_4-4_fixed-4qn"&&run.test.id!="B08_4-4_fixed-4qn"&&run.test.id!="B11_4-4_fixed-4qn"&&run.test.id!="BORROWED_4-4_fixed-4qn"&&run.test.id!="SUS_4-4_fixed-4qn")continue;
+        ++ablationCases;AnalysisContext ctx=plugin::developmentContext(AnalysisContext{},plugin::DevelopmentAlgorithmPreset::Legacy);const auto fixture=fixtures.find(run.test.fixture);ctx.forcedKey=fixture->second.key;ctx.timeSigNumerator=run.test.numerator;ctx.timeSigDenominator=run.test.denominator;
+        const auto baselineWeights=plugin::developmentRecommendationWeights(plugin::DevelopmentAlgorithmPreset::Legacy);const auto query=makeMatchQuery(run.progression,ctx);
+        const auto before=recommendContinuations(query,continuousIndex,{},baselineWeights);
+        for(const std::string parameter:{"intentCompletionTieBreak","unexplainedInsertionPenalty","diversityPenalty"}) {
+            auto ablatedWeights=baselineWeights;float defaultValue{};
+            if(parameter=="intentCompletionTieBreak"){defaultValue=baselineWeights.intentCompletionTieBreak;ablatedWeights.intentCompletionTieBreak=0.f;}
+            else if(parameter=="unexplainedInsertionPenalty"){defaultValue=baselineWeights.unexplainedInsertionPenalty;ablatedWeights.unexplainedInsertionPenalty=0.f;}
+            else {defaultValue=baselineWeights.diversityPenalty;ablatedWeights.diversityPenalty=0.f;}
+            require(ablatedWeights.minimumMatch==baselineWeights.minimumMatch&&ablatedWeights.minimumScore==baselineWeights.minimumScore&&
+                ablatedWeights.abstractChordCompatibility==baselineWeights.abstractChordCompatibility&&
+                ablatedWeights.diminishedPassingInsertionException==baselineWeights.diminishedPassingInsertionException,
+                "Phase6 one-at-a-time ablation preserves hard gates and feature flags");
+            const auto after=recommendContinuations(query,continuousIndex,{},ablatedWeights);
+            for(const auto& m:before.matches){const auto* n=findMatch(after,m.templateId);const auto a=rankMatch(before,m.templateId),b=rankMatch(after,m.templateId);
+                const float ablatedScore=n?n->candidateRankingScore:-1.f;const int rankDelta=n&&a.rank>=0&&b.rank>=0?b.rank-a.rank:0;
+                ablationFile<<run.test.id<<'\t'<<parameter<<'\t'<<defaultValue<<"\t0\t"<<m.templateId<<'\t'<<m.candidateRankingScore<<'\t'
+                    <<(n?std::to_string(ablatedScore):"NA")<<'\t'<<(n?std::to_string(ablatedScore-m.candidateRankingScore):"NA")<<'\t'
+                    <<m.disposition<<'\t'<<(n?n->disposition:"MISSING")<<'\t'<<a.rank<<'\t'<<(n?b.rank:0)<<'\t'<<rankDelta<<'\t'
+                    <<baselineWeights.minimumMatch<<'\t'<<baselineWeights.minimumScore<<'\t'<<(n?"MATCH":"MISSING")<<'\n';
+            }
+        }
+    }
+    require(ablationCases==6,"Phase6 controlled ablations use exactly six representative cases");
+
+    // Select at most two differing anonymous pairs; each uses the same actual preview/export path.
+    struct BlindPick {std::string caseId,preset,candidateId,primary,suffix;preview::Sequence sequence;std::vector<std::uint8_t> fullMidi,suffixMidi;double bpm{};};std::vector<BlindPick> blindPicks;
+    for(const auto& run:runs){if(blindPicks.size()>=4)break;for(std::size_t pair=1;pair<3&&blindPicks.size()<4;++pair){const auto& a=run.results[0].recommendations;const auto& b=run.results[pair].recommendations;
+            const ContinuationCandidate *ca{},*cb{};for(const auto& group:a.groups)if(!group.empty()){ca=&group.front();break;}for(const auto& group:b.groups)if(!group.empty()){cb=&group.front();break;}if(!ca||!cb||(ca->id==cb->id&&suffixText(ca->continuation)==suffixText(cb->continuation)))continue;
+            const auto session=imported(run.progression);auto ba=preview::buildSequence(session,ca,run.test.bpm),bb=preview::buildSequence(session,cb,run.test.bpm);if(!ba||!bb)continue;
+            midi::CandidateExportContext exportContext;exportContext.imported=session;exportContext.tempo=run.test.bpm;exportContext.meter={run.test.numerator,run.test.denominator};exportContext.mode=midi::ArrangementMode::VoiceLed;
+            auto fullContext=exportContext;fullContext.scope=midi::ExportScope::FullPhrase;auto suffixContext=exportContext;suffixContext.scope=midi::ExportScope::ContinuationOnly;
+            const auto caFull=midi::candidatePayload(fullContext,*ca),caSuffix=midi::candidatePayload(suffixContext,*ca),cbFull=midi::candidatePayload(fullContext,*cb),cbSuffix=midi::candidatePayload(suffixContext,*cb);
+            require(bool(caFull)&&bool(caSuffix)&&bool(cbFull)&&bool(cbSuffix),"Phase6 blind anonymous pair exports full and suffix MIDI for both alternatives");
+            blindPicks.push_back({run.test.id,"Legacy",ca->id,ca->primaryTemplate,suffixText(ca->continuation),std::move(ba.sequence),caFull.payload.smfBytes,caSuffix.payload.smfBytes,run.test.bpm});
+            blindPicks.push_back({run.test.id,pair==1?"HarmonyFirst":"Abstract",cb->id,cb->primaryTemplate,suffixText(cb->continuation),std::move(bb.sequence),cbFull.payload.smfBytes,cbSuffix.payload.smfBytes,run.test.bpm});
+        }}
+    std::size_t blindPairNumber{};for(std::size_t i=0;i+1<blindPicks.size();i+=2){const auto pair="P"+std::to_string(++blindPairNumber);std::array<preview::AudioBuffer,2> fullRaw,suffixRaw;std::array<std::string,2> aliases{"A","B"};
+        for(std::size_t side=0;side<2;++side){const auto& pick=blindPicks[i+side];fullRaw[side]=preview::renderOffline(pick.sequence,48000.);require(!fullRaw[side].left.empty()&&fullRaw[side].rms>0,"Phase6 blind full preview renders non-silent audio");
+            const auto boundary=pick.sequence.events[pick.sequence.recommendationBoundary].startQN;const auto frame=preview::qnToSamples(boundary,pick.sequence.tempoBPM,fullRaw[side].sampleRate);require(frame>=0&&static_cast<std::size_t>(frame)<fullRaw[side].left.size(),"Phase6 blind suffix boundary maps into rendered WAV");
+            suffixRaw[side].sampleRate=fullRaw[side].sampleRate;suffixRaw[side].left.assign(fullRaw[side].left.begin()+frame,fullRaw[side].left.end());suffixRaw[side].right.assign(fullRaw[side].right.begin()+frame,fullRaw[side].right.end());
+            long double squares{};for(const auto sample:suffixRaw[side].left){require(std::isfinite(sample),"Phase6 blind suffix samples remain finite");squares+=static_cast<long double>(sample)*sample;suffixRaw[side].peak=std::max(suffixRaw[side].peak,static_cast<double>(std::abs(sample)));}
+            require(!suffixRaw[side].left.empty(),"Phase6 blind suffix excerpt is non-empty");suffixRaw[side].rms=std::sqrt(static_cast<double>(squares/suffixRaw[side].left.size()));require(suffixRaw[side].rms>0,"Phase6 blind suffix excerpt has audible energy");}
+        for(const bool suffixOnly:{false,true}){const auto& raw=suffixOnly?suffixRaw:fullRaw;const double common=std::min(raw[0].rms,raw[1].rms);for(std::size_t side=0;side<2;++side){const auto& pick=blindPicks[i+side];auto normalized=raw[side];const double gain=common/raw[side].rms;require(gain>0&&gain<=1.0000001&&raw[side].peak*gain<1.0,"Phase6 blind pair uses non-boosting linear normalization without clipping");for(auto& sample:normalized.left)sample=static_cast<float>(sample*gain);for(auto& sample:normalized.right)sample=static_cast<float>(sample*gain);normalized.rms=common;normalized.peak=raw[side].peak*gain;
+                const auto scope=suffixOnly?"suffix":"full";const auto wav=out/"blind"/(pair+"-"+aliases[side]+"-"+scope+".wav");std::string error;require(preview::writeWav16(normalized,wav,error),"Phase6 anonymous preview WAV writes");
+                const auto fullMidi=out/"blind"/(pair+"-"+aliases[side]+"-full.mid"),suffixMidi=out/"blind"/(pair+"-"+aliases[side]+"-suffix.mid");
+                if(!suffixOnly){error.clear();require(midi::writeToFile(pick.fullMidi,fullMidi,error),"Phase6 blind full MIDI writes");error.clear();require(midi::writeToFile(pick.suffixMidi,suffixMidi,error),"Phase6 blind suffix MIDI writes");
+                    const auto fullDecoded=midi::readFromMemory(pick.fullMidi),suffixDecoded=midi::readFromMemory(pick.suffixMidi);checkVoicing(pick.sequence,fullDecoded,false);checkVoicing(pick.sequence,suffixDecoded,true);
+                    blindMidiCheck<<pair<<'\t'<<aliases[side]<<"\tfull\t"<<fullMidi.string()<<'\t'<<fullDecoded.file.notes.size()<<"\tPASS\n";
+                    blindMidiCheck<<pair<<'\t'<<aliases[side]<<"\tsuffix\t"<<suffixMidi.string()<<'\t'<<suffixDecoded.file.notes.size()<<"\tPASS\n";}
+                blindAnswer<<pair<<'\t'<<pick.caseId<<'\t'<<scope<<'\t'<<aliases[side]<<'\t'<<pick.preset<<'\t'<<pick.candidateId<<'\t'<<pick.primary<<'\t'<<pick.suffix<<'\t'<<wav.string()<<'\t'<<fullMidi.string()<<'\t'<<suffixMidi.string()<<'\n';}}
+        blindInstructions<<"Pair "<<pair<<": compare A-full/B-full and A-suffix/B-suffix WAVs or MIDI at one fixed host sound and volume. Matching MIDI files use the same aliases and scope.\n";
+    }
+
+    require(blindPairNumber>0,"Phase6 produces at least one anonymous A/B preview pair");
+    std::size_t r01V5Rows{},r01V5MidiPairs{};
+    if(!v5FactoryPath.empty()){
+        const auto candidateDb=library::loadFactory(v5FactoryPath);require(bool(candidateDb)&&candidateDb.templates.size()==658,
+            "Optional isolated R01 V5 Factory loads read-only with 658 templates");
+        const TemplateID v5Target="CANDIDATE_V5_CHROMATIC_MINOR_001";
+        const auto targetIt=std::find_if(candidateDb.templates.begin(),candidateDb.templates.end(),[&](const auto& item){return item.id==v5Target;});
+        require(targetIt!=candidateDb.templates.end()&&targetIt->full.size()==8&&targetIt->mode==Mode::Minor&&targetIt->intent==PhraseIntent::Develop,
+            "Optional R01 target keeps the reviewed eight-event Minor/Develop identity");
+        const auto v5UserPath=out/"r01-v5-empty-user-library.db";
+        require(!std::filesystem::exists(v5UserPath),"Isolated V5 probe starts without a user database so the worker has nothing to write");
+        std::filesystem::create_directories(out/"r01-v5-midi");
+        const auto pitchName=[](int note){constexpr const char* names[]{"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};return std::string(names[(note%12+12)%12])+std::to_string(note/12-1);};
+        const auto durationList=[](const std::vector<double>& values){std::ostringstream text;text<<std::fixed<<std::setprecision(6);for(std::size_t i=0;i<values.size();++i){if(i)text<<',';text<<values[i];}return text.str();};
+        const auto suffixDurations=[](const std::vector<ConcreteChordEvent>& suffix){std::ostringstream text;text<<std::fixed<<std::setprecision(6);for(std::size_t i=0;i<suffix.size();++i){if(i)text<<',';text<<suffix[i].durationQN;}return text.str();};
+        const auto decodedLowest=[&](const preview::Sequence& previewSequence,const midi::ReadResult& decoded,bool suffixOnly){
+            std::ostringstream values;bool first=true;const double firstSuffix=previewSequence.events[previewSequence.recommendationBoundary].startQN;
+            for(std::size_t i=0;i<previewSequence.events.size();++i){if(suffixOnly&&i<previewSequence.recommendationBoundary)continue;const auto& event=previewSequence.events[i];
+                const auto start=event.startQN-(suffixOnly?firstSuffix:0.);int lowest=128;
+                for(const auto& note:decoded.file.notes)if(closeQN(note.startQN,start)&&closeQN(note.durationQN,event.durationQN))lowest=std::min(lowest,note.pitch);
+                require(lowest<128,"R01 V5 decoded MIDI has a lowest note for every preview event");if(!first)values<<"|";first=false;values<<pitchName(lowest)<<'('<<lowest<<')';}
+            return values.str();
+        };
+        {
+            plugin::RecommendationWorker v5Worker(v5FactoryPath,v5UserPath,out/"r01-v5-empty-factory-store");std::uint64_t revision=1;
+            for(const double qn:{2.,4.})for(const auto meter:{midi::Meter{4,4},midi::Meter{7,8}})for(const auto preset:presets){
+                const auto progression=phrase({"Am","G#dim","G","D/F#"},{qn,qn,qn,qn},true);
+                AnalysisContext context;context.forcedKey=KeySignature{PitchClass::A,Mode::Minor};context.timeSigNumerator=meter.numerator;context.timeSigDenominator=meter.denominator;
+                v5Worker.submitPreset(progression,context,preset,{},false,revision++);const auto result=wait(v5Worker);
+                require(result.algorithmPreset&&*result.algorithmPreset==preset&&result.factoryCount==658&&result.userCount==0&&result.factoryVersion==candidateDb.libraryVersion,
+                    "R01 V5 matrix uses the explicit preset and isolated read-only 658-entry Factory");
+                const auto& rec=result.recommendations;require(rec.groups.size()==4&&rec.stats.shortlistSize==658,"R01 V5 runtime worker ranks the complete isolated candidate library");
+                const auto* match=findMatch(rec,v5Target);const auto rank=rankMatch(rec,v5Target);const auto outcome=phase5Outcome(rec,v5Target,plugin::developmentRecommendationWeights(preset).minimumScore);
+                const ContinuationCandidate* card{};for(const auto& group:rec.groups)for(const auto& candidate:group)if(candidate.id==rank.candidateId){card=&candidate;break;}
+                const auto selectedKey=result.analysis.selectedKey?formatKey(result.analysis.selectedKey->key):"UNKNOWN";
+                const std::vector<double> inputDurations(4,qn);std::string fullPath="NA",fullSuffix="NA",suffixDurationText="NA",snapshotPreserved="NOT_EXPORTED",fullMidiPath="NOT_EXPORTED",suffixMidiPath="NOT_EXPORTED",fullLows="NOT_EXPORTED",suffixLows="NOT_EXPORTED",voicing="NOT_EXPORTED";
+                if(card){fullSuffix=suffixText(card->continuation);suffixDurationText=suffixDurations(card->continuation);fullPath=sourceText(progression)+" -> "+fullSuffix;}
+                if(preset==plugin::DevelopmentAlgorithmPreset::Legacy&&card){
+                    const auto session=imported(progression);const auto captured=snapshot::capture(session,*card,rec.matches,120.,meter.numerator,meter.denominator);
+                    const auto stored=snapshot::deserialize(snapshot::serialize(captured));ContinuationCandidate exportCandidate=*card;
+                    if(stored){const auto& restored=stored.value.candidate;bool suffixSame=restored.continuation.size()==card->continuation.size();
+                        for(std::size_t i=0;suffixSame&&i<card->continuation.size();++i){const auto& before=card->continuation[i];const auto& after=restored.continuation[i];
+                            suffixSame=before.label==after.label&&closeQN(before.durationQN,after.durationQN)&&before.quality==after.quality&&bool(before.harmonicData)==bool(after.harmonicData);
+                            if(suffixSame&&before.harmonicData){const auto a=normalizeChord(*before.harmonicData),b=normalizeChord(*after.harmonicData);
+                                suffixSame=before.harmonicData->name==after.harmonicData->name&&a.root==b.root&&a.bass==b.bass&&a.quality==b.quality&&a.explicitBass==b.explicitBass;}}
+                        require(suffixSame,"R01 V5 snapshot route preserves each returned suffix event and chord identity");exportCandidate=restored;snapshotPreserved="PASS";
+                    }else snapshotPreserved="NOTSUPPORTED"; // The V5 MIDI check remains independent of V4 snapshot policy.
+                    auto previewBuilt=preview::buildSequence(session,&exportCandidate,120.);require(bool(previewBuilt),"R01 V5 selected card previews for full/suffix MIDI export");
+                    midi::CandidateExportContext exportContext;exportContext.imported=session;exportContext.tempo=120.;exportContext.meter=meter;exportContext.mode=midi::ArrangementMode::VoiceLed;
+                    exportContext.scope=midi::ExportScope::FullPhrase;const auto fullPayload=midi::candidatePayload(exportContext,exportCandidate);require(bool(fullPayload),"R01 V5 selected full phrase exports");
+                    exportContext.scope=midi::ExportScope::ContinuationOnly;const auto suffixPayload=midi::candidatePayload(exportContext,exportCandidate);require(bool(suffixPayload),"R01 V5 selected suffix exports");
+                    const auto stem="R01_"+std::to_string(static_cast<int>(qn))+"QN_"+std::to_string(meter.numerator)+"-"+std::to_string(meter.denominator)+"_Legacy";
+                    const auto fullFile=out/"r01-v5-midi"/(stem+"_full.mid"),suffixFile=out/"r01-v5-midi"/(stem+"_suffix.mid");std::string error;
+                    require(midi::writeToFile(fullPayload.payload.smfBytes,fullFile,error),"R01 V5 full MIDI saves after the storage route");error.clear();
+                    require(midi::writeToFile(suffixPayload.payload.smfBytes,suffixFile,error),"R01 V5 suffix MIDI saves after the storage route");
+                    const auto fullDecoded=midi::readFromMemory(fullPayload.payload.smfBytes),suffixDecoded=midi::readFromMemory(suffixPayload.payload.smfBytes);
+                    checkVoicing(previewBuilt.sequence,fullDecoded,false);checkVoicing(previewBuilt.sequence,suffixDecoded,true);
+                    compareMidi(previewBuilt.sequence,fullDecoded);fullLows=decodedLowest(previewBuilt.sequence,fullDecoded,false);suffixLows=decodedLowest(previewBuilt.sequence,suffixDecoded,true);
+                    fullMidiPath=fullFile.string();suffixMidiPath=suffixFile.string();voicing="PASS";++r01V5MidiPairs;
+                }
+                r01V5File<<v5FactoryPath.string()<<'\t'<<result.factoryVersion<<'\t'<<result.factorySha256<<'\t'<<result.factoryCount<<'\t'<<qn<<'\t'
+                    <<meter.numerator<<'/'<<meter.denominator<<"\t1\t"<<plugin::algorithmPresetName(preset)<<'\t'<<selectedKey<<'\t'<<durationList(inputDurations)<<'\t'<<v5Target<<'\t'
+                    <<bool(match)<<'\t'<<(match?formatKey(match->key):"NA")<<'\t'<<(match?match->similarity:-1.f)<<'\t'<<(match?match->candidateRankingScore:-1.f)<<'\t'
+                    <<(match?match->candidateEligibilityScore:-1.f)<<'\t'<<(match?(preset==plugin::DevelopmentAlgorithmPreset::HarmonyFirst?match->candidateEligibilityScore:match->candidateRankingScore):-1.f)<<'\t'
+                    <<phase5Disposition(outcome)<<'\t'<<outcome.eligible<<'\t'<<(card?card->id:"NA")<<'\t'<<(card?card->primaryTemplate:"NA")<<'\t'
+                    <<(rank.group<0?"NA":groupName(static_cast<std::size_t>(rank.group)))<<'\t'<<rank.rank<<'\t'<<rank.visible<<'\t'<<fullPath<<'\t'<<fullSuffix<<'\t'
+                    <<suffixDurationText<<'\t'<<snapshotPreserved<<'\t'<<fullMidiPath<<'\t'<<suffixMidiPath<<'\t'<<fullLows<<'\t'<<suffixLows<<'\t'<<voicing<<'\n';
+                ++r01V5Rows;
+            }
+        }
+        require(!std::filesystem::exists(v5UserPath),"R01 V5 probe leaves the isolated user database uncreated and writes no database");
+        require(r01V5Rows==12&&r01V5MidiPairs==4,"R01 V5 worker grid has twelve rows and four Legacy full/suffix MIDI pairs");
+    }
+    std::ostringstream nonExactNames;bool firstNonExact=true;for(const auto& id:nonExactCoverageCases){if(!firstNonExact)nonExactNames<<", ";firstNonExact=false;nonExactNames<<id;}
+    std::ofstream summary(out/"summary.md");require(bool(summary),"Phase6 summary opens");summary<<"# Phase 6 fixed benchmark\n\n"<<"Cases: "<<cases.size()<<"; presets: Legacy/HarmonyFirst/Abstract; internal ContinuousStructure control: "<<continuousIndex.templates().size()<<" V4 entries. Factory expectation: v4, SHA-256 "<<factoryHash<<".\n\n"
+        <<"Historical Phase 4B exact inputs: "<<inputOracleRows<<"; input mismatches: "<<inputOracleMismatches<<". Raw three-build match rows: "<<oracleRows<<"; mismatches: "<<oracleMismatches<<". Historical Phase 5.1 Q1/Q2 rows: "<<phase51Rows<<"; mismatches: "<<phase51Diffs<<". Phase 5.1 MIDI rows: "<<phase51MidiRows<<"/8 pass; exact SMF bytes: "<<phase51ExactByteRows<<"/8.\n\n"
+        <<"R02 production-worker orthogonal grid: "<<r02CellCount<<" cells (Auto/C major/A minor × 4,4,4/3,5,4 QN × closed/OPEN × three presets), with "<<r02TargetRows<<" fixed-target rows. Non-exact alignment coverage cases: "<<nonExactCoverageCases.size()<<" ("<<nonExactNames.str()<<").\n\n"
+        <<"Worker performance samples: "<<performanceRows<<" (35 cases × three presets). The first timer sample is cold and includes Factory loading and SHA-256; remaining rows are hot. These values are not a cold-versus-hot preset speed comparison.\n\n"
+        <<"Optional isolated V5 R01 probe: "<<(v5FactoryPath.empty()?"not run (optional V5 path was not supplied)":std::to_string(r01V5Rows)+" rows; four Legacy full/suffix MIDI pairs decoded and checked after the existing snapshot storage route")<<". It reads the supplied 658-entry Factory and creates no user database. See `r01-v5-isolated.tsv`.\n\n"
+        <<"Phase 5.1 MIDI comparison exports the archived selected Q1/Q2 OFF/ON cards through the current worker, then checks old and new full/suffix SMFs against the same preview voicing and compares decoded pitches, starts, durations, velocities, channels, and tempo. The exact-byte count is reported above; if the bytes differ, the TSV records that the decoded musical event values still match.\n\n"
+        <<"Offline one-parameter controls: "<<ablationCases<<" fixed cases × intentCompletionTieBreak, unexplainedInsertionPenalty, and diversityPenalty reset individually to zero; thresholds and feature flags stay unchanged, and no ablated values are adopted.\n\n"
+        <<"Existing hard/soft structure behavior is reused: the existing 0.55 skeleton threshold controls ordinary structural selection; Phase 5's FULL/SKELETON checks and this run's actual ContinuousStructure core mode already exercise the full-query/skeleton distinction. No new score or UI mode is added.\n\n"
+        <<"Intent request coverage: Resolve, Develop, Loop, and Color. The production Color reranker is checked in all four groups; its order is filtered through `presentationIndices` before default-visible IDs and the first MIDI export are selected. `color-ranking.tsv` records before/after default IDs. The benchmark records machine scores, IDs, groups, dispositions, suffixes, and export/readback consistency; it does not automatically rate musical quality. Anonymous WAV and MIDI full/suffix pairs are in `blind/`; their decode-to-preview voicing checks are in `blind-midi-readback.tsv`. The alias mapping is only in `answer-key/answer-key.tsv`.\n\n"
+        <<"Not covered by this offline executable: Cubase-host import/export, actual user MIDI files, physical listening results, and installer behavior. No score threshold or core algorithm was changed.\n";
+    std::cout<<"Phase6 PASS cases="<<cases.size()<<" r02Cells="<<r02CellCount<<" r02Targets="<<r02TargetRows<<" nonExactCases="<<nonExactCoverageCases.size()<<" ablationCases="<<ablationCases<<" blindPairs="<<blindPairNumber<<" oracleRows="<<oracleRows<<" oracleMismatches="<<oracleMismatches<<" phase51Rows="<<phase51Rows<<" phase51Mismatches="<<phase51Diffs<<" phase51MidiRows="<<phase51MidiRows<<" r01V5Rows="<<r01V5Rows<<" performanceRows="<<performanceRows<<" output="<<out.string()<<"\n";
+    return 0;
+}
 int main(int argc,char** argv) {
  try {
     const std::filesystem::path out=argc>1?argv[1]:"phase4d";std::filesystem::create_directories(out);
@@ -1075,6 +1667,7 @@ int main(int argc,char** argv) {
         return 0;
     }
     if(argc>3&&std::string(argv[3])=="phase5")return runPhase5(out,argv[2]);
+    if(argc>3&&std::string(argv[3])=="phase6")return runPhase6(out,argc>2?argv[2]:HC_FACTORY_DB_PATH,argc>4?argv[4]:out/"oracle",argc>5?std::filesystem::path(argv[5]):std::filesystem::path{});
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(db)&&db.templates.size()==657,"Factory V4 baseline");CandidateIndex index(db.templates);
     std::ofstream summary(out/"summary.txt"),trace(out/"candidate-traces.txt"),meters(out/"meters.tsv"),perf(out/"performance.tsv");
     summary<<"SYNTHETIC fixtures from user transcription; no captured Cubase MIDI/XML supplied.\n";
@@ -1351,5 +1944,5 @@ int main(int argc,char** argv) {
     summary<<"PASS checks="<<checks<<"; Factory=657; synthetic tests only; true R01 installed ON identity and R02 host cause require diagnostic export.\n";
     std::cout<<"Phase4D PASS "<<checks<<" checks\n";return 0;
   }catch(const std::exception& e){const auto phase=argc>3?std::string(argv[3]):std::string{};
-    std::cerr<<(phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
+    std::cerr<<(phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":phase=="phase6"?"Phase6":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
 }

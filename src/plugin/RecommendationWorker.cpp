@@ -107,8 +107,10 @@ FileSha256Result sha256File(const std::filesystem::path&) {
 } // namespace
 
 namespace harmony::plugin {
-RecommendationWorker::RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath)
-    : factoryPath_(std::move(factoryPath)), userPath_(std::move(userPath)) { thread_=std::thread([this] { run(); }); }
+RecommendationWorker::RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath,
+                                             std::optional<std::filesystem::path> factoryStore)
+    : factoryPath_(std::move(factoryPath)), userPath_(std::move(userPath)),
+      factoryStore_(std::move(factoryStore)) { thread_=std::thread([this] { run(); }); }
 RecommendationWorker::~RecommendationWorker() {
     { std::lock_guard lock(mutex_); stop_ = true; pending_.reset(); }
     wake_.notify_one();
@@ -220,7 +222,8 @@ void RecommendationWorker::run() {
             }
             if (task.progression.size() <= 64) {
                 if (!index && loadError.empty()) {
-                    auto selectedFactory = library::loadAvailableFactory(factoryPath_);
+                    auto selectedFactory = library::loadAvailableFactory(
+                        factoryPath_, factoryStore_.value_or(library::factoryStoreDirectory()));
                     auto& factory = selectedFactory.library;
                     if (!factory) loadError = "Factory library: " + factory.error;
                     else {

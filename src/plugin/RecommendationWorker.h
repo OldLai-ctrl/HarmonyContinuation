@@ -25,7 +25,8 @@ struct WorkerResult {
 };
 class RecommendationWorker {
 public:
-    RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath);
+    RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath,
+                         std::optional<std::filesystem::path> factoryStore = std::nullopt);
     ~RecommendationWorker();
     RecommendationWorker(const RecommendationWorker&) = delete;
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
@@ -52,6 +53,7 @@ private:
                              std::optional<DevelopmentAlgorithmPreset>);
     void run();
     std::filesystem::path factoryPath_, userPath_;
+    std::optional<std::filesystem::path> factoryStore_;
     std::thread thread_;
     std::mutex mutex_;
     std::condition_variable wake_;

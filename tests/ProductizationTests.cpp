@@ -62,6 +62,8 @@ int main() {
         check(!session::deserialize("HCS1bad"),"corrupt state rejected");
         auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
         check(factory && factory.templates.size()==161,"factory load");
+        const int bundledFactoryVersion=factory.libraryVersion;
+        const auto bundledFactoryCount=factory.templates.size();
         const auto selectedFactory=library::loadAvailableFactory(HC_FACTORY_DB_PATH);
         check(selectedFactory.library && !selectedFactory.path.empty(),"selected Factory source load");
         const int expectedFactoryVersion=selectedFactory.library.libraryVersion;
@@ -214,6 +216,25 @@ int main() {
                 newest.recommendations.abstractChordCompatibility &&
                 newest.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy,
                 "rapid preset switches expose only the newest generation");
+
+            const auto isolationId=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+            const auto emptyFactoryStore=std::filesystem::temp_directory_path()/
+                ("hc-phase6-empty-factory-store-"+isolationId);
+            const auto isolatedUserPath=std::filesystem::temp_directory_path()/
+                ("hc-phase6-empty-factory-user-"+isolationId+".db");
+            std::filesystem::create_directories(emptyFactoryStore);
+            {
+                plugin::RecommendationWorker isolatedWorker(HC_FACTORY_DB_PATH,isolatedUserPath,emptyFactoryStore);
+                const auto isolatedGeneration=isolatedWorker.submitPreset({},baseContext,
+                    plugin::DevelopmentAlgorithmPreset::Legacy,{},false,23);
+                const auto isolated=waitResult(isolatedWorker);
+                check(isolated.generation==isolatedGeneration && isolated.error.empty() &&
+                    isolated.factoryVersion==bundledFactoryVersion &&
+                    isolated.factoryCount==bundledFactoryCount && validFactoryHash(isolated.factorySha256),
+                    "explicit empty Factory store selects the supplied fixture, independent of host active store");
+            }
+            std::filesystem::remove_all(emptyFactoryStore);
+            std::filesystem::remove(isolatedUserPath);
         }
         RecommendationWeights weights; weights.perGroup=10;
         for (char letter='A';letter<='H';++letter) {
