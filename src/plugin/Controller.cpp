@@ -278,7 +278,7 @@ void Controller::pollRecommendation() noexcept {
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
         recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
-        enrichmentResultReady_=!latest->analysis.full.empty();
+        enrichmentResultReady_=!analysis_.full.empty();
         enrichments_=std::move(latest->enrichments);
         recommendationGeneration_=latest->generation;
         lastComputationMs_=latest->computationMs;
