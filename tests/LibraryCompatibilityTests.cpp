@@ -176,6 +176,33 @@ void snapshots(const fs::path& root) {
 }
 void userPersistence(const fs::path& root) {
     std::string error;std::vector<ProgressionTemplate> inputs;const auto kinds=newChords();
+    const auto initializationPath=root/"initialization-rollback.db";
+    {
+        Sql fixture(initializationPath);
+        fixture.exec("CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);"
+                     "CREATE TABLE progressions(id TEXT PRIMARY KEY,payload TEXT NOT NULL);"
+                     "CREATE TRIGGER fail_initial_library_type BEFORE INSERT ON metadata "
+                     "WHEN NEW.key='library_type' BEGIN SELECT RAISE(ABORT,'injected initial metadata failure'); END;");
+    }
+    auto retryItem=userEntry(kinds.front(),-1);retryItem.id="initialization-retry";
+    library::UserLibrary initializing(initializationPath);
+    check(!initializing.addProgression(retryItem,error),"initial user metadata failure injected");
+    {
+        Sql rolledBack(initializationPath);
+        check(rolledBack.scalar("SELECT count(*) FROM metadata")=="0","initial metadata rows rolled back");
+        check(rolledBack.scalar("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='progression_data'")=="0",
+              "initial progression_data schema not partially created");
+        check(rolledBack.scalar("SELECT count(*) FROM sqlite_master WHERE type='trigger' AND name='fail_initial_library_type'")=="1",
+              "initial failure trigger remains for controlled retry");
+        rolledBack.exec("DROP TRIGGER fail_initial_library_type");
+    }
+    error.clear();
+    check(initializing.addProgression(retryItem,error),"same DB retries fresh initialization after rollback: "+error);
+    library::UserLibrary initializationReopened(initializationPath);
+    const auto initialized=initializationReopened.loadAll();
+    check(initialized&&initialized.storageSchemaVersion==2&&initialized.templates.size()==1&&
+          initialized.templates.front().id==retryItem.id,"fresh DB initializes and reads after close/reopen");
+
     ImportedProgressionSession completed;completed.replace({kinds.front()},TimelineCoordinateMode::RelativeToSelection);
     ContinuationCandidate proposal;proposal.key={PitchClass::C,Mode::Major};proposal.suggestedCurrentChordDurationQN=8;
     proposal.continuation.push_back(realizeContinuation(dev::parseNotationEvent("V",Mode::Major,2),proposal.key,2));

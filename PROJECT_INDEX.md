@@ -8,6 +8,8 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 Phase5 / dev.6 接续入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)；开发分支及本轮状态见 NOW。
 
+Phase5.1 接续入口为 [收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 与 [Cubase验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。插件 production 与 `3a582e4` / dev.6 构建身份不变；测试/文档增补的离线门禁为 713/713，UserLibrary 定向测试为 283 checks。三种既有包是本轮唯一用户验收范围；其他 flag 组合仅作 core 实验。验证、增补包映射见 NOW、MAP 和 RUNBOOK。
+
 ## 按任务定位
 
 | 当前需要 | 首选位置 | 搜索词示例 |
