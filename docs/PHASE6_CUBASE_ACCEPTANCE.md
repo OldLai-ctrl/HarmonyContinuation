@@ -4,9 +4,9 @@
 
 ## 安装与操作约定
 
-A 项使用最终交付的唯一 HarmonyContinuation-0.10.0-dev.7-Setup.exe（若最终版本核对不同，以包内版本为准），安装一次。关闭 Cubase 后运行安装器；完成后在 Cubase 插件管理器扫描/刷新一次。B-K 均在同一工程、同一插件实例和同一输入中对照算法，不卸载、重装或替换 VST3。
+A 项使用唯一 HarmonyContinuation-0.10.0-dev.7-Setup.exe，安装一次。关闭 Cubase 后运行安装器，保留插件与 Factory 曲库组件；完成后在 Cubase 插件管理器扫描/刷新一次。B-K 均在同一工程、同一插件实例和同一输入中对照算法，不卸载、重装或替换 VST3。
 
-尽量只导入一次相同 MIDI，并固定工程 BPM、拍号、调性、OPEN/Closed、Intent。切换预设后确认界面和诊断都显示当前模式，再重新推荐；记录默认 Top3 和“更多”候选、Factory ID、分数、Preview 与 MIDI。发生问题时另存工程副本、输入 MIDI、诊断和截图。
+尽量只导入一次相同 MIDI，并固定工程 BPM、拍号、调性、OPEN/Closed、Intent。切换预设后确认界面和诊断都显示当前模式，等待自动推荐完成；记录默认 Top3 和“更多”候选、Factory ID、分数、Preview 与 MIDI。发生问题时另存工程副本、输入 MIDI、诊断和截图。
 
 | 项 | 输入与操作 | 算法 | 观察或试听 | 请反馈 |
 |---|---|---|---|---|

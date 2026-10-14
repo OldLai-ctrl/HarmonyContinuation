@@ -62,6 +62,14 @@ Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [�
 
 ## 交付与同步
 
+### Phase6 dev.7 另一设备接手
+
+1. 核实并保管当前目录的未提交改动。当前主 checkout 分支名为 `development/phase5-20261013`；Phase6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。换设备先核对远端、分支、HEAD 与工作区差异，按 [MAP](MAP.md) 的同步边界接续，不强制 reset。
+2. 从既有未发布 GitHub 草稿取得 Phase6 Test Handoff，按 `HANDOFF_PHASE6_SHA256SUMS.txt` 核验。交付目录为同级 `HarmonyContinuation-phase6-delivery-20261014/`；原始验证材料为同级 `HarmonyContinuation-phase6-validation-20261014/`。在 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 及包内证明核对最终门禁和 Setup SHA，不复用旧包身份。
+3. 安装时只使用 Phase6 的单一 Setup，确认 About 显示 `0.10.0-dev.7` 和 BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。该包提供一个 VST3 插件内的 Legacy、HarmonyFirst、Abstract 三种运行时模式；关闭并重新打开宿主工程后模式恢复 Legacy，需重新选择测试模式。Phase3A 保持 OFF。
+4. 确认 Factory V4 未改（SHA-256 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`）；不启用 V5，隔离评估 MIDI/证据另附，无 Phase6 Candidate 预设。随后按 [Phase 6 中文验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 逐项记录真实 Cubase 与试听结果，覆盖 R01/R02、拍号、FULL/SKELETON、Preview/MIDI、工程保存重开、User Library 和诊断导出。模拟宿主不能代替真实 Cubase。
+5. Phase5、Phase5.1 的旧报告、验收清单和增补包保持历史状态，分别见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [MAP](MAP.md)。Phase6 正式发布未授权。
+
 ### Phase5 dev.6 另一设备接手
 
 1. 核实并保管现有未提交文件。新目录可 `git clone --branch development/phase5-20261013 https://github.com/OldLai-ctrl/HarmonyContinuation.git HarmonyContinuation-release`；已有目录 fetch 后切分支并 `git pull --ff-only`，不强制reset。GitHub推送仍须核实本机代理。

@@ -16,17 +16,17 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 2026-10-14：Phase 5.1 离线诊断 713/713 通过（R02 200、音乐/映射 513），UserLibrary 定向回归 283 checks 通过。增补仅涉及测试与文档，production plugin 未改；BuildCommit/BuildID 仍为 `3a582e4` / `0.10.0-dev.6`。范围、证据与限制见 [Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Cubase 验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。
 
+2026-10-14：Phase 6 `0.10.0-dev.7` 构建身份为 BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。交付形态为一个 Setup、一个 VST3 插件，提供 Legacy、HarmonyFirst、Abstract 三种运行时模式；关闭并重新打开工程后恢复 Legacy。Factory V4 内容未改，Phase 3A 保持 OFF，不提供 Phase6 Candidate 预设、不安装 V5；隔离 V5 的评估 MIDI 和证据另附。工程报告与验收入口见 [Phase 6 综合报告](docs/PHASE6_ENGINEERING_20261014.md) 和 [Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md)。
+
 dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细核销与来源证据保存在同级 `HarmonyContinuation-validation-20261012/HISTORY_PROVENANCE.md`。dev.4 包保留在 `build-phase4d-delivery/`。新人工清单见 [dev.5 验收](docs/DEV5_CUBASE_ACCEPTANCE.md)。Factory V4 SHA-256 仍为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；独立候选及其音乐设计见 [候选说明](data/factory-proposals/20261012/README.md)。
 
-## 下一步：在另一台设备继续
+## Phase 6：当前验收与交付状态
 
-当前安全开发分支为 `development/phase5-20261013`，插件构建提交为 `3a582e4`。Phase 5.1 接续增加测试与文档，未改变 production plugin；本轮测试/文档提交身份与远端读回见增补交付的 Git proof。Phase 5 交付目录为同级 `HarmonyContinuation-phase5-delivery-20261013`，原始日志为 `HarmonyContinuation-phase5-validation-20261013`；Phase 5.1 验证与唯一增补包目录分别为同级 `HarmonyContinuation-phase51-validation-20261014`、`HarmonyContinuation-phase51-delivery-20261014`。独立候选仍为 `HarmonyContinuation-candidates-20261012`，dev.5 冻结包及历史分支保留。路径关系见 [MAP](MAP.md)。
+本 checkout 当前分支名仍为 `development/phase5-20261013`；Phase 6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。以 Phase 6 报告记录的构建、测试和最终交付证据核对当前 HEAD 与包身份。路径映射见 [MAP](MAP.md)。
 
-下一步按 [Phase 5.1 Cubase 验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md) 由用户执行真实宿主与试听验收；R02 的 Cubase 根因仍 UNKNOWN。只有 DEFAULT-OFF、HF-ON、ABSTRACT-ON 三种现有包列入本轮验收，其余 flag 组合仍属 core 实验。HF/P3/Abstract 默认均 OFF；V5 候选继续隔离，不进入 Factory V4。正式发布未授权且未执行。Phase 5 原人工清单与历史结论保留在 [Phase 5 验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 及 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)。
+Phase 6 的真实 Cubase 验收尚未完成；R02 Cubase 根因仍 UNKNOWN。请按 [Phase 6 Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 集中核对版本/Build ID、Factory、三种模式、R01/R02、拍号、Preview/MIDI、保存重开、User Library 和诊断导出。模拟宿主不代替真实 Cubase。Factory V4 SHA-256 为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；V5 不在插件内启用，隔离 MIDI 只作听评。运行时模式重开后为 Legacy，Phase 3A 保持 OFF。最终完整 CTest 34/34、Validator 47/47、隔离安装生命周期 21 checks 通过；Setup SHA 与全部交付证明见综合报告及校验清单。正式发布未授权、未执行。
 
-本机 ON 安装未完成：便携包91项、旧bundle17项备份均核验通过，但Windows UAC返回“操作已被用户取消”，实际插件及独立Factory未改变。备份、暂存、安装脚本和回退说明保存在同级 `HarmonyContinuation-on-install-20261012/`，不随Git同步。另一设备不能假定ON已安装，应按dev.5清单选择一个模式安装并核实About的Build ID/HF/P3。
-
-dev.5历史交接包已在既有GitHub未发布草稿，Phase5交付状态以 [MAP](MAP.md#同步) 和本轮交付proof为准。换设备步骤见 [RUNBOOK](RUNBOOK.md#phase5-dev6-另一设备接手)，可复制的接续说明见 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)。
+Phase 5 / 5.1 的人工清单、历史结论、交付与设备接续信息保留在 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[Phase 5 验收](docs/PHASE5_CUBASE_ACCEPTANCE.md)、[Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Phase 5.1 验收](docs/PHASE51_CUBASE_ACCEPTANCE.md)。Phase 6 换设备与安装步骤见 [RUNBOOK](RUNBOOK.md#phase6-dev7-另一设备接手)。
 
 ## 发布与验证证据
 
@@ -43,6 +43,6 @@ dev.5历史交接包已在既有GitHub未发布草稿，Phase5交付状态以 [M
 
 ## 待验收与边界
 
-Cubase 核心功能与 RC4 色彩显示由用户报告通过，正式构建未重新实机测试；宿主证据见 [HOST_SPIKE](docs/HOST_SPIKE.md)。FL Studio Not Verified / Pending。人工逐条试听未执行；全量回归按既有约定留到 v1.0 正式发布前。现行人工清单见 [RC_DAW_ACCEPTANCE](docs/RC_DAW_ACCEPTANCE.md)。
+Phase 6 dev.7 尚无真实 Cubase 验收或人工盲听结果；请以 [Phase 6 Cubase 清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 记录本机版本、操作和结果。Cubase 核心功能与 RC4 色彩显示的既有用户报告及宿主证据见 [HOST_SPIKE](docs/HOST_SPIKE.md)，不代表 dev.7 已验收。FL Studio Not Verified / Pending；既有 RC 人工清单见 [RC_DAW_ACCEPTANCE](docs/RC_DAW_ACCEPTANCE.md)。
 
 User Schema 2 需要本兼容桥或后续支持版本；v0.8.0 和旧 v0.9.0-dev.1 无法读写它。安装前按 [RISKS](RISKS.md) 定位降级风险并保留用户数据备份。已安装插件、生产 Factory 历史、真实 user.db 和同级旧 checkout 归档不属于本次仓库工作区清理。

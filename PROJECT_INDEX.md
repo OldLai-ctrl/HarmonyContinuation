@@ -4,11 +4,11 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-当前正式源码位于 `main`，Factory V4 独立开发分支为 `library/v4`，新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。V4 的局部引擎适配、维护和验证边界见专题说明。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。版本、提交及实际构建以当前 checkout 和产物为准，不能凭目录名推断。
+当前正式源码位于 `main`，Factory V4 独立开发分支为 `library/v4`，新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。V4 的局部引擎适配、维护和验证边界见专题说明。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。Phase6 dev.7 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`，使用单一 Setup/插件和 Legacy、HarmonyFirst、Abstract 三种运行时模式；Factory V4 未改、Phase3A OFF、工程重开恢复 Legacy，真实 Cubase 尚未验收。版本、提交及实际构建仍以当前 checkout 和产物为准。
 
-Phase5 / dev.6 接续入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)；开发分支及本轮状态见 NOW。
+Phase6 接续入口为 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [中文验收](docs/PHASE6_CUBASE_ACCEPTANCE.md)；完整质量分析在交付包 `benchmark/RESULTS_ANALYSIS.md`，验证/交付路径见 MAP，最终门禁和 Setup SHA 以综合报告及包内证明为准。
 
-Phase5.1 接续入口为 [收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 与 [Cubase验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。插件 production 与 `3a582e4` / dev.6 构建身份不变；测试/文档增补的离线门禁为 713/713，UserLibrary 定向测试为 283 checks。三种既有包是本轮唯一用户验收范围；其他 flag 组合仅作 core 实验。验证、增补包映射见 NOW、MAP 和 RUNBOOK。
+Phase5 / dev.6 的历史入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)。Phase5.1 历史收尾与验收见 [收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Cubase清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)；当时离线门禁 713/713、UserLibrary 定向测试 283 checks，三种既有包为该轮用户验收范围。详见各阶段报告。
 
 ## 按任务定位
 

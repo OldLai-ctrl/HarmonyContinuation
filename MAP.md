@@ -7,7 +7,7 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `development/phase5-20261013`；`library/v4`、dev.5、`main` / `v0.9/dev` 保留 | Phase5 独立开发，不合并正式分支 |
+| 主开发 checkout | `HarmonyContinuation-release/` → 当前分支名 `development/phase5-20261013`；`library/v4`、dev.5、`main` / `v0.9/dev` 保留 | Phase6 插件构建身份是 dev.7 / BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`；分支名仍沿用 Phase5，不合并正式分支 |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
@@ -36,3 +36,5 @@ dev.5源码通过 `development/dev5-closeout-20261012` 同步；原 `library/v4`
 Phase5源码使用 `development/phase5-20261013`，构建提交 `3a582e4`。同级 `HarmonyContinuation-phase5-delivery-20261013/` 提供三模式便携包、默认Setup、隔离V5评审包、源码、`HarmonyContinuation-Phase5-Handoff.zip` 与逐包SHA；原始证据位于同级 `HarmonyContinuation-phase5-validation-20261013/`。Git与远端交付状态见本轮 `git-proof.json` / 上传读回proof；操作见 [Phase5接手](RUNBOOK.md#phase5-dev6-另一设备接手)。不修改上述历史草稿元信息或旧附件。
 
 Phase5.1 保持插件构建身份 `3a582e4` / dev.6，增补范围仅测试与文档。验证资料位于同级 `HarmonyContinuation-phase51-validation-20261014/`；唯一 Acceptance Supplement 目标目录为同级 `HarmonyContinuation-phase51-delivery-20261014/`，不重打 Phase5 三模式包、Setup、Factory 或 Source ZIP。Supplement 顶层按现有打包器要求组织为 `proofs/`、`safety/`、`blind/`、`answer-key/`、`diagnostics/`、`docs/`；答案与 mapping 不进入 `blind/`。源码提交和远端资产读回分别以 Git proof、上传 proof 为准。详细范围见 [Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 与 [Cubase 清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。
+
+Phase6 dev.7 使用一个 Setup、一个 VST3 插件和 Legacy / HarmonyFirst / Abstract 三种运行时模式；工程重开后回到 Legacy。Factory V4 内容未改，Phase3A OFF，无 Phase6 Candidate 预设。验证材料在同级 `HarmonyContinuation-phase6-validation-20261014/`，最终分析为其中 `benchmark/RESULTS_ANALYSIS.md`；交付目录为同级 `HarmonyContinuation-phase6-delivery-20261014/`，包与 SHA 以最终交付证明为准。V5 不安装，只附隔离评估 MIDI/证据。详细状态见 [Phase 6 综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md)。
