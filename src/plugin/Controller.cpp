@@ -278,6 +278,7 @@ void Controller::pollRecommendation() noexcept {
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
         recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
+        enrichmentResultReady_=!latest->analysis.full.empty();
         enrichments_=std::move(latest->enrichments);
         recommendationGeneration_=latest->generation;
         lastComputationMs_=latest->computationMs;
@@ -306,6 +307,7 @@ void Controller::pollRecommendation() noexcept {
 
 void Controller::submitRecommendation(bool rankingOnly) {
     recommendationResultReady_=false;
+    enrichmentResultReady_=false;
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     auto analysisContext=sessionState_.analysisContext();
     recommendationGeneration_=recommendationWorker_->submitPreset(importedProgression_.events,analysisContext,algorithmPreset_,
@@ -339,7 +341,7 @@ bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidat
     return false;
 }
 bool Controller::currentCandidate(const harmony::enrichment::EnrichmentCandidate& candidate) const {
-    if(!recommendationResultReady_)return false;
+    if(!enrichmentResultReady_)return false;
     for(const auto& group:enrichments_.groups)for(const auto& current:group)
         if(current.id==candidate.id&&current.fingerprint==candidate.fingerprint)return true;
     return false;

@@ -86,6 +86,7 @@ private:
     std::vector<harmony::MatchResult> matches_;
     harmony::RecommendationSet recommendations_;
     bool recommendationResultReady_{};
+    bool enrichmentResultReady_{};
     DevelopmentAlgorithmPreset algorithmPreset_{DevelopmentAlgorithmPreset::Legacy};
     std::string factorySha256_{"PENDING"};
     harmony::RecommendationRequest recommendationRequest_;
