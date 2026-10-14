@@ -32,6 +32,11 @@ int main(){
             check(!overlap(l.topBar,l.phrase)&&!overlap(l.phrase,l.content),"primary separation");
             check(inside(l.timeline,l.phrase),"timeline bounds");
             for(auto control:l.topControls)check(inside(control,l.topBar),"top control bounds");
+            for(auto control:l.algorithmControls) {
+                check(inside(control,l.topBar),"algorithm control bounds");
+                for(auto constraint:l.constraintControls)
+                    check(!overlap(control,constraint),"algorithm and constraint separation");
+            }
             check(l.laneColumns==1||l.laneColumns==2||l.laneColumns==4,"column count");
             check(l.lanes[0].width()>=410,"card minimum width");
             for(int a=0;a<4;++a)for(int b=a+1;b<4;++b)check(!overlap(l.lanes[a],l.lanes[b]),"lane separation");
@@ -76,6 +81,7 @@ int main(){
                     harmony::session::Tab::Recommend,true,true,zoom});
                 check(std::abs(l.viewport.width()*zoom-w)<0.01,"zoom independent from resize");
                 for(auto control:l.constraintControls)check(inside(control,l.topBar),"constraint control bounds");
+                for(auto control:l.algorithmControls)check(inside(control,l.topBar),"zoom algorithm control bounds");
                 check(inside(l.inspector,l.viewport)&&l.inspector.height()>180,"zoom overlay bounds");
                 const auto card=candidateRowGeometry(l.lanes[0],0,true);
                 check(card.row.width()>=410&&inside(card.midi,card.row)&&inside(card.why,card.row),"zoom card controls");

@@ -103,8 +103,11 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
             o.inspector={w-408,contentTop,w-16,contentBottom};
         } else {
             const double panelW=std::min(650.,w-48);
-            const auto top=std::max(topH+8,std::min(contentTop+8,contentBottom-250));
-            o.inspector={(w-panelW)/2,top,(w+panelW)/2,contentBottom-8};
+            // A transient inspector may cover the compare strip on short, zoomed
+            // viewports so its controls remain readable below the toolbar.
+            const double panelBottom=std::min(h-16,std::max(contentBottom-8,topH+208));
+            const auto top=std::max(topH+8,std::min(contentTop+8,panelBottom-250));
+            o.inspector={(w-panelW)/2,top,(w+panelW)/2,panelBottom};
         }
     }
     const double laneRight=o.inspectorMode==InspectorMode::Side?o.inspector.left-12:o.content.right;
