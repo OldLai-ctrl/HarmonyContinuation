@@ -107,6 +107,22 @@ int main() {
                 return value.find("unavailable")!=std::string::npos;
 #endif
             };
+            const auto allGroupsEmpty=[](const auto& groups) {
+                for (const auto& group:groups) if (!group.empty()) return false;
+                return true;
+            };
+            AnalysisContext baseContext;
+            const auto metadataGeneration=worker.submitPreset({},baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,18);
+            const auto metadataOnly=waitResult(worker);
+            check(metadataOnly.generation==metadataGeneration &&
+                metadataOnly.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
+                metadataOnly.error.empty() && !metadataOnly.analysisReused && metadataOnly.analysis.full.empty() &&
+                metadataOnly.recommendations.matches.empty() && allGroupsEmpty(metadataOnly.recommendations.groups) &&
+                allGroupsEmpty(metadataOnly.enrichments.groups) &&
+                metadataOnly.factoryVersion==expectedFactoryVersion && validFactoryHash(metadataOnly.factorySha256),
+                "empty metadata-only task reports selected Factory identity without candidates");
+
             worker.submit(a.chords,{}, {},false,19);
             const auto first=waitResult(worker);
             check(!first.analysisReused && first.error.empty() && !first.algorithmPreset &&
@@ -116,7 +132,20 @@ int main() {
             const auto ranked=waitResult(worker);
             check(ranked.analysisReused && ranked.error.empty(),"ranking reuses analysis");
 
-            AnalysisContext baseContext;
+            const auto emptyAfterInputGeneration=worker.submitPreset({},baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,19);
+            const auto emptyAfterInput=waitResult(worker);
+            check(emptyAfterInput.generation==emptyAfterInputGeneration && emptyAfterInput.error.empty() &&
+                emptyAfterInput.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
+                allGroupsEmpty(emptyAfterInput.recommendations.groups) && allGroupsEmpty(emptyAfterInput.enrichments.groups),
+                "empty metadata-only task clears candidate output after a prior query");
+            const auto afterEmptyGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},true,19);
+            const auto afterEmpty=waitResult(worker);
+            check(afterEmpty.generation==afterEmptyGeneration && !afterEmpty.analysisReused &&
+                afterEmpty.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy && afterEmpty.error.empty(),
+                "non-empty task recomputes after empty metadata-only task");
+
             auto legacyGeneration=worker.submitPreset(a.chords,baseContext,
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},false,20);
             const auto legacy=waitResult(worker);

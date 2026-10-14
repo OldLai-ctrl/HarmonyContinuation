@@ -182,28 +182,38 @@ void RecommendationWorker::run() {
         result.algorithmPreset = task.algorithmPreset;
         const auto start=std::chrono::steady_clock::now();
         try {
-            const auto effectiveContext = task.algorithmPreset
-                ? developmentContext(task.context, *task.algorithmPreset) : task.context;
-            result.analysisReused=task.rankingOnly && task.progression.size()<=64 && cachedQuery && task.phraseRevision!=0 &&
-                task.phraseRevision==cachedPhraseRevision && cachedContext &&
-                cachedContext->forcedKey.has_value()==effectiveContext.forcedKey.has_value() &&
-                (!cachedContext->forcedKey || (cachedContext->forcedKey->tonic==effectiveContext.forcedKey->tonic &&
-                    cachedContext->forcedKey->mode==effectiveContext.forcedKey->mode)) &&
-                cachedContext->timeSigNumerator==effectiveContext.timeSigNumerator &&
-                cachedContext->timeSigDenominator==effectiveContext.timeSigDenominator &&
-                cachedContext->retrievalTimingMode==effectiveContext.retrievalTimingMode;
-            if (result.analysisReused) result.analysis=cachedAnalysis;
-            else {
+            const bool metadataOnly=task.progression.empty();
+            if (metadataOnly) {
+                // An empty progression is used to resolve the selected Factory identity only.
+                // Drop any prior query so a later ranking-only task cannot reuse stale input.
                 cachedQuery.reset();
-                result.analysis=analyzeHarmony(task.progression,effectiveContext);
-                if (task.progression.size()<=64) {
-                    cachedQuery=makeMatchQuery(task.progression,effectiveContext);
-                    cachedAnalysis=result.analysis;
-                    cachedPhraseRevision=task.phraseRevision;
-                    cachedContext=effectiveContext;
+                cachedAnalysis={};
+                cachedPhraseRevision=0;
+                cachedContext.reset();
+            } else {
+                const auto effectiveContext = task.algorithmPreset
+                    ? developmentContext(task.context, *task.algorithmPreset) : task.context;
+                result.analysisReused=task.rankingOnly && task.progression.size()<=64 && cachedQuery && task.phraseRevision!=0 &&
+                    task.phraseRevision==cachedPhraseRevision && cachedContext &&
+                    cachedContext->forcedKey.has_value()==effectiveContext.forcedKey.has_value() &&
+                    (!cachedContext->forcedKey || (cachedContext->forcedKey->tonic==effectiveContext.forcedKey->tonic &&
+                        cachedContext->forcedKey->mode==effectiveContext.forcedKey->mode)) &&
+                    cachedContext->timeSigNumerator==effectiveContext.timeSigNumerator &&
+                    cachedContext->timeSigDenominator==effectiveContext.timeSigDenominator &&
+                    cachedContext->retrievalTimingMode==effectiveContext.retrievalTimingMode;
+                if (result.analysisReused) result.analysis=cachedAnalysis;
+                else {
+                    cachedQuery.reset();
+                    result.analysis=analyzeHarmony(task.progression,effectiveContext);
+                    if (task.progression.size()<=64) {
+                        cachedQuery=makeMatchQuery(task.progression,effectiveContext);
+                        cachedAnalysis=result.analysis;
+                        cachedPhraseRevision=task.phraseRevision;
+                        cachedContext=effectiveContext;
+                    }
                 }
             }
-            if (task.progression.size() <= 64) {
+            if (!metadataOnly && task.progression.size() <= 64) {
                 enrichment::EnrichmentConfig config;
                 config.constraints=task.request.constraints;config.tendency=task.request.tendency;
                 result.enrichments=enrichment::enrichProgression(task.progression,result.analysis,task.request.style,config);
@@ -241,12 +251,14 @@ void RecommendationWorker::run() {
                         }
                     }
                 }
-                if (index) {
+                if (metadataOnly) {
+                    if (!index) result.error=loadError;
+                } else if (index && cachedQuery) {
                     const auto weights=task.algorithmPreset
                         ? developmentRecommendationWeights(*task.algorithmPreset)
                         : developmentRecommendationWeights();
                     result.recommendations = recommendContinuations(*cachedQuery, *index, task.request, weights);
-                } else result.error = loadError;
+                } else result.error = index ? "推荐查询不可用。" : loadError;
             } else result.error = "超过 64 个和弦；推荐暂不计算。";
         } catch (const std::exception& e) { result.error = e.what(); }
         catch (...) { result.error = "推荐计算异常"; }

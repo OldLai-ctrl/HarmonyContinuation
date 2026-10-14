@@ -109,6 +109,7 @@ std::string Controller::hostDiagnostics() const {
 }
 std::string Controller::exportHostDiagnostics(void* owner) noexcept {
     try {
+        if(factorySha256_.size()!=64)return "Factory identity is pending/unavailable; retry after loading";
 #if defined(_WIN32)
         const auto path=savePath(owner,"HarmonyContinuation-HostDiagnostics.txt",L"Text files\0*.txt\0\0",L"txt");
         if(!path)return "Cancelled";
@@ -204,6 +205,7 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
             view_->setAlgorithmPreset(algorithmPreset_);
             view_->clearSessionDirty();
             view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
+            view_->setHostText(hostDiagnostics());
         }
         if (resizeRequest_) resizeRequest_(static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight));
         submitRecommendation();
@@ -259,6 +261,8 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
             view_->setHostText(hostDiagnostics());
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
             reloadLibraries();
+            view_->setHostText(hostDiagnostics());
+            if(factorySha256_=="PENDING")submitRecommendation();
             if (transportRateChanged_) transportRateChanged_(lastPlaying_);
         }
         catch (...) {}
@@ -273,7 +277,7 @@ void Controller::pollRecommendation() noexcept {
         if (!latest || latest->generation!=recommendationGeneration_ || latest->algorithmPreset!=algorithmPreset_) return;
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
-        recommendationResultReady_=latest->error.empty();
+        recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
         enrichments_=std::move(latest->enrichments);
         recommendationGeneration_=latest->generation;
         lastComputationMs_=latest->computationMs;
@@ -302,11 +306,6 @@ void Controller::pollRecommendation() noexcept {
 
 void Controller::submitRecommendation(bool rankingOnly) {
     recommendationResultReady_=false;
-    if (importedProgression_.events.empty()) {
-        if(recommendationWorker_)recommendationWorker_->cancel();
-        if(view_)view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,false);
-        return;
-    }
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     auto analysisContext=sessionState_.analysisContext();
     recommendationGeneration_=recommendationWorker_->submitPreset(importedProgression_.events,analysisContext,algorithmPreset_,
