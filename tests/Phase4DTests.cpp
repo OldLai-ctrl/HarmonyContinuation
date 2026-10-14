@@ -1190,13 +1190,13 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     colorExportFile<<"case\tpreset\tgroup\tpreference\tbeforeDefaultIDs\tafterDefaultIDs\tselectedCandidateID\tselectedPrimaryID\tpreviewCandidateID\tfullMidi\tsuffixMidi\tvoicingCheck\n";
     ablationFile<<"case\tparameter\tdefault\tablated\tFactoryID\tdefaultScore\tablatedScore\tdelta\tdefaultDisposition\tablatedDisposition\tdefaultRank\tablatedRank\trankDelta\tminimumMatch\tminimumScore\tstatus\n";
     inputOracleFile<<"case\toracleTrial\toldMeter\tnewMeter\toldBPM\tnewBPM\toldOPEN\tnewOPEN\toldQN\tnewQN\toldInput\tnewInput\toldKey\tnewKey\tstatus\n";
-    oracleFile<<"case\tpreset\tbuild\tFactoryID\toldDisposition\tnewDisposition\toldMatchKey\tnewMatchKey\toldSimilarity\tnewSimilarity\toldRankingScore\tnewRankingScore\toldEligibilityScore\tnewEligibilityScore\toldRankGroup\tnewRankGroup\toldRank\tnewRank\toldVisible\tnewVisible\toldSuffix\tnewSuffix\tstatus\n";
-    phase51OracleFile<<"case\tpreset\tpair\tFactoryID\toldDisposition\tnewDisposition\toldSimilarity\tnewSimilarity\toldRawCost\tnewRawCost\toldPrimaryID\tnewPrimaryID\toldRank\tnewRank\toldScore\tnewScore\tstatus\n";
+    oracleFile<<"case\tpreset\tcomparisonScope\tbuild\tFactoryID\toldDisposition\tnewDisposition\toldMatchKey\tnewMatchKey\toldSimilarity\tnewSimilarity\toldRankingScore\tnewRankingScore\toldEligibilityScore\tnewEligibilityScore\toldRankGroup\tnewRankGroup\toldRank\tnewRank\toldVisible\tnewVisible\toldSuffix\tnewSuffix\tsuffixSemanticEqual\tstatus\n";
+    phase51OracleFile<<"case\tpreset\tcomparisonScope\tpair\tFactoryID\toldDisposition\tnewDisposition\toldSimilarity\tnewSimilarity\toldRawCost\tnewRawCost\toldPrimaryID\tnewPrimaryID\toldRank\tnewRank\toldScore\tnewScore\tstatus\n";
     blindAnswer<<"pair\tcase\tscope\talias\tpreset\tcandidateID\tprimaryID\tcontinuation\twav\tfullMidi\tsuffixMidi\n";
     blindMidiCheck<<"pair\talias\tscope\tmidiPath\tnoteCount\tdecodedVoicing\n";
     r02RuntimeFile<<"cell\tkeySetting\tdurationsQN\tOPEN\tpreset\tselectedAnalysisKey\tfactoryVersion\tfactorySha256\tmatchFound\tmatchKey\tsimilarity\trawCost\trankingScore\teligibilityScore\tactiveGateScore\tdisposition\tsuffixStageReached\tvalidCompleteSuffix\tsuffix\tgroup\tworkerRank\tdefaultCard\tminimumMatch\tminimumScore\n";
     r01V5File<<"factoryPath\tfactoryVersion\tfactorySha256\tfactoryCount\tQN\tmeter\tOPEN\tpreset\tselectedAnalysisKey\tinputDurationsQN\ttemplateID\tmatchFound\tmatchKey\tsimilarity\trankingScore\teligibilityScore\tactiveGateScore\tdisposition\teligible\tcardCandidateID\tprimaryID\tgroup\tworkerRank\tdefaultCard\tfullPath\tfullSuffix\tsuffixDurationsQN\tsnapshotSuffixPreserved\tfullMidi\tsuffixMidi\tfullDecodedLowestNotes\tsuffixDecodedLowestNotes\tvoicingCheck\n";
-    phase51MidiFile<<"pair\tabstract\tscope\tpreset\tfactoryVersion\tfactorySha256\tmatchedTemplateID\tselectedCardPrimaryID\tworkerRank\toldMidiPath\truntimeMidiPath\tbytesEqual\tbyteComparisonNote\tnoteEventsEqual\ttempoEqual\toldNoteCount\truntimeNoteCount\toldTempoBPM\truntimeTempoBPM\toldVoicing\truntimeVoicing\tstatus\n";
+    phase51MidiFile<<"pair\tabstract\tscope\tpreset\tcomparisonScope\tfactoryVersion\tfactorySha256\tmatchedTemplateID\tselectedCardPrimaryID\tworkerRank\toldMidiPath\truntimeMidiPath\tbytesEqual\tbyteComparisonNote\tnoteEventsEqual\ttempoEqual\toldNoteCount\truntimeNoteCount\toldTempoBPM\truntimeTempoBPM\toldVoicing\truntimeVoicing\tstatus\n";
     blindInstructions<<"Phase 6 anonymized preview pairs. Full WAVs and suffix excerpts are rule-based built-in PreviewSynth renders at 48 kHz and the case tempo; they are not recordings or GM-patch renders. Each pair uses the same source progression and renderer. Pair aliases A/B and their files are not mapped to a preset here; the answer key is stored separately under ../answer-key/answer-key.tsv. Automatic scores describe implementation output only and do not rate musical quality.\n";
     caseFile<<std::setprecision(9);matchFile<<std::setprecision(9);candidateFile<<std::setprecision(9);continuousFile<<std::setprecision(9);
     const auto makeSequence=[&](const Case& c,const Fixture& fixture){
@@ -1401,11 +1401,38 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     for(const auto rows:stagedRowsByBuild)require(rows==8643,"Phase6 stages all 8,643 selected historical comparisons for each reviewed build");
     // The old Abstract build's Phase4B direct-core rows use default RecommendationWeights (Abstract OFF).
     // Its Legacy rows are a build-consistency oracle; Phase 5.1 below is the actual Abstract ON oracle.
-    const std::array<std::size_t,3> currentPresetForBuild{0,1,0};const std::array<std::string,3> buildNames{"build-off","build-hf-on","build-abstract"};std::size_t oracleRows{},oracleMismatches{};
-    const auto compact=[](std::string text){text.erase(std::remove_if(text.begin(),text.end(),[](unsigned char c){return std::isspace(c)!=0;}),text.end());return text;};
+    const std::array<std::size_t,3> oraclePresetForBuild{0,1,0};const std::array<std::string,3> buildNames{"build-off","build-hf-on","build-abstract"};std::size_t oracleRows{},oracleMismatches{};
+    const auto directCoreControl=[&](const Run& run,RetrievalTimingMode mode){
+        const auto fixture=fixtures.find(run.test.fixture);require(fixture!=fixtures.end(),"Phase6 direct-core historical control fixture exists");
+        AnalysisContext context;context.forcedKey=fixture->second.key;
+        if(context.forcedKey&&run.test.semitones)context.forcedKey->tonic=static_cast<PitchClass>((static_cast<int>(context.forcedKey->tonic)+run.test.semitones+12)%12);
+        context.timeSigNumerator=run.test.numerator;context.timeSigDenominator=run.test.denominator;context.retrievalTimingMode=mode;
+        RecommendationRequest request;request.preferredIntent=run.test.requestedIntent;RecommendationWeights weights;
+        require(weights.minimumMatch==0.60f&&weights.minimumScore==60.f&&weights.perGroup==3&&
+            !weights.diminishedPassingInsertionException&&!weights.abstractChordCompatibility,
+            "Historical Phase4B direct-core control retains default cap-3 weights and 0.60/60 gates");
+        return recommendContinuations(makeMatchQuery(run.progression,context),continuousIndex,request,weights);
+    };
+    const auto suffixEquivalent=[](const std::string& archived,const std::string& current){
+        const auto trim=[](std::string value){const auto first=value.find_first_not_of(" \t\r\n");if(first==std::string::npos)return std::string{};const auto last=value.find_last_not_of(" \t\r\n");return value.substr(first,last-first+1);};
+        const auto parse=[&](const std::string& text,std::vector<std::pair<std::string,double>>& events){
+            const auto cleaned=trim(text);if(cleaned.empty())return true;std::istringstream input(cleaned);std::string token;
+            while(std::getline(input,token,'|')){token=trim(std::move(token));const auto at=token.rfind('@');if(at==std::string::npos)return false;
+                const auto label=trim(token.substr(0,at));auto duration=trim(token.substr(at+1));if(label.empty())return false;
+                if(duration.size()>=2&&duration.compare(duration.size()-2,2,"QN")==0)duration.resize(duration.size()-2);
+                try{std::size_t used{};const double qn=std::stod(duration,&used);if(used!=duration.size()||!std::isfinite(qn))return false;events.emplace_back(label,qn);}catch(...){return false;}}
+            return true;
+        };
+        std::vector<std::pair<std::string,double>> oldEvents,newEvents;if(!parse(archived,oldEvents)||!parse(current,newEvents)||oldEvents.size()!=newEvents.size())return false;
+        for(std::size_t i=0;i<oldEvents.size();++i)if(oldEvents[i].first!=newEvents[i].first||std::abs(oldEvents[i].second-newEvents[i].second)>1e-6)return false;
+        return true;
+    };
     std::size_t expectedOracleRows{};
-    for(const auto& run:runs)if(!run.test.oracleTrial.empty())for(std::size_t b=0;b<3;++b){const auto p=currentPresetForBuild[b];const auto& rows=oldRows[b][run.test.oracleTrial];
-        require(!rows.empty(),"Phase6 historical oracle includes every exact trial in all three baseline builds");expectedOracleRows+=rows.size();const auto& rec=run.results[p].recommendations;
+    for(const auto& run:runs)if(!run.test.oracleTrial.empty()){
+        const auto legacyDirect=directCoreControl(run,RetrievalTimingMode::Legacy);
+        const auto harmonyFirstDirect=directCoreControl(run,RetrievalTimingMode::HarmonyFirst);
+        for(std::size_t b=0;b<3;++b){const auto p=oraclePresetForBuild[b];const auto& rows=oldRows[b][run.test.oracleTrial];
+        require(!rows.empty(),"Phase6 historical oracle includes every exact trial in all three baseline builds");expectedOracleRows+=rows.size();const auto& rec=b==1?harmonyFirstDirect:legacyDirect;
         for(const auto& [id,old]:rows){const auto* now=findMatch(rec,id);const auto rank=rankMatch(rec,id);const auto& f=old.fields;const auto field=[&](const char* name)->const std::string&{return f[matchColumn.at(name)];};
             const auto nearFloat=[&](const char* name,float value,float tol){try{return std::abs(std::stof(field(name))-value)<=tol;}catch(...){return false;}};
             const bool present=now!=nullptr;const int nowRank=rank.rank<0?0:rank.rank;
@@ -1416,20 +1443,21 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
             const bool eligibilityScore=present&&nearFloat("eligibility_score",now->candidateEligibilityScore,0.0001f);
             const bool group=(field("rank_group")=="-"?rank.group<0:(rank.group>=0&&field("rank_group")==groupName(static_cast<std::size_t>(rank.group))));
             const bool visible=(field("visible")=="1")==rank.visible;const bool rankSame=std::stoi(field("rank"))==nowRank;
-            const bool suffix=compact(field("continuation"))==compact(rank.suffix);
+            const bool suffix=suffixEquivalent(field("continuation"),rank.suffix);
             const bool starts=present&&std::stoi(field("start_index"))==now->templateMatchStart&&std::stoi(field("end_index"))==now->templateMatchEnd&&
                 std::stoi(field("continuation_index"))==now->continuationStartIndex&&std::stoi(field("continuation_length"))==now->continuationLength;
             const bool equal=present&&disposition&&matchKey&&similarity&&rankingScore&&eligibilityScore&&group&&visible&&rankSame&&suffix&&starts;
             if(!equal)++oracleMismatches;++oracleRows;
-            oracleFile<<run.test.id<<'\t'<<plugin::algorithmPresetName(presets[p])<<'\t'<<buildNames[b]<<'\t'<<id<<'\t'<<field("disposition")<<'\t'<<(present?now->disposition:"MISSING")<<'\t'<<field("key")<<'\t'<<(present?formatKey(now->key):"NA")<<'\t'
+            oracleFile<<run.test.id<<'\t'<<plugin::algorithmPresetName(presets[p])<<"\tdirect_core_cap3\t"<<buildNames[b]<<'\t'<<id<<'\t'<<field("disposition")<<'\t'<<(present?now->disposition:"MISSING")<<'\t'<<field("key")<<'\t'<<(present?formatKey(now->key):"NA")<<'\t'
                 <<field("match_similarity")<<'\t'<<(present?std::to_string(now->similarity):"NA")<<'\t'<<field("ranking_score")<<'\t'<<(present?std::to_string(now->candidateRankingScore):"NA")<<'\t'
                 <<field("eligibility_score")<<'\t'<<(present?std::to_string(now->candidateEligibilityScore):"NA")<<'\t'<<field("rank_group")<<'\t'<<(rank.group<0?"-":groupName(static_cast<std::size_t>(rank.group)))<<'\t'
-                <<field("rank")<<'\t'<<nowRank<<'\t'<<field("visible")<<'\t'<<rank.visible<<'\t'<<field("continuation")<<'\t'<<rank.suffix<<'\t'<<(equal?"MATCH":"DIFF")<<'\n';
+                <<field("rank")<<'\t'<<nowRank<<'\t'<<field("visible")<<'\t'<<rank.visible<<'\t'<<field("continuation")<<'\t'<<rank.suffix<<'\t'<<suffix<<'\t'<<(equal?"MATCH":"DIFF")<<'\n';
+        }
         }
     }
     require(oracleRows==expectedOracleRows&&oracleRows==25929&&stagedMatchRows==25929,
         "Phase6 compares all 25,929 selected historical match rows; missing trials or rows cannot pass as present");
-    require(oracleMismatches==0,"Phase6 exact-input match/disposition/rank results agree with the three historical build oracles");
+    require(oracleMismatches==0,"Phase6 exact-input direct-core cap-3 controls agree with all three historical build oracles");
 
     // Phase 5.1 selected Abstract comparisons use the archived Q1/Q2 rows as their independent direct-core oracle.
     const auto abstractFile=oracleRoot/"phase51"/"abstract-comparison.tsv";std::size_t phase51Rows{},phase51Diffs{},phase51MidiRows{},phase51ExactByteRows{};
@@ -1440,7 +1468,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
             const bool same=match&&f[4]==match->disposition&&closeOld(6,match->rawCost,0.0001f)&&closeOld(7,match->similarity,0.0001f)&&
                 f[8]==rank.primaryId&&f[10]==(rank.group<0?"NA":groupName(static_cast<std::size_t>(rank.group)))&&
                 std::stoi(f[11])==(rank.rank<0?0:rank.rank)&&(f[12]=="1")==rank.visible&&closeOld(15,currentScore,0.0001f);
-            if(!same)++phase51Diffs;++phase51Rows;phase51OracleFile<<caseId<<'\t'<<plugin::algorithmPresetName(presets[p])<<'\t'<<f[0]<<'\t'<<f[3]<<'\t'<<f[4]<<'\t'<<(match?match->disposition:"MISSING")<<'\t'<<f[7]<<'\t'<<(match?std::to_string(match->similarity):"NA")<<'\t'<<f[6]<<'\t'<<(match?std::to_string(match->rawCost):"NA")<<'\t'<<f[8]<<'\t'<<(rank.group>=0?rank.primaryId:"NA")<<'\t'<<f[11]<<'\t'<<(rank.rank<0?0:rank.rank)<<'\t'<<f[15]<<'\t'<<currentScore<<'\t'<<(same?"MATCH":"DIFF")<<'\n';
+            if(!same)++phase51Diffs;++phase51Rows;phase51OracleFile<<caseId<<'\t'<<plugin::algorithmPresetName(presets[p])<<"\tproduction_worker_cap10\t"<<f[0]<<'\t'<<f[3]<<'\t'<<f[4]<<'\t'<<(match?match->disposition:"MISSING")<<'\t'<<f[7]<<'\t'<<(match?std::to_string(match->similarity):"NA")<<'\t'<<f[6]<<'\t'<<(match?std::to_string(match->rawCost):"NA")<<'\t'<<f[8]<<'\t'<<(rank.group>=0?rank.primaryId:"NA")<<'\t'<<f[11]<<'\t'<<(rank.rank<0?0:rank.rank)<<'\t'<<f[15]<<'\t'<<currentScore<<'\t'<<(same?"MATCH":"DIFF")<<'\n';
         }}
     require(phase51Rows==4,"Phase6 reads exactly the four Abstract OFF/ON Q1/Q2 historical worker rows");
     require(phase51Diffs==0,"Phase6 Abstract OFF/ON Q1/Q2 results agree with archived Phase5.1 worker rows");
@@ -1497,7 +1525,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
                 const bool noteEqual=noteEventsEqual(oldDecoded,currentDecoded),tempoEqual=tempoEventsEqual(oldDecoded,currentDecoded),exactBytes=oldBytes==currentBytes;
                 require(noteEqual&&tempoEqual,"Phase5.1 old/current MIDI pitch, start, duration, velocity, channel, and tempo events agree");
                 if(exactBytes)++phase51ExactByteRows;
-                phase51MidiFile<<f[0]<<'\t'<<f[2]<<'\t'<<scopes[scopeIndex]<<'\t'<<plugin::algorithmPresetName(preset)<<'\t'
+                phase51MidiFile<<f[0]<<'\t'<<f[2]<<'\t'<<scopes[scopeIndex]<<'\t'<<plugin::algorithmPresetName(preset)<<"\tproduction_worker_cap10\t"
                     <<runIt->results[presetIndexValue].factoryVersion<<'\t'<<runIt->results[presetIndexValue].factorySha256<<'\t'<<f[3]<<'\t'<<f[8]<<'\t'<<selectedRank.rank<<'\t'
                     <<oldPath.string()<<'\t'<<runtimePath.string()<<'\t'<<exactBytes<<'\t'<<(exactBytes?"identical SMF bytes":"serialized SMF differs; all decoded note and tempo values match")<<'\t'
                     <<noteEqual<<'\t'<<tempoEqual<<'\t'
@@ -1642,7 +1670,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     }
     std::ostringstream nonExactNames;bool firstNonExact=true;for(const auto& id:nonExactCoverageCases){if(!firstNonExact)nonExactNames<<", ";firstNonExact=false;nonExactNames<<id;}
     std::ofstream summary(out/"summary.md");require(bool(summary),"Phase6 summary opens");summary<<"# Phase 6 fixed benchmark\n\n"<<"Cases: "<<cases.size()<<"; presets: Legacy/HarmonyFirst/Abstract; internal ContinuousStructure control: "<<continuousIndex.templates().size()<<" V4 entries. Factory expectation: v4, SHA-256 "<<factoryHash<<".\n\n"
-        <<"Historical Phase 4B exact inputs: "<<inputOracleRows<<"; input mismatches: "<<inputOracleMismatches<<". Raw three-build match rows: "<<oracleRows<<"; mismatches: "<<oracleMismatches<<". Historical Phase 5.1 Q1/Q2 rows: "<<phase51Rows<<"; mismatches: "<<phase51Diffs<<". Phase 5.1 MIDI rows: "<<phase51MidiRows<<"/8 pass; exact SMF bytes: "<<phase51ExactByteRows<<"/8.\n\n"
+        <<"Historical Phase 4B exact inputs: "<<inputOracleRows<<"; input mismatches: "<<inputOracleMismatches<<". Raw three-build rows checked against the same-input direct-core cap-3 control (default RecommendationWeights, gates 0.60/60): "<<oracleRows<<"; mismatches: "<<oracleMismatches<<". This historical direct-core scope is separate from the Phase6 production worker's ten-item retention. Historical Phase 5.1 Q1/Q2 production-worker-cap10 rows: "<<phase51Rows<<"; mismatches: "<<phase51Diffs<<". Phase 5.1 production-worker-cap10 MIDI rows: "<<phase51MidiRows<<"/8 pass; exact SMF bytes: "<<phase51ExactByteRows<<"/8.\n\n"
         <<"R02 production-worker orthogonal grid: "<<r02CellCount<<" cells (Auto/C major/A minor × 4,4,4/3,5,4 QN × closed/OPEN × three presets), with "<<r02TargetRows<<" fixed-target rows. Non-exact alignment coverage cases: "<<nonExactCoverageCases.size()<<" ("<<nonExactNames.str()<<").\n\n"
         <<"Worker performance samples: "<<performanceRows<<" (35 cases × three presets). The first timer sample is cold and includes Factory loading and SHA-256; remaining rows are hot. These values are not a cold-versus-hot preset speed comparison.\n\n"
         <<"Optional isolated V5 R01 probe: "<<(v5FactoryPath.empty()?"not run (optional V5 path was not supplied)":std::to_string(r01V5Rows)+" rows; four Legacy full/suffix MIDI pairs decoded and checked after the existing snapshot storage route")<<". It reads the supplied 658-entry Factory and creates no user database. See `r01-v5-isolated.tsv`.\n\n"
