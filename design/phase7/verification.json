@@ -1,0 +1,283 @@
+{
+  "renderer": "Playwright / installed Edge, offscreen HTML; not VSTGUI or Cubase",
+  "screens": [
+    "A-main.png",
+    "A-detail.png",
+    "A-settings.png",
+    "A-drag.png",
+    "A-loading.png",
+    "A-playing.png",
+    "B-main.png",
+    "B-detail.png",
+    "B-settings.png",
+    "B-drag.png",
+    "B-loading.png",
+    "B-playing.png",
+    "controls.png",
+    "A-small-150.png",
+    "B-small-150.png"
+  ],
+  "layouts": [
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 382,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 338,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 287,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 482,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 438,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 387,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 839,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 787,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 734,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 382,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 333,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 281,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 482,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 433,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        740
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 381,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 822,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 766,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 709,
+      "cards": 3
+    }
+  ],
+  "interactions": [
+    "Details open; independent selection changes candidate",
+    "90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged",
+    "Unavailable host reports fallback; no host connection",
+    "Preset loading clears cards and disables play; rapid switches retain final captured preset",
+    "FULL/SKELETON is display-only; playback scope does not change export default; full/suffix .mid downloads equal recorded bytes",
+    "Separate MIDI handle reaches internal prototype receiver; OS/Cubase drag is not tested"
+  ],
+  "errors": []
+}

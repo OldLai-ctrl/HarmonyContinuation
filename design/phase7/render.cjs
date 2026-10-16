@@ -1,0 +1,49 @@
+// Render and inspect this isolated HTML prototype. Does not launch the plugin or access user.db.
+// NODE_PATH must point to an installed Playwright package; use HC_BROWSER for a Chrome/Edge binary.
+const {chromium}=require('playwright');
+const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.HC_BROWSER||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',args:['--autoplay-policy=no-user-gesture-required']});
+ const page=await browser.newPage({viewport:{width:1200,height:1000},deviceScaleFactor:1});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const root=pathToFileURL(path.join(__dirname,'index.html')).href;
+ const evidence={renderer:'Playwright / installed Edge, offscreen HTML; not VSTGUI or Cubase',screens:[],layouts:[],interactions:[],errors};
+ async function open(scheme,view='main'){await page.goto(`${root}?scheme=${scheme}&state=${view}`);await page.evaluate(()=>document.fonts.ready);}
+ async function shot(name){await page.screenshot({path:path.join(__dirname,'screens',name+'.png')});evidence.screens.push(name+'.png');}
+ for(const scheme of ['A','B']){
+  await page.setViewportSize({width:scheme==='A'?1200:1360,height:scheme==='A'?960:1130});
+  for(const view of ['main','detail','settings','drag','loading']){await open(scheme,view);await shot(`${scheme}-${view}`);}
+  await open(scheme);await page.click('#play');await page.waitForFunction(()=>document.querySelector('#playingState').textContent.startsWith('正在试听'));await page.waitForTimeout(900);await shot(`${scheme}-playing`);await page.click('#stop');
+ }
+ await open('A','controls');await shot('controls');
+ for(const scheme of ['A','B'])for(const size of [[900,640],[900,740],[1440,1100]])for(const zoom of [1,1.25,1.5]){
+  await page.setViewportSize({width:size[0],height:size[1]});await open(scheme);
+  await page.evaluate(z=>{const app=document.querySelector('#app');app.style.zoom=z;app.style.height=`calc((100vh - 48px) / ${z})`;},zoom);
+  const layout=await page.evaluate(()=>{const app=document.querySelector('#app'),main=document.querySelector('main'),footer=document.querySelector('footer');const f=footer.getBoundingClientRect(),m=main.getBoundingClientRect();return {bodyOverflow:document.documentElement.scrollWidth>innerWidth+1,appOverflow:app.scrollWidth>app.clientWidth+1,mainOverflow:main.scrollWidth>main.clientWidth+1,footerVisible:f.bottom<=innerHeight+2&&f.left>=0&&f.right<=innerWidth+2,mainHeight:Math.round(m.height),cards:document.querySelectorAll('.candidate').length};});
+  evidence.layouts.push({scheme,size,zoom,...layout});
+  if(layout.bodyOverflow||layout.appOverflow||layout.mainOverflow||!layout.footerVisible||layout.mainHeight<100)throw Error('Layout failed '+JSON.stringify(evidence.layouts.at(-1)));
+  if(size[1]===640&&zoom===1.5)await shot(`${scheme}-small-150`);
+ }
+ await page.setViewportSize({width:1200,height:960});await open('A');
+ await page.click('[data-detail="1"]');if(await page.locator('.detail').count()!==1)throw Error('Detail did not open');
+ await page.click('[data-select="2"]');if(await page.locator('.selectedCard').getAttribute('data-rank')!=='2')throw Error('Selection failed');
+ evidence.interactions.push('Details open; independent selection changes candidate');
+ const midiBefore=await page.evaluate(()=>window.PHASE7_DATA.map(x=>x.fullBase64+'|'+x.suffixBase64).join(''));
+ await page.fill('#bpm','90');await page.locator('#bpm').dispatchEvent('change');await page.click('[data-scope="suffix"]');await page.click('#play');await page.waitForFunction(()=>document.querySelector('#playingState').textContent.includes('仅续写'));await page.click('#stop');
+ const midiAfter=await page.evaluate(()=>window.PHASE7_DATA.map(x=>x.fullBase64+'|'+x.suffixBase64).join(''));if(midiBefore!==midiAfter)throw Error('Tempo mutated MIDI');
+ evidence.interactions.push('90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged');
+ await page.selectOption('#tempoMode','host');if(!(await page.locator('#tempoStatus').textContent()).includes('不可用'))throw Error('Missing host fallback');
+ evidence.interactions.push('Unavailable host reports fallback; no host connection');
+ await page.selectOption('#algorithm','HarmonyFirst');if(await page.locator('.candidate').count())throw Error('Stale cards visible');await page.waitForSelector('.candidate');
+ await page.selectOption('#algorithm','Abstract');await page.selectOption('#algorithm','Legacy');await page.waitForSelector('.candidate');if(await page.locator('#algorithm').inputValue()!=='Legacy')throw Error('Wrong final preset');
+ evidence.interactions.push('Preset loading clears cards and disables play; rapid switches retain final captured preset');
+ await page.selectOption('#matchMode','SKELETON');if(await page.locator('.candidate').count()!==3)throw Error('Display mode changed recommendations');
+ await page.selectOption('#matchMode','FULL');await page.click('[data-detail="1"]');const downloadPromise=page.waitForEvent('download');await page.click('[data-save="1"]');const dl=await downloadPromise;if(!dl.suggestedFilename().endsWith('-full.mid'))throw Error('Playback scope changed export scope');
+ const expected=await page.evaluate(()=>window.PHASE7_DATA[0].fullBase64);if(fs.readFileSync(await dl.path()).toString('base64')!==expected)throw Error('Downloaded full MIDI differs from recording');
+ await page.selectOption('#exportScope','suffix');const suffixDownload=page.waitForEvent('download');await page.click('[data-save="1"]');const sd=await suffixDownload;const suffixExpected=await page.evaluate(()=>window.PHASE7_DATA[0].suffixBase64);if(fs.readFileSync(await sd.path()).toString('base64')!==suffixExpected)throw Error('Downloaded suffix MIDI differs from recording');
+ evidence.interactions.push('FULL/SKELETON is display-only; playback scope does not change export default; full/suffix .mid downloads equal recorded bytes');
+ await open('A','drag');await page.locator('[data-drag="1"]').dragTo(page.locator('#dropDemo'));if(!(await page.locator('#dropResult').textContent()).includes('已接收'))throw Error('Prototype drag failed');
+ evidence.interactions.push('Separate MIDI handle reaches internal prototype receiver; OS/Cubase drag is not tested');
+ if(errors.length)throw Error(errors.join('\n'));
+ fs.writeFileSync(path.join(__dirname,'verification.json'),JSON.stringify(evidence,null,2));
+ console.log(JSON.stringify({screens:evidence.screens.length,layouts:evidence.layouts.length,interactions:evidence.interactions,errors}));await browser.close();
+})().catch(e=>{console.error(e);process.exit(1);});

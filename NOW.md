@@ -12,7 +12,21 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 ## 当前接续状态
 
-2026-10-13：Phase 5 / dev.6 代码构建提交 `3a582e4`。新增默认关闭的 Abstract 方向性扩展和弦匹配，改善真实 Factory V4_B11 的简单输入召回；修复 UserLibrary 并发首次初始化，保持 Factory 确定性编译。默认 OFF、HF-ON、Abstract-ON 三模式各 CTest 33/33、Validator 47/47、V4 专项13,048、隔离候选专项41,105通过；原1440矩阵哈希不变。最终Phase5专项8,361检查，OFF同步首写20/20、隔离安装21/21通过。完整对照、性能、历史核销及边界见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)。
+2026-10-16：Phase 7 UI 设计评审交付。源码基线 `66d7f0713b31f0e5180abf97d14d5a2b9dfc51ac` 已通过代理读回 GitHub 开发分支核实；隔离分支 `design/phase7-ui-20261016` 的目录关系见 [MAP](MAP.md)。原开发工作区的未提交文档改动保留原样。
+
+- UI 审计、功能迁移、创作流程、视觉交互规范、BPM 可行性和正式工作包：[Phase 7 设计报告](design/phase7/README.md)。
+- [直接打开 A/B 原型](design/phase7/index.html)，或查看报告中的 15 张 PNG。采用真实 B08 录制推荐和 MIDI；原型不连接宿主或真实用户曲库。
+- 本轮实际验证：A/B × 900×640（现最小窗口）、900×740、1440×1100 × 100/125/150%，18 组合通过；交互、试听/导出隔离、加载门禁、MIDI 下载和内部拖动通过。[原始结果](design/phase7/verification.json) 属浏览器离屏证据，不代替 VSTGUI/Cubase。
+- 插件仍为既有 `0.10.0-dev.7` / BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`；核心算法、Factory V4、User Library、Schema 和正式 UI 未改。本轮没有构建、安装、发布或真实 Cubase 验收。
+- 独立试听 BPM 可局部实现；建议先停止改速再重播。真正暂停、无缝变速、多实例并行发声仍需额外设计，详见报告。
+
+下一步：等待用户选择 **A / B / 指定混合方案**，再执行正式 VSTGUI 重构。主代理建议 A 默认，也可采用 B 的大字号与 48px 主控件；建议尚未代替用户批准。
+
+本轮设计成果同步至设计分支及 `development/phase5-20261013`；实际结果以最终 Git 远端读回为准。原 `HarmonyContinuation-release` 的本地分支和未提交文件不强制更新，接续使用设计工作树或从远端核对后再合并本地文档。
+
+## 历史工程摘要
+
+Phase 5 的源码构建身份为 `3a582e4` / dev.6；完整验证、交付与历史核销见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)。
 
 2026-10-14：Phase 5.1 离线诊断 713/713 通过（R02 200、音乐/映射 513），UserLibrary 定向回归 283 checks 通过。增补仅涉及测试与文档，production plugin 未改；BuildCommit/BuildID 仍为 `3a582e4` / `0.10.0-dev.6`。范围、证据与限制见 [Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Cubase 验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。
 
@@ -22,7 +36,7 @@ dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细
 
 ## Phase 6：当前验收与交付状态
 
-本 checkout 当前分支名仍为 `development/phase5-20261013`；Phase 6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。以 Phase 6 报告记录的构建、测试和最终交付证据核对当前 HEAD 与包身份。路径映射见 [MAP](MAP.md)。
+Phase 6 已交付源码的开发分支名为 `development/phase5-20261013`；插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。当前工作树、分支与构建身份分别核实，路径映射见 [MAP](MAP.md)。
 
 Phase 6 的真实 Cubase 验收尚未完成；R02 Cubase 根因仍 UNKNOWN。请按 [Phase 6 Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 集中核对版本/Build ID、Factory、三种模式、R01/R02、拍号、Preview/MIDI、保存重开、User Library 和诊断导出。模拟宿主不代替真实 Cubase。Factory V4 SHA-256 为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；V5 不在插件内启用，隔离 MIDI 只作听评。运行时模式重开后为 Legacy，Phase 3A 保持 OFF。最终完整 CTest 34/34、Validator 47/47、隔离安装生命周期 21 checks 通过；Setup SHA 与全部交付证明见综合报告及校验清单。正式发布未授权、未执行。
 
