@@ -322,5 +322,9 @@
   "color.whyMissingTiming": "; OPEN or missing timing prevents a whole-path mean or time trend.",
   "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration.",
   "whyV4.bass": "Preserves the specified bass notes.",
-  "whyV4.pitchSet": "Preserves the explicitly defined chord tones."
+  "whyV4.pitchSet": "Preserves the explicitly defined chord tones.",
+  "key.searchAuto": "Auto explores multiple keys; the top bar shows the leading analysis.",
+  "key.searchFixed": "Fixed key: search only in",
+  "key.match": "Key used by this recommendation:",
+  "key.alternatives": "Other key interpretations of the same music"
 }

@@ -101,9 +101,13 @@ int main() {
     const auto borrowedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Fm","start":4,"duration":4},{"name":"G","start":8}])");
     const auto borrowedSet = recommend(borrowedInput, alteredLoop);
     const auto* borrowedPath = findSuffix(borrowedSet, "Dm", "Dm");
-    check(borrowedPath && borrowedPath->intent == PhraseIntent::Develop &&
-          borrowedPath->cadence == CadenceType::None,
-          "changed structural quality does not inherit the prototype loop claim");
+    check(borrowedPath && borrowedPath->intent == PhraseIntent::Loop &&
+          borrowedPath->cadence == CadenceType::LoopClosure,
+          "internal borrowed iv preserves unchanged loop boundaries");
+    const auto changedStart = progression(R"([{"name":"Cm","start":0,"duration":4},{"name":"F","start":4,"duration":4},{"name":"G","start":8}])");
+    const auto changedStartSet=recommend(changedStart,alteredLoop);
+    check(changedStartSet.groups[2].empty(),
+          "a changed cycle boundary does not inherit the loop claim");
     const auto completeLoop = templates(R"([{"id":"complete_loop","mode":"major","sequence":"I vi IV V","intent":"loop","cadence":"loop_closure","loopable":true}])");
     const auto completedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4,"duration":4},{"name":"F","start":8,"duration":4},{"name":"G","start":12}])");
     const auto nextRound = recommend(completedInput, completeLoop);
@@ -199,6 +203,24 @@ int main() {
     auto dedup = templates(R"([{"id":"x","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"},{"id":"y","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"},{"id":"z","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"}])");
     const auto merged = recommend(a, dedup);
     check(merged.groups[0].size() == 1 && merged.groups[0][0].supportCount == 3, "K dedup support");
+    auto sameMusic=merged.groups[0][0];sameMusic.key={PitchClass::G,Mode::Major};
+    sameMusic.intent=PhraseIntent::Develop;sameMusic.cadence=CadenceType::None;
+    check(continuationMusicFingerprint(sameMusic)==continuationMusicFingerprint(merged.groups[0][0]),
+          "musical identity excludes explanatory key intent and cadence");
+    sameMusic.continuation[0].durationQN+=0.125;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "different MIDI timing remains distinct");
+    sameMusic=merged.groups[0][0];ChordEvent differentBass;differentBass.name="G/B";
+    sameMusic.continuation[0].harmonicData=differentBass;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "same chord text with different performed bass remains distinct");
+    auto crossIntent=dedup;crossIntent.resize(2);crossIntent[1].intent=PhraseIntent::Develop;
+    crossIntent[1].cadence=CadenceType::None;
+    const auto crossMerged=recommend(a,crossIntent),singleSource=recommend(a,{crossIntent[0]});
+    std::size_t musicalCards{};for(const auto& group:crossMerged.groups)musicalCards+=group.size();
+    check(musicalCards==1&&crossMerged.groups[0][0].supportCount==2&&
+          std::abs(crossMerged.groups[0][0].rankingScore-singleSource.groups[0][0].rankingScore)<0.001f,
+          "cross-intent merge keeps winner score and unique provenance without double reward");
     auto styled = templates(R"([{"id":"pop","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic","styles":"pop:1"},{"id":"rock","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic","styles":"rock:1"}])");
     const auto untagged = templates(R"([{"id":"untagged_exact","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"}])");
     const auto untaggedPop = recommend(a, untagged, {Style::Pop, {}});

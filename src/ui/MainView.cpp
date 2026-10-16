@@ -2155,6 +2155,14 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         std::vector<std::string> path;for(const auto& chord:c.continuation)path.push_back(chord.label);
         addPath(t("mode.continue"),path);
+        paragraph(state_.forcedKey?t("key.searchFixed")+" "+formatKey(*state_.forcedKey):t("key.searchAuto"));
+        add(t("key.match")+" "+formatKey(c.key),muted);
+        std::vector<std::string> otherKeys;
+        for(const auto& source:matches_)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),source.templateId)!=c.supportingTemplates.end()) {
+            const auto key=formatKey(source.key);
+            if(key!=formatKey(c.key)&&std::find(otherKeys.begin(),otherKeys.end(),key)==otherKeys.end())otherKeys.push_back(key);
+        }
+        if(!otherKeys.empty())addPath(t("key.alternatives"),otherKeys);
         auto functional=functionalWhy(completion,state_.locale);
         if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
         const auto explanation=explainWhy(functional,hint,state_.locale,colorPreference_,reason,promoted);
@@ -2196,6 +2204,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
             std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
             add(t("inspector.sources")+"  "+sources,muted);
+            for(const auto& source:matches_)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),source.templateId)!=c.supportingTemplates.end())
+                add(source.templateId+" · "+formatKey(source.key),muted);
             if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
                 const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
                 const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");

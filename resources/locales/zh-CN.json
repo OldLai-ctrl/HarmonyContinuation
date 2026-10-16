@@ -322,5 +322,9 @@
   "color.whyMissingTiming": "；存在 OPEN 或缺失时值，不能判断整段平均温度及时间趋势。",
   "color.staticRelease": "末次连接的自身张力有所降低，这不依赖未知时值。",
   "whyV4.bass": "保留此路线指定的低音。",
-  "whyV4.pitchSet": "保留此路线明确定义的和弦音。"
+  "whyV4.pitchSet": "保留此路线明确定义的和弦音。",
+  "key.searchAuto": "自动分析：探索多种调性；顶部调性是分析首选。",
+  "key.searchFixed": "固定调性：只按此调性检索：",
+  "key.match": "此推荐采用的调性：",
+  "key.alternatives": "相同音乐的其他调性解释"
 }

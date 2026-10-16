@@ -59,7 +59,7 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     const auto shown=presentationIndices(set,{});
     for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
         const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
-          <<" score="<<c.rankingScore<<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
+          <<" key="<<formatKey(c.key)<<" score="<<c.rankingScore<<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
           <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
           // Show More lists every retained worker candidate (MainView), without
           // the default presentation's score/diversity/path filtering.
@@ -127,13 +127,7 @@ std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const st
 }
 namespace {
 bool sameContinuationPath(const ContinuationCandidate& a,const ContinuationCandidate& b) {
-    if(a.suggestedCurrentChordDurationQN!=b.suggestedCurrentChordDurationQN||
-       a.continuation.size()!=b.continuation.size())return false;
-    for(std::size_t i=0;i<a.continuation.size();++i) {
-        const auto& x=a.continuation[i];const auto& y=b.continuation[i];
-        if(x.label!=y.label||x.quality!=y.quality||x.durationQN!=y.durationQN)return false;
-    }
-    return true;
+    return continuationMusicFingerprint(a)==continuationMusicFingerprint(b);
 }
 }
 RecommendationPresentation presentationIndices(const RecommendationSet& set,
@@ -164,9 +158,6 @@ RecommendationPresentation presentationIndices(const RecommendationSet& set,
             shown[group].push_back(index);
             if(shown[group].size()>=policy.maxPerGroup)break;
         }
-        // Keep one valid result when a group has no distinct alternative.
-        if(shown[group].empty()&&!eligible.empty()&&policy.maxPerGroup>0)
-            shown[group].push_back(eligible.front());
     }
     return shown;
 }

@@ -65,6 +65,8 @@ struct RecommendationRequest {
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
 };
+// Output identity shared by ranking and presentation; omits explanatory key/intent.
+std::string continuationMusicFingerprint(const ContinuationCandidate&);
 struct DiminishedInsertionDiagnostic {
     TemplateID templateId;
     bool singleInsertion{}, reliableAlignment{}, diminished{}, chromaticMotion{};

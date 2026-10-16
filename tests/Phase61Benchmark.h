@@ -187,6 +187,76 @@ bool phase61HasTemplate(const ContinuationCandidate& candidate,const TemplateID&
         std::find(candidate.supportingTemplates.begin(),candidate.supportingTemplates.end(),id)!=candidate.supportingTemplates.end();
 }
 
+int runDev9Consistency(const std::filesystem::path& out,const std::filesystem::path& factoryPath,bool strict) {
+    std::filesystem::create_directories(out);
+    std::ofstream log(out/"consistency.txt");
+    plugin::RecommendationWorker worker(factoryPath,out/"isolated-user.db",out/"isolated-factory-store");
+    int duplicates{};
+    for(int test=0;test<8;++test) {
+        const auto p=test==0?phrase({"Am","G#dim","G","D/F#"},{4,4,4,4},true):
+            test<5?phrase({"F","G","Am"},{4,4,4},true):
+            test<7?phrase({"C","Fm","G"},{2,2,2},true):phrase({"C","G","Am"},{4,4,4},true);
+        AnalysisContext ctx;
+        if(test==4)ctx.forcedKey=KeySignature{PitchClass::A,Mode::Minor};
+        if(test==6)ctx.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+        const auto preset=test==2?plugin::DevelopmentAlgorithmPreset::HarmonyFirst:
+            test==3?plugin::DevelopmentAlgorithmPreset::Abstract:plugin::DevelopmentAlgorithmPreset::Legacy;
+        worker.submitPreset(p,ctx,preset,{},false,test+1);
+        const auto r=wait(worker);const auto& rec=r.recommendations;
+        require(r.factoryVersion==4&&r.factoryCount==657,"dev9 consistency frozen Factory");
+        require(r.algorithmPreset==preset&&rec.retrievalTimingMode==plugin::developmentContext(ctx,preset).retrievalTimingMode&&
+            rec.abstractChordCompatibility==(preset==plugin::DevelopmentAlgorithmPreset::Abstract),"actual preset dispatch");
+        const auto defaults=session::presentationIndices(rec,{});
+        log<<"\nCASE "<<test<<" input="<<phase61InputPath(p)<<" preset="<<plugin::algorithmPresetName(preset)
+            <<" forced="<<(ctx.forcedKey?formatKey(*ctx.forcedKey):"AUTO")<<" selected="<<formatKey(r.analysis.selectedKey->key)<<'\n';
+        for(const auto& k:r.analysis.keyCandidates)if(k.confidence>.05f)
+            log<<"KEY "<<formatKey(k.key)<<" score="<<k.score<<" confidence="<<k.confidence<<'\n';
+        std::vector<std::string> midiOutputs;
+        bool classic{},completeLoop{},foreignColor{},dmLoop{};
+        for(std::size_t g=0;g<4;++g)for(std::size_t n=0;n<rec.groups[g].size();++n) {
+            const auto& c=rec.groups[g][n];
+            const auto visible=[&](const auto& indices){return std::find(indices[g].begin(),indices[g].end(),n)!=indices[g].end();};
+            log<<"CARD "<<intentName(c.intent)<<" rank="<<n+1<<" default="<<visible(defaults)<<" more=1"
+                <<" primary="<<c.primaryTemplate<<" key="<<formatKey(c.key)<<" score="<<c.rankingScore
+                <<" hold="<<c.suggestedCurrentChordDurationQN.value_or(-1.)<<" cadence="<<cadenceName(c.cadence)
+                <<" support="<<c.supportCount<<" suffix="<<phase61ChordPath(c.continuation)<<" sources=";
+            for(const auto& id:c.supportingTemplates)log<<id<<',';log<<'\n';
+            if(ctx.forcedKey)require(c.key.tonic==ctx.forcedKey->tonic&&c.key.mode==ctx.forcedKey->mode,"fixed key reaches realization");
+            if(test==0&&c.continuation.size()==1&&c.continuation.front().label=="Em") {
+                if(strict)require(c.supportCount==6&&c.rankingScore<66.f,"merged provenance does not add another support bonus");
+                midi::CandidateExportContext ec;ec.imported=imported(p);ec.tempo=120.;ec.meter={4,4};
+                ec.mode=midi::ArrangementMode::VoiceLed;ec.scope=midi::ExportScope::FullPhrase;ec.key=c.key;
+                const auto midi=midi::candidatePayload(ec,c);require(bool(midi),"actual Em MIDI export");
+                const auto decoded=midi::readFromMemory(midi.payload.smfBytes);require(bool(decoded),"Em MIDI readback");
+                std::ostringstream notes;
+                for(const auto& note:decoded.file.notes)notes<<note.pitch<<'@'<<note.startQN<<'/'<<note.durationQN
+                    <<':'<<note.velocity<<':'<<note.channel<<',';
+                log<<"MIDI "<<notes.str()<<'\n';
+                // Key metadata may differ; compare the rendered note events and times.
+                if(std::find(midiOutputs.begin(),midiOutputs.end(),notes.str())!=midiOutputs.end())++duplicates;
+                midiOutputs.push_back(notes.str());
+            }
+            if(g==3&&(c.key.tonic!=PitchClass::A||c.key.mode!=Mode::Minor))foreignColor=true;
+            if(phase61TargetSuffix(c)&&visible(defaults))classic=true;
+            if(c.intent==PhraseIntent::Loop&&c.continuation.size()==1&&c.continuation[0].label=="F"&&visible(defaults))completeLoop=true;
+            if(c.intent==PhraseIntent::Loop&&c.continuation.size()==1&&c.continuation[0].label=="Dm"&&visible(defaults))dmLoop=true;
+        }
+        if(test>0&&test<4)require(foreignColor,"Auto Color includes another matching key");
+        if(test==4)require(rec.groups[3].empty(),"fixed A minor Color difference is accounted for");
+        if(test==7)require(classic&&completeLoop,"classic continuation and F loop completion remain visible");
+        if(strict&&(test==5||test==6))require(dmLoop,"borrowed iv keeps valid Dm-to-C loop boundary");
+        if(test==5||test==6)for(const auto& m:rec.matches)if(m.templateId=="V3_CYCLE_016") {
+            log<<"DM_TRACE key="<<formatKey(m.key)<<" disposition="<<m.disposition<<" match="<<m.similarity
+                <<" ranking="<<m.candidateRankingScore<<" eligibility="<<m.candidateEligibilityScore<<'\n';
+            for(const auto& s:m.alignmentTrace)log<<alignmentOpName(s.operation)<<" q="<<(s.queryIndex?std::to_string(*s.queryIndex):"-")
+                <<" t="<<(s.templateIndex?std::to_string(*s.templateIndex):"-")<<" reasons="<<reasonNames(s.reasons)<<'\n';
+        }
+    }
+    log<<"duplicateMusic="<<duplicates<<'\n';log.flush();require(bool(log),"consistency evidence written");
+    if(strict)require(duplicates==0,"same actual Em MIDI must occupy only one recommendation");
+    std::cout<<"dev9 consistency cases=8 duplicateMusic="<<duplicates<<'\n';return 0;
+}
+
 int runPhase62(const std::filesystem::path& out,const std::filesystem::path& factoryPath,bool strict) {
     std::filesystem::create_directories(out);
     std::ofstream log(out/"focused.txt");
@@ -235,13 +305,13 @@ int runPhase62(const std::filesystem::path& out,const std::filesystem::path& fac
                 }
                 if(path=="Em F G C"&&visible)classic=true;
                 if(path=="C G Am F"&&c.intent==PhraseIntent::Loop&&visible)cycle=true;
-                if(test==3&&path=="Dm") {dm=true;if(c.intent==PhraseIntent::Loop)++classificationFailures;}
+                if(test==3&&path=="Dm") {dm=c.intent==PhraseIntent::Loop;}
             }
             if(test==0)require(std::all_of(foundTargets.begin(),foundTargets.end(),[](bool found){return found;}),
                 "Phase62 retains each of the three actual R01 routes");
             if(test==1)require(classic,"Phase62 C-G-Am to Em-F-G-C remains default-visible");
             if(test==2)require(cycle,"Phase62 complete 1564 loop still returns one full next round");
-            if(test==3)require(dm,"Phase62 C-Fm-G has the actual Dm route");
+            if(test==3)require(dm,"Phase62 internal borrowed iv preserves the Dm loop route");
         }
     }
     log<<"loopClassificationFailures="<<classificationFailures<<'\n';log.flush();

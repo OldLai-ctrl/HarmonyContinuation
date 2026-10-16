@@ -1,6 +1,7 @@
 #include "ContinuationEngine.h"
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <map>
 #include <numeric>
 #include <sstream>
@@ -71,9 +72,9 @@ ChordQuality harmonicCore(ChordQuality quality) {
 bool preservesLoopContext(const KeyInterpretation& input, const MatchResult& match,
                           const ProgressionTemplate& item) {
     // A catalogue loop certifies its own cycle, including the wrap boundary.
-    // An inserted/deleted chord or a changed harmonic core creates a different
-    // cycle. Keep that route as development rather than claiming it will loop.
-    // Extensions may retain the same core; no tonic ending or V-I is required.
+    // Keep both original cycle boundaries. An internal, recognized borrowed
+    // major/minor variant may retain the loop; a gap or changed boundary cannot
+    // inherit that evidence. No tonic ending or V-I is required.
     std::size_t paired{};
     for (const auto& step : match.alignmentTrace) {
         if (!step.queryIndex || !step.templateIndex ||
@@ -84,8 +85,14 @@ bool preservesLoopContext(const KeyInterpretation& input, const MatchResult& mat
         if (!actual.degree || !expected.degree ||
             actual.degree->degree != expected.degree->degree ||
             actual.degree->alteration != expected.degree->alteration ||
-            actual.quality == ChordQuality::Unknown ||
-            harmonicCore(actual.quality) != harmonicCore(expected.quality)) return false;
+            actual.quality == ChordQuality::Unknown) return false;
+        if (harmonicCore(actual.quality) != harmonicCore(expected.quality)) {
+            const auto a=harmonicCore(actual.quality),b=harmonicCore(expected.quality);
+            const bool borrowedCore=(a==ChordQuality::Major&&b==ChordQuality::Minor)||
+                                    (a==ChordQuality::Minor&&b==ChordQuality::Major);
+            if (*step.queryIndex==0 || *step.queryIndex+1==input.full.size() || !borrowedCore ||
+                !hasRole(actual.roles,Role::Borrowed) || !hasReason(step.reasons,MatchReason::BorrowedVariant)) return false;
+        }
         ++paired;
     }
     return paired == input.full.size();
@@ -118,6 +125,22 @@ float rhythmNeutralEligibility(const RecommendationSubScores& s, const Recommend
         w.prior*s.prior) / weights;
 }
 } // namespace
+
+std::string continuationMusicFingerprint(const ContinuationCandidate& candidate) {
+    std::ostringstream out;
+    out << std::setprecision(17);
+    const auto hold=candidate.suggestedCurrentChordDurationQN;
+    if(hold)out<<*hold;else out<<'?';
+    for(const auto& event:candidate.continuation) {
+        const auto chord=event.harmonicData?chordPitches(*event.harmonicData):chordPitches(event.label,event.quality);
+        // The voicer uses root, bass, pitch mask, quality priority and exact-mask
+        // status. Keep all of them, plus exact timing; spelling/key/intent/cadence
+        // are explanations, not additional audible outputs.
+        out<<'|'<<chord.root<<':'<<chord.bass<<':'<<chord.intervals<<':'<<int(chord.quality)
+           <<':'<<chord.exactIntervals<<'@'<<event.durationQN;
+    }
+    return out.str();
+}
 
 RhythmScaleEstimate estimateRhythmScale(const MatchResult& match, const MatchQuery& query,
                                         const ProgressionTemplate& item) {
@@ -530,6 +553,24 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         } else {mark(candidate,"minimum_score");
         }
     }
+    // Merge accepted musical outputs before diversity and per-group limits, so
+    // duplicates cannot consume More slots. Scores already include support:
+    // retain the winning score and merge provenance without another bonus.
+    std::map<std::string,ContinuationCandidate> music;
+    for(auto& group:result.groups) {
+        for(auto& candidate:group) {
+            auto [it,inserted]=music.try_emplace(continuationMusicFingerprint(candidate),std::move(candidate));
+            if(inserted)continue;
+            auto sources=it->second.supportingTemplates;
+            for(const auto& id:candidate.supportingTemplates)
+                if(std::find(sources.begin(),sources.end(),id)==sources.end())sources.push_back(id);
+            if(higherRank(candidate,it->second))it->second=std::move(candidate);
+            it->second.supportingTemplates=std::move(sources);
+            it->second.supportCount=static_cast<int>(it->second.supportingTemplates.size());
+        }
+        group.clear();
+    }
+    for(auto& [identity,candidate]:music)result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
     for (auto& group : result.groups) {
         std::sort(group.begin(), group.end(), higherRank);
         std::vector<ContinuationCandidate> diverse;

@@ -288,8 +288,13 @@ int main() {
         const auto presented=session::presentationIndices(display,presentationPolicy);
         check(presented[0]==std::vector<std::size_t>({0,2}),"same-group exact path uses one card");
         check(presented[1]==std::vector<std::size_t>({1}),"cross-group duplicate yields to alternative");
-        check(presented[2]==std::vector<std::size_t>({0}),"group without alternative stays visible");
+        check(presented[2].empty(),"a duplicate does not occupy another group without an alternative");
         check(presented[3]==std::vector<std::size_t>({0}),"similar path remains distinct");
+        ChordEvent extraTone;extraTone.name="C";extraTone.extensions.mask="0x891";
+        display.groups[0][1].continuation[0].harmonicData=extraTone;
+        const auto differentTones=session::presentationIndices(display,presentationPolicy);
+        check(differentTones[0]==std::vector<std::size_t>({0,1}),
+              "same displayed name with different actual tones stays visible");
         const auto query=makeMatchQuery(a.chords);
         const auto rec=recommendContinuations(query,index,{},weights);
         const ContinuationCandidate* choice{};
