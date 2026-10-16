@@ -172,11 +172,14 @@
   ,"completion.dominantTonic": "Dominant to tonic completes the resolution"
   ,"completion.stableTonic": "Ends on a stable tonic"
   ,"completion.phraseReturn": "Returns to the phrase beginning"
-  ,"completion.loopClosure": "Forms a clear loop connection"
+  ,"completion.loopClosure": "Completes the library loop segment"
   ,"completion.developedPath": "Opens a further development path"
   ,"completion.functionalPivot": "Creates a functional turn"
   ,"completion.shortDevelopment": "Development path is short"
   ,"completion.audibleColor": "Adds audible harmonic color"
+  ,"completion.borrowedColor": "Borrows from the parallel key"
+  ,"completion.secondaryColor": "Uses secondary dominant or leading-tone harmony"
+  ,"completion.extendedColor": "Adds seventh or suspended harmony"
   ,"completion.noEvidence": "Limited evidence for the chosen intent"
   ,"voice.inversionImprovesBass": "Inversion smooths the bass connection"
   ,"voice.smoother": "Smoother voice connection"
@@ -299,11 +302,14 @@
   "whyV2.completion.dominantTonic": "This path resolves from dominant to tonic, providing closure.",
   "whyV2.completion.stableTonic": "This path ends on the tonic, closing the current phrase.",
   "whyV2.completion.phraseReturn": "This path returns to the opening, helping the phrase loop.",
-  "whyV2.completion.loopClosure": "This path connects its ending back to the opening.",
+  "whyV2.completion.loopClosure": "This continuation completes the library loop segment; audition two rounds to compare the return to the opening.",
   "whyV2.completion.developedPath": "This complete path develops the current phrase.",
   "whyV2.completion.functionalPivot": "This path changes harmonic direction to support further development.",
   "whyV2.completion.shortDevelopment": "This path offers a short continuation.",
-  "whyV2.completion.audibleColor": "This path varies the phrase through its existing color harmony treatment.",
+  "whyV2.completion.audibleColor": "The continuation uses altered, diminished, or augmented harmony to change the harmonic color.",
+  "whyV2.completion.borrowedColor": "The continuation borrows chords from the parallel key to change the harmonic color.",
+  "whyV2.completion.secondaryColor": "The continuation uses secondary dominant or leading-tone harmony to point temporarily toward another chord.",
+  "whyV2.completion.extendedColor": "The continuation uses seventh or suspended chords to add color within the harmony.",
   "whyV2.completion.noEvidence": "This option is available for comparison; evidence for functional closure is limited.",
   "colorSort.labelShort": "Color Pref.",
   "whyV2.details": "Details",

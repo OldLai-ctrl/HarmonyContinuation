@@ -172,11 +172,14 @@
   ,"completion.dominantTonic": "属到主，收束完整"
   ,"completion.stableTonic": "落在稳定主和弦"
   ,"completion.phraseReturn": "回到乐句开头，循环闭合"
-  ,"completion.loopClosure": "形成明确的循环连接"
+  ,"completion.loopClosure": "补足曲库中的循环片段"
   ,"completion.developedPath": "形成后续发展路径"
   ,"completion.functionalPivot": "形成明确的功能转向"
   ,"completion.shortDevelopment": "发展方向较短"
   ,"completion.audibleColor": "产生可辨认的和声色彩"
+  ,"completion.borrowedColor": "借用平行调和弦"
+  ,"completion.secondaryColor": "副属或副导和弦转向"
+  ,"completion.extendedColor": "七和弦或挂留增加色彩"
   ,"completion.noEvidence": "意图完成证据较弱"
   ,"voice.inversionImprovesBass": "转位改善低音连接"
   ,"voice.smoother": "整体声部连接更顺"
@@ -299,11 +302,14 @@
   "whyV2.completion.dominantTonic": "这条进行通过属和弦解决到主和弦，形成收束。",
   "whyV2.completion.stableTonic": "这条进行落在主和弦，为当前片段提供收束。",
   "whyV2.completion.phraseReturn": "这条进行回到乐句开头，便于循环衔接。",
-  "whyV2.completion.loopClosure": "这条进行形成首尾衔接的循环。",
+  "whyV2.completion.loopClosure": "这条续写补足曲库中的循环片段；连续试听两轮可比较首尾衔接。",
   "whyV2.completion.developedPath": "这条完整进行为当前片段提供后续发展。",
   "whyV2.completion.functionalPivot": "这条进行改变功能走向，连接到新的发展方向。",
   "whyV2.completion.shortDevelopment": "这条进行提供较短的后续发展。",
-  "whyV2.completion.audibleColor": "这条进行通过已有色彩和声处理形成变化。",
+  "whyV2.completion.audibleColor": "后续包含变音、减和弦或增和弦，改变原有和声色彩。",
+  "whyV2.completion.borrowedColor": "后续借用平行调和弦，改变原调内的和声色彩。",
+  "whyV2.completion.secondaryColor": "后续包含副属或副导和弦，暂时指向新的目标和弦。",
+  "whyV2.completion.extendedColor": "后续包含七和弦或挂留和弦，增加和弦内部的色彩。",
   "whyV2.completion.noEvidence": "该方案可供试听比较，目前的功能收束依据有限。",
   "colorSort.labelShort": "色彩排序",
   "whyV2.details": "高级详情",

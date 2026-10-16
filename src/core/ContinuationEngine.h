@@ -18,7 +18,8 @@ struct RecommendationSubScores {
 };
 enum class CompletionReason {
     NoEvidence, DominantTonic, StableTonic, PhraseReturn, LoopClosure,
-    DevelopedPath, FunctionalPivot, ShortDevelopment, AudibleColor
+    DevelopedPath, FunctionalPivot, ShortDevelopment, AudibleColor,
+    BorrowedColor, SecondaryColor, ExtendedColor
 };
 struct IntentCompletionResult {
     float score{}; // diagnostic 0..1, not a probability

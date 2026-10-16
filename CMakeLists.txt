@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.10.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.7" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRERELEASE "dev.8" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_FACTORY_LIBRARY_VERSION 4 CACHE STRING "Factory content version; V4 development candidate")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
