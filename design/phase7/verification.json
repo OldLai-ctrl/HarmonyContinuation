@@ -26,6 +26,132 @@
     {
       "scheme": "A",
       "size": [
+        640,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 508,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 470,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 429,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 588,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 550,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 509,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 508,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 470,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 429,
+      "cards": 3
+    },
+    {
+      "scheme": "A",
+      "size": [
         900,
         640
       ],
@@ -34,7 +160,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 382,
+      "mainHeight": 428,
       "cards": 3
     },
     {
@@ -48,7 +174,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 338,
+      "mainHeight": 390,
       "cards": 3
     },
     {
@@ -62,49 +188,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 266,
-      "cards": 3
-    },
-    {
-      "scheme": "A",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 482,
-      "cards": 3
-    },
-    {
-      "scheme": "A",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1.25,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 438,
-      "cards": 3
-    },
-    {
-      "scheme": "A",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1.5,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 366,
+      "mainHeight": 349,
       "cards": 3
     },
     {
@@ -118,7 +202,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 839,
+      "mainHeight": 888,
       "cards": 3
     },
     {
@@ -132,7 +216,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 787,
+      "mainHeight": 850,
       "cards": 3
     },
     {
@@ -146,7 +230,133 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 734,
+      "mainHeight": 809,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 463,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 378,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 319,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 543,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 458,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 399,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 463,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 413,
+      "cards": 3
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 319,
       "cards": 3
     },
     {
@@ -189,48 +399,6 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 260,
-      "cards": 3
-    },
-    {
-      "scheme": "B",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 482,
-      "cards": 3
-    },
-    {
-      "scheme": "B",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1.25,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 433,
-      "cards": 3
-    },
-    {
-      "scheme": "B",
-      "size": [
-        900,
-        740
-      ],
-      "zoom": 1.5,
-      "bodyOverflow": false,
-      "appOverflow": false,
-      "mainOverflow": false,
-      "footerVisible": true,
-      "mainHeight": 360,
       "cards": 3
     },
     {
@@ -279,6 +447,7 @@
   "interactions": [
     "B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible",
     "R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords",
+    "Layout-only five-long-chord-label fixture wraps without horizontal overflow; not a generated music recommendation",
     "Details open; independent selection changes candidate",
     "90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged",
     "Unavailable host reports fallback; no host connection",
@@ -288,9 +457,19 @@
   ],
   "errors": [],
   "cardSize": {
-    "width": 1200,
-    "A2Height": 228,
-    "A3Height": 94,
-    "reductionPercent": 59
+    "window": [
+      800,
+      720
+    ],
+    "columns": 3,
+    "tileWidth": 252,
+    "tileHeight": 161,
+    "A2Height": 224.390625,
+    "A3Baseline": {
+      "commit": "87f40a6",
+      "width": 1125,
+      "height": 94
+    },
+    "areaReductionPercent": 62
   }
 }

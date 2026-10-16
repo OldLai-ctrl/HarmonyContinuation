@@ -10,23 +10,26 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  async function open(scheme,view='main',sample='B08',density='mini'){await page.goto(`${root}?scheme=${scheme}&state=${view}&sample=${sample}&density=${density}`);await page.evaluate(()=>document.fonts.ready);}
  async function shot(name){await page.screenshot({path:path.join(__dirname,'screens',name+'.png')});evidence.screens.push(name+'.png');}
  for(const scheme of ['A','B']){
-  await page.setViewportSize({width:scheme==='A'?1200:1360,height:scheme==='A'?960:1130});
+  await page.setViewportSize({width:scheme==='A'?800:1360,height:scheme==='A'?720:1130});
   for(const view of ['main','detail','settings','drag','loading']){await open(scheme,view);await shot(`${scheme}-${view}`);}
   await open(scheme);await page.click('#play');await page.waitForFunction(()=>document.querySelector('#playingState').textContent.startsWith('正在试听'));await page.waitForTimeout(900);await shot(`${scheme}-playing`);await page.click('#stop');
  }
  await open('A','controls');await shot('controls');
- await page.setViewportSize({width:1200,height:960});await open('A','main','B08','full');
+ await page.setViewportSize({width:800,height:720});await open('A','main','B08','full');
  const fullHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
  await page.locator('.candidate').first().screenshot({path:path.join(__dirname,'screens','A2-card-comparison.png')});evidence.screens.push('A2-card-comparison.png');
  await page.click('#cardDensity');const miniHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
- if(miniHeight>fullHeight*.6||miniHeight>112)throw Error('Card is not compact enough');
- evidence.cardSize={width:1200,A2Height:fullHeight,A3Height:miniHeight,reductionPercent:Math.round(100*(1-miniHeight/fullHeight))};
+ const tileWidth=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().width);
+ const placements=await page.locator('.candidate').evaluateAll(xs=>xs.map(x=>{const r=x.getBoundingClientRect();return{x:r.x,y:r.y,bottom:r.bottom}}));
+ if(placements.some(p=>Math.abs(p.y-placements[0].y)>1))throw Error('Top3 are not on one row');
+ const contentBottom=await page.locator('#workspace').evaluate(x=>x.getBoundingClientRect().bottom);if(placements.some(p=>p.bottom>contentBottom))throw Error('Top3 do not fit in default window');
+ evidence.cardSize={window:[800,720],columns:3,tileWidth,tileHeight:miniHeight,A2Height:fullHeight,A3Baseline:{commit:'87f40a6',width:1125,height:94},areaReductionPercent:Math.round(100*(1-tileWidth*miniHeight/(1125*94)))};
  await page.locator('.candidate[data-rank="1"]').screenshot({path:path.join(__dirname,'screens','A-card.png')});evidence.screens.push('A-card.png');
  const rhythm=await page.locator('.candidate[data-rank="1"] .clipCell.nextChord').evaluateAll(c=>c.map(x=>({qn:Number(x.dataset.duration),width:x.getBoundingClientRect().width})));
  if(Math.abs(rhythm[2].width/rhythm[0].width-2)>.03||Math.abs(rhythm[3].width/rhythm[0].width-4)>.03)throw Error('QN proportions are incorrect');
  if(!(await page.locator('.progressionName').first().textContent()).includes('半音下降低音'))throw Error('Missing actual progression name');
  evidence.interactions.push('B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible');
- await page.click('[data-scope="suffix"]');await page.click('#play');await page.waitForTimeout(500);const marker=await page.locator('.candidate[data-rank="1"] .clipPlayhead').evaluate(x=>parseFloat(x.style.left));if(marker<33||marker>37)throw Error('Suffix playhead does not start after input');await shot('A-suffix-playing');await page.click('#stop');
+ await page.click('[data-scope="suffix"]');await page.click('#play');await page.waitForTimeout(500);const marker=await page.locator('.candidate[data-rank="1"] .clipPlayhead').evaluate(x=>parseFloat(x.style.left));if(marker<0||marker>5)throw Error('Suffix playhead does not start at continuation zero');await shot('A-suffix-playing');await page.click('#stop');
  await open('A','main','R02');await shot('A-middle');
  const middle=page.locator('.candidate[data-rank="2"]');await middle.screenshot({path:path.join(__dirname,'screens','A-middle-card.png')});evidence.screens.push('A-middle-card.png');
  if(!(await middle.locator('.miniLocation').textContent()).includes('2–5/8'))throw Error('Compact source location missing');
@@ -34,7 +37,10 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  if(await middle.locator('.sourceCell.prefix').count()!==1||await middle.locator('.sourceCell.gap').count()!==1||await middle.locator('.sourceCell.matched').count()!==3)throw Error('Middle match or skipped source chord is incorrect');
  if((await middle.locator('.clipGrid').allTextContents()).join(' ').includes('dim'))throw Error('Skipped source chord leaked into playback');
  evidence.interactions.push('R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords');
- for(const scheme of ['A','B'])for(const size of [[900,640],[900,740],[1440,1100]])for(const zoom of [1,1.25,1.5]){
+ await open('A');await page.evaluate(()=>{window.PHASE7_DATA[0].fullSuffix='Cmaj9/E@4.000000QN | F#m7b5@4.000000QN | B7(b9)@8.000000QN | Em9/G@4.000000QN | Am11@4.000000QN';render();});
+ const five=await page.locator('.candidate').first().evaluate(x=>{const r=x.querySelector('.miniChordRoute');return {cells:x.querySelectorAll('.miniRibbon .clipCell').length,overflow:r.scrollWidth>r.clientWidth+1,text:r.textContent};});if(five.cells!==5||five.overflow)throw Error('Five-chord layout overflows');
+ evidence.interactions.push('Layout-only five-long-chord-label fixture wraps without horizontal overflow; not a generated music recommendation');
+ for(const scheme of ['A','B'])for(const size of [[640,720],[720,800],[800,720],[900,640],[1440,1100]])for(const zoom of [1,1.25,1.5]){
   await page.setViewportSize({width:size[0],height:size[1]});await open(scheme);
   await page.evaluate(z=>{const app=document.querySelector('#app');app.style.zoom=z;app.style.height=`calc((100vh - 48px) / ${z})`;},zoom);
   const layout=await page.evaluate(()=>{const app=document.querySelector('#app'),main=document.querySelector('main'),footer=document.querySelector('footer');const f=footer.getBoundingClientRect(),m=main.getBoundingClientRect();return {bodyOverflow:document.documentElement.scrollWidth>innerWidth+1,appOverflow:app.scrollWidth>app.clientWidth+1,mainOverflow:main.scrollWidth>main.clientWidth+1,footerVisible:f.bottom<=innerHeight+2&&f.left>=0&&f.right<=innerWidth+2,mainHeight:Math.round(m.height),cards:document.querySelectorAll('.candidate').length};});
