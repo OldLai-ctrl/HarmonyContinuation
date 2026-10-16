@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
 | 原开发 checkout | `HarmonyContinuation-release/`；Phase7 开始时为 `development/phase5-20261013`，收尾只读观测为 `development/phase61-20261016` | 存在本轮之外的未提交文档改动，未强制同步或切换该工作树。Phase6 插件身份仍以实际包与既有报告核对，不由当前分支名推断 |
-| Phase 7 设计工作树 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016`，从 `66d7f07` 隔离；产物 `design/phase7/` | A/B 原型与报告同步至设计分支和既有开发分支；原开发目录未提交文档保留。正式 UI 实施等待用户选择，插件包身份不变 |
+| Phase 7 设计工作树 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016`，从 `66d7f07` 隔离；产物 `design/phase7/` | 用户已选A，A2卡片原型与报告同步至设计/既有开发分支；原开发目录并行改动保留，插件包身份不变 |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |

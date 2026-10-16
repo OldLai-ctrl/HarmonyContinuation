@@ -33,3 +33,7 @@ Factory 使用 ProgramData 的不可变版本目录及活动指针，失败可�
 ## D08 完整和弦存储及冻结契约
 
 旧匹配投影无法无损保存 bass/extension，因此采用 additive、事务式 User Schema 2，并保留原 payload 和一次性备份；不重建 user.db。Factory 和快照的冻结格式、重定向规则及降级边界以 [V3 兼容契约](docs/LIBRARY_V3_COMPATIBILITY.md) 为权威说明。新 metadata 只参与保存与 realization，不调分析、匹配成本、排名或声部权重。
+
+## D09 Phase7采用A并保留音乐判断信息
+
+已确认：用户于2026-10-16选择Apple Compact（A），同时要求卡片常驻进行名称、相对时值和输入在来源进行中的匹配位置。来源定位与实际试听/导出片段分层展示，近似匹配、未覆盖和弦和续写起点明确标记，避免把源模板前文或缺口误认为用户输入。详见 [A2设计规格与真实样例](design/phase7/README.md#a2-卡片先判断音乐结构)。该选择确认布局方向；生产VSTGUI、试听BPM和宿主验收的实现状态仍以NOW为准。

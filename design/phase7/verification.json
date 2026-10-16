@@ -14,6 +14,10 @@
     "B-loading.png",
     "B-playing.png",
     "controls.png",
+    "A-card.png",
+    "A-suffix-playing.png",
+    "A-middle.png",
+    "A-middle-card.png",
     "A-small-150.png",
     "B-small-150.png"
   ],
@@ -57,7 +61,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 287,
+      "mainHeight": 266,
       "cards": 3
     },
     {
@@ -99,7 +103,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 387,
+      "mainHeight": 366,
       "cards": 3
     },
     {
@@ -183,7 +187,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 281,
+      "mainHeight": 260,
       "cards": 3
     },
     {
@@ -225,7 +229,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 381,
+      "mainHeight": 360,
       "cards": 3
     },
     {
@@ -272,6 +276,8 @@
     }
   ],
   "interactions": [
+    "B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible",
+    "R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords",
     "Details open; independent selection changes candidate",
     "90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged",
     "Unavailable host reports fallback; no host connection",
