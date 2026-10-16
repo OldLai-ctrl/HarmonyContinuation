@@ -19,6 +19,7 @@
     "A-suffix-playing.png",
     "A-middle.png",
     "A-middle-card.png",
+    "A-wide.png",
     "A-small-150.png",
     "B-small-150.png"
   ],
@@ -111,42 +112,42 @@
       "scheme": "A",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 508,
+      "mainHeight": 628,
       "cards": 3
     },
     {
       "scheme": "A",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1.25,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 470,
+      "mainHeight": 590,
       "cards": 3
     },
     {
       "scheme": "A",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1.5,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 429,
+      "mainHeight": 549,
       "cards": 3
     },
     {
@@ -202,7 +203,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 888,
+      "mainHeight": 843,
       "cards": 3
     },
     {
@@ -216,7 +217,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 850,
+      "mainHeight": 793,
       "cards": 3
     },
     {
@@ -230,7 +231,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 809,
+      "mainHeight": 741,
       "cards": 3
     },
     {
@@ -321,42 +322,42 @@
       "scheme": "B",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 463,
+      "mainHeight": 583,
       "cards": 3
     },
     {
       "scheme": "B",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1.25,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 413,
+      "mainHeight": 533,
       "cards": 3
     },
     {
       "scheme": "B",
       "size": [
         800,
-        720
+        840
       ],
       "zoom": 1.5,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 319,
+      "mainHeight": 439,
       "cards": 3
     },
     {
@@ -447,7 +448,7 @@
   "interactions": [
     "B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible",
     "R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords",
-    "Layout-only five-long-chord-label fixture wraps without horizontal overflow; not a generated music recommendation",
+    "Layout-only five-long-chord-label fixture retains all five labels and the input block; not a generated music recommendation",
     "Details open; independent selection changes candidate",
     "90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged",
     "Unavailable host reports fallback; no host connection",
@@ -459,17 +460,41 @@
   "cardSize": {
     "window": [
       800,
-      720
+      840
     ],
-    "columns": 3,
-    "tileWidth": 252,
-    "tileHeight": 161,
+    "columns": 1,
+    "cardWidth": 772,
+    "cardHeight": 96.75,
     "A2Height": 224.390625,
     "A3Baseline": {
       "commit": "87f40a6",
       "width": 1125,
       "height": 94
     },
-    "areaReductionPercent": 62
+    "areaReductionPercent": 29
+  },
+  "a3Information": {
+    "name": "半音下降低音完整乐句",
+    "position": "输入位置 1–4/8",
+    "input": true,
+    "boundary": true,
+    "chords": [
+      {
+        "label": "Fm/A♭",
+        "qn": "4"
+      },
+      {
+        "label": "C/G",
+        "qn": "4"
+      },
+      {
+        "label": "G7",
+        "qn": "8"
+      },
+      {
+        "label": "C",
+        "qn": "16"
+      }
+    ]
   }
 }
