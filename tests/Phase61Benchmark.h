@@ -187,6 +187,68 @@ bool phase61HasTemplate(const ContinuationCandidate& candidate,const TemplateID&
         std::find(candidate.supportingTemplates.begin(),candidate.supportingTemplates.end(),id)!=candidate.supportingTemplates.end();
 }
 
+int runPhase62(const std::filesystem::path& out,const std::filesystem::path& factoryPath,bool strict) {
+    std::filesystem::create_directories(out);
+    std::ofstream log(out/"focused.txt");
+    require(bool(log),"Phase62 focused output opens");
+    plugin::RecommendationWorker worker(factoryPath,out/"isolated-user.db",out/"isolated-factory-store");
+    const auto labels=[](const ContinuationCandidate& c) {
+        std::string s;for(const auto& e:c.continuation){if(!s.empty())s+=' ';s+=e.label;}return s;
+    };
+    int classificationFailures{};
+    for(int test=0;test<4;++test) {
+        const auto p=test==0?phrase({"Am","G#dim","G","D/F#"},{4,4,4,4},true):
+            test==1?phrase({"C","G","Am"},{4,4,4},true):
+            test==2?phrase({"C","G","Am","F"},{4,4,4,4},false):
+                    phrase({"C","Fm","G"},{4,4,4},true);
+        for(const auto preset:{plugin::DevelopmentAlgorithmPreset::Legacy,
+                plugin::DevelopmentAlgorithmPreset::HarmonyFirst,plugin::DevelopmentAlgorithmPreset::Abstract}) {
+            if(test!=0&&preset!=plugin::DevelopmentAlgorithmPreset::Legacy)continue;
+            AnalysisContext ctx;
+            if(test!=0){ctx.timeSigNumerator=4;ctx.timeSigDenominator=4;}
+            worker.submitPreset(p,ctx,preset,{},false,static_cast<std::uint64_t>(test+1));
+            const auto r=wait(worker);const auto& rec=r.recommendations;
+            const auto shown=session::presentationIndices(rec,{});
+            log<<"INPUT "<<phase61InputPath(p)<<" preset="<<plugin::algorithmPresetName(preset)
+                <<" selected="<<formatKey(r.analysis.selectedKey->key)<<" FULL="<<r.analysis.full.size()
+                <<" SKELETON="<<r.analysis.skeletonIndices.size()<<'\n';
+            require(r.factoryVersion==4&&r.factoryCount==657,"Phase62 frozen Factory V4/657");
+            for(std::size_t i=0;i<std::min<std::size_t>(5,r.analysis.keyCandidates.size());++i) {
+                const auto& k=r.analysis.keyCandidates[i];log<<"KEY "<<formatKey(k.key)<<" score="<<k.score<<" confidence="<<k.confidence<<'\n';
+            }
+            std::array<bool,3> foundTargets{};bool classic{},cycle{},dm{};
+            for(std::size_t g=0;g<4;++g)for(std::size_t n=0;n<rec.groups[g].size();++n) {
+                const auto& c=rec.groups[g][n];const auto path=labels(c);
+                const bool visible=std::find(shown[g].begin(),shown[g].end(),n)!=shown[g].end();
+                log<<"CARD "<<intentName(c.intent)<<" rank="<<n+1<<" default="<<visible<<" primary="<<c.primaryTemplate
+                    <<" key="<<formatKey(c.key)<<" match="<<c.matchSimilarity<<" score="<<c.rankingScore
+                    <<" cadence="<<cadenceName(c.cadence)<<" suffix="<<path<<'\n';
+                if(test==0&&(path=="G C Em"||path=="C G Em"||path=="Em")) {
+                    foundTargets[path=="G C Em"?0:path=="C G Em"?1:2]=true;
+                    if(c.intent==PhraseIntent::Loop)++classificationFailures;
+                    for(const auto& m:rec.matches)if(m.templateId==c.primaryTemplate) {
+                        log<<"FOCUS rawCost="<<m.rawCost<<" full="<<m.subScores.fullHarmony<<" skeleton="<<m.subScores.skeletonHarmony
+                            <<" cadenceSubscore="<<c.subscores.cadence<<" support="<<c.supportCount<<'\n';
+                        for(const auto& s:m.alignmentTrace)log<<alignmentOpName(s.operation)<<" q="<<(s.queryIndex?std::to_string(*s.queryIndex):"-")
+                            <<" t="<<(s.templateIndex?std::to_string(*s.templateIndex):"-")<<" reasons="<<reasonNames(s.reasons)<<'\n';
+                    }
+                }
+                if(path=="Em F G C"&&visible)classic=true;
+                if(path=="C G Am F"&&c.intent==PhraseIntent::Loop&&visible)cycle=true;
+                if(test==3&&path=="Dm") {dm=true;if(c.intent==PhraseIntent::Loop)++classificationFailures;}
+            }
+            if(test==0)require(std::all_of(foundTargets.begin(),foundTargets.end(),[](bool found){return found;}),
+                "Phase62 retains each of the three actual R01 routes");
+            if(test==1)require(classic,"Phase62 C-G-Am to Em-F-G-C remains default-visible");
+            if(test==2)require(cycle,"Phase62 complete 1564 loop still returns one full next round");
+            if(test==3)require(dm,"Phase62 C-Fm-G has the actual Dm route");
+        }
+    }
+    log<<"loopClassificationFailures="<<classificationFailures<<'\n';log.flush();
+    if(strict)require(classificationFailures==0,"Phase62 approximate structural replacements must not inherit Loop qualification");
+    std::cout<<"Phase62 focused cases=6 loopClassificationFailures="<<classificationFailures<<'\n';return 0;
+}
+
 int runPhase61(const std::filesystem::path& out,const std::filesystem::path& factoryPath,bool strictRequested) {
     std::filesystem::create_directories(out);
     const auto db=library::loadFactory(factoryPath);

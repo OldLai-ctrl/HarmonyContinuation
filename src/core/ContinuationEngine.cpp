@@ -60,6 +60,36 @@ PhraseIntent effectiveIntent(const ProgressionTemplate& item, const std::vector<
         item.cadence == CadenceType::Plagal) return PhraseIntent::Resolve;
     return PhraseIntent::Develop;
 }
+ChordQuality harmonicCore(ChordQuality quality) {
+    switch (quality) {
+        case ChordQuality::Major7: case ChordQuality::Dominant7: return ChordQuality::Major;
+        case ChordQuality::Minor7: return ChordQuality::Minor;
+        case ChordQuality::Diminished7: case ChordQuality::HalfDiminished7: return ChordQuality::Diminished;
+        default: return quality;
+    }
+}
+bool preservesLoopContext(const KeyInterpretation& input, const MatchResult& match,
+                          const ProgressionTemplate& item) {
+    // A catalogue loop certifies its own cycle, including the wrap boundary.
+    // An inserted/deleted chord or a changed harmonic core creates a different
+    // cycle. Keep that route as development rather than claiming it will loop.
+    // Extensions may retain the same core; no tonic ending or V-I is required.
+    std::size_t paired{};
+    for (const auto& step : match.alignmentTrace) {
+        if (!step.queryIndex || !step.templateIndex ||
+            (step.operation != AlignmentOp::Match && step.operation != AlignmentOp::Substitute)) return false;
+        if (*step.queryIndex >= input.full.size() || *step.templateIndex >= item.full.size()) return false;
+        const auto& actual = input.full[*step.queryIndex];
+        const auto& expected = item.full[*step.templateIndex];
+        if (!actual.degree || !expected.degree ||
+            actual.degree->degree != expected.degree->degree ||
+            actual.degree->alteration != expected.degree->alteration ||
+            actual.quality == ChordQuality::Unknown ||
+            harmonicCore(actual.quality) != harmonicCore(expected.quality)) return false;
+        ++paired;
+    }
+    return paired == input.full.size();
+}
 std::size_t groupIndex(PhraseIntent intent) {
     switch (intent) {
         case PhraseIntent::Resolve: return 0; case PhraseIntent::Loop: return 2;
@@ -363,6 +393,10 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         candidate.key = match.key;
         candidate.intent = effectiveIntent(item, suffix);
         candidate.cadence = item.cadence;
+        if (candidate.intent == PhraseIntent::Loop && !preservesLoopContext(*selected, match, item)) {
+            candidate.intent = PhraseIntent::Develop;
+            candidate.cadence = CadenceType::None;
+        }
         candidate.styles = item.styles;
         candidate.matchStart = match.templateMatchStart;
         candidate.matchEnd = match.templateMatchEnd;
@@ -405,7 +439,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         s.skeleton = match.subScores.skeletonHarmony;
         s.style = styleScore(item, request.style, match.rawCost <= 0.00001f);
         s.intent = request.preferredIntent && *request.preferredIntent == candidate.intent ? 1.f : 0.5f;
-        s.cadence = cadenceScore(candidate.intent, item.cadence);
+        s.cadence = cadenceScore(candidate.intent, candidate.cadence);
         s.continuation = clampScore(0.45f + 0.1f * static_cast<float>(std::min<std::size_t>(5, suffix.size())));
         s.prior = item.priorWeight;
         s.rhythm = rhythm.samples >= 2 ? clampScore(0.5f * match.subScores.rhythmSimilarity +

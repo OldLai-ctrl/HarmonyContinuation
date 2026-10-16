@@ -1700,6 +1700,7 @@ int main(int argc,char** argv) {
     if(argc>3&&std::string(argv[3])=="phase5")return runPhase5(out,argv[2]);
     if(argc>3&&std::string(argv[3])=="phase6")return runPhase6(out,argc>2?argv[2]:HC_FACTORY_DB_PATH,argc>4?argv[4]:out/"oracle",argc>5?std::filesystem::path(argv[5]):std::filesystem::path{});
     if(argc>3&&std::string(argv[3])=="phase61")return runPhase61(out,argc>2?std::filesystem::path(argv[2]):std::filesystem::path(HC_FACTORY_DB_PATH),argc>4&&std::string(argv[4])=="strict");
+    if(argc>3&&std::string(argv[3])=="phase62")return runPhase62(out,argv[2],argc>4&&std::string(argv[4])=="strict");
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(db)&&db.templates.size()==657,"Factory V4 baseline");CandidateIndex index(db.templates);
     std::ofstream summary(out/"summary.txt"),trace(out/"candidate-traces.txt"),meters(out/"meters.tsv"),perf(out/"performance.tsv");
     summary<<"SYNTHETIC fixtures from user transcription; no captured Cubase MIDI/XML supplied.\n";

@@ -97,6 +97,13 @@ int main() {
     const auto loopQuery = progression(R"([{"name":"Am","start":0,"duration":4},{"name":"F","start":4}])");
     check(findSuffix(recommend(loopQuery, loop), "C", "G") != nullptr, "G loop wrap");
     check(!recommend(loopQuery, loop).groups[2].empty(), "loop grouping");
+    const auto alteredLoop = templates(R"([{"id":"altered_loop","mode":"major","sequence":"I IV V ii","intent":"loop","cadence":"loop_closure","loopable":true}])");
+    const auto borrowedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Fm","start":4,"duration":4},{"name":"G","start":8}])");
+    const auto borrowedSet = recommend(borrowedInput, alteredLoop);
+    const auto* borrowedPath = findSuffix(borrowedSet, "Dm", "Dm");
+    check(borrowedPath && borrowedPath->intent == PhraseIntent::Develop &&
+          borrowedPath->cadence == CadenceType::None,
+          "changed structural quality does not inherit the prototype loop claim");
     const auto completeLoop = templates(R"([{"id":"complete_loop","mode":"major","sequence":"I vi IV V","intent":"loop","cadence":"loop_closure","loopable":true}])");
     const auto completedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4,"duration":4},{"name":"F","start":8,"duration":4},{"name":"G","start":12}])");
     const auto nextRound = recommend(completedInput, completeLoop);
