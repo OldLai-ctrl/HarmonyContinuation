@@ -14,6 +14,7 @@
     "B-loading.png",
     "B-playing.png",
     "controls.png",
+    "A2-card-comparison.png",
     "A-card.png",
     "A-suffix-playing.png",
     "A-middle.png",
@@ -285,5 +286,11 @@
     "FULL/SKELETON is display-only; playback scope does not change export default; full/suffix .mid downloads equal recorded bytes",
     "Separate MIDI handle reaches internal prototype receiver; OS/Cubase drag is not tested"
   ],
-  "errors": []
+  "errors": [],
+  "cardSize": {
+    "width": 1200,
+    "A2Height": 228,
+    "A3Height": 94,
+    "reductionPercent": 59
+  }
 }

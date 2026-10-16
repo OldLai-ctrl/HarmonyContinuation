@@ -7,25 +7,32 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  const page=await browser.newPage({viewport:{width:1200,height:1000},deviceScaleFactor:1});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));const root=pathToFileURL(path.join(__dirname,'index.html')).href;
  const evidence={renderer:'Playwright / installed Edge, offscreen HTML; not VSTGUI or Cubase',screens:[],layouts:[],interactions:[],errors};
- async function open(scheme,view='main',sample='B08'){await page.goto(`${root}?scheme=${scheme}&state=${view}&sample=${sample}`);await page.evaluate(()=>document.fonts.ready);}
+ async function open(scheme,view='main',sample='B08',density='mini'){await page.goto(`${root}?scheme=${scheme}&state=${view}&sample=${sample}&density=${density}`);await page.evaluate(()=>document.fonts.ready);}
  async function shot(name){await page.screenshot({path:path.join(__dirname,'screens',name+'.png')});evidence.screens.push(name+'.png');}
  for(const scheme of ['A','B']){
-  await page.setViewportSize({width:scheme==='A'?1200:1360,height:scheme==='A'?1320:1480});
+  await page.setViewportSize({width:scheme==='A'?1200:1360,height:scheme==='A'?960:1130});
   for(const view of ['main','detail','settings','drag','loading']){await open(scheme,view);await shot(`${scheme}-${view}`);}
   await open(scheme);await page.click('#play');await page.waitForFunction(()=>document.querySelector('#playingState').textContent.startsWith('正在试听'));await page.waitForTimeout(900);await shot(`${scheme}-playing`);await page.click('#stop');
  }
  await open('A','controls');await shot('controls');
- await page.setViewportSize({width:1280,height:1320});await open('A');
+ await page.setViewportSize({width:1200,height:960});await open('A','main','B08','full');
+ const fullHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
+ await page.locator('.candidate').first().screenshot({path:path.join(__dirname,'screens','A2-card-comparison.png')});evidence.screens.push('A2-card-comparison.png');
+ await page.click('#cardDensity');const miniHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
+ if(miniHeight>fullHeight*.6||miniHeight>112)throw Error('Card is not compact enough');
+ evidence.cardSize={width:1200,A2Height:fullHeight,A3Height:miniHeight,reductionPercent:Math.round(100*(1-miniHeight/fullHeight))};
  await page.locator('.candidate[data-rank="1"]').screenshot({path:path.join(__dirname,'screens','A-card.png')});evidence.screens.push('A-card.png');
- const rhythm=await page.locator('.candidate[data-rank="1"] .clipCell').evaluateAll(c=>c.map(x=>({qn:Number(x.dataset.duration),width:x.getBoundingClientRect().width})));
- if(Math.abs(rhythm[6].width/rhythm[4].width-2)>.03||Math.abs(rhythm[7].width/rhythm[4].width-4)>.03)throw Error('QN proportions are incorrect');
+ const rhythm=await page.locator('.candidate[data-rank="1"] .clipCell.nextChord').evaluateAll(c=>c.map(x=>({qn:Number(x.dataset.duration),width:x.getBoundingClientRect().width})));
+ if(Math.abs(rhythm[2].width/rhythm[0].width-2)>.03||Math.abs(rhythm[3].width/rhythm[0].width-4)>.03)throw Error('QN proportions are incorrect');
  if(!(await page.locator('.progressionName').first().textContent()).includes('半音下降低音'))throw Error('Missing actual progression name');
  evidence.interactions.push('B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible');
  await page.click('[data-scope="suffix"]');await page.click('#play');await page.waitForTimeout(500);const marker=await page.locator('.candidate[data-rank="1"] .clipPlayhead').evaluate(x=>parseFloat(x.style.left));if(marker<33||marker>37)throw Error('Suffix playhead does not start after input');await shot('A-suffix-playing');await page.click('#stop');
  await open('A','main','R02');await shot('A-middle');
  const middle=page.locator('.candidate[data-rank="2"]');await middle.screenshot({path:path.join(__dirname,'screens','A-middle-card.png')});evidence.screens.push('A-middle-card.png');
+ if(!(await middle.locator('.miniLocation').textContent()).includes('2–5/8'))throw Error('Compact source location missing');
+ await page.click('[data-detail="2"]');
  if(await middle.locator('.sourceCell.prefix').count()!==1||await middle.locator('.sourceCell.gap').count()!==1||await middle.locator('.sourceCell.matched').count()!==3)throw Error('Middle match or skipped source chord is incorrect');
- if((await middle.locator('.clipGrid').textContent()).includes('dim'))throw Error('Skipped source chord leaked into playback');
+ if((await middle.locator('.clipGrid').allTextContents()).join(' ').includes('dim'))throw Error('Skipped source chord leaked into playback');
  evidence.interactions.push('R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords');
  for(const scheme of ['A','B'])for(const size of [[900,640],[900,740],[1440,1100]])for(const zoom of [1,1.25,1.5]){
   await page.setViewportSize({width:size[0],height:size[1]});await open(scheme);

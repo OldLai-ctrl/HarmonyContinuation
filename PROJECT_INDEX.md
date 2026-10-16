@@ -6,7 +6,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
 
-Phase 7 UI 入口为 [审计、迁移表与A2图片](design/phase7/README.md) 和 [交互原型](design/phase7/index.html)。用户已选A；A2补齐音乐结构、时值及输入匹配位置。正式插件UI尚未替换。
+Phase7入口为 [审计、迁移表与A3图片](design/phase7/README.md) 和 [交互原型](design/phase7/index.html)。用户已选A；A3精简卡片保留名称、时值与输入定位，完整结构按需展开。正式插件UI尚未替换。
 
 Phase6 接续入口为 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [中文验收](docs/PHASE6_CUBASE_ACCEPTANCE.md)；完整质量分析在交付包 `benchmark/RESULTS_ANALYSIS.md`，验证/交付路径见 MAP，最终门禁和 Setup SHA 以综合报告及包内证明为准。
 
