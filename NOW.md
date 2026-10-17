@@ -1,5 +1,17 @@
 # 当前接续状态
 
+## 本轮工作与下一步
+
+2026-10-17：方案 A 核心推荐决策链修复已完成。独立分支 `development/core-decision-chain-20261017`；生产源码提交 `1c671521603949768eae666656a120b9f56f5f18`，已推送 origin。唯一测试包为 [0.10.0-dev.11 Setup](../HarmonyContinuation-dev11-delivery-20261017/HarmonyContinuation-0.10.0-dev.11-Setup.exe)，BuildCommit `1c67152`；一次 Release 插件构建和一次打包通过，暂存插件与构建字节一致，moduleinfo 与二进制版本/提交一致，Factory V4 / Schema 2 / 657 条。
+
+- 决策链：有限 template–key 解释保留至实化及硬约束；精确音乐聚合保留低音、性质、扩展、精确 QN、OPEN 和按输入锚点归一的实现约束。每条音乐只占一个位置，代表解释来自真实匹配，不拼接 subscores。来源数只作证据，支持分为零。
+- 基础资格固定使用 style/intent/prior=0.5、support=0，门槛 60；保留原权重与三模式节奏尺度。偏好、来源质量、完成度和软旋律适配只排序；多样性只选默认位置。ProductServices 与色彩重排使用显式资格。用途来自实际路径；缺乏充分证据的路线标为探索性，只进入有界 More。
+- 关键对照：C–G–Am 的 Em–F–G–C 在三模式均为默认 Develop 首项；单 F Loop 仍合格，现位于 More。C–G–Am–F 保留完整下一轮；C–Fm–G 的 Dm 在 Auto/固定 C major 仍为默认 Loop。F–G–Am 的原五条 F major Color 均保留，Forced Key 只检索指定调性。Am–G#dim–G–D/F# 的两条近似三和弦路线改为探索性；单 Em 唯一，依据实际 D→Em 作 E minor 模态收束解释，未继承 Loop/Develop。计数与排名变化不构成听感质量结论。
+- 兼容：Session 5 / Snapshot 3 / Factory / UserLibrary / 宿主及音频线程格式与职责保持；Session pin 字符串资源上限由 8 扩至 16 KiB，以容纳完整实现引用。旧引用完整恢复音乐后匹配，缺失实现约束的旧 pin 保持不可用，避免错误绑定；旧 Snapshot 保留原音乐，重算后才获得新推荐。Why/Snapshot 按真实 key 与匹配窗口取代表解释。
+- 必要证据：[8 个定向测试目标](../HarmonyContinuation-core-chain-validation-20261017/checks-final.txt)全部通过；[13 例 worker 集成](../HarmonyContinuation-core-chain-validation-20261017/integration.txt)通过、重复音乐为零，包括实际 Preview、Snapshot、两种配音×三个 MIDI 导出范围的读回，以及有顶声部/事件切分的时间锚点检查。性质检查覆盖复制/重排来源、细小时值/OPEN/低音/扩展、偏好隔离及首选 key 硬约束失败后次解释保留。dev.10 [有限对照](../HarmonyContinuation-core-chain-validation-20261017/before/consistency.txt)与 dev.11 [实际结果](../HarmonyContinuation-core-chain-validation-20261017/after/consistency.txt)保留。算法职责见 [Continuation Engine](docs/CONTINUATION_ENGINE.md)。未重跑完整 CTest、Validator、安装生命周期或全库穷举；安装契约未改。
+
+工程与单包交付已完成；尚未安装或进行真实 Cubase 加载、保存重开和音乐听评。关闭 Cubase 后安装上述 Setup，About 核对 `0.10.0-dev.11 / 1c67152`，使用顶部 Legacy、HarmonyFirst、Abstract 按钮切换；工程重开恢复 Legacy。重点听评经典完整续写、普通循环及借用 iv 回接、D/F#→Em 收束与探索路线。主代理负责算法判断、实现和集中最终复核；Luna 只读取证并提供性质测试补丁。Phase 7 工作树未修改；未合并 main、未建 Tag、未正式发布。原有未提交协作文档差异保留。
+
 ## 已完成阶段
 
 Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分析及 Phase 4B 节奏/和声检索审计均已形成报告。Phase 3A 补偿保持默认关闭；相关历史范围和证据边界见各阶段报告。
@@ -10,7 +22,7 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 - 正式版为 Factory Library 3；本轮独立开发版本为 Library 4。Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2 保持；生产数据与宿主适配未改。
 - Factory V3 为 155 条 canonical 历史记录加 474 条新进行，共 629 条；六条 QUESTIONABLE 留在非生产清单。统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)，兼容与降级边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。
 
-## 当前接续状态
+## 历史接续记录
 
 2026-10-13：Phase 5 / dev.6 代码构建提交 `3a582e4`。新增默认关闭的 Abstract 方向性扩展和弦匹配，改善真实 Factory V4_B11 的简单输入召回；修复 UserLibrary 并发首次初始化，保持 Factory 确定性编译。默认 OFF、HF-ON、Abstract-ON 三模式各 CTest 33/33、Validator 47/47、V4 专项13,048、隔离候选专项41,105通过；原1440矩阵哈希不变。最终Phase5专项8,361检查，OFF同步首写20/20、隔离安装21/21通过。完整对照、性能、历史核销及边界见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)。
 
@@ -20,9 +32,9 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 dev.4 源码交付快照与接手源码 435 个项目文件内容一致；详细核销与来源证据保存在同级 `HarmonyContinuation-validation-20261012/HISTORY_PROVENANCE.md`。dev.4 包保留在 `build-phase4d-delivery/`。新人工清单见 [dev.5 验收](docs/DEV5_CUBASE_ACCEPTANCE.md)。Factory V4 SHA-256 仍为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；独立候选及其音乐设计见 [候选说明](data/factory-proposals/20261012/README.md)。
 
-## Phase 6：当前验收与交付状态
+## Phase 6：历史验收与交付对照
 
-本 checkout 当前分支名仍为 `development/phase5-20261013`；Phase 6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。以 Phase 6 报告记录的构建、测试和最终交付证据核对当前 HEAD 与包身份。路径映射见 [MAP](MAP.md)。
+Phase 6 交付时分支名为 `development/phase5-20261013`；Phase 6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。以 Phase 6 报告记录的构建、测试和最终交付证据核对当前 HEAD 与包身份。路径映射见 [MAP](MAP.md)。
 
 Phase 6 的真实 Cubase 验收尚未完成；R02 Cubase 根因仍 UNKNOWN。请按 [Phase 6 Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 集中核对版本/Build ID、Factory、三种模式、R01/R02、拍号、Preview/MIDI、保存重开、User Library 和诊断导出。模拟宿主不代替真实 Cubase。Factory V4 SHA-256 为 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`；V5 不在插件内启用，隔离 MIDI 只作听评。运行时模式重开后为 Legacy，Phase 3A 保持 OFF。最终完整 CTest 34/34、Validator 47/47、隔离安装生命周期 21 checks 通过；Setup SHA 与全部交付证明见综合报告及校验清单。正式发布未授权、未执行。
 

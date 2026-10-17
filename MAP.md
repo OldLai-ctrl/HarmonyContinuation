@@ -7,7 +7,8 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `development/phase61-20261016`；原开发线与正式分支保留 | dev.8 生产源码/BuildCommit `dd76b60046940ee7dee90ae9807f7ca5b3c2246a`；本轮不合并 main |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/core-decision-chain-20261017` | dev.11 源码/BuildCommit `1c67152`；独立分支交付，不合并 main；当前验收见 [NOW](NOW.md) |
+| 当前验证与测试包 | 同级 `HarmonyContinuation-core-chain-validation-20261017/`、`HarmonyContinuation-dev11-delivery-20261017/` | 前者含 dev.10 有限对照、定向检查及 dev.11 结果；后者为唯一 dev.11 Setup。沿用 dev9-fix 的本机匹配构建缓存，当前缓存身份已更新为 dev.11 |
 | Phase 7 UI 原型 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016` | 独立工作树；Phase6.1 没有修改 MainView |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
