@@ -35,7 +35,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 508,
+      "mainHeight": 519,
       "cards": 3
     },
     {
@@ -49,7 +49,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 470,
+      "mainHeight": 483,
       "cards": 3
     },
     {
@@ -63,7 +63,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 429,
+      "mainHeight": 446,
       "cards": 3
     },
     {
@@ -77,7 +77,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 588,
+      "mainHeight": 599,
       "cards": 3
     },
     {
@@ -91,7 +91,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 550,
+      "mainHeight": 563,
       "cards": 3
     },
     {
@@ -105,49 +105,49 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 509,
+      "mainHeight": 526,
       "cards": 3
     },
     {
       "scheme": "A",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 628,
+      "mainHeight": 579,
       "cards": 3
     },
     {
       "scheme": "A",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1.25,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 590,
+      "mainHeight": 543,
       "cards": 3
     },
     {
       "scheme": "A",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1.5,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 549,
+      "mainHeight": 506,
       "cards": 3
     },
     {
@@ -161,7 +161,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 428,
+      "mainHeight": 439,
       "cards": 3
     },
     {
@@ -175,7 +175,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 390,
+      "mainHeight": 403,
       "cards": 3
     },
     {
@@ -189,7 +189,7 @@
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 349,
+      "mainHeight": 366,
       "cards": 3
     },
     {
@@ -322,42 +322,42 @@
       "scheme": "B",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 583,
+      "mainHeight": 523,
       "cards": 3
     },
     {
       "scheme": "B",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1.25,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 533,
+      "mainHeight": 473,
       "cards": 3
     },
     {
       "scheme": "B",
       "size": [
         800,
-        840
+        780
       ],
       "zoom": 1.5,
       "bodyOverflow": false,
       "appOverflow": false,
       "mainOverflow": false,
       "footerVisible": true,
-      "mainHeight": 439,
+      "mainHeight": 379,
       "cards": 3
     },
     {
@@ -460,18 +460,18 @@
   "cardSize": {
     "window": [
       800,
-      840
+      780
     ],
     "columns": 1,
     "cardWidth": 772,
-    "cardHeight": 96.75,
+    "cardHeight": 93.75,
     "A2Height": 224.390625,
     "A3Baseline": {
       "commit": "87f40a6",
       "width": 1125,
       "height": 94
     },
-    "areaReductionPercent": 29
+    "areaReductionPercent": 32
   },
   "a3Information": {
     "name": "半音下降低音完整乐句",
@@ -495,6 +495,18 @@
         "label": "C",
         "qn": "16"
       }
+    ]
+  },
+  "cardFacts": {
+    "lengths": [
+      "续写 8 小节 · 4 和弦",
+      "续写 2 小节 · 2 和弦",
+      "续写 3 小节 · 3 和弦"
+    ],
+    "alignment": [
+      "逐项对齐",
+      "1处替代",
+      "3处替代"
     ]
   }
 }

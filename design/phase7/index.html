@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HarmonyContinuation · Phase 7 Design Review</title><link rel="stylesheet" href="prototype.css"></head>
 <body>
-<div class="reviewbar"><span><b>A3 · 小窗口修订</b></span><div><label>样例 <select id="example"><option value="B08">B08 · 长短时值</option><option value="R02">R02 · 中段匹配</option></select></label><button id="cardDensity">对比 A2 详细卡片</button><button id="scheme">切换到 B · Spacious</button><button id="stateGuide">控件规范</button><a href="README.md">设计说明 ↗</a></div></div>
+<div class="reviewbar"><span><b>A3 · 密度微调</b></span><div><label>样例 <select id="example"><option value="B08">B08 · 长短时值</option><option value="R02">R02 · 中段匹配</option></select></label><button id="cardDensity">对比 A2 详细卡片</button><button id="scheme">切换到 B · Spacious</button><button id="stateGuide">控件规范</button><a href="README.md">设计说明 ↗</a></div></div>
 <div id="app" class="compact">
  <header class="appheader"><div class="brand"><span class="brandmark">h.</span><div><b>HarmonyContinuation</b><small>从这里，继续音乐。</small></div></div><div class="headerActions"><label>算法 <select id="algorithm"><option>Legacy</option><option>HarmonyFirst</option><option>Abstract</option></select></label><button data-panel="library">曲库</button><button data-panel="settings">设置</button></div></header>
  <main id="workspace">
@@ -11,7 +11,7 @@
    <div class="timeline" aria-label="已有进行时间轴，每格4QN"><div><small>1</small><b>C</b></div><div><small>2</small><b>Cmaj7/B</b></div><div><small>3</small><b>C7/B♭</b></div><div><small>4</small><b>F/A</b></div></div>
    <div class="inputFoot"><span>B08 · 半音下行低音</span><span>16 QN <span class="muted">/ 完整输入已保留</span></span></div>
   </section>
-  <section class="recommendations"><div class="recHeading"><div><span class="eyebrow">02 / 找到下一句</span><h2>让进行自然落地。</h2></div><div class="inline"><label class="quietLabel">进行视图 <select id="matchMode"><option>FULL</option><option>SKELETON</option></select></label><button data-panel="color">色彩偏好</button><button data-panel="enrichment">升级进行</button></div></div>
+  <section class="recommendations"><div class="recHeading"><div><span class="eyebrow">02 / 找到下一句</span><h2>推荐续写</h2></div><div class="inline"><label class="quietLabel">进行视图 <select id="matchMode"><option>FULL</option><option>SKELETON</option></select></label><button data-panel="color">色彩偏好</button><button data-panel="enrichment">升级进行</button></div></div>
    <div class="intentline"><div class="segments" aria-label="推荐意图"><button data-intent="RESOLVE" class="selected">收束 <small>Resolve</small></button><button data-intent="DEVELOP">发展 <small>Develop</small></button><button data-intent="LOOP">循环 <small>Loop</small></button><button data-intent="COLOR">色彩 <small>Color</small></button></div><span id="resultLabel">TOP 3 · Factory V4</span></div>
    <div id="cards"></div>
    <div class="moreline"><span id="resultNote">块宽 ∝ QN 时值 · 灰色为输入，蓝色为续写 · 竖线标出续写起点</span><button id="more">更多推荐 ↓</button></div>

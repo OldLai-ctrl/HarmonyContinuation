@@ -10,21 +10,23 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  async function open(scheme,view='main',sample='B08',density='mini'){await page.goto(`${root}?scheme=${scheme}&state=${view}&sample=${sample}&density=${density}`);await page.evaluate(()=>document.fonts.ready);}
  async function shot(name){await page.screenshot({path:path.join(__dirname,'screens',name+'.png')});evidence.screens.push(name+'.png');}
  for(const scheme of ['A','B']){
-  await page.setViewportSize({width:scheme==='A'?800:1360,height:scheme==='A'?840:1130});
+  await page.setViewportSize({width:scheme==='A'?800:1360,height:scheme==='A'?780:1130});
   for(const view of ['main','detail','settings','drag','loading']){await open(scheme,view);await shot(`${scheme}-${view}`);}
   await open(scheme);await page.click('#play');await page.waitForFunction(()=>document.querySelector('#playingState').textContent.startsWith('正在试听'));await page.waitForTimeout(900);await shot(`${scheme}-playing`);await page.click('#stop');
  }
  await open('A','controls');await shot('controls');
- await page.setViewportSize({width:800,height:840});await open('A','main','B08','full');
+ await page.setViewportSize({width:800,height:780});await open('A','main','B08','full');
  const fullHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
  await page.locator('.candidate').first().screenshot({path:path.join(__dirname,'screens','A2-card-comparison.png')});evidence.screens.push('A2-card-comparison.png');
  await page.click('#cardDensity');const miniHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
  const tileWidth=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().width);
  const placements=await page.locator('.candidate').evaluateAll(xs=>xs.map(x=>{const r=x.getBoundingClientRect();return{x:r.x,y:r.y,bottom:r.bottom}}));
  const contentBottom=await page.locator('#workspace').evaluate(x=>x.getBoundingClientRect().bottom);if(placements.some(p=>p.bottom>contentBottom))throw Error('Top3 do not fit in default window');
- evidence.cardSize={window:[800,840],columns:1,cardWidth:tileWidth,cardHeight:miniHeight,A2Height:fullHeight,A3Baseline:{commit:'87f40a6',width:1125,height:94},areaReductionPercent:Math.round(100*(1-tileWidth*miniHeight/(1125*94)))};
+ evidence.cardSize={window:[800,780],columns:1,cardWidth:tileWidth,cardHeight:miniHeight,A2Height:fullHeight,A3Baseline:{commit:'87f40a6',width:1125,height:94},areaReductionPercent:Math.round(100*(1-tileWidth*miniHeight/(1125*94)))};
  const content=await page.locator('.candidate').first().evaluate(x=>({name:x.querySelector('.progressionName').textContent,position:x.querySelector('.miniLocation').textContent,input:!!x.querySelector('.miniRibbon .inputChord'),boundary:!!x.querySelector('.miniRibbon .continuationBoundary'),chords:[...x.querySelectorAll('.miniRibbon .nextChord')].map(c=>({label:c.querySelector('b')?.textContent,qn:c.dataset.duration}))}));
  if(!content.input||!content.boundary||content.chords.some(c=>!c.label)||content.chords.map(c=>c.qn).join(',')!=='4,4,8,16')throw Error('A3 music information was lost');evidence.a3Information=content;
+ const facts=await page.locator('.cardFacts').allTextContents();if(!facts[0].includes('8 小节 · 4 和弦')||!facts[1].includes('2 小节 · 2 和弦')||!facts[2].includes('3 小节 · 3 和弦'))throw Error('Continuation length summary incorrect');
+ const matches=await page.locator('.matchFacts').allTextContents();if(matches.join('|')!=='逐项对齐|1处替代|3处替代')throw Error('Alignment summary incorrect');evidence.cardFacts={lengths:facts,alignment:matches};
  await page.locator('.candidate[data-rank="1"]').screenshot({path:path.join(__dirname,'screens','A-card.png')});evidence.screens.push('A-card.png');
  const rhythm=await page.locator('.candidate[data-rank="1"] .clipCell.nextChord').evaluateAll(c=>c.map(x=>({qn:Number(x.dataset.duration),width:x.getBoundingClientRect().width})));
  if(Math.abs(rhythm[2].width/rhythm[0].width-2)>.03||Math.abs(rhythm[3].width/rhythm[0].width-4)>.03)throw Error('QN proportions are incorrect');
@@ -34,6 +36,7 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  await open('A','main','R02');await shot('A-middle');
  const middle=page.locator('.candidate[data-rank="2"]');await middle.screenshot({path:path.join(__dirname,'screens','A-middle-card.png')});evidence.screens.push('A-middle-card.png');
  if(!(await middle.locator('.miniLocation').textContent()).includes('2–5/8'))throw Error('Compact source location missing');
+ if(!(await middle.locator('.matchFacts').textContent()).includes('1个来源和弦未覆盖'))throw Error('Source gap summary missing');
  await page.click('[data-detail="2"]');
  if(await middle.locator('.sourceCell.prefix').count()!==1||await middle.locator('.sourceCell.gap').count()!==1||await middle.locator('.sourceCell.matched').count()!==3)throw Error('Middle match or skipped source chord is incorrect');
  if((await middle.locator('.clipGrid').allTextContents()).join(' ').includes('dim'))throw Error('Skipped source chord leaked into playback');
@@ -42,7 +45,7 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  const five=await page.locator('.candidate').first().evaluate(x=>({cells:x.querySelectorAll('.miniRibbon .nextChord').length,labels:[...x.querySelectorAll('.miniRibbon .nextChord b')].map(c=>c.textContent)}));if(five.cells!==5||five.labels.length!==5)throw Error('Five-chord labels were lost');
  evidence.interactions.push('Layout-only five-long-chord-label fixture retains all five labels and the input block; not a generated music recommendation');
  await page.setViewportSize({width:1440,height:900});await open('A');const wide=await page.locator('.candidate').evaluateAll(xs=>xs.slice(0,2).map(x=>({x:x.getBoundingClientRect().x,y:x.getBoundingClientRect().y,input:!!x.querySelector('.inputChord'),boundary:!!x.querySelector('.continuationBoundary')})));if(Math.abs(wide[0].y-wide[1].y)>1||wide[0].x===wide[1].x||wide.some(x=>!x.input||!x.boundary))throw Error('Wide two-column layout lost A3 information');await shot('A-wide');
- for(const scheme of ['A','B'])for(const size of [[640,720],[720,800],[800,840],[900,640],[1440,1100]])for(const zoom of [1,1.25,1.5]){
+ for(const scheme of ['A','B'])for(const size of [[640,720],[720,800],[800,780],[900,640],[1440,1100]])for(const zoom of [1,1.25,1.5]){
   await page.setViewportSize({width:size[0],height:size[1]});await open(scheme);
   await page.evaluate(z=>{const app=document.querySelector('#app');app.style.zoom=z;app.style.height=`calc((100vh - 48px) / ${z})`;},zoom);
   const layout=await page.evaluate(()=>{const app=document.querySelector('#app'),main=document.querySelector('main'),footer=document.querySelector('footer');const f=footer.getBoundingClientRect(),m=main.getBoundingClientRect();return {bodyOverflow:document.documentElement.scrollWidth>innerWidth+1,appOverflow:app.scrollWidth>app.clientWidth+1,mainOverflow:main.scrollWidth>main.clientWidth+1,footerVisible:f.bottom<=innerHeight+2&&f.left>=0&&f.right<=innerWidth+2,mainHeight:Math.round(m.height),cards:document.querySelectorAll('.candidate').length};});
