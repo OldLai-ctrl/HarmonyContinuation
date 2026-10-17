@@ -4,6 +4,7 @@
 #include <atomic>
 #include <bit>
 #include <chrono>
+#include <charconv>
 #include <cmath>
 #include <sstream>
 #include <iomanip>
@@ -59,7 +60,9 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     const auto shown=presentationIndices(set,{});
     for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
         const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
-          <<" key="<<formatKey(c.key)<<" score="<<c.rankingScore<<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
+          <<" key="<<formatKey(c.key)<<" score="<<c.rankingScore<<" eligibility="<<c.eligibilityScore
+          <<" hard="<<c.hardConstraintsPassed<<" qualified="<<c.baseQualified<<" exploratory="<<c.exploratory
+          <<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
           <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
           // Show More lists every retained worker candidate (MainView), without
           // the default presentation's score/diversity/path filtering.
@@ -71,6 +74,9 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     return out.str();
 }
 std::string continuationFingerprint(const ContinuationCandidate& c) {
+    return "music-v1:"+continuationMusicFingerprint(c);
+}
+std::string legacyContinuationFingerprint(const ContinuationCandidate& c) {
     std::ostringstream out;
     const auto sized=[&](const std::string& value){out << value.size() << ':' << value;};
     out << static_cast<int>(c.key.tonic) << ':' << static_cast<int>(c.key.mode) << ':'
@@ -88,6 +94,62 @@ std::string continuationFingerprint(const ContinuationCandidate& c) {
     }
     return out.str();
 }
+bool continuationReferenceMatches(const ContinuationCandidate& c, std::string_view reference) {
+    if (reference.starts_with("music-v1:")) return reference==continuationFingerprint(c);
+    // Legacy pins did not store realization constraints, so cannot certify them.
+    if (!c.constraints.melody.empty()) return false;
+    // Recover complete legacy music, never rebind by source ID or a partial parse.
+    try {
+        if (reference.size()>8192) return false;
+        std::size_t at{};
+        const auto token = [&](char separator) {
+            const auto end=reference.find(separator,at);
+            if(end==reference.npos) throw std::runtime_error("reference separator");
+            const auto value=reference.substr(at,end-at); at=end+1; return value;
+        };
+        const auto integer = [](std::string_view value) {
+            std::uint64_t result{};
+            const auto parsed=std::from_chars(value.data(),value.data()+value.size(),result);
+            if(parsed.ec!=std::errc{}||parsed.ptr!=value.data()+value.size()) throw std::runtime_error("reference number");
+            return result;
+        };
+        const auto sized = [&] {
+            const auto count=integer(token(':'));
+            if(count>reference.size()-at) throw std::runtime_error("reference length");
+            const auto value=reference.substr(at,static_cast<std::size_t>(count)); at+=count; return value;
+        };
+        for(int i=0;i<4;++i) (void)integer(token(':'));
+        (void)sized();
+        if(at>=reference.size()||reference[at++]!=':') return false;
+        ContinuationCandidate old;
+        const auto hold=token(':');
+        if(hold!="-") {
+            const auto duration=std::bit_cast<double>(integer(hold));
+            if(!std::isfinite(duration)||duration<=0) return false;
+            old.suggestedCurrentChordDurationQN=duration;
+        }
+        const auto count=integer(token(':'));
+        if(count==0||count>64) return false;
+        for(std::size_t i=0;i<count;++i) {
+            (void)token(':'); (void)token(':'); // signed, explanatory scale degrees
+            ConcreteChordEvent event; event.label=std::string(sized());
+            if(at>=reference.size()||reference[at++]!=':') return false;
+            const auto quality=integer(token(':'));
+            if(quality>static_cast<unsigned>(ChordQuality::Augmented)) return false;
+            event.quality=static_cast<ChordQuality>(quality);
+            event.durationQN=std::bit_cast<double>(integer(token(';')));
+            if(!std::isfinite(event.durationQN)||event.durationQN<=0) return false;
+            const auto colon=reference.find(':',at);
+            if(colon!=reference.npos&&colon+1<reference.size()&&reference[colon+1]=='[') {
+                const auto chords=persistence::decodeChords(sized());
+                if(chords.size()!=1) return false;
+                event.harmonicData=chords.front();
+            }
+            old.continuation.push_back(std::move(event));
+        }
+        return at==reference.size()&&continuationMusicFingerprint(old)==continuationMusicFingerprint(c);
+    } catch(const std::exception&) { return false; }
+}
 namespace {
 float pathDistance(const ContinuationCandidate& a,const ContinuationCandidate& b) {
     const auto count=std::max(a.continuation.size(),b.continuation.size());
@@ -96,9 +158,11 @@ float pathDistance(const ContinuationCandidate& a,const ContinuationCandidate& b
     for (std::size_t i=0;i<count;++i) {
         if (i>=a.continuation.size() || i>=b.continuation.size()) { distance+=1.f; continue; }
         const auto& x=a.continuation[i]; const auto& y=b.continuation[i];
+        const auto px=x.harmonicData?chordPitches(*x.harmonicData):chordPitches(x.label,x.quality);
+        const auto py=y.harmonicData?chordPitches(*y.harmonicData):chordPitches(y.label,y.quality);
         float diff{};
-        if (x.degree.degree!=y.degree.degree || x.degree.alteration!=y.degree.alteration) diff+=0.65f;
-        if (x.quality!=y.quality) diff+=0.2f;
+        if (px.root!=py.root || px.bass!=py.bass) diff+=0.65f;
+        if (px.quality!=py.quality || px.intervals!=py.intervals || px.exactIntervals!=py.exactIntervals) diff+=0.2f;
         const auto ratio=std::min(x.durationQN,y.durationQN)/std::max(0.001,std::max(x.durationQN,y.durationQN));
         diff+=static_cast<float>((1.0-ratio)*0.15);
         distance+=diff;
@@ -113,11 +177,7 @@ std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const st
     for (const auto& candidate:group) best=std::max(best,candidate.rankingScore);
     for (std::size_t i=0;i<group.size() && visible.size()<maxPerGroup;++i) {
         const auto& c=group[i];
-        // Constraint penalties describe melody fit, not the underlying harmony
-        // gate. Soft conflicts must remain visible rather than becoming empty UI.
-        const float harmonyScore=c.rankingScore+(c.constraints.melody.empty()?0.f:
-            melodySoftPenaltyPoints*(1.f-c.melodyCompatibility.score));
-        if (!std::isfinite(c.rankingScore) || harmonyScore<absoluteMinimumScore ||
+        if (!c.hardConstraintsPassed || !c.baseQualified || (c.exploratory&&!includeExploratory) || !std::isfinite(c.rankingScore) ||
             (relativeToGroupBest>0 && c.rankingScore<best-relativeToGroupBest)) continue;
         if (minimumDiversityDistance>0 && std::any_of(visible.begin(),visible.end(),[&](std::size_t chosen){
             return pathDistance(c,group[chosen])<minimumDiversityDistance; })) continue;
@@ -140,8 +200,7 @@ RecommendationPresentation presentationIndices(const RecommendationSet& set,
         };
         return score(a)>score(b);
     });
-    auto all=policy;
-    all.maxPerGroup=100;
+    auto all=policy; all.maxPerGroup=100;
     for(const auto group:order) {
         const auto eligible=all.visibleIndices(set.groups[group]);
         for(const auto index:eligible) {

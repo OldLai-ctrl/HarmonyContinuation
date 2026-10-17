@@ -9,6 +9,7 @@ ConcreteChordEvent chord(int degree, RoleFlags roles = 0, int alteration = 0) {
     ConcreteChordEvent result;
     result.degree = {degree, alteration};
     result.roles = roles;
+    result.quality = ChordQuality::Major;
     result.durationQN = 4;
     return result;
 }
@@ -27,6 +28,7 @@ int main() {
         c.intent=PhraseIntent::Resolve;
         c.cadence=CadenceType::Authentic;
         c.continuation={chord(1)};
+        c.actualPhraseReturn=true;
         auto result=evaluateIntentCompletion(c,ScaleDegree{2,0},ScaleDegree{5,0});
         check(result.score>0.9f && result.reason==CompletionReason::DominantTonic,
               "single tonic completes dominant resolution");
@@ -47,8 +49,11 @@ int main() {
         check(evaluateIntentCompletion(c,ScaleDegree{1,0}).score>0.9f,
               "single chord can close loop");
         c.continuation={chord(4)};
+        c.actualPhraseReturn=false;
         c.cadence=CadenceType::LoopClosure;
-        check(evaluateIntentCompletion(c).score>0.8f,"documented loop closure");
+        check(evaluateIntentCompletion(c).score<0.5f,"loop metadata alone is insufficient");
+        c.preservedLoop=true;
+        check(evaluateIntentCompletion(c).score>0.8f,"adapted loop context certifies closure");
 
         c.intent=PhraseIntent::Develop;
         c.cadence=CadenceType::None;

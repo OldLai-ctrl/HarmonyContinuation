@@ -91,6 +91,7 @@ std::vector<ProgressionTemplate> canonicalFactoryEntries(std::vector<Progression
     return unique;
 }
 std::string resolveFingerprint(std::string_view value,int version) {
+    if(value.starts_with("music-v1:"))return std::string(value);
     if(version<3)return std::string(value);
     std::size_t at{};
     for(int i=0;i<4;++i){const auto end=value.find(':',at);if(end==value.npos)return std::string(value);at=end+1;}

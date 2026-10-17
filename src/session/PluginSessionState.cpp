@@ -26,9 +26,9 @@ void PluginSessionState::resolvePins(const RecommendationSet& set) {
         const auto fingerprint=library::resolveFingerprint(pinnedFingerprints[pin],static_cast<int>(factoryLibraryVersion));
         if (fingerprint.empty()) continue;
         for (const auto& group:set.groups) for (const auto& candidate:group) {
-            if (continuationFingerprint(candidate)!=fingerprint) continue;
+            if (!continuationReferenceMatches(candidate,fingerprint)) continue;
             if (std::find(ids.begin(),ids.end(),candidate.id)==ids.end()) {
-                ids.push_back(candidate.id); fingerprints.push_back(fingerprint);
+                ids.push_back(candidate.id); fingerprints.push_back(continuationFingerprint(candidate));
             }
             goto matched;
         }
@@ -66,7 +66,7 @@ struct Writer {
     void u32(std::uint32_t n) { for (int i=0;i<4;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
     void u64(std::uint64_t n) { for (int i=0;i<8;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
     void dbl(double n) { if (!std::isfinite(n)) throw std::runtime_error("nonfinite session time"); u64(std::bit_cast<std::uint64_t>(n)); }
-    void str(const std::string& s) { if (s.size()>8192) throw std::runtime_error("session string too long"); u32(static_cast<std::uint32_t>(s.size())); bytes += s; }
+    void str(const std::string& s,std::size_t limit=8192) { if (s.size()>limit) throw std::runtime_error("session string too long"); u32(static_cast<std::uint32_t>(s.size())); bytes += s; }
     void optionalString(const std::optional<std::string>& s) { u8(s.has_value()); if (s) str(*s); }
     void optionalInt(const std::optional<std::int32_t>& n) { u8(n.has_value()); if (n) u32(static_cast<std::uint32_t>(*n)); }
 };
@@ -76,7 +76,7 @@ struct Reader {
     std::uint32_t u32() { std::uint32_t n{}; for (int i=0;i<4;++i) n |= std::uint32_t(u8()) << (8*i); return n; }
     std::uint64_t u64() { std::uint64_t n{}; for (int i=0;i<8;++i) n |= std::uint64_t(u8()) << (8*i); return n; }
     double dbl() { const auto n=std::bit_cast<double>(u64()); if (!std::isfinite(n)) throw std::runtime_error("invalid session time"); return n; }
-    std::string str() { const auto len=u32(); if (len>8192 || len>bytes.size()-at) throw std::runtime_error("invalid session string"); std::string s(bytes.substr(at,len)); at+=len; return s; }
+    std::string str(std::size_t limit=8192) { const auto len=u32(); if (len>limit || len>bytes.size()-at) throw std::runtime_error("invalid session string"); std::string s(bytes.substr(at,len)); at+=len; return s; }
     std::optional<std::string> optionalString() { return u8() ? std::optional<std::string>(str()) : std::nullopt; }
     std::optional<std::int32_t> optionalInt() { return u8() ? std::optional<std::int32_t>(static_cast<std::int32_t>(u32())) : std::nullopt; }
 };
@@ -109,8 +109,8 @@ std::string serialize(const PluginSessionState& input) {
     w.u8(state.skeletonView); w.u8(static_cast<std::uint8_t>(state.tab)); w.u8(state.debugExpanded);
     w.u8(static_cast<std::uint8_t>(state.pinnedCandidateIds.size()));
     for (std::size_t i=0;i<state.pinnedCandidateIds.size();++i) {
-        w.str(state.pinnedCandidateIds[i]);
-        w.str(i<state.pinnedFingerprints.size()?state.pinnedFingerprints[i]:std::string{});
+        w.str(state.pinnedCandidateIds[i],16384);
+        w.str(i<state.pinnedFingerprints.size()?state.pinnedFingerprints[i]:std::string{},16384);
     }
     w.optionalInt(state.meterNumerator); w.optionalInt(state.meterDenominator);
     w.u8(static_cast<std::uint8_t>(state.imported.events.size()));
@@ -161,7 +161,7 @@ DecodeResult deserialize(std::string_view bytes) {
         s.skeletonView=r.u8()!=0; const auto tab=r.u8(); if (tab>3) throw std::runtime_error("invalid tab"); s.tab=static_cast<Tab>(tab); s.debugExpanded=r.u8()!=0;
         const auto pins=r.u8(); if (pins>3) throw std::runtime_error("too many pins");
         for (int i=0;i<pins;++i) {
-            const auto id=r.str(); const auto fingerprint=legacy?std::string{}:r.str();
+            const auto id=r.str(16384); const auto fingerprint=legacy?std::string{}:r.str(16384);
             if (!s.pin(id,fingerprint)) throw std::runtime_error("invalid pin");
         }
         s.meterNumerator=r.optionalInt(); s.meterDenominator=r.optionalInt();

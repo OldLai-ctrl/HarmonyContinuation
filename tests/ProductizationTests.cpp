@@ -54,6 +54,72 @@ int main() {
         check(session::recomputeScope(state,resized)==session::RecomputeScope::None,"resize does not reanalyze");
         check(view.pin("A") && view.pin("B") && view.pin("C") && !view.pin("D"),"pin max three");
         check(view.unpin("B") && view.pinnedCandidateIds.size()==2 && !view.unpin("B"),"unpin");
+        {
+            ContinuationCandidate oldRepresentative;
+            oldRepresentative.primaryTemplate="source-old";
+            oldRepresentative.key={PitchClass::C,Mode::Major};
+            oldRepresentative.intent=PhraseIntent::Resolve;
+            oldRepresentative.cadence=CadenceType::Authentic;
+            oldRepresentative.suggestedCurrentChordDurationQN=2.;
+            oldRepresentative.continuation.push_back({"G",2.,{5,0},ChordQuality::Major});
+            oldRepresentative.id=session::continuationFingerprint(oldRepresentative);
+            auto newRepresentative=oldRepresentative;
+            newRepresentative.primaryTemplate="source-new";
+            newRepresentative.id=session::continuationFingerprint(newRepresentative);
+            RecommendationSet available;available.groups[0].push_back(newRepresentative);
+
+            session::PluginSessionState newMusicPin;newMusicPin.factoryLibraryVersion=2;
+            check(newMusicPin.pin(oldRepresentative.id,session::continuationFingerprint(oldRepresentative)),
+                  "new music identity pin fixture");
+            newMusicPin.resolvePins(available);
+            check(newMusicPin.pinnedCandidateIds==std::vector<std::string>{newRepresentative.id}&&
+                  newMusicPin.pinnedFingerprints==std::vector<std::string>{session::continuationFingerprint(newRepresentative)},
+                  "music pin resolves across a changed representative source");
+
+            session::PluginSessionState legacyPin;legacyPin.factoryLibraryVersion=2;
+            check(legacyPin.pin(oldRepresentative.primaryTemplate,
+                                session::legacyContinuationFingerprint(oldRepresentative)),
+                  "legacy music pin fixture");
+            legacyPin.resolvePins(available);
+            check(legacyPin.pinnedCandidateIds==std::vector<std::string>{newRepresentative.id}&&
+                  legacyPin.pinnedFingerprints==std::vector<std::string>{session::continuationFingerprint(newRepresentative)},
+                  "legacy fingerprint migrates to the exact current music identity");
+
+            auto changedDuration=newRepresentative;
+            changedDuration.continuation.front().durationQN+=0.01;
+            changedDuration.id=session::continuationFingerprint(changedDuration);
+            RecommendationSet changedPath;changedPath.groups[0].push_back(changedDuration);
+            session::PluginSessionState stalePin;stalePin.factoryLibraryVersion=2;
+            check(stalePin.pin(oldRepresentative.primaryTemplate,
+                               session::legacyContinuationFingerprint(oldRepresentative)),
+                  "duration-migration pin fixture");
+            stalePin.resolvePins(changedPath);
+            check(std::find(stalePin.pinnedCandidateIds.begin(),stalePin.pinnedCandidateIds.end(),
+                            changedDuration.id)==stalePin.pinnedCandidateIds.end(),
+                  "legacy pin with changed duration never binds to another music result");
+
+            session::PluginSessionState malformedPin;malformedPin.factoryLibraryVersion=2;
+            check(malformedPin.pin("malformed-pin-id","not-a-complete-legacy-fingerprint"),
+                  "malformed pin fixture");
+            auto matchingIdDifferentMusic=changedDuration;matchingIdDifferentMusic.id="malformed-pin-id";
+            RecommendationSet malformedAvailable;malformedAvailable.groups[0].push_back(matchingIdDifferentMusic);
+            malformedPin.resolvePins(malformedAvailable);
+            check(malformedPin.pinnedCandidateIds.empty()&&
+                  !session::continuationReferenceMatches(matchingIdDifferentMusic,
+                      "not-a-complete-legacy-fingerprint"),
+                  "malformed old reference fails safely without ID-only rebinding");
+            auto constrained=newRepresentative;
+            MelodyConstraint top;top.pitch=74;top.pitchClass=2;top.role=ConstraintRole::TopVoice;
+            constrained.constraints.melody.push_back(top);
+            check(!session::continuationReferenceMatches(constrained,session::legacyContinuationFingerprint(oldRepresentative)),
+                  "legacy pin cannot invent missing realization constraints");
+            session::PluginSessionState longIdentity;longIdentity.factoryLibraryVersion=2;
+            const std::string largeReference="music-v1:"+std::string(9000,'x');
+            check(longIdentity.pin(largeReference,largeReference),"bounded long realization identity pin");
+            const auto restoredLong=session::deserialize(session::serialize(longIdentity));
+            check(restoredLong&&restoredLong.state.pinnedFingerprints==longIdentity.pinnedFingerprints,
+                  "session5 encodes complete realization references without truncation");
+        }
         view.debugExpanded=true; view.factoryLibraryVersion=3;
         auto decoded=session::deserialize(session::serialize(view));
         check(decoded && decoded.state.skeletonView && decoded.state.tab==session::Tab::Library &&
@@ -264,14 +330,17 @@ int main() {
         check(analyzeHarmony(h.chords).keyCandidates.size()>=2,"ambiguous key candidates retained");
         std::vector<ContinuationCandidate> synthetic(3);
         synthetic[0].rankingScore=90; synthetic[1].rankingScore=70; synthetic[2].rankingScore=50;
+        synthetic[2].baseQualified=false;
         session::RecommendationVisibilityPolicy policy;
-        check(policy.visibleIndices(synthetic).size()==2,"absolute visibility threshold");
+        policy.minimumDiversityDistance=0;
+        check(policy.visibleIndices(synthetic).size()==2,"explicit qualification controls visibility");
         policy.relativeToGroupBest=10;
         check(policy.visibleIndices(synthetic).size()==1,"relative visibility threshold");
         policy.relativeToGroupBest=0; policy.minimumDiversityDistance=0.1f;
         check(policy.visibleIndices(synthetic).size()==1,"minimum diversity distance");
         for (auto& item:synthetic) item.rankingScore=40;
-        check(policy.visibleIndices(synthetic).empty(),"no strong option is empty");
+        policy.minimumDiversityDistance=0;
+        check(policy.visibleIndices(synthetic).size()==2,"ranking cannot revoke qualification");
         session::RecommendationVisibilityPolicy presentationPolicy;
         presentationPolicy.maxPerGroup=2;
         auto card=[](std::string id,std::string label,float score) {
