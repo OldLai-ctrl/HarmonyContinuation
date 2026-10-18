@@ -25,6 +25,8 @@ A4的呈现方式已撤回；以A3恢复版`bb2deeb`为当前基准。用户于2
 
 面积对照见 [A2详细卡片](screens/A2-card-comparison.png)，实测尺寸与A3信息保留检查在`verification.json`的`cardSize`和`a3Information`。窄窗高缩放允许换行或轨道滚动，不通过删除输入块、拆开和弦与时值来塞入更多列。卡片操作36px，固定播放栏40px；实际VSTGUI命中仍待验证。
 
+圆形选择按钮独立于通用按钮的最小高度：修复前A紧凑卡片实际为28×36，现为28×28；窄窗网格列宽同步为28px。数字与选中标记居中，详细卡片A/B分别保持36×36、40×40。
+
 字段复用：`ProgressionTemplate::{nameZh,name,full}`、`ContinuationCandidate::{primaryTemplate,matchStart,matchEnd,continuationStart,continuation}`、`MatchResult::alignmentTrace` 及输入事件的 `durationQN`。对应入口见 `src/core/ProgressionMatcher.h:55–85,174–190`、`src/core/ContinuationEngine.h:27–50`。现有 `MainView::drawMiniTimeline` 已有拼接时值块与播放头（`MainView.cpp:1086–1112`），正式改造应复用数据语义并改进可读性。
 
 边界规格：OPEN/未知尾长用虚线和“待定”表示；候选建议时值单独标“建议”，不得用默认值冒充确定时长。零时长、无效时间或未知坐标不画伪造等宽时值块。短和弦过密时横向滚动，最小格宽只扩大整条时间轨道，不逐格拉宽而破坏比例。循环接续要明确标记回到来源开头；多来源合并卡片只突出主来源，在详情列出其余来源。这些边界尚未在本轮录制样例中全部覆盖，须在正式 VSTGUI 阶段验证。
@@ -220,6 +222,7 @@ MIDI 继续走独立 `CandidateExportContext`：保持原始事件 QN、宿主/�
 
 - 21张PNG：两方案主要状态、卡片/中段样例、仅续写播放、小窗口、A2对照和宽窗两列。`a3Information`继续核对原有音乐信息；新增`cardFacts`核对三张卡的实际小节数/和弦数，以及逐项对齐/替代次数；R02另验未覆盖提示。
 - A/B × 640×720 / 720×800 / 800×780 / 900×640 / 1440×1100 × 100/125/150%，30组合通过。默认800×780另验Top3完整可见，1440宽验两列仍保留输入块和边界。浏览器缩放不代替Windows DPI/VSTGUI验证。
+- 上述30组合逐一测量三枚圆形按钮，宽高相等（含选中和未选中）；另验A/B详细卡片圆形。尺寸记录在各布局的`circleSizes`和`fullCardCircles`。
 - 验证4:8:16 QN的块宽比为1:2:4、真实来源名称、R02中段匹配的来源前文/3个对应输入/1个未覆盖和弦，以及仅续写播放头从输入边界出发。还覆盖详情、选择、90 BPM试听调度、停止复位、原始 MIDI 字节不变、宿主缺失回退、算法加载门禁、视图切换、MIDI下载和内部拖动。离屏检查验证调度状态，不作为人工听评。
 - 原型音频按录制 MIDI 的音高、时值与力度经 WebAudio 三角波发声，标注“浏览器示意音色”；不是 PreviewSynth，也不是音乐质量验收。它可用于理解播放/停止/速度交互。
 - 原型的拖放只到显式内部演示接收区；真实系统/DAW Drag-Out 未接线。可以从详情保存真实录制 MIDI。原型的保存不依赖宿主。

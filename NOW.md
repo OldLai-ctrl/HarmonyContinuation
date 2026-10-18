@@ -16,7 +16,7 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 
 - UI 审计、功能迁移、创作流程、视觉交互规范、BPM 可行性和正式工作包：[Phase 7 设计报告](design/phase7/README.md)。
 - [打开A3密度微调](design/phase7/index.html)，21张PNG。窗口比已认可版降低60px，卡片约772×93.75；原有名称、定位、输入/续写轨道及QN比例保留，新增摘要不另占一行。原型不连接宿主或真实用户曲库。
-- 本轮30组布局、A3信息保留和原有交互通过；新增验证摘要与录制实际值一致，R02未覆盖提示正确。默认Top3完整可见，宽窗两列保留同样信息。结果见 [verification.json](design/phase7/verification.json)，仍为浏览器离屏证据。
+- 本轮30组布局、A3信息保留和原有交互通过；新增验证摘要与录制实际值一致，R02未覆盖提示正确。圆形选择按钮解除通用最小高度冲突，由28×36恢复28×28；30组布局及A/B详细卡片实测宽高相等。默认Top3完整可见，宽窗两列保留同样信息。结果见 [verification.json](design/phase7/verification.json)，仍为浏览器离屏证据。
 - 插件仍为既有 `0.10.0-dev.7` / BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`；核心算法、Factory V4、User Library、Schema 和正式 UI 未改。本轮没有构建、安装、发布或真实 Cubase 验收。
 - 独立试听 BPM 可局部实现；建议先停止改速再重播。真正暂停、无缝变速、多实例并行发声仍需额外设计，详见报告。
 

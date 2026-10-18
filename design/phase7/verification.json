@@ -36,7 +36,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 519,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -50,7 +64,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 483,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -64,7 +92,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 446,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -78,7 +120,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 599,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -92,7 +148,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 563,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -106,7 +176,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 526,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -120,7 +204,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 579,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -134,7 +232,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 543,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -148,7 +260,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 506,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -162,7 +288,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 439,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -176,7 +316,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 403,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -190,7 +344,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 366,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -204,7 +372,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 843,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -218,7 +400,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 793,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "A",
@@ -232,7 +428,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 741,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -246,7 +456,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 463,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -260,7 +484,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 378,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -274,7 +512,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 319,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -288,7 +540,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 543,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -302,7 +568,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 458,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -316,7 +596,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 399,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -330,7 +624,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 523,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -344,7 +652,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 473,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -358,7 +680,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 379,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -372,7 +708,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 382,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -386,7 +736,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 333,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -400,7 +764,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 260,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -414,7 +792,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 822,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -428,7 +820,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 766,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
     },
     {
       "scheme": "B",
@@ -442,7 +848,21 @@
       "mainOverflow": false,
       "footerVisible": true,
       "mainHeight": 709,
-      "cards": 3
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
     }
   ],
   "interactions": [
@@ -457,6 +877,36 @@
     "Separate MIDI handle reaches internal prototype receiver; OS/Cubase drag is not tested"
   ],
   "errors": [],
+  "fullCardCircles": {
+    "A": [
+      {
+        "width": 36,
+        "height": 36
+      },
+      {
+        "width": 36,
+        "height": 36
+      },
+      {
+        "width": 36,
+        "height": 36
+      }
+    ],
+    "B": [
+      {
+        "width": 40,
+        "height": 40
+      },
+      {
+        "width": 40,
+        "height": 40
+      },
+      {
+        "width": 40,
+        "height": 40
+      }
+    ]
+  },
   "cardSize": {
     "window": [
       800,

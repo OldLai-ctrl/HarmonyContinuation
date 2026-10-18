@@ -9,6 +9,11 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  const evidence={renderer:'Playwright / installed Edge, offscreen HTML; not VSTGUI or Cubase',screens:[],layouts:[],interactions:[],errors};
  async function open(scheme,view='main',sample='B08',density='mini'){await page.goto(`${root}?scheme=${scheme}&state=${view}&sample=${sample}&density=${density}`);await page.evaluate(()=>document.fonts.ready);}
  async function shot(name){await page.screenshot({path:path.join(__dirname,'screens',name+'.png')});evidence.screens.push(name+'.png');}
+ async function circleSizes(){
+  const sizes=await page.locator('.selectCard').evaluateAll(xs=>xs.map(x=>{const r=x.getBoundingClientRect();return{width:r.width,height:r.height};}));
+  if(sizes.length!==3||sizes.some(r=>r.width<=0||Math.abs(r.width-r.height)>.1))throw Error('Circular selection button distorted: '+JSON.stringify(sizes));
+  return sizes;
+ }
  for(const scheme of ['A','B']){
   await page.setViewportSize({width:scheme==='A'?800:1360,height:scheme==='A'?780:1130});
   for(const view of ['main','detail','settings','drag','loading']){await open(scheme,view);await shot(`${scheme}-${view}`);}
@@ -16,6 +21,7 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
  }
  await open('A','controls');await shot('controls');
  await page.setViewportSize({width:800,height:780});await open('A','main','B08','full');
+ evidence.fullCardCircles={A:await circleSizes()};
  const fullHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
  await page.locator('.candidate').first().screenshot({path:path.join(__dirname,'screens','A2-card-comparison.png')});evidence.screens.push('A2-card-comparison.png');
  await page.click('#cardDensity');const miniHeight=await page.locator('.candidate').first().evaluate(x=>x.getBoundingClientRect().height);
@@ -49,10 +55,11 @@ const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url');
   await page.setViewportSize({width:size[0],height:size[1]});await open(scheme);
   await page.evaluate(z=>{const app=document.querySelector('#app');app.style.zoom=z;app.style.height=`calc((100vh - 48px) / ${z})`;},zoom);
   const layout=await page.evaluate(()=>{const app=document.querySelector('#app'),main=document.querySelector('main'),footer=document.querySelector('footer');const f=footer.getBoundingClientRect(),m=main.getBoundingClientRect();return {bodyOverflow:document.documentElement.scrollWidth>innerWidth+1,appOverflow:app.scrollWidth>app.clientWidth+1,mainOverflow:main.scrollWidth>main.clientWidth+1,footerVisible:f.bottom<=innerHeight+2&&f.left>=0&&f.right<=innerWidth+2,mainHeight:Math.round(m.height),cards:document.querySelectorAll('.candidate').length};});
-  evidence.layouts.push({scheme,size,zoom,...layout});
+  evidence.layouts.push({scheme,size,zoom,...layout,circleSizes:await circleSizes()});
   if(layout.bodyOverflow||layout.appOverflow||layout.mainOverflow||!layout.footerVisible||layout.mainHeight<100)throw Error('Layout failed '+JSON.stringify(evidence.layouts.at(-1)));
   if(size[1]===640&&zoom===1.5)await shot(`${scheme}-small-150`);
  }
+ await page.setViewportSize({width:1360,height:1130});await open('B','main','B08','full');evidence.fullCardCircles.B=await circleSizes();
  await page.setViewportSize({width:1200,height:960});await open('A');
  await page.click('[data-detail="1"]');if(await page.locator('.detail').count()!==1)throw Error('Detail did not open');
  await page.click('[data-select="2"]');if(await page.locator('.selectedCard').getAttribute('data-rank')!=='2')throw Error('Selection failed');
