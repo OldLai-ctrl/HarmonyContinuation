@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "core/RecommendationPolicy.h"
 #include "library/LibraryStore.h"
 #include <memory>
 #include <iterator>
@@ -135,7 +136,7 @@ std::uint64_t RecommendationWorker::submitImpl(Progression progression, Analysis
                                                 std::optional<DevelopmentAlgorithmPreset> preset) {
     std::lock_guard lock(mutex_);
     ++generation_;
-    pending_ = Task{generation_, std::move(progression), std::move(context), request,
+    pending_ = Task{generation_, std::move(progression), recommendationContext(std::move(context)), request,
                     rankingOnly, phraseRevision, preset};
     ready_.reset();
     wake_.notify_one();
@@ -193,8 +194,7 @@ void RecommendationWorker::run() {
                 cachedPhraseRevision=0;
                 cachedContext.reset();
             } else {
-                const auto effectiveContext = task.algorithmPreset
-                    ? developmentContext(task.context, *task.algorithmPreset) : task.context;
+                const auto& effectiveContext = task.context;
                 result.analysisReused=task.rankingOnly && task.progression.size()<=64 && cachedQuery && task.phraseRevision!=0 &&
                     task.phraseRevision==cachedPhraseRevision && cachedContext &&
                     cachedContext->forcedKey.has_value()==effectiveContext.forcedKey.has_value() &&
@@ -257,9 +257,7 @@ void RecommendationWorker::run() {
                 if (metadataOnly) {
                     if (!index) result.error=loadError;
                 } else if (index && cachedQuery) {
-                    const auto weights=task.algorithmPreset
-                        ? developmentRecommendationWeights(*task.algorithmPreset)
-                        : developmentRecommendationWeights();
+                    const auto weights=recommendationWeights();
                     result.recommendations = recommendContinuations(*cachedQuery, *index, task.request, weights);
                 } else result.error = index ? "推荐查询不可用。" : loadError;
             } else result.error = "超过 64 个和弦；推荐暂不计算。";

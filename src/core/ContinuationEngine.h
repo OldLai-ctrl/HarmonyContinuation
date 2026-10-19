@@ -35,6 +35,7 @@ struct ContinuationCandidate {
     TemplateID primaryTemplate;
     PhraseIntent intent{PhraseIntent::Neutral};
     KeySignature key;
+    int keyOffsetFromInput{}; // transposition-invariant tie order, never a score
     std::vector<ConcreteChordEvent> continuation;
     std::optional<double> suggestedCurrentChordDurationQN;
     float rhythmScale{1.f};
@@ -93,7 +94,7 @@ struct DiminishedInsertionDiagnostic {
     float totalInsertionPenalty{}, originalPenalty{}, refund{}, scoreBefore{}, scoreAfter{};
 };
 struct RecommendationSet {
-    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Legacy};
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
     bool phase3aEnabled{}; // actual invocation, diagnostic only; never persisted
     std::array<std::vector<ContinuationCandidate>, 4> groups; // Resolve, Develop, Loop, Color
     std::vector<MatchResult> matches;

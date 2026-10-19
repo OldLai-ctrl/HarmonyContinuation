@@ -155,9 +155,12 @@ std::vector<KeyCandidate> candidateKeys(const Progression& events,
                                         const HarmonyAnalysisWeights& weights, float median) {
     std::vector<KeyCandidate> result;
     result.reserve(24);
-    for (int root = 0; root < 12; ++root)
+    // Keep tied hypotheses in the same relative order after transposition.
+    // The finite budget and every musical key score remain unchanged.
+    const int anchor = !chords.empty() && chords.front().root ? number(*chords.front().root) : 0;
+    for (int offset = 0; offset < 12; ++offset)
         for (Mode mode : {Mode::Major, Mode::Minor}) {
-            const KeySignature key{static_cast<PitchClass>(root), mode};
+            const KeySignature key{static_cast<PitchClass>(mod12(anchor + offset)), mode};
             result.push_back({key, scoreKey(events, chords, key, weights, median), 0});
         }
     std::stable_sort(result.begin(), result.end(), [](const auto& a, const auto& b) {
@@ -319,6 +322,7 @@ HarmonicAnalysisResult analyzeHarmony(const Progression& events, const AnalysisC
                     events[i], event, i, events.size(), median, context, true, false, true);
                 break;
             case RetrievalTimingMode::HarmonyFirst:
+            case RetrievalTimingMode::Unified:
                 event.retrievalStructuralWeight = structuralWeight(
                     events[i], event, i, events.size(), median, context, false, false, false);
                 break;
@@ -336,7 +340,7 @@ HarmonicAnalysisResult analyzeHarmony(const Progression& events, const AnalysisC
         // happens to contain one explicit pitch list (as all Cubase drops do).
         const bool definingRealization = tones.bass != tones.root || tones.colorMask != 0;
         RoleFlags retrievalRoles = event.roles & ~(flag(Role::Structural) | flag(Role::Embellishing));
-        if (context.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst)
+        if (context.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst || context.retrievalTimingMode == RetrievalTimingMode::Unified)
             retrievalRoles &= ~flag(Role::Approach);
         const bool retrievalStructural = i == 0 || i + 1 == events.size() || definingRealization ||
             hasRole(event.roles, Role::Cadential) || event.retrievalStructuralWeight >= context.skeletonThreshold;

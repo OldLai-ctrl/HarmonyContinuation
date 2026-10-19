@@ -95,7 +95,7 @@ struct MatchQuery {
     std::optional<StyleFlags> styleHint;
     bool forcedKey{};
     Progression source;
-    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Legacy};
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
 };
 
 // All score-affecting constants live here. Values are dimensionless costs.

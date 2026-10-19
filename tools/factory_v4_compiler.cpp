@@ -74,7 +74,8 @@ void maintain(ProgressionTemplate& t,std::ostream& audit){
 }
 }
 int main(int argc,char** argv){try{
-    require(argc==6,"usage: factory_v4_compiler legacy-dir v3-dir v4-dir output.db maintenance.tsv");
+    require(argc==6||argc==8,"usage: factory_v4_compiler legacy-dir v3-dir v4-dir output.db maintenance.tsv [v5-additions-dir library-version]");
+    if(argc==8)require(std::string(argv[7])=="5","V5 append requires Library 5");
     auto entries=read(argv[1]);auto v3=read(argv[2]);entries.insert(entries.end(),v3.begin(),v3.end());
     entries=library::canonicalFactoryEntries(std::move(entries));require(entries.size()==629,"V3 baseline must have 629 canonical entries");
     const auto baseline=entries;std::ofstream audit(argv[5]);require(bool(audit),"cannot write maintenance audit");
@@ -101,6 +102,48 @@ int main(int argc,char** argv){try{
         require(it!=loaded.templates.end()&&library::canonicalMusicalFingerprint(*it)==library::canonicalMusicalFingerprint(t),"readback changed music: "+t.id);
         require(it->techniques==t.techniques&&it->skeletonIndices==t.skeletonIndices,"readback changed metadata: "+t.id);}
     audit.close();require(bool(audit),"maintenance report write failed");
+    if(argc==8){
+        const auto frozenV4=loaded.templates;
+        auto v5additions=read(argv[6]);
+        require(v5additions.size()==1,"V5 proposal must contain exactly one curated addition");
+        const auto& candidate=v5additions.front();
+        require(candidate.id.starts_with("V5_")&&candidate.version==5,"V5 addition identity required");
+        require(candidate.sourceType=="factory"&&!candidate.nameZh.empty()&&!candidate.nameEn.empty(),
+                "V5 factory display metadata required");
+        require(candidate.full.size()>=2&&candidate.skeletonIndices.size()==candidate.full.size(),
+                "V5 conservative full skeleton required: "+candidate.id);
+        require(std::none_of(frozenV4.begin(),frozenV4.end(),[&](const auto& old){return old.id==candidate.id;}),
+                "V5 ID already exists in frozen V4: "+candidate.id);
+        require(std::none_of(frozenV4.begin(),frozenV4.end(),[&](const auto& old){return
+            old.nameZh==candidate.nameZh||old.nameEn==candidate.nameEn;}),
+            "V5 display name already exists in frozen V4: "+candidate.id);
+        const auto candidateFingerprint=library::canonicalMusicalFingerprint(candidate);
+        require(std::none_of(frozenV4.begin(),frozenV4.end(),[&](const auto& old){return
+            library::canonicalMusicalFingerprint(old)==candidateFingerprint;}),
+            "V5 addition duplicates frozen V4 music: "+candidate.id);
+        auto entriesV5=frozenV4;
+        entriesV5.push_back(candidate);
+        std::string v5Error;
+        require(library::compileFactory(argv[4],entriesV5,v5Error,5),v5Error);
+        const auto loadedV5=library::loadFactory(argv[4]);
+        require(bool(loadedV5),loadedV5.error);
+        require(loadedV5.libraryVersion==5&&loadedV5.storageSchemaVersion==2&&
+                loadedV5.templates.size()==frozenV4.size()+1,"V5 database contract");
+        for(const auto& old:frozenV4){
+            const auto it=std::find_if(loadedV5.templates.begin(),loadedV5.templates.end(),[&](const auto& item){return item.id==old.id;});
+            require(it!=loadedV5.templates.end(),"frozen V4 ID missing from V5: "+old.id);
+            require(dev::serializeTemplateJson(*it,true)==dev::serializeTemplateJson(old,true),
+                    "frozen V4 metadata/typedData changed in V5: "+old.id);
+        }
+        const auto addedReadback=std::find_if(loadedV5.templates.begin(),loadedV5.templates.end(),[&](const auto& item){return item.id==candidate.id;});
+        require(addedReadback!=loadedV5.templates.end()&&
+                library::canonicalMusicalFingerprint(*addedReadback)==candidateFingerprint&&
+                dev::serializeTemplateJson(*addedReadback,true)==dev::serializeTemplateJson(candidate,true),
+                "V5 addition typedData/fingerprint readback changed");
+        std::cout<<"Factory V5 READY: inherited="<<frozenV4.size()
+                 <<" exact_payloads=PASS additions=1 schema=2 distinct_music=PASS\n";
+        return 0;
+    }
     std::cout<<"Factory V4 READY: legacy=629 additions=28 total=657 exact_duplicates=0 new_connection_duplicates=0 schema=2; pitch/rhythm/bass preservation and typed readback PASS\n";
     return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

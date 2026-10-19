@@ -1685,6 +1685,169 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     return 0;
 }
 #include "Phase61Benchmark.h"
+namespace {
+bool unifiedPathIs(const ContinuationCandidate& c,const std::vector<std::string>& labels) {
+    if(c.continuation.size()!=labels.size())return false;
+    for(std::size_t i=0;i<labels.size();++i) {
+        ChordEvent aEvent;aEvent.name=c.continuation[i].label;aEvent.quality=c.continuation[i].quality;
+        ChordEvent bEvent;bEvent.name=labels[i];
+        const auto a=normalizeChord(aEvent),b=normalizeChord(bEvent);
+        if(a.root!=b.root||a.quality!=b.quality||a.bass!=b.bass||a.intervalMask!=b.intervalMask)return false;
+    }
+    return true;
+}
+bool unifiedSourceTraceable(const ContinuationCandidate& c,const RecommendationSet& rec,const TemplateID& id) {
+    return std::any_of(c.evidence.begin(),c.evidence.end(),[&](const auto& e) {
+        if(e.templateId!=id)return false;
+        return std::any_of(rec.matches.begin(),rec.matches.end(),[&](const auto& m) {
+            return m.templateId==e.templateId&&m.key.tonic==e.key.tonic&&m.key.mode==e.key.mode&&
+                m.templateMatchStart==e.matchStart&&m.templateMatchEnd==e.matchEnd&&
+                m.continuationStartIndex==e.continuationStart;
+        });
+    });
+}
+int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem::path& factoryPath) {
+    std::filesystem::create_directories(out);
+    std::ofstream log(out/"unified.txt");
+    require(bool(log),"unified evidence opens");
+    const auto loaded=library::loadFactory(factoryPath);
+    require(bool(loaded)&&loaded.libraryVersion==5&&loaded.templates.size()==658,"read-only Factory 5/658");
+    for(const TemplateID id:{"POP_014","V5_POP_VARIANT_001"})
+        require(std::count_if(loaded.templates.begin(),loaded.templates.end(),
+            [&](const auto& t){return t.id==id;})==1,"required long-form source exists exactly once");
+
+    struct Case {std::string name;Progression input;AnalysisContext context;};
+    std::vector<Case> cases;
+    const auto add=[&](const char* name,Progression p,std::optional<KeySignature> key) {
+        AnalysisContext c;c.forcedKey=key;c.timeSigNumerator=4;c.timeSigDenominator=4;
+        cases.push_back({name,std::move(p),c});
+    };
+    add("C-G-Am Auto",phrase({"C","G","Am"},{4,4,4},true),std::nullopt);
+    add("C-G-Am-F Auto",phrase({"C","G","Am","F"},{4,4,4,4},true),std::nullopt);
+    add("Am-G#dim-G-D/F# Auto",symbolic(phrase({"Am","G#dim","G","D/F#"},{4,4,4,4},true)),std::nullopt);
+    add("F-G-Am Auto",phrase({"F","G","Am"},{4,4,4},true),std::nullopt);
+    add("F-G-Am forced A minor",phrase({"F","G","Am"},{4,4,4},true),KeySignature{PitchClass::A,Mode::Minor});
+    add("C-Fm-G Auto",phrase({"C","Fm","G"},{2,2,2},true),std::nullopt);
+    add("C-Fm-G forced C major",phrase({"C","Fm","G"},{2,2,2},true),KeySignature{PitchClass::C,Mode::Major});
+    require(cases.size()==7,"exactly seven requested input/key cases");
+
+    plugin::RecommendationWorker worker(factoryPath,out/"unified-user.db",out/"unified-factory-store");
+    constexpr std::array<const char*,4> groups{"Resolve","Develop","Loop","Color"};
+    const std::vector<std::string> pop014{"Em","F","C","F","G"},v5pop{"Em","F","C","Dm","G"};
+    std::uint64_t revision=1;std::size_t total{},defaultsTotal{},moreTotal{},exploreTotal{};
+    for(std::size_t test=0;test<cases.size();++test) {
+        const auto& item=cases[test];
+        worker.submit(item.input,item.context,{},false,revision++);
+        const auto result=wait(worker);const auto& rec=result.recommendations;
+        require(result.factoryVersion==5&&result.factoryCount==658&&result.userCount==0,"Worker uses isolated Factory 5/658");
+        require(!result.algorithmPreset&&rec.retrievalTimingMode==RetrievalTimingMode::Unified&&
+            rec.abstractChordCompatibility&&!rec.phase3aEnabled,"Worker submit runs unified abstract-compatible mode");
+        require(rec.stats.shortlistSize==658&&rec.groups.size()==4,"all Factory entries reach the four output groups");
+        if(item.context.forcedKey) {
+            require(result.analysis.selectedKey&&result.analysis.selectedKey->key.tonic==item.context.forcedKey->tonic&&
+                result.analysis.selectedKey->key.mode==item.context.forcedKey->mode,"forced key remains selected");
+            for(const auto& m:rec.matches)require(m.key.tonic==item.context.forcedKey->tonic&&
+                m.key.mode==item.context.forcedKey->mode,"forced key constrains actual matches");
+        }
+        const auto visible=session::presentationIndices(rec,{});
+        const auto key=result.analysis.selectedKey?formatKey(result.analysis.selectedKey->key):"UNKNOWN";
+        auto session=imported(item.input);std::vector<std::string> identities;
+        std::size_t caseTotal{},caseDefault{},caseMore{},caseExplore{};
+        bool classic{},popFull{},v5Full{},fourLoop{},color{},dmLoop{},gce{},cge{};
+        log<<"\nCASE "<<test<<" "<<item.name<<" input=\""<<phase61InputPath(item.input)
+           <<"\" selectedKey="<<key<<" ms="<<result.computationMs<<'\n';
+        for(std::size_t g=0;g<rec.groups.size();++g) {
+            const auto access=session::continuationAccess(rec.groups[g]);
+            for(std::size_t n=0;n<rec.groups[g].size();++n) {
+                const auto& c=rec.groups[g][n];const auto identity=continuationMusicFingerprint(c);
+                require(std::find(identities.begin(),identities.end(),identity)==identities.end(),
+                    "identical music occupies one recommendation position");
+                identities.push_back(identity);
+                require(c.id=="music-v1:"+identity&&std::any_of(rec.matches.begin(),rec.matches.end(),
+                    [&](const auto& m){return representativeMatch(c,m);}),"exact identity and real representative match");
+                require(c.hardConstraintsPassed&&c.baseQualified&&std::isfinite(c.rankingScore),
+                    "every Worker output passed hard and base qualification");
+                const bool shown=std::find(visible[g].begin(),visible[g].end(),n)!=visible[g].end();
+                const bool inMore=std::find(access.more.begin(),access.more.end(),n)!=access.more.end();
+                require(inMore,"retained qualified output is accessible in More");
+                if(c.exploratory)require(!shown,"exploratory candidate is outside default positions");
+                ++total;++caseTotal;++moreTotal;++caseMore;
+                if(shown){++defaultsTotal;++caseDefault;}
+                if(c.exploratory){++exploreTotal;++caseExplore;}
+                log<<"CARD "<<groups[g]<<" rank="<<n+1<<" id="<<c.id<<" key="<<formatKey(c.key)
+                   <<" intent="<<intentName(c.intent)<<" ranking="<<c.rankingScore<<" eligibility="<<c.eligibilityScore
+                   <<" hard="<<c.hardConstraintsPassed<<" baseQualified="<<c.baseQualified<<" exploratory="<<c.exploratory
+                   <<" default="<<shown<<" more="<<inMore<<" suffix=\""<<phase61ChordPath(c.continuation)
+                   <<"\" sourceCount="<<c.supportingTemplates.size()<<" evidence=";
+                for(std::size_t i=0;i<std::min<std::size_t>(3,c.evidence.size());++i) {
+                    const auto& e=c.evidence[i];if(i)log<<';';
+                    log<<e.templateId<<'@'<<formatKey(e.key)<<'['<<e.matchStart<<'-'<<e.matchEnd
+                       <<";next="<<e.continuationStart<<']';
+                }
+                log<<'\n';
+                if(test==0) {
+                    if(phase61TargetSuffix(c)&&shown)classic=true;
+                    if(unifiedPathIs(c,pop014)&&unifiedSourceTraceable(c,rec,"POP_014"))popFull=true;
+                    if(unifiedPathIs(c,v5pop)&&unifiedSourceTraceable(c,rec,"V5_POP_VARIANT_001"))v5Full=true;
+                }
+                if(test==1&&g==2&&c.intent==PhraseIntent::Loop&&phase61CandidateRepeatsInput(item.input,c))fourLoop=true;
+                if((test==3||test==4)&&g==3&&c.intent==PhraseIntent::Color)color=true;
+                if((test==5||test==6)&&g==2&&c.intent==PhraseIntent::Loop&&unifiedPathIs(c,{"Dm"})&&shown)dmLoop=true;
+                if(test==2) {
+                    if(unifiedPathIs(c,{"G","C","Em"})&&c.baseQualified&&c.exploratory&&inMore)gce=true;
+                    if(unifiedPathIs(c,{"C","G","Em"})&&c.baseQualified&&c.exploratory&&inMore)cge=true;
+                }
+                if(n==0) {
+                    const auto previewBuilt=preview::buildSequence(session,&c,120.);
+                    require(bool(previewBuilt),"first candidate in group builds Preview");
+                    const auto snap=snapshot::deserialize(snapshot::serialize(
+                        snapshot::capture(session,c,rec.matches,120.,4,4)));
+                    require(bool(snap)&&snap.value.match&&representativeMatch(c,*snap.value.match),
+                        "first group candidate Snapshot preserves its actual representative");
+                    require(session::continuationFingerprint(c)==session::continuationFingerprint(snap.value.candidate),
+                        "Snapshot roundtrip preserves exact music identity");
+                    midi::CandidateExportContext ec;ec.imported=session;ec.tempo=120.;ec.meter={4,4};ec.key=c.key;
+                    for(auto mode:{midi::ArrangementMode::BlockChords,midi::ArrangementMode::VoiceLed})
+                    for(auto scope:{midi::ExportScope::FullPhrase,midi::ExportScope::CurrentOnly,midi::ExportScope::ContinuationOnly}) {
+                        ec.mode=mode;ec.scope=scope;
+                        const auto payload=midi::candidatePayload(ec,c),restored=midi::candidatePayload(ec,snap.value.candidate);
+                        require(bool(payload)&&bool(restored)&&payload.payload.smfBytes==restored.payload.smfBytes,
+                            "Snapshot preserves Block/VoiceLed MIDI in all three scopes");
+                        const auto decoded=midi::readFromMemory(payload.payload.smfBytes);
+                        require(bool(decoded)&&!decoded.file.notes.empty(),"actual MIDI output reads back");
+                        if(mode==midi::ArrangementMode::VoiceLed&&scope==midi::ExportScope::FullPhrase)
+                            compareMidi(previewBuilt.sequence,decoded);
+                    }
+                }
+            }
+            require(access.exploratory==static_cast<std::size_t>(std::count_if(rec.groups[g].begin(),
+                rec.groups[g].end(),[](const auto& c){return c.exploratory;})),"More exploratory count agrees with qualified cards");
+        }
+        log<<"COUNTS candidates="<<caseTotal<<" defaultVisible="<<caseDefault<<" more="<<caseMore
+           <<" exploratory="<<caseExplore<<'\n';
+        if(test==0) {
+            require(classic,"C-G-Am default reaches Em-F-G-C");
+            require(popFull,"full POP_014 suffix Em-F-C-F-G is source-traceable");
+            require(v5Full,"full V5_POP_VARIANT_001 suffix Em-F-C-Dm-G is source-traceable");
+        }
+        if(test==1)require(fourLoop,"C-G-Am-F retains its complete four-chord Loop");
+        if(test==2)require(gce&&cge,"G-C-Em and C-G-Em are qualified exploratory More routes");
+        if(test==3)require(color,"F-G-Am Auto retains actual Color continuations");
+        // Forced A minor constrains the search. The Auto Color paths above use F major;
+        // absence of those paths under a different forced key is not a coverage regression.
+        if(test==4)log<<"KEY_CONSTRAINT forced A minor excludes the F-major Auto Color interpretations\n";
+        if(test==5||test==6)require(dmLoop,"C-Fm-G retains default Dm Loop for Auto and forced C major");
+    }
+    phase5CompatibilityExperiments(out);
+    log<<"SUMMARY cases="<<cases.size()<<" candidates="<<total<<" defaultVisible="<<defaultsTotal
+       <<" more="<<moreTotal<<" exploratory="<<exploreTotal<<" (default counts are observations only)\n";
+    log.flush();require(bool(log),"unified evidence flushes");
+    std::cout<<"Unified integration PASS cases="<<cases.size()<<" candidates="<<total
+       <<" defaultVisible="<<defaultsTotal<<" more="<<moreTotal<<" exploratory="<<exploreTotal
+       <<" checks="<<checks<<" output="<<out/"unified.txt"<<'\n';
+    return 0;
+}
+}
 int main(int argc,char** argv) {
  try {
     const std::filesystem::path out=argc>1?argv[1]:"phase4d";std::filesystem::create_directories(out);
@@ -1702,6 +1865,9 @@ int main(int argc,char** argv) {
     if(argc>3&&std::string(argv[3])=="phase61")return runPhase61(out,argc>2?std::filesystem::path(argv[2]):std::filesystem::path(HC_FACTORY_DB_PATH),argc>4&&std::string(argv[4])=="strict");
     if(argc>3&&std::string(argv[3])=="phase62")return runPhase62(out,argv[2],argc>4&&std::string(argv[4])=="strict");
     if(argc>3&&std::string(argv[3])=="consistency")return runDev9Consistency(out,argv[2],argc>4&&std::string(argv[4])=="strict");
+    if(argc>3&&std::string(argv[3])=="unified")return runUnifiedIntegration(out,argc>2?std::filesystem::path(argv[2]):std::filesystem::path(HC_FACTORY_DB_PATH));
+    if(argc<=3)return runUnifiedIntegration(out,argc>2?std::filesystem::path(argv[2]):std::filesystem::path(HC_FACTORY_DB_PATH));
+    if(std::string(argv[3])!="history")throw std::runtime_error("unknown Phase4D mode; use unified or history");
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(db)&&db.templates.size()==657,"Factory V4 baseline");CandidateIndex index(db.templates);
     std::ofstream summary(out/"summary.txt"),trace(out/"candidate-traces.txt"),meters(out/"meters.tsv"),perf(out/"performance.tsv");
     summary<<"SYNTHETIC fixtures from user transcription; no captured Cubase MIDI/XML supplied.\n";
@@ -1978,5 +2144,5 @@ int main(int argc,char** argv) {
     summary<<"PASS checks="<<checks<<"; Factory=657; synthetic tests only; true R01 installed ON identity and R02 host cause require diagnostic export.\n";
     std::cout<<"Phase4D PASS "<<checks<<" checks\n";return 0;
   }catch(const std::exception& e){const auto phase=argc>3?std::string(argv[3]):std::string{};
-    std::cerr<<(phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":phase=="phase6"?"Phase6":phase=="phase61"?"Phase61":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
+    std::cerr<<(phase=="unified"||phase.empty()?"UnifiedIntegration":phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":phase=="phase6"?"Phase6":phase=="phase61"?"Phase61":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
 }

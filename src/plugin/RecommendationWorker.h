@@ -19,7 +19,7 @@ struct WorkerResult {
     double computationMs{};
     std::size_t factoryCount{}, userCount{};
     bool analysisReused{};
-    std::optional<DevelopmentAlgorithmPreset> algorithmPreset;
+    std::optional<DevelopmentAlgorithmPreset> algorithmPreset; // legacy request echo only; execution is always Unified
     int factoryVersion{};
     std::string factorySha256{"unavailable"};
 };
@@ -32,6 +32,7 @@ public:
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
     std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {},
                          bool rankingOnly = false, std::uint64_t phraseRevision = 0);
+    // Migration alias for old development clients. Preset never selects behavior.
     std::uint64_t submitPreset(Progression, AnalysisContext, DevelopmentAlgorithmPreset,
                                RecommendationRequest = {}, bool rankingOnly = false,
                                std::uint64_t phraseRevision = 0);

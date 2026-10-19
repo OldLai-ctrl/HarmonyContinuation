@@ -1,6 +1,7 @@
 #include "TemplateJson.h"
 #include "ProgressionJson.h"
 #include "core/ContinuationEngine.h"
+#include "core/ChordPitchSet.h"
 #include "library/ProgressionLibrary.h"
 #include "plugin/RecommendationWorker.h"
 #include <algorithm>
@@ -64,6 +65,82 @@ int main() {
           "C OPEN duration");
     check(std::abs(path->continuation[0].durationQN - 2.) < 0.001, "A suffix duration");
     check(first.groups[0].size() == 1, "H resolve grouping");
+    const auto autoFirst=recommendContinuations(makeMatchQuery(a),CandidateIndex(basic));
+    const auto* autoPath=findSuffix(autoFirst,"G","C");
+    check(autoPath&&path&&std::abs(autoPath->eligibilityScore-path->eligibilityScore)<0.0001f&&
+          std::abs(autoPath->rankingScore-path->rankingScore)<0.0001f,
+          "normalized route has identical qualification and ranking in Auto and its forced key");
+    auto changedKeyPrior=query(a);
+    changedKeyPrior.interpretations.front().key.confidence=0.f;
+    const auto priorOnly=recommendContinuations(changedKeyPrior,CandidateIndex(basic));
+    const auto* priorPath=findSuffix(priorOnly,"G","C");
+    check(priorPath&&path&&std::abs(priorPath->eligibilityScore-path->eligibilityScore)<0.0001f&&
+          std::abs(priorPath->rankingScore-path->rankingScore)<0.0001f,
+          "normalized harmonic quality does not depend on the explanatory key confidence");
+    // The same musical relation must score and order identically in all twelve keys.
+    // Absolute output pitches remain distinct identities; only this comparison normalizes them.
+    constexpr const char* roots[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+    const auto transpose=[&](Progression input,int shift) {
+        for(auto& e:input) {
+            const auto n=normalizeChord(e);
+            const auto rootLength=1u+(e.name.size()>1&&(e.name[1]=='#'||e.name[1]=='b'));
+            e.name=std::string(roots[(int(*n.root)+shift)%12])+e.name.substr(rootLength);
+        }
+        return input;
+    };
+    const auto sameTransposed=[&](const RecommendationSet& reference,const RecommendationSet& shifted,int shift) {
+        for(std::size_t g=0;g<4;++g) {
+            check(reference.groups[g].size()==shifted.groups[g].size(),"transposition preserves candidate count");
+            for(std::size_t i=0;i<reference.groups[g].size();++i) {
+                const auto& x=reference.groups[g][i];const auto& y=shifted.groups[g][i];
+                check(x.primaryTemplate==y.primaryTemplate&&x.intent==y.intent&&x.key.mode==y.key.mode&&
+                    (int(x.key.tonic)+shift)%12==int(y.key.tonic)&&x.baseQualified==y.baseQualified&&
+                    x.exploratory==y.exploratory&&std::abs(x.eligibilityScore-y.eligibilityScore)<0.0001f&&
+                    std::abs(x.rankingScore-y.rankingScore)<0.0001f&&x.continuation.size()==y.continuation.size(),
+                    "transposition preserves normalized explanation, qualification, score and order");
+                for(std::size_t j=0;j<x.continuation.size();++j) {
+                    const auto cx=chordPitches(x.continuation[j].label),cy=chordPitches(y.continuation[j].label);
+                    check((cx.root+shift)%12==cy.root&&(cx.bass+shift)%12==cy.bass&&cx.intervals==cy.intervals&&
+                        x.continuation[j].durationQN==y.continuation[j].durationQN,
+                        "transposition preserves actual quality, bass and timing");
+                }
+            }
+        }
+    };
+    for(int shift=0;shift<12;++shift) {
+        const auto moved=transpose(a,shift);
+        sameTransposed(first,recommendContinuations(query(moved,{PitchClass(shift),Mode::Major}),CandidateIndex(basic)),shift);
+        sameTransposed(autoFirst,recommendContinuations(makeMatchQuery(moved),CandidateIndex(basic)),shift);
+    }
+    const auto longPrefix=progression(R"([{"name":"C","start":0},{"name":"G","start":4},{"name":"Am","start":8},{"name":"Em","start":12},{"name":"F","start":16}])");
+    const auto longQuery=makeMatchQuery(longPrefix);
+    for(int shift=0;shift<12;++shift) {
+        const auto moved=makeMatchQuery(transpose(longPrefix,shift));
+        check(longQuery.interpretations.size()==moved.interpretations.size(),"bounded key budget is transposition invariant");
+        for(std::size_t i=0;i<longQuery.interpretations.size();++i) {
+            const auto& x=longQuery.interpretations[i].key;const auto& y=moved.interpretations[i].key;
+            check((int(x.key.tonic)+shift)%12==int(y.key.tonic)&&x.key.mode==y.key.mode,
+                "bounded alternate-key ties use a normalized root order");
+        }
+    }
+    auto uneven=a;uneven[0].startQN=0.;uneven[1].startQN=1.;uneven[2].startQN=9.;
+    check(sortAndInferDurations(uneven),"uneven structural fixture");
+    const auto unevenResults=recommend(uneven,basic);const auto* unevenPath=findSuffix(unevenResults,"G","C");
+    check(unevenPath&&std::abs(path->eligibilityScore-unevenPath->eligibilityScore)<0.0001f&&
+        unevenResults.retrievalTimingMode==RetrievalTimingMode::Unified&&unevenResults.abstractChordCompatibility,
+        "unified structural qualification ignores rhythm while timing remains realized");
+    auto extensionTemplates=templates(R"([{"id":"extended","mode":"major","sequence":"Imaj7 vi7 ii7 V7 Imaj7","intent":"resolve"}])");
+    for(auto& e:extensionTemplates.front().full) {
+        const auto realized=realizeContinuation(e,{PitchClass::C,Mode::Major},4.);
+        e.intervalMask=chordPitches(realized.label).intervals;
+    }
+    prepareTemplate(extensionTemplates.front());
+    const auto extensionResults=recommend(a,extensionTemplates);
+    check(std::any_of(extensionResults.matches.begin(),extensionResults.matches.end(),[](const auto& m){
+        return std::any_of(m.alignmentTrace.begin(),m.alignmentTrace.end(),[](const auto& step){
+            return hasReason(step.reasons,MatchReason::AbstractExtensionCompatibility);
+        });
+    }),"unified retrieval retains guarded directional extension compatibility");
     check(makeMatchQuery(a).interpretations.size() >= 2, "P ambiguous key interpretations retained");
     check(!dev::parseTemplateJson(R"([{"id":"bad","mode":"major","sequence":"I V","styles":"unknown:1"}])"),
           "factory rejects unknown style");
@@ -359,6 +436,8 @@ int main() {
         preferred.key.confidence=0.99f;
         alternate.key.key.tonic=PitchClass::C;
         alternate.key.confidence=0.10f;
+        // Unified ignores explanatory confidence; a real alignment cost creates the competing order.
+        alternate.full.front().sourceUncertainty=0.10f;
         ambiguous.interpretations={preferred,alternate};
         RecommendationRequest hardRequest;
         MelodyConstraint melody;melody.startQN=12.;melody.durationQN=2.;melody.pitchClass=2;
@@ -398,11 +477,20 @@ int main() {
     const auto shipped = library::loadFactory(HC_FACTORY_DB_PATH);
     check(shipped && shipped.templates.size() == 161, "factory seed count and SQLite roundtrip");
     const auto wrong = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4,"duration":2},{"name":"F#","start":6,"duration":1},{"name":"Dm","start":7}])");
-    const auto goodFactory = recommend(inserted, shipped.templates);
-    const auto badFactory = recommend(wrong, shipped.templates);
-    check(!goodFactory.groups[0].empty() && !badFactory.groups[0].empty() &&
-          goodFactory.groups[0][0].rankingScore > badFactory.groups[0][0].rankingScore + 5.f,
-          "unexplained input does not rank like resolved secondary chord");
+    const auto goodInsertion = recommend(inserted, basic);
+    const auto badInsertion = recommend(wrong, basic);
+    const auto* goodRoute=findSuffix(goodInsertion,"G","C");
+    const auto* badRoute=findSuffix(badInsertion,"G","C");
+    const auto explained=[](const RecommendationSet& result) {
+        return std::any_of(result.matches.begin(),result.matches.end(),[](const auto& m){
+            return std::any_of(m.alignmentTrace.begin(),m.alignmentTrace.end(),[](const auto& step){
+                return step.operation==AlignmentOp::QueryInsertion&&hasReason(step.reasons,MatchReason::ResolvesToMatchedTarget);
+            });
+        });
+    };
+    check(goodRoute&&badRoute&&explained(goodInsertion)&&!explained(badInsertion)&&
+          goodRoute->rankingScore>badRoute->rankingScore,
+          "resolved secondary insertion outranks an unexplained insertion on the same harmonic route");
     auto custom = basic.front(); custom.id = "user1"; custom.sourceType = "user";
     {
         library::UserLibrary user(userPath);

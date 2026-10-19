@@ -37,7 +37,7 @@ public:
     void pollRecommendation() noexcept;
     void setRecommendationPreferences(std::optional<harmony::Style>, std::optional<harmony::PhraseIntent>) noexcept;
     void setAlgorithmPreset(DevelopmentAlgorithmPreset) noexcept;
-    DevelopmentAlgorithmPreset algorithmPreset() const noexcept { return algorithmPreset_; }
+    DevelopmentAlgorithmPreset algorithmPreset() const noexcept { return DevelopmentAlgorithmPreset::Legacy; }
     void applySessionState(const harmony::session::PluginSessionState&) noexcept;
     std::string saveRecommendation(const harmony::ContinuationCandidate&, const harmony::session::SaveMetadata&) noexcept;
     std::string updateUserProgression(const harmony::ProgressionTemplate&) noexcept;
@@ -87,7 +87,6 @@ private:
     harmony::RecommendationSet recommendations_;
     bool recommendationResultReady_{};
     bool enrichmentResultReady_{};
-    DevelopmentAlgorithmPreset algorithmPreset_{DevelopmentAlgorithmPreset::Legacy};
     std::string factorySha256_{"PENDING"};
     harmony::RecommendationRequest recommendationRequest_;
     std::unique_ptr<RecommendationWorker> recommendationWorker_;

@@ -1,4 +1,5 @@
 #include "library/ProgressionLibrary.h"
+#include "TemplateJson.h"
 #include "library/LegacyFactoryIdResolver.h"
 #include "library/LibraryStore.h"
 #include "core/ContinuationEngine.h"
@@ -92,8 +93,56 @@ void reachable(const library::LoadResult& db,const CandidateIndex& index,const c
     const auto preview=preview::buildSequence(imported,chosen,120);require(bool(preview),"recommended preview");exactOutput(preview.sequence);
     std::cout<<id<<" tonic="<<static_cast<int>(tonic)<<" perGroup="<<limit<<" rank="<<rank<<" full path -> preview -> exact MIDI PASS\n";
 }
+void versionedPopVariant(const library::LoadResult& db) {
+    require(db.libraryVersion==5&&db.storageSchemaVersion==2&&db.templates.size()==658,"V5 additive library contract");
+    const auto v4=library::loadFactory(HC_FACTORY_V4_PATH);
+    require(v4&&v4.libraryVersion==4&&v4.templates.size()==657,"frozen V4 reference");
+    for(const auto& old:v4.templates)
+        require(dev::serializeTemplateJson(old)==dev::serializeTemplateJson(find(db,old.id)),"V5 changed inherited payload: "+old.id);
+    const auto& variant=find(db,"V5_POP_VARIANT_001");
+    require(variant.version==5&&variant.full.size()==8&&!variant.loopable,"curated complete variant identity");
+    const CandidateIndex index(db.templates);
+    float eligibility=-1.f,ranking=-1.f;
+    for(int shift=0;shift<12;++shift) {
+        const KeySignature key{PitchClass(shift),Mode::Major};Progression input;double at{};
+        for(std::size_t i=0;i<3;++i){auto e=chord(variant.full[i],key,at);at+=*e.durationQN;input.push_back(e);}
+        input.back().durationQN.reset();input.back().openEnded=true;
+        AnalysisContext ctx;ctx.forcedKey=key;RecommendationWeights weights;weights.perGroup=10;
+        const auto rec=recommendContinuations(makeMatchQuery(input,ctx),index,{},weights);
+        const ContinuationCandidate* chosen{};
+        for(const auto& group:rec.groups)for(const auto& c:group)
+            if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),variant.id)!=c.supportingTemplates.end()&&
+                c.continuation.size()==5)chosen=&c;
+        require(chosen&&chosen->baseQualified&&chosen->hardConstraintsPassed,"exact prefix failed to recall new complete route");
+        require(std::any_of(rec.matches.begin(),rec.matches.end(),[&](const auto& m){return representativeMatch(*chosen,m);}),"real representative");
+        for(std::size_t i=0;i<5;++i) {
+            const auto expected=chordPitches(chord(variant.full[i+3],key,0));
+            const auto actual=chordPitches(chosen->continuation[i].label);
+            require(expected.root==actual.root&&expected.bass==actual.bass&&expected.intervals==actual.intervals,"variant suffix changed");
+        }
+        if(shift==0){eligibility=chosen->eligibilityScore;ranking=chosen->rankingScore;}
+        require(std::abs(eligibility-chosen->eligibilityScore)<.0001f&&std::abs(ranking-chosen->rankingScore)<.0001f,
+            "new normalized route scores differently across keys");
+    }
+    const auto store=std::filesystem::path(HC_FACTORY_DB_PATH).parent_path()/
+        ("v5-store-case-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::string error;require(library::installFactoryPackage(HC_FACTORY_V4_PATH,store,error),error);
+    const auto selection=library::loadAvailableFactory(HC_FACTORY_DB_PATH,store);
+    require(selection.library&&selection.library.libraryVersion==5&&selection.path==HC_FACTORY_DB_PATH,"new bundle preference");
+    {std::ifstream f(store/"active.txt");int v{};f>>v;require(v==4,"bundle selection changed installed pointer");}
+    require(library::installFactoryPackage(HC_FACTORY_DB_PATH,store,error),error);
+    require(library::installFactoryPackage(HC_FACTORY_V4_PATH,store,error),error);
+    {std::ifstream f(store/"active.txt");int v{};f>>v;require(v==5,"older repair downgraded V5");}
+    const auto history=library::loadFactory(store/"4"/"factory.db");
+    require(history&&history.templates.size()==657&&dev::serializeTemplateJson(find(history,"POP_014"))==
+        dev::serializeTemplateJson(find(v4,"POP_014")),"historical V4 payload lost");
+    std::filesystem::remove_all(store);
+    std::cout<<"V5 657 inherited payloads, 12-key variant recall/scores, versioned store and downgrade protection PASS\n";
+}
+
 }
 int main(int argc,char** argv){try{
+    if(product::factoryLibraryVersion==5){const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(db),db.error);versionedPopVariant(db);return 0;}
     require(product::factoryLibraryVersion==4,"development product library identity");
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(db&&db.templates.size()==657&&db.libraryVersion==4&&db.storageSchemaVersion==2,"V4 load");
     std::size_t added{};for(const auto& t:db.templates)if(t.id.starts_with("V4_")){

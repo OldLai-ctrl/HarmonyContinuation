@@ -96,16 +96,12 @@ tresult PLUGIN_API Controller::terminate(){
 std::string Controller::hostDiagnostics() const {
     auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
     copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
-    const auto weights=harmony::plugin::developmentRecommendationWeights(algorithmPreset_);
     return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN)+
         "\nBuild ID="+std::string(product::commit)+"; Factory version="+std::to_string(sessionState_.factoryLibraryVersion)+
-        "; Factory SHA-256="+factorySha256_+"\nAlgorithm preset="+algorithmPresetName(algorithmPreset_)+
-        "; Project reopen=Legacy\nRequested HarmonyFirst="+(algorithmPreset_==DevelopmentAlgorithmPreset::HarmonyFirst?std::string("ON"):std::string("OFF"))+"; Requested Phase3A="+
-        (weights.diminishedPassingInsertionException?std::string("ON"):std::string("OFF"))+"; Requested Abstract="+
-        (weights.abstractChordCompatibility?std::string("ON"):std::string("OFF"))+"; Actual recommendations="+
-        (recommendationResultReady_ ? "HarmonyFirst="+std::string(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")+
-            " Phase3A="+(recommendations_.phase3aEnabled?"ON":"OFF")+
-            " Abstract="+(recommendations_.abstractChordCompatibility?"ON":"OFF") : "PENDING");
+        "; Factory SHA-256="+factorySha256_+"\nRecommendation engine=Unified"+
+        "; Actual recommendations="+(recommendationResultReady_ ?
+            std::string(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::Unified?"Unified":"unexpected legacy context")+
+            "; strict extension compatibility="+(recommendations_.abstractChordCompatibility?"ON":"OFF") : "PENDING");
 }
 std::string Controller::exportHostDiagnostics(void* owner) noexcept {
     try {
@@ -116,17 +112,12 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
         auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
         copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
         std::ofstream file(*path,std::ios::binary);file<<copy.diagnostics(sessionState_.locale==session::Locale::ZhCN,true);
-        const auto context=harmony::plugin::developmentContext(sessionState_.analysisContext(),algorithmPreset_);
-        const auto weights=harmony::plugin::developmentRecommendationWeights(algorithmPreset_);
+        const auto context=harmony::recommendationContext(sessionState_.analysisContext());
         file<<"\nBuild ID="<<product::commit<<"\nFactory version="<<sessionState_.factoryLibraryVersion
-            <<"\nFactory SHA-256="<<factorySha256_<<"\nAlgorithm preset="<<algorithmPresetName(algorithmPreset_)
-            <<"\nProject reopen=Legacy (experimental selection is not saved)\nRequested HarmonyFirst="<<(algorithmPreset_==DevelopmentAlgorithmPreset::HarmonyFirst?"ON":"OFF")
-            <<" Phase3A="<<(weights.diminishedPassingInsertionException?"ON":"OFF")
-            <<" Abstract="<<(weights.abstractChordCompatibility?"ON":"OFF")<<"; Actual recommendations=";
+            <<"\nFactory SHA-256="<<factorySha256_<<"\nRecommendation engine=Unified; Actual recommendations=";
         if(recommendationResultReady_)
-            file<<"HarmonyFirst="<<(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::HarmonyFirst?"ON":"OFF")
-                <<" Phase3A="<<(recommendations_.phase3aEnabled?"ON":"OFF")
-                <<" Abstract="<<(recommendations_.abstractChordCompatibility?"ON":"OFF")<<'\n';
+            file<<(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::Unified?"Unified":"unexpected legacy context")
+                <<" strict extension compatibility="<<(recommendations_.abstractChordCompatibility?"ON":"OFF")<<'\n';
         else file<<"PENDING\n";
         file<<"Meter source=MIDI/session; live host is reference only (meter may change). Host="
             <<lastTimeSigNumerator_.value_or(0)<<'/'<<lastTimeSigDenominator_.value_or(0)
@@ -193,7 +184,6 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         hostEnvironment_.stateRestoreStatus="restored";
         hostEnvironment_.capabilities.stateRestore=host::Observed::Available;
         sessionState_=std::move(restored.state);
-        algorithmPreset_=DevelopmentAlgorithmPreset::Legacy;
         importedProgression_=sessionState_.imported;
         recommendationRequest_.style=sessionState_.style;
         recommendationRequest_.preferredIntent=sessionState_.intent;
@@ -202,7 +192,6 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         analysis_={}; matches_.clear(); recommendations_={}; recommendationResultReady_=false;
         if (view_) {
             view_->setSessionState(sessionState_);
-            view_->setAlgorithmPreset(algorithmPreset_);
             view_->clearSessionDirty();
             view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
             view_->setHostText(hostDiagnostics());
@@ -250,7 +239,6 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
     if (view_) {
         try {
             view_->setSessionState(sessionState_);
-            view_->setAlgorithmPreset(algorithmPreset_);
             view_->clearSessionDirty();
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
@@ -274,7 +262,7 @@ void Controller::pollRecommendation() noexcept {
         pollMidiImport();
         if (!recommendationWorker_) return;
         auto latest = recommendationWorker_->takeLatest();
-        if (!latest || latest->generation!=recommendationGeneration_ || latest->algorithmPreset!=algorithmPreset_) return;
+        if (!latest || latest->generation!=recommendationGeneration_) return;
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
         recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
@@ -310,28 +298,13 @@ void Controller::submitRecommendation(bool rankingOnly) {
     enrichmentResultReady_=false;
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     auto analysisContext=sessionState_.analysisContext();
-    recommendationGeneration_=recommendationWorker_->submitPreset(importedProgression_.events,analysisContext,algorithmPreset_,
+    recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
     if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_,recommendationResultReady_); }
 }
-void Controller::setAlgorithmPreset(DevelopmentAlgorithmPreset preset) noexcept {
-    try {
-        if(preset!=DevelopmentAlgorithmPreset::Legacy&&preset!=DevelopmentAlgorithmPreset::HarmonyFirst&&
-            preset!=DevelopmentAlgorithmPreset::Abstract)return;
-        if(preset==algorithmPreset_)return;
-        stopPreview();
-        if(recommendationWorker_)recommendationWorker_->cancel();
-        algorithmPreset_=preset;recommendationResultReady_=false;
-        analysis_={};matches_.clear();recommendations_={};enrichments_={};editorUiState_.reset();
-        if(view_) {
-            view_->setAlgorithmPreset(preset);view_->setAnalysis(analysis_);
-            view_->setMatches(matches_,"Analyzing…");view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
-            view_->setHostText(hostDiagnostics());
-        }
-        submitRecommendation();
-    }catch(...){if(view_)view_->setActionStatus("Algorithm switch failed");}
-}
+// Temporary source compatibility for the independently developed editor.
+void Controller::setAlgorithmPreset(DevelopmentAlgorithmPreset) noexcept {}
 bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidate) const {
     if(!recommendationResultReady_)return false;
     const auto fingerprint=session::continuationFingerprint(candidate);

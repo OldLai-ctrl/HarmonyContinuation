@@ -26,8 +26,8 @@ bool higherRank(const ContinuationCandidate& a, const ContinuationCandidate& b) 
     if (aScore != bScore) return aScore > bScore;
     if (a.continuation.size() != b.continuation.size())
         return a.continuation.size() > b.continuation.size();
-    return std::tuple(a.id,a.primaryTemplate,a.key.tonic,a.key.mode) <
-        std::tuple(b.id,b.primaryTemplate,b.key.tonic,b.key.mode);
+    return std::tuple(a.primaryTemplate,a.keyOffsetFromInput,a.key.mode,a.matchStart,a.matchEnd) <
+        std::tuple(b.primaryTemplate,b.keyOffsetFromInput,b.key.mode,b.matchStart,b.matchEnd);
 }
 PhraseIntent effectiveIntent(const ProgressionTemplate& item, const std::vector<MatchEvent>& suffix) {
     if (item.intent != PhraseIntent::Neutral) return item.intent;
@@ -310,14 +310,17 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     RecommendationSet result;
     result.retrievalTimingMode=query.retrievalTimingMode;
     result.phase3aEnabled=w.diminishedPassingInsertionException;
-    result.abstractChordCompatibility=w.abstractChordCompatibility;
+    const bool unified=query.retrievalTimingMode==RetrievalTimingMode::Unified;
+    result.abstractChordCompatibility=unified||w.abstractChordCompatibility;
     MatchWeights matchWeights;
-    matchWeights.abstractChordCompatibility=w.abstractChordCompatibility;
+    matchWeights.abstractChordCompatibility=result.abstractChordCompatibility;
+    if(unified) matchWeights.keyPriorWeight=0.f;
     result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats, true);
     std::map<std::string, ContinuationCandidate> distinct;
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
     byId.reserve(index.templates().size());
     for (const auto& item : index.templates()) byId.emplace(item.id, &item);
+    const auto inputRoot=query.source.empty()?0:chordPitches(query.source.front()).root;
     for (auto& match : result.matches) {
         if (match.similarity < w.minimumMatch) { match.disposition="minimum_match"; continue; }
         ++result.stats.similarityPassed;
@@ -392,6 +395,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         candidate.primaryTemplate = item.id;
         candidate.sourceAnchorQN = query.source.empty()?0.:query.source.front().startQN;
         candidate.key = match.key;
+        candidate.keyOffsetFromInput=positiveMod(int(match.key.tonic)-inputRoot,12);
         candidate.intent = effectiveIntent(item, suffix);
         candidate.pathContextReliable = preservesLoopContext(*selected, match, item);
         candidate.preservedLoop = item.loopable && candidate.pathContextReliable;
@@ -484,7 +488,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         auto neutral = s;
         neutral.style = neutral.intent = neutral.prior = 0.5f;
         neutral.support = 0.f;
-        candidate.eligibilityScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
+        candidate.eligibilityScore = unified || query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
             ? rhythmNeutralEligibility(neutral, w)
             : 100.f * (w.match*neutral.match + w.skeleton*neutral.skeleton + w.style*neutral.style +
                 w.intent*neutral.intent + w.cadence*neutral.cadence + w.continuation*neutral.continuation +

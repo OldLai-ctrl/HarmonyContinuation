@@ -1,7 +1,9 @@
+#include "core/RecommendationPolicy.h"
 #include "demo/DemoScenario.h"
 #include "library/LibraryStore.h"
 #include "session/ProductServices.h"
 #include "plugin/RecommendationWorker.h"
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -159,11 +161,17 @@ int main() {
                     for (std::size_t i=0;i<left.groups[group].size();++i) {
                         const auto& a=left.groups[group][i];
                         const auto& b=right.groups[group][i];
-                        if (a.id!=b.id || a.primaryTemplate!=b.primaryTemplate ||
-                            a.matchSimilarity!=b.matchSimilarity || a.rankingScore!=b.rankingScore) return false;
+                        if (a.id!=b.id || a.eligibilityScore!=b.eligibilityScore ||
+                            a.rankingScore!=b.rankingScore) return false;
                     }
                 }
                 return true;
+            };
+            const auto unifiedResult=[](const plugin::WorkerResult& result) {
+                return result.error.empty() &&
+                    result.recommendations.retrievalTimingMode==RetrievalTimingMode::Unified &&
+                    result.recommendations.abstractChordCompatibility &&
+                    !result.recommendations.phase3aEnabled;
             };
             const auto validFactoryHash=[](const std::string& value) {
 #if defined(_WIN32)
@@ -180,6 +188,12 @@ int main() {
                 return true;
             };
             AnalysisContext baseContext;
+            baseContext.retrievalTimingMode=RetrievalTimingMode::Legacy;
+            const auto policyContext=recommendationContext(baseContext);
+            const auto policyWeights=recommendationWeights();
+            check(policyContext.retrievalTimingMode==RetrievalTimingMode::Unified &&
+                policyWeights.abstractChordCompatibility && !policyWeights.diminishedPassingInsertionException,
+                "shared worker policy uses Unified retrieval and keeps Phase3A disabled");
             const auto metadataGeneration=worker.submitPreset({},baseContext,
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},false,18);
             const auto metadataOnly=waitResult(worker);
@@ -193,12 +207,12 @@ int main() {
 
             worker.submit(a.chords,{}, {},false,19);
             const auto first=waitResult(worker);
-            check(!first.analysisReused && first.error.empty() && !first.algorithmPreset &&
+            check(!first.analysisReused && !first.algorithmPreset && unifiedResult(first) &&
                 first.factoryVersion==expectedFactoryVersion && validFactoryHash(first.factorySha256),
-                "initial worker analysis reports selected Factory identity");
+                "initial worker analysis uses the shared policy and reports selected Factory identity");
             worker.submit(a.chords,{}, {Style::Pop,std::nullopt},true,19);
             const auto ranked=waitResult(worker);
-            check(ranked.analysisReused && ranked.error.empty(),"ranking reuses analysis");
+            check(ranked.analysisReused && unifiedResult(ranked),"ranking reuses the unified analysis");
 
             const auto emptyAfterInputGeneration=worker.submitPreset({},baseContext,
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},false,19);
@@ -211,77 +225,79 @@ int main() {
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},true,19);
             const auto afterEmpty=waitResult(worker);
             check(afterEmpty.generation==afterEmptyGeneration && !afterEmpty.analysisReused &&
-                afterEmpty.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy && afterEmpty.error.empty(),
-                "non-empty task recomputes after empty metadata-only task");
+                afterEmpty.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy && unifiedResult(afterEmpty),
+                "non-empty task recomputes under the shared policy after empty metadata-only task");
 
-            auto legacyGeneration=worker.submitPreset(a.chords,baseContext,
+            const auto legacyGeneration=worker.submitPreset(a.chords,baseContext,
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},false,20);
             const auto legacy=waitResult(worker);
-            check(legacy.generation==legacyGeneration &&
-                legacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
-                legacy.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy &&
-                !legacy.recommendations.abstractChordCompatibility &&
-                !legacy.recommendations.phase3aEnabled &&
-                legacy.factoryVersion==first.factoryVersion && legacy.factorySha256==first.factorySha256 &&
-                sameRecommendation(first.recommendations,legacy.recommendations),
-                "runtime Legacy preset preserves the legacy worker recommendation");
-
-            const auto abstractGeneration=worker.submitPreset(a.chords,baseContext,
-                plugin::DevelopmentAlgorithmPreset::Abstract,{},true,20);
-            const auto abstract=waitResult(worker);
-            check(abstract.generation==abstractGeneration && abstract.analysisReused &&
-                abstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract &&
-                abstract.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy &&
-                abstract.recommendations.abstractChordCompatibility &&
-                !abstract.recommendations.phase3aEnabled &&
-                abstract.factoryVersion==first.factoryVersion && abstract.factorySha256==first.factorySha256,
-                "Abstract reuses timing query and changes only its compatibility flag");
-
             const auto hfGeneration=worker.submitPreset(a.chords,baseContext,
                 plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},true,20);
             const auto harmonyFirst=waitResult(worker);
-            check(harmonyFirst.generation==hfGeneration && !harmonyFirst.analysisReused &&
-                harmonyFirst.algorithmPreset==plugin::DevelopmentAlgorithmPreset::HarmonyFirst &&
-                harmonyFirst.recommendations.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst &&
-                !harmonyFirst.recommendations.abstractChordCompatibility &&
-                !harmonyFirst.recommendations.phase3aEnabled &&
-                harmonyFirst.factoryVersion==first.factoryVersion && harmonyFirst.factorySha256==first.factorySha256,
-                "HarmonyFirst switch invalidates the Legacy cached query");
+            const auto abstractGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},true,20);
+            const auto abstract=waitResult(worker);
+            check(legacy.generation==legacyGeneration && !legacy.analysisReused &&
+                legacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy && unifiedResult(legacy) &&
+                harmonyFirst.generation==hfGeneration && harmonyFirst.analysisReused &&
+                harmonyFirst.algorithmPreset==plugin::DevelopmentAlgorithmPreset::HarmonyFirst && unifiedResult(harmonyFirst) &&
+                abstract.generation==abstractGeneration && abstract.analysisReused &&
+                abstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract && unifiedResult(abstract) &&
+                legacy.factoryVersion==first.factoryVersion && legacy.factorySha256==first.factorySha256 &&
+                sameRecommendation(legacy.recommendations,harmonyFirst.recommendations) &&
+                sameRecommendation(legacy.recommendations,abstract.recommendations),
+                "legacy preset aliases reuse one Unified query and preserve music identity, eligibility, and ranking");
 
-            const auto legacyAgainGeneration=worker.submitPreset(a.chords,baseContext,
+            auto forcedContext=baseContext;
+            forcedContext.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+            const auto forcedGeneration=worker.submitPreset(a.chords,forcedContext,
                 plugin::DevelopmentAlgorithmPreset::Legacy,{},true,20);
-            const auto legacyAgain=waitResult(worker);
-            check(legacyAgain.generation==legacyAgainGeneration && !legacyAgain.analysisReused &&
-                legacyAgain.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy,
-                "switching back invalidates the HarmonyFirst cached query");
+            const auto forcedResult=waitResult(worker);
+            check(forcedResult.generation==forcedGeneration && !forcedResult.analysisReused && unifiedResult(forcedResult),
+                "forced-key change invalidates the same-revision query");
+            auto meterContext=forcedContext;
+            meterContext.timeSigNumerator=4;meterContext.timeSigDenominator=4;
+            const auto meterGeneration=worker.submitPreset(a.chords,meterContext,
+                plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},true,20);
+            const auto meterResult=waitResult(worker);
+            check(meterResult.generation==meterGeneration && !meterResult.analysisReused && unifiedResult(meterResult),
+                "meter change invalidates the same-revision query");
+            const auto inputBaseGeneration=worker.submitPreset(a.chords,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,21);
+            const auto inputBase=waitResult(worker);
+            auto changedInput=a.chords;changedInput.front().name="F";
+            const auto changedInputGeneration=worker.submitPreset(changedInput,baseContext,
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},true,22);
+            const auto changedInputResult=waitResult(worker);
+            check(inputBase.generation==inputBaseGeneration && !inputBase.analysisReused &&
+                changedInputResult.generation==changedInputGeneration && !changedInputResult.analysisReused &&
+                unifiedResult(inputBase) && unifiedResult(changedInputResult),
+                "changed input revision invalidates the cached query");
 
             const auto unique=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
             plugin::RecommendationWorker secondWorker(HC_FACTORY_DB_PATH,
                 std::filesystem::temp_directory_path()/("hc-phase6-instance-"+unique+".db"));
             const auto instanceLegacyGeneration=worker.submitPreset(a.chords,baseContext,
-                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,21);
+                plugin::DevelopmentAlgorithmPreset::Legacy,{},false,23);
             const auto instanceAbstractGeneration=secondWorker.submitPreset(a.chords,baseContext,
-                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,21);
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,23);
             const auto instanceLegacy=waitResult(worker);
             const auto instanceAbstract=waitResult(secondWorker);
-            check(instanceLegacy.generation==instanceLegacyGeneration &&
-                instanceAbstract.generation==instanceAbstractGeneration &&
-                !instanceLegacy.recommendations.abstractChordCompatibility &&
-                instanceAbstract.recommendations.abstractChordCompatibility &&
-                instanceLegacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy &&
-                instanceAbstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract,
-                "simultaneous workers keep preset state instance-local");
+            check(instanceLegacy.generation==instanceLegacyGeneration && !instanceLegacy.analysisReused &&
+                instanceAbstract.generation==instanceAbstractGeneration && !instanceAbstract.analysisReused &&
+                instanceLegacy.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Legacy && unifiedResult(instanceLegacy) &&
+                instanceAbstract.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract && unifiedResult(instanceAbstract) &&
+                sameRecommendation(instanceLegacy.recommendations,instanceAbstract.recommendations),
+                "worker query caches remain instance-local under the unified policy");
 
-            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::Legacy,{},false,22);
-            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},false,22);
+            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::Legacy,{},false,24);
+            worker.submitPreset(a.chords,baseContext,plugin::DevelopmentAlgorithmPreset::HarmonyFirst,{},false,24);
             const auto newestGeneration=worker.submitPreset(a.chords,baseContext,
-                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,22);
+                plugin::DevelopmentAlgorithmPreset::Abstract,{},false,24);
             const auto newest=waitResult(worker);
             check(newest.generation==newestGeneration &&
-                newest.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract &&
-                newest.recommendations.abstractChordCompatibility &&
-                newest.recommendations.retrievalTimingMode==RetrievalTimingMode::Legacy,
-                "rapid preset switches expose only the newest generation");
+                newest.algorithmPreset==plugin::DevelopmentAlgorithmPreset::Abstract && unifiedResult(newest),
+                "only the latest preset-alias generation is published");
 
             const auto isolationId=std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
             const auto emptyFactoryStore=std::filesystem::temp_directory_path()/
@@ -341,6 +357,25 @@ int main() {
         for (auto& item:synthetic) item.rankingScore=40;
         policy.minimumDiversityDistance=0;
         check(policy.visibleIndices(synthetic).size()==2,"ranking cannot revoke qualification");
+        auto accessCandidate=[](std::string id,float score,bool qualified,bool exploratory,std::string label) {
+            ContinuationCandidate candidate;candidate.id=std::move(id);candidate.rankingScore=score;
+            candidate.baseQualified=qualified;candidate.exploratory=exploratory;
+            ConcreteChordEvent chord;chord.label=std::move(label);chord.durationQN=4;
+            candidate.continuation.push_back(std::move(chord));return candidate;
+        };
+        std::vector<ContinuationCandidate> accessGroup{
+            accessCandidate("explore",62,true,true,"C"),
+            accessCandidate("below-sixty",59,true,false,"Dm"),
+            accessCandidate("unqualified",90,false,true,"G")};
+        const auto access=session::continuationAccess(accessGroup);
+        const auto defaults=session::RecommendationVisibilityPolicy{}.visibleIndices(accessGroup);
+        const auto hasIndex=[](const std::vector<std::size_t>& values,std::size_t index) {
+            return std::find(values.begin(),values.end(),index)!=values.end();
+        };
+        check(!hasIndex(defaults,0)&&hasIndex(access.more,0)&&access.exploratory==1,
+              "qualified exploration is excluded from defaults but retained in More");
+        check(hasIndex(access.more,1),"a retained candidate below 60 remains accessible in More");
+        check(!hasIndex(access.more,2),"an unqualified candidate is excluded from More");
         session::RecommendationVisibilityPolicy presentationPolicy;
         presentationPolicy.maxPerGroup=2;
         auto card=[](std::string id,std::string label,float score) {

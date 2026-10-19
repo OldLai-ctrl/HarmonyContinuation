@@ -18,7 +18,9 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
- #if LibraryVersion == "4"
+ #if LibraryVersion == "5"
+  #define MinimumPluginVersion "0.10.0-dev.12"
+ #elif LibraryVersion == "4"
   #define MinimumPluginVersion "0.10.0-dev.1"
  #else
   #define MinimumPluginVersion "0.9.0-dev.2"
