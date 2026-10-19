@@ -4,7 +4,9 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-当前正式源码位于 `main`，Factory V4 独立开发分支为 `library/v4`，新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。V4 的局部引擎适配、维护和验证边界见专题说明。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。Phase6 dev.7 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`，使用单一 Setup/插件和 Legacy、HarmonyFirst、Abstract 三种运行时模式；Factory V4 未改、Phase3A OFF、工程重开恢复 Legacy，真实 Cubase 尚未验收。版本、提交及实际构建仍以当前 checkout 和产物为准。
+当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
+
+Phase7入口为 [A3密度微调与审计](design/phase7/README.md) 和 [原型](design/phase7/index.html)。用户已认可A3恢复版；当前800×780保留音乐信息并增加续写长度/匹配差异摘要。正式插件UI尚未替换。
 
 Phase6 接续入口为 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [中文验收](docs/PHASE6_CUBASE_ACCEPTANCE.md)；完整质量分析在交付包 `benchmark/RESULTS_ANALYSIS.md`，验证/交付路径见 MAP，最终门禁和 Setup SHA 以综合报告及包内证明为准。
 

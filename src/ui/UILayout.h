@@ -14,14 +14,14 @@ struct UiRect {
 enum class LayoutMode { Compact, Standard, Wide };
 enum class InspectorMode { None, Overlay, Side };
 struct UILayoutInput {
-    double width{1100}, height{900}, contentScaleFactor{1};
+    double width{800}, height{780}, contentScaleFactor{1};
     session::Tab tab{session::Tab::Recommend};
     bool inspectorOpen{}, compareOpen{};
     double userZoom{1};
 };
 struct UILayoutResult {
-    static constexpr int minimumWidth=900, minimumHeight=640;
-    static constexpr int defaultWidth=1100, defaultHeight=900;
+    static constexpr int minimumWidth=800, minimumHeight=640;
+    static constexpr int defaultWidth=800, defaultHeight=780;
     static constexpr int maximumWidth=2200, maximumHeight=1400;
     LayoutMode mode{LayoutMode::Standard};
     InspectorMode inspectorMode{InspectorMode::None};
@@ -31,7 +31,6 @@ struct UILayoutResult {
     std::array<UiRect,4> lanes{};
     std::array<UiRect,6> topControls{}; // key, style, intent, advanced, recommend, library
     std::array<UiRect,4> constraintControls{};
-    std::array<UiRect,3> algorithmControls{};
     double laneHeight{}, laneScrollMax{};
 };
 struct CandidateRowGeometry {
@@ -61,11 +60,99 @@ inline CandidateRowGeometry candidateRowGeometry(UiRect lane,int row,bool export
     return out;
 }
 
+struct CompactLayoutResult {
+    UiRect viewport,header,input,recommendationHeading,intentToolbar,cardsViewport,footer;
+    double logicalWidth{},logicalHeight{},userZoom{1};
+    int candidateColumns{1};
+    bool narrow{};
+};
+
+struct CompactCandidateGeometry {
+    UiRect row,select,name,facts,location,match,timeBand,inputTimes,sourceLocation;
+    UiRect audition,midi,details;
+    bool actionWrapped{};
+};
+
+inline CompactLayoutResult computeCompactLayout(double width,double height,double userZoom=1.) {
+    CompactLayoutResult out;
+    const double zoom=std::clamp(std::isfinite(userZoom)?userZoom:1.,1.,1.5);
+    const double w=std::clamp(std::isfinite(width)?width:static_cast<double>(UILayoutResult::defaultWidth),
+        static_cast<double>(UILayoutResult::minimumWidth),static_cast<double>(UILayoutResult::maximumWidth))/zoom;
+    const double h=std::clamp(std::isfinite(height)?height:static_cast<double>(UILayoutResult::defaultHeight),
+        static_cast<double>(UILayoutResult::minimumHeight),static_cast<double>(UILayoutResult::maximumHeight))/zoom;
+    out.viewport={0,0,w,h};
+    out.logicalWidth=w;
+    out.logicalHeight=h;
+    out.userZoom=zoom;
+    out.narrow=w<620.;
+
+    out.header={0,0,w,48};
+    out.input={12,52,w-12,192};
+    out.recommendationHeading={12,196,w-12,224};
+    out.intentToolbar={12,228,w-12,264};
+    const double footerHeight=110.;
+    out.footer={0,h-footerHeight,w,h};
+    const double cardsTop=270.;
+    out.cardsViewport={12,cardsTop,w-12,std::max(cardsTop,out.footer.top-6)};
+    return out;
+}
+
+inline CompactCandidateGeometry compactCandidateGeometry(UiRect area,double y,bool detailed) {
+    CompactCandidateGeometry out;
+    // cardsViewport uses 12 logical pixels of horizontal inset on each side.
+    out.actionWrapped=area.width()<596.;
+    const double height=detailed?190.:(out.actionWrapped?148.:100.);
+    out.row={area.left,y,area.right,y+height};
+
+    const double inset=8.,gap=8.;
+    constexpr double auditionWidth=56.,midiWidth=66.,detailsWidth=52.,buttonHeight=36.;
+    const double right=area.right-inset;
+    out.select={area.left+inset,y+8,area.left+inset+28,y+36};
+    const double contentLeft=area.left+48.;
+    const double actionsWidth=auditionWidth+midiWidth+detailsWidth+2*gap;
+    const double actionLeft=right-actionsWidth;
+    const double contentRight=out.actionWrapped?right:actionLeft-8.;
+    const double textWidth=std::max(0.,contentRight-contentLeft);
+    const double factsWidth=std::min(190.,std::max(132.,textWidth*0.36));
+    const double factsLeft=contentRight-factsWidth;
+    out.name={contentLeft,y+7,factsLeft-8,y+28};
+    out.facts={factsLeft,y+7,contentRight,y+28};
+    const double locationWidth=std::max(0.,(contentRight-contentLeft)*0.58);
+    out.location={contentLeft,y+31,contentLeft+locationWidth,y+49};
+    out.match={contentLeft+locationWidth+6, y+31,contentRight,y+49};
+
+    const double actionY=y+(out.actionWrapped?56.:8.);
+    out.audition={actionLeft,actionY,actionLeft+auditionWidth,actionY+buttonHeight};
+    out.midi={actionLeft+auditionWidth+gap,actionY,
+        actionLeft+auditionWidth+gap+midiWidth,actionY+buttonHeight};
+    if(out.actionWrapped) {
+        out.details={right-detailsWidth,actionY,right,actionY+buttonHeight};
+    } else {
+        out.details={actionLeft+auditionWidth+gap+midiWidth+gap,actionY,right,actionY+buttonHeight};
+    }
+
+    const double timeBandY=detailed?(out.actionWrapped?100.:56.):
+        (out.actionWrapped?104.:56.);
+    out.timeBand={area.left+inset,y+timeBandY,right,y+timeBandY+34.};
+    if(detailed) {
+        if(out.actionWrapped) {
+            out.sourceLocation={area.left+inset,y+136,right,y+154};
+            out.inputTimes={area.left+inset,y+156,right,y+190};
+        } else {
+            out.sourceLocation={area.left+inset,y+96,right,y+116};
+            out.inputTimes={area.left+inset,y+122,right,y+156};
+        }
+    }
+    return out;
+}
+
 inline UILayoutResult computeLayout(UILayoutInput input) {
     UILayoutResult o;
     const double zoom=std::clamp(std::isfinite(input.userZoom)?input.userZoom:1.,1.,1.5);
-    const double w=std::clamp(std::isfinite(input.width)?input.width:1100.,900.,2200.)/zoom;
-    const double h=std::clamp(std::isfinite(input.height)?input.height:900.,640.,1400.)/zoom;
+    const double w=std::clamp(std::isfinite(input.width)?input.width:static_cast<double>(UILayoutResult::defaultWidth),
+        static_cast<double>(UILayoutResult::minimumWidth),static_cast<double>(UILayoutResult::maximumWidth))/zoom;
+    const double h=std::clamp(std::isfinite(input.height)?input.height:static_cast<double>(UILayoutResult::defaultHeight),
+        static_cast<double>(UILayoutResult::minimumHeight),static_cast<double>(UILayoutResult::maximumHeight))/zoom;
     o.contentScaleFactor=std::isfinite(input.contentScaleFactor)&&input.contentScaleFactor>0?
         std::clamp(input.contentScaleFactor,0.5,4.0):1.0;
     o.viewport={0,0,w,h};
@@ -84,9 +171,6 @@ inline UILayoutResult computeLayout(UILayoutInput input) {
     o.constraintControls={UiRect{16,controlsH,w*0.42,controlsH+31},
         UiRect{w*0.43,controlsH,w*0.59,controlsH+31},UiRect{w*0.60,controlsH,w*0.76,controlsH+31},
         UiRect{w*0.77,controlsH,w-16,controlsH+31}};
-    const double algorithmWidth=std::min(135.,(w-190)/3);
-    for(int i=0;i<3;++i)o.algorithmControls[i]={174+i*algorithmWidth,controlsH+35,
-        170+(i+1)*algorithmWidth,topH-4};
     const double phraseTop=topH+34;
     o.phrase={16,phraseTop,w-16,phraseTop+160};
     o.timeline={24,phraseTop+20,w-24,phraseTop+89};

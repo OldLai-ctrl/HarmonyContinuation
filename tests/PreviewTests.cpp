@@ -40,9 +40,21 @@ int main() {
         candidate.continuation={{"G",2},{"C",4}};
         auto built=preview::buildSequence(imported,&candidate,120);
         check(built && built.sequence.events.size()==5 && built.sequence.totalQN==14,"sequence size");
+        const auto completeSequence=built.sequence;
+        const auto customTempo=preview::buildSequence(imported,&candidate,90);
+        bool sameQN=customTempo&&customTempo.sequence.events.size()==completeSequence.events.size()&&
+            customTempo.sequence.totalQN==completeSequence.totalQN;
+        if (sameQN) for (std::size_t i=0;i<completeSequence.events.size();++i)
+            sameQN=sameQN&&customTempo.sequence.events[i].startQN==completeSequence.events[i].startQN&&
+                customTempo.sequence.events[i].durationQN==completeSequence.events[i].durationQN;
+        check(customTempo&&customTempo.sequence.tempoBPM==90&&sameQN,"custom BPM changes preview tempo without changing QN");
         for (int i=0;i<5;++i) check(built.sequence.events[i].startQN==std::array<double,5>{0,4,6,8,10}[i],"relative start");
         for (int i=0;i<5;++i) check(built.sequence.events[i].durationQN==std::array<double,5>{4,2,2,2,4}[i],"durations");
         check(built.sequence.recommendationBoundary==3 && built.sequence.events[2].segment==preview::Segment::CurrentOpen,"boundary");
+        const auto fullRange=preview::previewRange(completeSequence,preview::PreviewScope::Full);
+        const auto suffixRange=preview::previewRange(completeSequence,preview::PreviewScope::Suffix);
+        check(fullRange.startQN==0&&fullRange.endQN==14&&suffixRange.startQN==8&&suffixRange.endQN==14,
+            "suffix begins at recommendation boundary");
         check(imported.replace({event("C",32,8),event("Am",40,3),event("A7",43,1),event("Dm",44,{})},TimelineCoordinateMode::AbsoluteProjectQN),"reimport");
         built=preview::buildSequence(imported,&candidate,120);
         check(built && built.sequence.events[0].durationQN==8 && built.sequence.events[1].durationQN==3 &&
@@ -56,6 +68,9 @@ int main() {
         check(imported.replace({event("Dm",100,{})},TimelineCoordinateMode::AbsoluteProjectQN),"open only import");
         built=preview::buildSequence(imported,nullptr,0);
         check(built && built.sequence.events[0].durationQN==4 && built.sequence.tempoBPM==120,"default fallback");
+        const auto noRecommendationRange=preview::previewRange(built.sequence,preview::PreviewScope::Suffix);
+        check(noRecommendationRange.startQN==0&&noRecommendationRange.endQN==4,
+            "suffix without a recommendation keeps the available phrase");
         check(std::abs(preview::qnToSeconds(1,120)-0.5)<1e-12 && preview::qnToSeconds(1,60)==1 &&
             preview::qnToSeconds(1,240)==0.25,"tempo seconds");
         for (double rate:{44100.0,48000.0,96000.0}) check(preview::qnToSamples(1,120,rate)==rate/2,"sample timing");
@@ -83,6 +98,14 @@ int main() {
         built=preview::buildSequence(imported,nullptr,120);
         auto audio=preview::renderOffline(built.sequence,44100);
         check(!audio.left.empty() && audio.peak>0.01 && audio.peak<=0.95 && audio.peakVoices<=preview::PreviewSynth::maxVoices,"audio safety");
+        const auto completeAudio=preview::renderOffline(completeSequence,8000,preview::PreviewScope::Full);
+        const auto suffixAudio=preview::renderOffline(completeSequence,8000,preview::PreviewScope::Suffix);
+        const auto prefixFrames=static_cast<std::size_t>(preview::qnToSamples(suffixRange.startQN,completeSequence.tempoBPM,8000));
+        check(prefixFrames<completeAudio.left.size()&&suffixAudio.left.size()==completeAudio.left.size()-prefixFrames,
+            "suffix audio omits the input prefix");
+        check(std::equal(suffixAudio.left.begin(),suffixAudio.left.end(),completeAudio.left.begin()+prefixFrames)&&
+            std::equal(suffixAudio.right.begin(),suffixAudio.right.end(),completeAudio.right.begin()+prefixFrames),
+            "suffix is cropped after full-sequence voicing");
         const auto again=preview::renderOffline(built.sequence,44100);
         check(audio.left==again.left,"deterministic audio");
         preview::PreviewSynth synth; synth.prepare(48000); check(synth.start(built.sequence),"scheduler start");
@@ -113,6 +136,9 @@ int main() {
         auto old=version4; old[3]='2'; old[4]=2; old.resize(old.size()-10);
         const auto migrated=session::deserialize(old);
         check(migrated&&migrated.state.editorWidth==1100&&migrated.state.editorHeight==900,"v2 size migration");
+        state.editorWidth=800;state.editorHeight=780;
+        const auto compactState=session::deserialize(session::serialize(state));
+        check(compactState&&compactState.state.editorWidth==800&&compactState.state.editorHeight==780,"A3 editor size roundtrip");
         state.editorWidth=1500; state.editorHeight=850;
         const auto sized=session::deserialize(session::serialize(state));
         check(sized&&sized.state.editorWidth==1500&&sized.state.editorHeight==850,"editor size roundtrip");

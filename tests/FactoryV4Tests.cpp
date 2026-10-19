@@ -4,6 +4,7 @@
 #include "library/LibraryStore.h"
 #include "core/ContinuationEngine.h"
 #include "midi/MidiClip.h"
+#include "midi/MidiWorkflow.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "midi/StandardMidiFileReader.h"
 #include "preview/PreviewSynth.h"
@@ -120,7 +121,23 @@ void versionedPopVariant(const library::LoadResult& db) {
             const auto actual=chordPitches(chosen->continuation[i].label);
             require(expected.root==actual.root&&expected.bass==actual.bass&&expected.intervals==actual.intervals,"variant suffix changed");
         }
-        if(shift==0){eligibility=chosen->eligibilityScore;ranking=chosen->rankingScore;}
+        if(shift==0){
+            eligibility=chosen->eligibilityScore;ranking=chosen->rankingScore;
+            ImportedProgressionSession imported;
+            require(imported.replace(input,TimelineCoordinateMode::RelativeToSelection),"V5 input session");
+            auto captured=snapshot::capture(imported,*chosen,rec.matches,120.,4,4,key);
+            captured.factoryLibraryVersion=5;
+            const auto restored=snapshot::deserialize(snapshot::serialize(captured),&db);
+            require(restored&&restored.value.factoryLibraryVersion==5&&
+                continuationMusicFingerprint(restored.value.candidate)==continuationMusicFingerprint(*chosen),
+                "new V5 route snapshot preserves its own music and library reference");
+            const auto built=preview::buildSequence(imported,&restored.value.candidate,120.);
+            require(bool(built),"new V5 snapshot Preview");exactOutput(built.sequence);
+            midi::CandidateExportContext ec;ec.imported=imported;ec.key=key;
+            const auto original=midi::candidatePayload(ec,*chosen),reopened=midi::candidatePayload(ec,restored.value.candidate);
+            require(original&&reopened&&original.payload.smfBytes==reopened.payload.smfBytes,
+                "new V5 route MIDI remains exact after snapshot reopen");
+        }
         require(std::abs(eligibility-chosen->eligibilityScore)<.0001f&&std::abs(ranking-chosen->rankingScore)<.0001f,
             "new normalized route scores differently across keys");
     }

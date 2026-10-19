@@ -9,6 +9,6 @@ struct AudioBuffer {
     double peak{}, rms{};
     int peakVoices{};
 };
-AudioBuffer renderOffline(const Sequence&,double sampleRate=48000);
+AudioBuffer renderOffline(const Sequence&,double sampleRate=48000,PreviewScope scope=PreviewScope::Full);
 bool writeWav16(const AudioBuffer&,const std::filesystem::path&,std::string& error);
 } // namespace harmony::preview

@@ -95,7 +95,7 @@ std::string serialize(const PluginSessionState& input) {
             }
     }
     if (state.imported.events.size()>64 || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
-    if (state.editorWidth<900 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
+    if (state.editorWidth<800 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
         throw std::runtime_error("invalid editor size");
     Writer w;
     w.u32(PluginSessionState::currentSchemaVersion);
@@ -179,9 +179,9 @@ DecodeResult deserialize(std::string_view bytes) {
         }
         if (version3 || version4 || version5) {
             s.editorWidth=r.u32(); s.editorHeight=r.u32();
-            if (s.editorWidth<900 || s.editorWidth>2200 || s.editorHeight<640 || s.editorHeight>1400)
+            if (s.editorWidth<800 || s.editorWidth>2200 || s.editorHeight<640 || s.editorHeight>1400)
                 throw std::runtime_error("invalid editor size");
-        }
+        } else { s.editorWidth=1100; s.editorHeight=900; } // Preserve the historical migration for states without a window size.
         if (version4 || version5) {
             const auto mode=r.u8(), locale=r.u8();
             if (mode>1 || locale>1) throw std::runtime_error("invalid product preferences");

@@ -3,6 +3,7 @@
 #include "plugin/HostContextAdapter.h"
 #include "plugin/HostAdapters.h"
 #include "plugin/RecommendationWorker.h"
+#include "ProgressionJson.h"
 #include "io/AsyncMidiImport.h"
 #include "io/FileDropRouter.h"
 #include "io/MidiDragService.h"
@@ -28,8 +29,11 @@
 #include <objbase.h>
 #include <ole2.h>
 #include <fstream>
+#include <filesystem>
+#include <iterator>
 #include <iostream>
 #include <chrono>
+#include <system_error>
 #include <barrier>
 #include <string_view>
 #include <thread>
@@ -90,13 +94,116 @@ std::optional<io::CompletedMidiImport> wait(io::AsyncMidiImport& worker){
 }
 }
 int main(int argc,char** argv){
+    if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui")) {
+        const bool exploration=std::string(argv[1])=="--exploration-ui";
+        const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+        VSTGUI::init(GetModuleHandleW(nullptr));
+        auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
+        platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
+        Window window;VSTGUI::CFrame* frame{};bool frameOpened{};bool passed{};
+        try {
+            const auto output=std::filesystem::absolute(argv[2]);
+            std::filesystem::create_directories(output);
+            const auto fixturePath=std::filesystem::path(HC_FIXTURE_DIR)/"demo"/"case_b.json";
+            std::ifstream input(fixturePath,std::ios::binary);
+            require(static_cast<bool>(input),"Scenario B fixture could not be opened");
+            const std::string fixture(std::istreambuf_iterator<char>{input},{});
+            const auto chordsKey=fixture.find("\"chords\"");
+            const auto chordsBegin=fixture.find('[',chordsKey);
+            const auto chordsEnd=fixture.find(']',chordsBegin);
+            require(chordsKey!=std::string::npos&&chordsBegin!=std::string::npos&&chordsEnd!=std::string::npos,
+                    "Scenario B fixture has no chord array");
+            const auto chordText=exploration?std::string_view(R"([{"name":"Am","start":0},{"name":"G#dim","start":4},{"name":"G","start":8},{"name":"D/F#","start":12}])"):
+                std::string_view(fixture).substr(chordsBegin,chordsEnd-chordsBegin+1);
+            auto parsed=dev::parseProgressionJson(chordText);
+            require(static_cast<bool>(parsed),"Scenario B progression parse failed: "+parsed.error);
+            require(sortAndInferDurations(parsed.events),"Scenario B progression normalization failed");
+
+            session::PluginSessionState state;state.editorWidth=800;state.editorHeight=780;
+            state.meterNumerator=4;state.meterDenominator=4;
+            require(state.imported.replace(std::move(parsed.events),TimelineCoordinateMode::RelativeToSelection),
+                    "Scenario B progression could not be installed in the UI state");
+            auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
+            require(static_cast<bool>(factory),"configured test Factory database could not be loaded: "+factory.error);
+
+            const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
+            const auto workerDirectory=std::filesystem::temp_directory_path()/
+                ("HarmonyContinuation-compact-ui-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(stamp));
+            require(std::filesystem::create_directory(workerDirectory),"isolated worker directory could not be created");
+            struct RemoveWorkerDirectory {
+                std::filesystem::path path;
+                ~RemoveWorkerDirectory(){std::error_code ignored;std::filesystem::remove_all(path,ignored);}
+            } cleanup{workerDirectory};
+            std::optional<plugin::WorkerResult> workerResult;
+            std::uint64_t generation{};
+            {
+                plugin::RecommendationWorker worker(HC_FACTORY_DB_PATH,workerDirectory/"user.db",workerDirectory/"factory-store");
+                generation=worker.submit(state.imported.events,state.analysisContext(),{},false,state.imported.revision);
+                for(int wait=0;wait<1000&&!workerResult;++wait){
+                    workerResult=worker.takeLatest();
+                    if(!workerResult)std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                }
+            }
+            require(workerResult.has_value(),"Scenario B recommendation worker timed out");
+            require(workerResult->generation==generation,"Scenario B recommendation worker returned a stale generation");
+            require(workerResult->error.empty(),"Scenario B recommendation worker failed: "+workerResult->error);
+            std::size_t recommendationCount{};
+            for(const auto& group:workerResult->recommendations.groups)recommendationCount+=group.size();
+            require(recommendationCount>0,"Scenario B recommendation worker returned no UI data");
+
+            if(exploration) {
+                const auto& rec=workerResult->recommendations;
+                const auto access=session::continuationAccess(rec.groups[1]);
+                require(workerResult->factoryVersion==5&&rec.retrievalTimingMode==RetrievalTimingMode::Unified,
+                    "exploration UI uses the delivered unified engine and V5");
+                require(session::presentationIndices(rec,{})[1].empty()&&access.exploratory==3&&access.more.size()==3,
+                    "R01 empty default Develop retains three accessible exploratory routes");
+                std::cout<<"R01 UI: default Develop=0, exploratory More=3; actual cards and MIDI hit regions follow\n";
+            }
+            frame=new VSTGUI::CFrame({0,0,800,780},nullptr);
+            auto* view=new ui::MainView({0,0,800,780},{});frame->addView(view);
+            frameOpened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);
+            require(frameOpened,"compact UI test frame could not be opened");
+            view->setSessionState(state);
+            view->setLibrary(std::move(factory.templates),{});
+            view->setAnalysis(workerResult->analysis);
+            view->setMatches(workerResult->recommendations.matches,"Ready");
+            view->setRecommendations(workerResult->recommendations);
+            view->setEnrichments(workerResult->enrichments);
+            view->setWorkerStatus(workerResult->generation,workerResult->computationMs,false,
+                                  workerResult->factoryCount,workerResult->userCount,true);
+            view->setHostText(exploration?"R01 · exploration · isolated unified worker":"Scenario B · 120 BPM · isolated recommendation worker");
+
+            const auto context=VSTGUI::COffscreenContext::create({800,780});
+            require(static_cast<bool>(context),"compact UI offscreen context could not be created");
+            require(view->runCompactSmoke(context.get()),"compact UI interaction smoke failed");
+            require(!view->captureEditorUiState().detailedCards,"compact UI smoke did not restore the summary view");
+            const auto saveScreenshot=[&](const char* name){
+                context->beginDraw();view->drawRect(context,{0,0,800,780});context->endDraw();
+                const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
+                std::ofstream file(output/name,std::ios::binary);
+                file.write(reinterpret_cast<const char*>(png.data()),png.size());
+                file.close();
+                return file.good()&&!png.empty();
+            };
+            require(saveScreenshot("A3-main.png"),"A3-main.png could not be saved");
+            auto detailed=view->captureEditorUiState();detailed.detailedCards=true;view->restoreEditorUiState(detailed);
+            require(saveScreenshot("A2-detailed.png"),"A2-detailed.png could not be saved");
+            frame->close();frame=nullptr;frameOpened=false;passed=true;
+            std::cout<<"Compact UI PNGs: "<<(output/"A3-main.png").string()<<"; "<<(output/"A2-detailed.png").string()<<'\n';
+        } catch(const std::exception& e) {
+            std::cerr<<"Compact UI smoke failure: "<<e.what()<<'\n';
+            if(frame&&frameOpened)frame->close();
+        }
+        VSTGUI::exit();if(SUCCEEDED(comResult))CoUninitialize();
+        return passed?0:1;
+    }
     if(argc==2&&std::string(argv[1])=="--structure") {
         CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);VSTGUI::init(GetModuleHandleW(nullptr));
         auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
         Window window;auto* frame=new VSTGUI::CFrame({0,0,1100,900},nullptr);auto* view=new ui::MainView({0,0,1100,900},{});frame->addView(view);
         const bool opened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);
         bool passed=opened&&view->runStructureSmoke();
-        if(passed)passed=view->runAlgorithmSwitchSmoke();
         if(passed)for(int skeleton=0;skeleton<2;++skeleton) {
             if(skeleton){const auto layout=ui::computeLayout({1100,900,1,session::Tab::Recommend,false,false,1});VSTGUI::CPoint point{160,layout.timeline.bottom+12};view->onMouseDown(point,VSTGUI::CButtonState{VSTGUI::kLButton});}
             const auto context=VSTGUI::COffscreenContext::create({1100,900});
@@ -105,29 +212,8 @@ int main(int argc,char** argv){
             std::ofstream file(std::filesystem::path(HC_TEST_OUTPUT_DIR)/(skeleton?"structure-SKELETON.png":"structure-FULL.png"),std::ios::binary);
             file.write(reinterpret_cast<const char*>(png.data()),png.size());passed=passed&&file.good()&&!png.empty();
         }
-        std::filesystem::path algorithmScreenshotDir;
-        if(passed) {
-            const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
-            algorithmScreenshotDir=std::filesystem::path(HC_TEST_OUTPUT_DIR)/
-                ("algorithm-switch-ui-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(stamp));
-            std::filesystem::create_directories(algorithmScreenshotDir);
-            const auto savePreset=[&](plugin::DevelopmentAlgorithmPreset preset,const char* name) {
-                view->setAlgorithmPreset(preset);
-                const auto context=VSTGUI::COffscreenContext::create({1100,900});
-                if(!context)return false;
-                context->beginDraw();view->drawRect(context,{0,0,1100,900});context->endDraw();
-                const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
-                std::ofstream file(algorithmScreenshotDir/(std::string("algorithm-")+name+".png"),std::ios::binary);
-                file.write(reinterpret_cast<const char*>(png.data()),png.size());
-                return file.good()&&!png.empty();
-            };
-            passed=savePreset(plugin::DevelopmentAlgorithmPreset::Legacy,"Legacy")&&
-                savePreset(plugin::DevelopmentAlgorithmPreset::HarmonyFirst,"HarmonyFirst")&&
-                savePreset(plugin::DevelopmentAlgorithmPreset::Abstract,"Abstract");
-        }
         passed=passed&&view->runMidiWorkflowSmoke();
-        frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / algorithm switch / FULL-SKELETON / More MIDI identity "<<(passed?"PASS":"FAIL");
-        if(!algorithmScreenshotDir.empty())std::cout<<"; Legacy/HarmonyFirst/Abstract MainView PNGs: "<<algorithmScreenshotDir.string();
+        frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / FULL-SKELETON / More MIDI identity "<<(passed?"PASS":"FAIL");
         std::cout<<'\n';return passed?0:1;
     }
     if(argc<3){std::cerr<<"usage: HostContractHarness plugin.vst3 host-name [report]\n";return 2;}

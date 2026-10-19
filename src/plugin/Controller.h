@@ -23,6 +23,14 @@
 namespace VSTGUI { class IDataPackage; }
 namespace harmony::ui { class MainView; }
 namespace harmony::plugin {
+struct PreviewStatus {
+    harmony::preview::PreviewTempoMode bpmMode{harmony::preview::PreviewTempoMode::FollowHost};
+    double customBPM{harmony::preview::defaultTempoBPM};
+    double effectiveBPM{harmony::preview::defaultTempoBPM};
+    bool hostValid{};
+    harmony::preview::PreviewScope scope{harmony::preview::PreviewScope::Full};
+    bool active{};
+};
 class Controller final : public Steinberg::Vst::EditController {
 public:
     static Steinberg::FUnknown* create(void*) { return static_cast<Steinberg::Vst::IEditController*>(new Controller); }
@@ -36,8 +44,6 @@ public:
     Steinberg::tresult pollTransport() noexcept;
     void pollRecommendation() noexcept;
     void setRecommendationPreferences(std::optional<harmony::Style>, std::optional<harmony::PhraseIntent>) noexcept;
-    void setAlgorithmPreset(DevelopmentAlgorithmPreset) noexcept;
-    DevelopmentAlgorithmPreset algorithmPreset() const noexcept { return DevelopmentAlgorithmPreset::Legacy; }
     void applySessionState(const harmony::session::PluginSessionState&) noexcept;
     std::string saveRecommendation(const harmony::ContinuationCandidate&, const harmony::session::SaveMetadata&) noexcept;
     std::string updateUserProgression(const harmony::ProgressionTemplate&) noexcept;
@@ -46,6 +52,9 @@ public:
     void auditionEnrichment(const harmony::enrichment::EnrichmentCandidate&) noexcept;
     void pollPreview() noexcept;
     void stopPreview() noexcept;
+    void setPreviewSettings(harmony::preview::PreviewTempoMode,double customBPM,
+                           harmony::preview::PreviewScope) noexcept;
+    PreviewStatus previewStatus() const noexcept;
     bool previewActive() const noexcept { return !previewCandidateId_.empty(); }
     std::string exportMidi(const harmony::ContinuationCandidate&, void* owner) noexcept;
     std::string exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
@@ -97,6 +106,10 @@ private:
     unsigned unchangedTransportPolls_{};
     std::optional<double> lastProjectQN_;
     double lastTempoBPM_{120.0};
+    bool hostTempoValid_{};
+    harmony::preview::PreviewTempoMode previewTempoMode_{harmony::preview::PreviewTempoMode::FollowHost};
+    double customPreviewBPM_{harmony::preview::defaultTempoBPM};
+    harmony::preview::PreviewScope previewScope_{harmony::preview::PreviewScope::Full};
     std::optional<int> lastTimeSigNumerator_;
     std::optional<int> lastTimeSigDenominator_;
     bool lastPlaying_{};
@@ -105,11 +118,21 @@ private:
     std::uint64_t recommendationGeneration_{};
     double lastComputationMs_{};
     std::size_t factoryCount_{}, userCount_{};
+    enum class PreviewTargetKind { Continuation, Enrichment };
+    struct PreviewTarget {
+        std::string id;
+        PreviewTargetKind kind{};
+        std::string fingerprint;
+        float rankingScore{};
+    };
     std::filesystem::path previewFile_;
     std::string previewCandidateId_;
-    double previewTotalQN_{}, previewSeconds_{};
+    std::optional<PreviewTarget> previewTarget_;
+    double previewBPMAtStart_{}, previewStartQN_{}, previewTotalQN_{}, previewSeconds_{};
     std::chrono::steady_clock::time_point previewStarted_{};
-    void playPreview(std::string id, const harmony::preview::BuildResult&) noexcept;
+    double effectivePreviewBPM() const noexcept;
+    void playPreview(const PreviewTarget&, const harmony::preview::BuildResult&) noexcept;
+    void replayPreview(const PreviewTarget&) noexcept;
     void submitRecommendation(bool rankingOnly = false);
     bool currentCandidate(const harmony::ContinuationCandidate&) const;
     bool currentCandidate(const harmony::enrichment::EnrichmentCandidate&) const;

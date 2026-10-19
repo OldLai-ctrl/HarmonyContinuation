@@ -23,6 +23,17 @@ std::int64_t qnToSamples(double qn,double bpm,double sampleRate) noexcept {
     if (!std::isfinite(samples)||samples>static_cast<double>(std::numeric_limits<std::int64_t>::max())) return 0;
     return static_cast<std::int64_t>(std::llround(samples));
 }
+PreviewRange previewRange(const Sequence& sequence,PreviewScope scope) noexcept {
+    PreviewRange range; range.endQN=sequence.totalQN;
+    for (const auto& event:sequence.events)
+        if (std::isfinite(event.startQN)&&std::isfinite(event.durationQN))
+            range.endQN=std::max(range.endQN,event.startQN+event.durationQN);
+    if (scope==PreviewScope::Suffix && sequence.recommendationBoundary<sequence.events.size()) {
+        const auto start=sequence.events[sequence.recommendationBoundary].startQN;
+        if (std::isfinite(start)&&start>=0&&start<range.endQN) range.startQN=start;
+    }
+    return range;
+}
 Chord chordFromLabel(const std::string& label,ChordQuality hint) {
     ChordEvent event; event.name=label; event.quality=hint;
     return convert(event);

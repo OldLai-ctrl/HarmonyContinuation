@@ -106,7 +106,7 @@ if(HC_BUILD_PLUGIN)
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
         src/plugin/RecommendationWorker.cpp src/plugin/HostAdapters.cpp
-        src/ui/MainView.cpp)
+        src/ui/MainView.cpp src/ui/MainViewCompact.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
     endif()
@@ -249,7 +249,7 @@ add_executable(benchmark_compare tools/benchmark_compare.cpp)
 target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
-        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp)
+        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp)
     target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment harmony_host harmony_io vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
@@ -545,7 +545,7 @@ if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
     target_link_libraries(hc_sdk_host_loader PUBLIC sdk_hosting)
     target_compile_features(hc_sdk_host_loader PRIVATE cxx_std_17)
     add_executable(HostContractHarness tests/HostContractHarness.cpp
-        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp
 )
     target_link_libraries(HostContractHarness PRIVATE harmony_host harmony_io harmony_product harmony_xml harmony_snapshot hc_sdk_host_loader vstgui_support winmm)
     target_link_libraries(HostContractHarness PRIVATE harmony_color)
@@ -626,8 +626,8 @@ if(HC_BUILD_PLUGIN)
  set_tests_properties(Phase4DCubaseFeedback PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
 endif()
 if(BUILD_TESTING AND TARGET HostContractHarness)
- add_test(NAME RuntimeAlgorithmSwitchUI COMMAND HostContractHarness --structure)
- set_tests_properties(RuntimeAlgorithmSwitchUI PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+ add_test(NAME CompactEditorUI COMMAND HostContractHarness --compact-ui "${CMAKE_BINARY_DIR}/compact-ui-evidence")
+ set_tests_properties(CompactEditorUI PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
 endif()
 if(WIN32)
  foreach(HC_WORKER_TARGET HarmonyContinuation HarmonyContinuationDemo ProductizationTests ContinuationEngineTests HostContractHarness RecommendationReliabilityTests CubaseReliabilityTests Phase4DTests)
