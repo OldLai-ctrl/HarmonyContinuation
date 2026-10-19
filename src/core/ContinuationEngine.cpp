@@ -1,9 +1,12 @@
 #include "ContinuationEngine.h"
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <map>
+#include <locale>
 #include <numeric>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 
 namespace harmony {
@@ -15,31 +18,16 @@ const KeyInterpretation* interpretationFor(const MatchQuery& query, KeySignature
 }
 int positiveMod(int x, int divisor) { return (x % divisor + divisor) % divisor; }
 float clampScore(float x) { return std::clamp(x, 0.f, 1.f); }
-std::string suffixFingerprint(const ContinuationCandidate& candidate, bool coarse) {
-    std::ostringstream out;
-    out << static_cast<int>(candidate.key.tonic) << ':' << static_cast<int>(candidate.key.mode) << ':'
-        << static_cast<int>(candidate.intent) << ':';
-    if (!coarse) {
-        out << static_cast<int>(candidate.cadence) << ':';
-        if (candidate.suggestedCurrentChordDurationQN)
-            out << std::round(*candidate.suggestedCurrentChordDurationQN * 4.0) / 4.0 << ':';
-    }
-    double average{};
-    for (const auto& event : candidate.continuation) average += event.durationQN;
-    average /= std::max<std::size_t>(1, candidate.continuation.size());
-    for (const auto& event : candidate.continuation) {
-        if (coarse) out << event.degree.degree << '/' << event.degree.alteration << ':'
-                        << (event.durationQN / std::max(0.001, average) < 0.7 ? 0 :
-                            event.durationQN / std::max(0.001, average) > 1.4 ? 2 : 1);
-        else out << event.label << '@' << std::round(event.durationQN * 4.0) / 4.0;
-        out << '|';
-        // Bass and exact colors define some V4 phrases, including diversity identity.
-        if (event.harmonicData) {
-            const auto tones=chordPitches(*event.harmonicData);
-            out << tones.bass << ':' << tones.intervals << '|';
-        }
-    }
-    return out.str();
+bool higherRank(const ContinuationCandidate& a, const ContinuationCandidate& b) {
+    // Sub-millipoint floating-point noise is not a musical preference. Use a
+    // transitive score bucket, then expose the longer complete option on ties.
+    const auto aScore = std::round(a.rankingScore * 1000.f);
+    const auto bScore = std::round(b.rankingScore * 1000.f);
+    if (aScore != bScore) return aScore > bScore;
+    if (a.continuation.size() != b.continuation.size())
+        return a.continuation.size() > b.continuation.size();
+    return std::tuple(a.id,a.primaryTemplate,a.key.tonic,a.key.mode) <
+        std::tuple(b.id,b.primaryTemplate,b.key.tonic,b.key.mode);
 }
 PhraseIntent effectiveIntent(const ProgressionTemplate& item, const std::vector<MatchEvent>& suffix) {
     if (item.intent != PhraseIntent::Neutral) return item.intent;
@@ -50,22 +38,54 @@ PhraseIntent effectiveIntent(const ProgressionTemplate& item, const std::vector<
         item.cadence == CadenceType::Plagal) return PhraseIntent::Resolve;
     return PhraseIntent::Develop;
 }
+ChordQuality harmonicCore(ChordQuality quality) {
+    switch (quality) {
+        case ChordQuality::Major7: case ChordQuality::Dominant7: return ChordQuality::Major;
+        case ChordQuality::Minor7: return ChordQuality::Minor;
+        case ChordQuality::Diminished7: case ChordQuality::HalfDiminished7: return ChordQuality::Diminished;
+        default: return quality;
+    }
+}
+bool preservesLoopContext(const KeyInterpretation& input, const MatchResult& match,
+                          const ProgressionTemplate& item) {
+    // A catalogue loop certifies its own cycle, including the wrap boundary.
+    // Keep both original cycle boundaries. An internal, recognized borrowed
+    // major/minor variant may retain the loop; a gap or changed boundary cannot
+    // inherit that evidence. No tonic ending or V-I is required.
+    std::size_t paired{};
+    for (const auto& step : match.alignmentTrace) {
+        if (!step.queryIndex || !step.templateIndex ||
+            (step.operation != AlignmentOp::Match && step.operation != AlignmentOp::Substitute)) return false;
+        if (*step.queryIndex >= input.full.size() || *step.templateIndex >= item.full.size()) return false;
+        const auto& actual = input.full[*step.queryIndex];
+        const auto& expected = item.full[*step.templateIndex];
+        if (!actual.degree || !expected.degree ||
+            actual.degree->degree != expected.degree->degree ||
+            actual.degree->alteration != expected.degree->alteration ||
+            actual.quality == ChordQuality::Unknown) return false;
+        if (harmonicCore(actual.quality) != harmonicCore(expected.quality)) {
+            const auto a=harmonicCore(actual.quality),b=harmonicCore(expected.quality);
+            const bool borrowedCore=(a==ChordQuality::Major&&b==ChordQuality::Minor)||
+                                    (a==ChordQuality::Minor&&b==ChordQuality::Major);
+            if (*step.queryIndex==0 || *step.queryIndex+1==input.full.size() || !borrowedCore ||
+                !hasRole(actual.roles,Role::Borrowed) || !hasReason(step.reasons,MatchReason::BorrowedVariant)) return false;
+        }
+        ++paired;
+    }
+    return paired == input.full.size();
+}
 std::size_t groupIndex(PhraseIntent intent) {
     switch (intent) {
         case PhraseIntent::Resolve: return 0; case PhraseIntent::Loop: return 2;
         case PhraseIntent::Color: return 3; default: return 1;
     }
 }
-float styleScore(const ProgressionTemplate& item, std::optional<Style> hint) {
+float styleScore(const ProgressionTemplate& item, std::optional<Style> hint, bool exactHarmony) {
     if (!hint) return 0.5f;
     for (const auto& [style, weight] : item.styleWeights) if (style == *hint) return weight;
-    return 0.25f; // a strong harmonic match can still rank
-}
-float cadenceScore(PhraseIntent intent, CadenceType cadence) {
-    if (intent == PhraseIntent::Loop) return cadence == CadenceType::LoopClosure ? 1.f : 0.5f;
-    if (intent == PhraseIntent::Resolve) return cadence == CadenceType::Authentic ||
-        cadence == CadenceType::PerfectAuthentic || cadence == CadenceType::Plagal ? 1.f : 0.4f;
-    return 0.5f;
+    // Missing catalogue metadata is not negative style evidence for an exact
+    // harmonic route. Keep it neutral; only a listed style earns its weight.
+    return exactHarmony ? 0.5f : 0.25f;
 }
 float rhythmNeutralEligibility(const RecommendationSubScores& s, const RecommendationWeights& w) {
     const float weights = w.match + w.skeleton + w.style + w.intent + w.cadence +
@@ -76,6 +96,29 @@ float rhythmNeutralEligibility(const RecommendationSubScores& s, const Recommend
         w.prior*s.prior) / weights;
 }
 } // namespace
+
+std::string continuationMusicFingerprint(const ContinuationCandidate& candidate) {
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::setprecision(17);
+    const auto hold=candidate.suggestedCurrentChordDurationQN;
+    if(hold)out<<*hold;else out<<'?';
+    for(const auto& event:candidate.continuation) {
+        const auto chord=event.harmonicData?chordPitches(*event.harmonicData):chordPitches(event.label,event.quality);
+        // The voicer uses root, bass, pitch mask, quality priority and exact-mask
+        // status. Keep all of them, plus exact timing; spelling/key/intent/cadence
+        // are explanations, not additional audible outputs.
+        out<<'|'<<chord.root<<':'<<chord.bass<<':'<<chord.intervals<<':'<<int(chord.quality)
+           <<':'<<chord.exactIntervals<<':'<<chord.colorMask<<'@'<<event.durationQN;
+    }
+    if(!candidate.constraints.melody.empty()) {
+        out<<"|melody:";
+        for(const auto& melody:candidate.constraints.melody)
+            out<<melody.startQN-candidate.sourceAnchorQN<<' '<<melody.durationQN<<' '<<melody.pitch.value_or(-1)<<' '
+                <<melody.pitchClass<<' '<<int(melody.role)<<' '<<int(melody.strictness)<<';';
+    }
+    return out.str();
+}
 
 RhythmScaleEstimate estimateRhythmScale(const MatchResult& match, const MatchQuery& query,
                                         const ProgressionTemplate& item) {
@@ -270,7 +313,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     result.abstractChordCompatibility=w.abstractChordCompatibility;
     MatchWeights matchWeights;
     matchWeights.abstractChordCompatibility=w.abstractChordCompatibility;
-    result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats);
+    result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats, true);
     std::map<std::string, ContinuationCandidate> distinct;
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
     byId.reserve(index.templates().size());
@@ -333,7 +376,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         std::vector<MatchEvent> suffix;
         for (std::size_t i = match.continuationStartIndex; i < item.full.size(); ++i) suffix.push_back(item.full[i]);
         if (item.loopable) {
-            const auto wrapEnd = match.templateMatchStart == 0 ? 1 : match.templateMatchStart;
+            // Complete one cycle up to, but not including, the query's start.
+            // A prefix starting at zero already has the rest of its cycle in
+            // suffix. Replaying its first chord would add a spurious extra beat
+            // group. A fully consumed cycle offers the complete next round.
+            const auto wrapEnd = match.templateMatchStart == 0
+                ? (match.hasContinuation ? 0 : item.full.size()) : match.templateMatchStart;
             for (std::size_t i = 0; i < std::min(wrapEnd, item.full.size()); ++i) suffix.push_back(item.full[i]);
         }
         if (suffix.empty()) { match.disposition="empty_suffix"; continue; }
@@ -341,11 +389,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         auto rhythm = estimateRhythmScale(match, query, item);
         match.timingSource=rhythm.source;
         ContinuationCandidate candidate;
-        candidate.id = item.id;
         candidate.primaryTemplate = item.id;
+        candidate.sourceAnchorQN = query.source.empty()?0.:query.source.front().startQN;
         candidate.key = match.key;
         candidate.intent = effectiveIntent(item, suffix);
-        candidate.cadence = item.cadence;
+        candidate.pathContextReliable = preservesLoopContext(*selected, match, item);
+        candidate.preservedLoop = item.loopable && candidate.pathContextReliable;
         candidate.styles = item.styles;
         candidate.matchStart = match.templateMatchStart;
         candidate.matchEnd = match.templateMatchEnd;
@@ -357,9 +406,46 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         for (const auto& event : suffix)
             candidate.continuation.push_back(realizeContinuation(event, match.key,
                 event.durationQN.value_or(4.0) * rhythm.scale));
+        const auto firstChord = query.source.empty()?ChordPitchSet{}:chordPitches(query.source.front());
+        const auto& lastEvent = candidate.continuation.back();
+        const auto lastChord = lastEvent.harmonicData ? chordPitches(*lastEvent.harmonicData) : chordPitches(lastEvent.label,lastEvent.quality);
+        candidate.actualPhraseReturn = !query.source.empty() && firstChord.root==lastChord.root && firstChord.bass==lastChord.bass &&
+            firstChord.intervals==lastChord.intervals && firstChord.quality==lastChord.quality;
+        // Catalogue intent is a prior. Only the evaluator can certify actual use.
+        const auto completionFor = [&](PhraseIntent intent) {
+            auto probe = candidate; probe.intent = intent;
+            return evaluateIntentCompletion(probe, selected->full.front().degree, selected->full.back().degree);
+        };
+        candidate.completion = completionFor(candidate.intent);
+        const auto sufficient = [](IntentCompletionResult value) {
+            return value.reason != CompletionReason::NoEvidence && value.reason != CompletionReason::ShortDevelopment;
+        };
+        const auto resolveEvidence=completionFor(PhraseIntent::Resolve);
+        const auto loopEvidence=completionFor(PhraseIntent::Loop);
+        if(resolveEvidence.reason==CompletionReason::DominantTonic) candidate.cadence=CadenceType::Authentic;
+        else if(resolveEvidence.reason==CompletionReason::StableTonic) {
+            const auto previous=candidate.continuation.size()>1?std::optional(candidate.continuation[candidate.continuation.size()-2].degree):selected->full.back().degree;
+            candidate.cadence=previous&&previous->degree==4?CadenceType::Plagal:CadenceType::Modal;
+        }
+        else if(sufficient(loopEvidence)) candidate.cadence=CadenceType::LoopClosure;
+        if (!sufficient(candidate.completion)) {
+            // Prefer supported uses; a failed Loop/Color label does not certify Develop.
+            for (auto intent : {PhraseIntent::Resolve, PhraseIntent::Loop, PhraseIntent::Color, PhraseIntent::Develop}) {
+                const auto evidence = completionFor(intent);
+                if (!sufficient(evidence)) continue;
+                candidate.intent = intent; candidate.completion = evidence; break;
+            }
+        }
+        candidate.exploratory = !sufficient(candidate.completion);
+        if (candidate.exploratory) candidate.intent = PhraseIntent::Neutral;
         // A repeated copy of the current open chord offers no new harmonic step.
-        const auto currentLabel = realizeContinuation(selected->full.back(), match.key, 1.0).label;
-        if (!candidate.continuation.empty() && candidate.continuation.front().label == currentLabel) {
+        const auto currentEvent = realizeContinuation(selected->full.back(), match.key, 1.0);
+        const auto currentChord = currentEvent.harmonicData?chordPitches(*currentEvent.harmonicData):chordPitches(currentEvent.label,currentEvent.quality);
+        const auto& nextEvent=candidate.continuation.front();
+        const auto nextChord=nextEvent.harmonicData?chordPitches(*nextEvent.harmonicData):chordPitches(nextEvent.label,nextEvent.quality);
+        if (nextChord.root==currentChord.root && nextChord.bass==currentChord.bass &&
+            nextChord.intervals==currentChord.intervals && nextChord.quality==currentChord.quality &&
+            nextChord.exactIntervals==currentChord.exactIntervals) {
             match.disposition="repeated_current_chord"; continue; }
         if (!selected->full.back().durationQN) {
             for (const auto& step : match.alignmentTrace) {
@@ -368,13 +454,25 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
                     candidate.suggestedCurrentChordDurationQN =
                         *item.full[*step.templateIndex].durationQN * rhythm.scale;
             }
+            if(!candidate.suggestedCurrentChordDurationQN&&!query.source.empty())
+                candidate.suggestedCurrentChordDurationQN=progressionOpenDuration(query.source);
+        }
+        const auto realizable=[](const ConcreteChordEvent& e) {
+            const auto chord=e.harmonicData?chordPitches(*e.harmonicData):chordPitches(e.label,e.quality);
+            return chord.root>=0 && chord.bass>=0 && chord.intervals &&
+                std::isfinite(e.durationQN) && e.durationQN>0 && e.durationQN<=128;
+        };
+        if (!std::all_of(candidate.continuation.begin(),candidate.continuation.end(),realizable) ||
+            (candidate.suggestedCurrentChordDurationQN && (!std::isfinite(*candidate.suggestedCurrentChordDurationQN) ||
+                *candidate.suggestedCurrentChordDurationQN<=0 || *candidate.suggestedCurrentChordDurationQN>128))) {
+            match.disposition="unrealizable_continuation"; continue;
         }
         auto& s = candidate.subscores;
         s.match = match.similarity;
         s.skeleton = match.subScores.skeletonHarmony;
-        s.style = styleScore(item, request.style);
+        s.style = styleScore(item, request.style, match.rawCost <= 0.00001f);
         s.intent = request.preferredIntent && *request.preferredIntent == candidate.intent ? 1.f : 0.5f;
-        s.cadence = cadenceScore(candidate.intent, item.cadence);
+        s.cadence = sufficient(resolveEvidence) || sufficient(loopEvidence) ? 1.f : 0.5f;
         s.continuation = clampScore(0.45f + 0.1f * static_cast<float>(std::min<std::size_t>(5, suffix.size())));
         s.prior = item.priorWeight;
         s.rhythm = rhythm.samples >= 2 ? clampScore(0.5f * match.subScores.rhythmSimilarity +
@@ -383,7 +481,14 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         candidate.rankingScore = 100.f * (w.match*s.match + w.skeleton*s.skeleton + w.style*s.style +
             w.intent*s.intent + w.cadence*s.cadence + w.continuation*s.continuation + w.prior*s.prior +
             w.rhythm*s.rhythm);
-        candidate.eligibilityScore = rhythmNeutralEligibility(s, w);
+        auto neutral = s;
+        neutral.style = neutral.intent = neutral.prior = 0.5f;
+        neutral.support = 0.f;
+        candidate.eligibilityScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
+            ? rhythmNeutralEligibility(neutral, w)
+            : 100.f * (w.match*neutral.match + w.skeleton*neutral.skeleton + w.style*neutral.style +
+                w.intent*neutral.intent + w.cadence*neutral.cadence + w.continuation*neutral.continuation +
+                w.prior*neutral.prior + w.rhythm*neutral.rhythm);
         for (const auto& step : match.alignmentTrace) {
             if (step.operation == AlignmentOp::QueryInsertion &&
                 !hasReason(step.reasons, MatchReason::ResolvesToMatchedTarget)) {
@@ -423,94 +528,58 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             });
             candidate.rankingScore+=profile.colorBias*static_cast<float>(colors)/
                 static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
-            candidate.eligibilityScore+=profile.colorBias*static_cast<float>(colors)/
-                static_cast<float>(std::max<std::size_t>(1,candidate.continuation.size()));
         }
+        candidate.baseQualified = std::isfinite(candidate.eligibilityScore) && candidate.eligibilityScore >= w.minimumScore;
+        candidate.rankingScore += 100.f*w.intentCompletionTieBreak*(candidate.completion.score-0.5f);
+        if (!candidate.constraints.melody.empty())
+            candidate.rankingScore -= melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
+        candidate.evidence.push_back({item.id,match.key,match.templateMatchStart,match.templateMatchEnd,match.continuationStartIndex});
+        const auto identity = continuationMusicFingerprint(candidate);
+        candidate.id = "music-v1:" + identity;
         match.disposition="candidate_generated";match.candidateRankingScore=candidate.rankingScore;
         match.candidateEligibilityScore=candidate.eligibilityScore;
-        const auto fingerprint = suffixFingerprint(candidate, false);
-        auto [it, inserted] = distinct.try_emplace(fingerprint, std::move(candidate));
+        auto [it, inserted] = distinct.try_emplace(identity, std::move(candidate));
         if (!inserted) {
-            // A selected style can make a later source the better explanation.
-            const auto previousCount = it->second.supportCount;
-            auto sources = std::move(it->second.supportingTemplates);
-            sources.push_back(item.id);
-            if (candidate.rankingScore > it->second.rankingScore) {
-                candidate.supportCount = previousCount + 1;
-                candidate.supportingTemplates = std::move(sources);
-                it->second = std::move(candidate);
-            } else {
-                it->second.supportCount = previousCount + 1;
-                it->second.supportingTemplates = std::move(sources);
-            }
+            auto sources = it->second.supportingTemplates;
+            if (std::find(sources.begin(),sources.end(),item.id)==sources.end()) sources.push_back(item.id);
+            auto evidence = it->second.evidence;
+            evidence.insert(evidence.end(),candidate.evidence.begin(),candidate.evidence.end());
+            // Select one complete, qualified explanation. Never combine subscores.
+            const auto better = [&] {
+                if (candidate.baseQualified != it->second.baseQualified) return candidate.baseQualified;
+                if (candidate.exploratory != it->second.exploratory) return !candidate.exploratory;
+                return higherRank(candidate,it->second);
+            };
+            if (better()) it->second=std::move(candidate);
+            std::sort(sources.begin(),sources.end());
+            it->second.supportingTemplates=std::move(sources);
+            it->second.supportCount=static_cast<int>(it->second.supportingTemplates.size());
+            it->second.evidence=std::move(evidence);
         }
     }
     const auto mark=[&](const ContinuationCandidate& c,const char* why) {
-        for(auto& m:result.matches)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),m.templateId)!=c.supportingTemplates.end()){
-            m.disposition=why;m.candidateRankingScore=c.rankingScore;m.candidateEligibilityScore=c.eligibilityScore;
-        }
+        for (auto& m:result.matches)
+            if (std::any_of(c.evidence.begin(),c.evidence.end(),[&](const auto& e) {
+                return e.templateId==m.templateId && e.key.tonic==m.key.tonic && e.key.mode==m.key.mode &&
+                    e.matchStart==m.templateMatchStart && e.matchEnd==m.templateMatchEnd &&
+                    e.continuationStart==m.continuationStartIndex;
+            })) m.disposition=why;
     };
     result.stats.distinct=distinct.size();
-    for (auto& [key, candidate] : distinct) {
-        candidate.subscores.support = clampScore(static_cast<float>(candidate.supportCount - 1) / 4.f);
-        candidate.rankingScore += 100.f * w.support * candidate.subscores.support;
-        const float coreWeight = w.match + w.skeleton + w.style + w.intent + w.cadence + w.continuation + w.prior + w.support;
-        if (coreWeight > 0.f)
-            candidate.eligibilityScore += 100.f * w.support * candidate.subscores.support / coreWeight;
-        const auto gateScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
-            ? candidate.eligibilityScore : candidate.rankingScore;
-        if (gateScore >= w.minimumScore) {
-            ++result.stats.scorePassed;
-            result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
-        } else {mark(candidate,"minimum_score");
-        }
+    for (auto& [identity,candidate]:distinct) {
+        if (!candidate.baseQualified) { mark(candidate,"minimum_score"); continue; }
+        ++result.stats.scorePassed;
+        result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
     }
-    for (auto& group : result.groups) {
-        std::sort(group.begin(), group.end(), [](const auto& a, const auto& b) {
-            return a.rankingScore == b.rankingScore ? a.id < b.id : a.rankingScore > b.rankingScore;
+    for (auto& group:result.groups) {
+        // Exploration shares More's existing bounded list, after supported routes.
+        std::sort(group.begin(),group.end(),[](const auto& a,const auto& b) {
+            if (a.exploratory!=b.exploratory) return !a.exploratory;
+            return higherRank(a,b);
         });
-        std::vector<ContinuationCandidate> diverse;
-        for (auto& candidate : group) {
-            const auto coarse = suffixFingerprint(candidate, true);
-            bool near{};
-            for (const auto& chosen : diverse) {
-                if (suffixFingerprint(chosen, true) == coarse) { near = true; break; }
-                std::size_t shared{};
-                const auto common = std::min(chosen.continuation.size(), candidate.continuation.size());
-                while (shared < common && chosen.continuation[shared].degree.degree == candidate.continuation[shared].degree.degree &&
-                       chosen.continuation[shared].degree.alteration == candidate.continuation[shared].degree.alteration)
-                    ++shared;
-                if (shared >= 2 && shared * 2 >= common) {
-                    candidate.rankingScore -= w.diversityPenalty;
-                    if (query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst)
-                        candidate.eligibilityScore -= w.diversityPenalty;
-                }
-            }
-            const auto candidateGateScore = query.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst
-                ? candidate.eligibilityScore : candidate.rankingScore;
-            if (!near && candidateGateScore >= w.minimumScore) diverse.push_back(std::move(candidate));
-            else mark(candidate,near?"equivalent_path_deduplication":"diversity_score");
-        }
-        std::sort(diverse.begin(), diverse.end(), [](const auto& a, const auto& b) { return a.rankingScore > b.rankingScore; });
-        for(std::size_t i=w.perGroup;i<diverse.size();++i)mark(diverse[i],"retained_limit");
-        if (diverse.size() > w.perGroup) diverse.resize(w.perGroup);
-        for(const auto& c:diverse)mark(c,"TARGET_RETAINED");
-        // Score only the already accepted cards: a diagnostic tie-break cannot
-        // remove a valid option or pull a lower-quality option across the gate.
-        for(auto& candidate:diverse)
-            if(const auto* selected=interpretationFor(query,candidate.key);selected&&!selected->full.empty()) {
-                const auto completion=evaluateIntentCompletion(candidate,selected->full.front().degree,
-                                                                selected->full.back().degree);
-                candidate.rankingScore=std::clamp(candidate.rankingScore+
-                    100.f*w.intentCompletionTieBreak*(completion.score-0.5f),0.f,100.f);
-            }
-        for(auto& candidate:diverse)
-            if(!candidate.constraints.melody.empty())
-                candidate.rankingScore-=melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
-        std::stable_sort(diverse.begin(),diverse.end(),[](const auto& a,const auto& b) {
-            return a.rankingScore>b.rankingScore;
-        });
-        group = std::move(diverse);
+        for (std::size_t i=w.perGroup;i<group.size();++i) mark(group[i],"retained_limit");
+        if (group.size()>w.perGroup) group.resize(w.perGroup);
+        for (const auto& c:group) mark(c,c.exploratory?"EXPLORATORY_RETAINED":"TARGET_RETAINED");
         result.stats.output+=group.size();
     }
     return result;

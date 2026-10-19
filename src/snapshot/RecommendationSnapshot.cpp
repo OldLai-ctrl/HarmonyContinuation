@@ -160,9 +160,10 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
         const double anchor=s.imported.events.front().startQN;
         for (auto& event:s.imported.events) event.startQN-=anchor;
         for(auto& melody:s.candidate.constraints.melody)melody.startQN-=anchor;
+        s.candidate.sourceAnchorQN=0.;
         s.imported.coordinateMode=TimelineCoordinateMode::RelativeToSelection;
     }
-    const auto match=std::find_if(matches.begin(),matches.end(),[&](const auto& m){return m.templateId==candidate.primaryTemplate;});
+    const auto match=std::find_if(matches.begin(),matches.end(),[&](const auto& m){return representativeMatch(candidate,m);});
     if (match!=matches.end()) s.match=*match;
     validate(s);
     return s;
@@ -284,6 +285,7 @@ DecodeResult deserialize(std::string_view input,const library::LoadResult* activ
         c.id=candidate.at("id").text(); c.primaryTemplate=candidate.at("primaryTemplate").text();
         if(candidate.object.contains("melodyConstraints"))c.constraints=decodeConstraints(candidate.at("melodyConstraints").text());
         c.intent=static_cast<PhraseIntent>(candidate.at("intent").integer(0,4)); c.key=keyIn(candidate.at("key"));
+        c.exploratory=c.intent==PhraseIntent::Neutral;
         c.cadence=static_cast<CadenceType>(candidate.at("cadence").integer(0,static_cast<int>(CadenceType::Unknown)));
         c.styles=static_cast<StyleFlags>(candidate.at("styles").integer(0,63));
         c.rankingScore=static_cast<float>(candidate.at("rankingScore").finite());
@@ -318,8 +320,32 @@ DecodeResult deserialize(std::string_view input,const library::LoadResult* activ
                 step.operation=static_cast<AlignmentOp>(a[2].integer(0,3));
                 m.alignmentTrace.push_back(std::move(step));
             }
+            // Schema 3 already stores the full trace and the candidate key.
+            // Recover its match window without introducing another persisted format.
+            m.key=c.key;
+            bool first=true;
+            for(const auto& step:m.alignmentTrace)if(step.templateIndex) {
+                if(first){m.templateMatchStart=m.templateMatchEnd=*step.templateIndex;first=false;}
+                else {m.templateMatchStart=std::min(m.templateMatchStart,*step.templateIndex);
+                    m.templateMatchEnd=std::max(m.templateMatchEnd,*step.templateIndex);}
+            }
+            if(!first) {
+                m.continuationStartIndex=m.templateMatchEnd+1;
+                c.matchStart=m.templateMatchStart;c.matchEnd=m.templateMatchEnd;c.continuationStart=m.continuationStartIndex;
+            }
             s.match=std::move(m);
         }
+        c.preservedLoop=c.intent==PhraseIntent::Loop&&c.cadence==CadenceType::LoopClosure;
+        if(!s.imported.events.empty()&&!c.continuation.empty()) {
+            const auto first=chordPitches(s.imported.events.front());
+            const auto& last=c.continuation.back();
+            const auto end=last.harmonicData?chordPitches(*last.harmonicData):chordPitches(last.label,last.quality);
+            c.actualPhraseReturn=first.root==end.root&&first.bass==end.bass&&first.intervals==end.intervals&&first.quality==end.quality;
+            AnalysisContext context;context.forcedKey=c.key;
+            const auto analysis=analyzeHarmony(s.imported.events,context);
+            if(!analysis.full.empty()) c.completion=evaluateIntentCompletion(c,analysis.full.front().degree,analysis.full.back().degree);
+        }
+        if(s.match)c.evidence.push_back({c.primaryTemplate,c.key,c.matchStart,c.matchEnd,c.continuationStart});
         s.schemaVersion=RecommendationSnapshot::currentSchemaVersion;
         if(activeFactory)restoreFactoryReferences(s,*activeFactory);
         validate(s);

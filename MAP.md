@@ -7,8 +7,9 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 原开发 checkout | `HarmonyContinuation-release/`；Phase7 开始时为 `development/phase5-20261013`，收尾只读观测为 `development/phase61-20261016` | 存在本轮之外的未提交文档改动，未强制同步或切换该工作树。Phase6 插件身份仍以实际包与既有报告核对，不由当前分支名推断 |
-| Phase 7 设计工作树 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016`，从 `66d7f07` 隔离；产物 `design/phase7/` | A4撤回；当前在已认可A3上收紧到800×780，补充真实判断摘要；原开发目录并行改动保留，插件包身份不变 |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/core-decision-chain-20261017` | dev.11 源码/BuildCommit `1c67152`；独立分支交付，不合并 main；当前验收见 [NOW](NOW.md) |
+| 当前验证与测试包 | 同级 `HarmonyContinuation-core-chain-validation-20261017/`、`HarmonyContinuation-dev11-delivery-20261017/` | 前者含 dev.10 有限对照、定向检查及 dev.11 结果；后者为唯一 dev.11 Setup。沿用 dev9-fix 的本机匹配构建缓存，当前缓存身份已更新为 dev.11 |
+| Phase 7 UI 原型 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016` | 独立工作树；Phase6.1 没有修改 MainView |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
@@ -39,3 +40,5 @@ Phase5源码使用 `development/phase5-20261013`，构建提交 `3a582e4`。同�
 Phase5.1 保持插件构建身份 `3a582e4` / dev.6，增补范围仅测试与文档。验证资料位于同级 `HarmonyContinuation-phase51-validation-20261014/`；唯一 Acceptance Supplement 目标目录为同级 `HarmonyContinuation-phase51-delivery-20261014/`，不重打 Phase5 三模式包、Setup、Factory 或 Source ZIP。Supplement 顶层按现有打包器要求组织为 `proofs/`、`safety/`、`blind/`、`answer-key/`、`diagnostics/`、`docs/`；答案与 mapping 不进入 `blind/`。源码提交和远端资产读回分别以 Git proof、上传 proof 为准。详细范围见 [Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 与 [Cubase 清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。
 
 Phase6 dev.7 使用一个 Setup、一个 VST3 插件和 Legacy / HarmonyFirst / Abstract 三种运行时模式；工程重开后回到 Legacy。Factory V4 内容未改，Phase3A OFF，无 Phase6 Candidate 预设。验证材料在同级 `HarmonyContinuation-phase6-validation-20261014/`，最终分析为其中 `benchmark/RESULTS_ANALYSIS.md`；交付目录为同级 `HarmonyContinuation-phase6-delivery-20261014/`，包与 SHA 以最终交付证明为准。V5 不安装，只附隔离评估 MIDI/证据。详细状态见 [Phase 6 综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [Cubase 验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md)。
+
+Phase6.1 dev.8 的构建与诊断为同级 `HarmonyContinuation-phase61-validation-20261016/`，交付为同级 `HarmonyContinuation-phase61-delivery-20261016/`；具体门禁、哈希和实际和弦听评见 [Phase6.1 报告](docs/PHASE61_ENGINEERING_20261016.md)。dev.7 目录和 Factory V4 原件保留作回退对照。

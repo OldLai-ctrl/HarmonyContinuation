@@ -914,7 +914,7 @@ bool MainView::runColorHintSmoke(CDrawContext* dc) {
     return !showColorHints_&&selectedCandidate()!=nullptr;
 }
 void MainView::setSnapshotMode(bool enabled) {
-    visibility_.absoluteMinimumScore=enabled?0.f:60.f;
+    visibility_.includeExploratory=enabled;
     invalid();
 }
 void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttempt) {
@@ -1127,7 +1127,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         if(lane.bottom<layout_.content.top||lane.top>layout_.content.bottom)continue;
         box(dc,viewRect(lane),panel);
         line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
-        if (recommendations_.groups[group].size()>2)
+        if (recommendations_.groups[group].size()>2 || std::any_of(recommendations_.groups[group].begin(),recommendations_.groups[group].end(),[](const auto& c){return c.exploratory;}))
             line(dc,t("candidate.more"),CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
         const auto& visible=presentation[group];
         if (visible.empty()) {
@@ -1891,7 +1891,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(!lane.contains(where.x,where.y))continue;
             const auto group=groupForVisual(visual,state_.intent);
             if(where.y<lane.top+27) {
-                if(where.x>=lane.right-120&&recommendations_.groups[group].size()>2) {
+                if(where.x>=lane.right-120&&(recommendations_.groups[group].size()>2 ||
+                    std::any_of(recommendations_.groups[group].begin(),recommendations_.groups[group].end(),[](const auto& c){return c.exploratory;}))) {
                     refreshColorRanking();
                     std::vector<ContinuationCandidate> listed;
                     for(const auto index:colorRanks_[group].order)listed.push_back(recommendations_.groups[group][index]);
@@ -1899,7 +1900,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     std::vector<std::string> options;
                     for(const auto& c:listed) {
                         std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
-                        options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
+                        options.push_back((c.exploratory?(state_.locale==session::Locale::ZhCN?std::string("探索 · "):std::string("Explore · ")):std::string{})+
+                            std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
                     if(selected>=0&&static_cast<std::size_t>(selected)<listed.size()&&revision==state_.imported.revision) {
@@ -2155,7 +2157,18 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         std::vector<std::string> path;for(const auto& chord:c.continuation)path.push_back(chord.label);
         addPath(t("mode.continue"),path);
-        auto functional=functionalWhy(completion,state_.locale);
+        paragraph(state_.forcedKey?t("key.searchFixed")+" "+formatKey(*state_.forcedKey):t("key.searchAuto"));
+        add(t("key.match")+" "+formatKey(c.key),muted);
+        std::vector<std::string> otherKeys;
+        for(const auto& source:c.evidence) {
+            const auto key=formatKey(source.key);
+            if(key!=formatKey(c.key)&&std::find(otherKeys.begin(),otherKeys.end(),key)==otherKeys.end())otherKeys.push_back(key);
+        }
+        if(!otherKeys.empty())addPath(t("key.alternatives"),otherKeys);
+        auto functional=c.exploratory?
+            (state_.locale==session::Locale::ZhCN?std::string("探索性续写：通过基础匹配门槛，实际音乐意图证据不足。"):
+                std::string("Exploratory continuation: passes basic matching; musical intent evidence is insufficient.")):
+            functionalWhy(completion,state_.locale);
         if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
         const auto explanation=explainWhy(functional,hint,state_.locale,colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
@@ -2180,7 +2193,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 skeletonNames.push_back(formatDegree(analysis_.full[index]));
             for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
             addPath(t("inspector.user"),userNames);addPath("SKELETON",skeletonNames);
-            const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
+            const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
             if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
 
             add(t("inspector.source")+"  "+c.primaryTemplate,muted);
@@ -2196,6 +2209,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
             std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
             add(t("inspector.sources")+"  "+sources,muted);
+            for(const auto& source:c.evidence)
+                add(source.templateId+" · "+formatKey(source.key),muted);
             if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
                 const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
                 const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");

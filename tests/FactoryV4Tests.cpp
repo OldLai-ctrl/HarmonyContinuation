@@ -157,7 +157,9 @@ int main(int argc,char** argv){try{
             const char* status=candidate?(visible?"DEFAULT_VISIBLE":"MORE_ACCESSIBLE"):"BLOCKED";
             std::string suffix;
             if(candidate){
-                require(candidate->continuationStart==prefix&&candidate->continuation.size()==t.full.size()-prefix+(t.loopable?1:0),"batch alignment: "+t.id);
+                const auto remaining=t.full.size()-prefix;
+                const auto nextRound=t.loopable&&remaining==0?t.full.size():0;
+                require(candidate->continuationStart==prefix&&candidate->continuation.size()==remaining+nextRound,"batch alignment: "+t.id);
                 for(std::size_t i=0;i<candidate->continuation.size();++i){const auto& c=candidate->continuation[i];
                     const auto expected=chordPitches(chord(t.full[(prefix+i)%t.full.size()],key,0));
                     const auto actual=c.harmonicData?chordPitches(*c.harmonicData):chordPitches(c.label,c.quality);

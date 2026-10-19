@@ -77,6 +77,11 @@ const char* analysisFunctionName(HarmonicFunction f) {
 std::string joinLabels(const std::vector<std::string>& values) {
  std::ostringstream out;for(std::size_t i=0;i<values.size();++i){if(i)out<<" | ";out<<values[i];}return out.str();
 }
+std::size_t phase61LoopWrapEnd(const ProgressionTemplate& item,const MatchResult& match) {
+ if(!item.loopable)return 0;
+ if(match.templateMatchStart>0)return std::min(match.templateMatchStart,item.full.size());
+ return match.hasContinuation?0:item.full.size();
+}
 struct RhythmFixture {
  std::string id; std::vector<std::string> chords; std::optional<KeySignature> key;
 };
@@ -653,12 +658,12 @@ int main(int argc,char** argv) {
    if(itemIt==db.templates.end())continue;
    const auto& item=*itemIt;
    const auto intent=item.intent;
-   const float style=request.style?([&]{for(const auto& value:item.styleWeights)if(value.first==*request.style)return value.second;return 0.25f;}()):0.5f;
+   const float style=request.style?([&]{for(const auto& value:item.styleWeights)if(value.first==*request.style)return value.second;return match.rawCost<=0.00001f?0.5f:0.25f;}()):0.5f;
    const float intentScore=request.preferredIntent&&*request.preferredIntent==intent?1.f:0.5f;
    const float cadence=intent==PhraseIntent::Loop?(item.cadence==CadenceType::LoopClosure?1.f:0.5f):
      intent==PhraseIntent::Resolve?(item.cadence==CadenceType::Authentic||item.cadence==CadenceType::PerfectAuthentic||item.cadence==CadenceType::Plagal?1.f:0.4f):0.5f;
    std::size_t suffixCount=item.full.size()-match.continuationStartIndex;
-   if(item.loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;suffixCount+=std::min(wrapEnd,item.full.size());}
+   suffixCount+=phase61LoopWrapEnd(item,match);
    const float continuation=0.45f+0.1f*static_cast<float>(std::min<std::size_t>(5,suffixCount));
    const auto rhythm=estimateRhythmScale(match,query,item);
    const float rhythmScore=rhythm.samples>=2?0.5f*match.subScores.rhythmSimilarity+0.5f*rhythm.confidence:0.5f;
@@ -705,7 +710,7 @@ int main(int argc,char** argv) {
    if(itemIt==db.templates.end())continue;
    const auto& item=*itemIt;std::vector<const MatchEvent*> suffix;
    for(std::size_t i=match.continuationStartIndex;i<item.full.size();++i)suffix.push_back(&item.full[i]);
-   if(item.loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;for(std::size_t i=0;i<std::min(wrapEnd,item.full.size());++i)suffix.push_back(&item.full[i]);}
+   for(std::size_t i=0;i<phase61LoopWrapEnd(item,match);++i)suffix.push_back(&item.full[i]);
    PhraseIntent resolvedIntent=item.intent;
    if(resolvedIntent==PhraseIntent::Neutral) {
     if(item.loopable)resolvedIntent=PhraseIntent::Loop;
@@ -873,9 +878,9 @@ int main(int argc,char** argv) {
    const bool eligible=exactOtherChords&&match.hasContinuation&&match.similarity>=weights.minimumMatch&&match.candidateRankingScore>=0.f;
    const bool relevant=match.templateId=="V4_A08"||eligible||(insertionAtDim&&match.hasContinuation&&match.similarity>=weights.minimumMatch&&match.candidateRankingScore>=0.f);if(!relevant)continue;
    std::size_t suffixCount=itemIt->full.size()-match.continuationStartIndex;
-   if(itemIt->loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;suffixCount+=std::min(wrapEnd,itemIt->full.size());}
+   suffixCount+=phase61LoopWrapEnd(*itemIt,match);
    std::vector<std::string> suffix;for(std::size_t i=match.continuationStartIndex;i<itemIt->full.size();++i)suffix.push_back(formatMatchEvent(itemIt->full[i]));
-   if(itemIt->loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;for(std::size_t i=0;i<std::min(wrapEnd,itemIt->full.size());++i)suffix.push_back(formatMatchEvent(itemIt->full[i]));}
+   for(std::size_t i=0;i<phase61LoopWrapEnd(*itemIt,match);++i)suffix.push_back(formatMatchEvent(itemIt->full[i]));
    const float current=match.candidateRankingScore;const float targeted=eligible?current+penalty*static_cast<float>(unexplained):current;
    phase3a0<<"CANDIDATE id="<<match.templateId<<" intent="<<intentName(itemIt->intent)<<" window="<<match.templateMatchStart<<'-'<<match.templateMatchEnd
     <<" similarity="<<match.similarity<<" continuation="<<match.hasContinuation<<" disposition="<<match.disposition<<" unexplainedInsertions="<<unexplained
@@ -1133,7 +1138,7 @@ int main(int argc,char** argv) {
     if(match.candidateRankingScore>stat.bestScore){stat.bestScore=match.candidateRankingScore;stat.bestDisposition=match.disposition;stat.bestInput=std::string(corpus)+":"+std::string(caseId)+":"+std::string(variant);}
      if(corpus=="R01_R02_B08_B11"){
       const auto& item=db.templates[ri->second];std::vector<MatchEvent> suffix;for(std::size_t n=match.continuationStartIndex;n<item.full.size();++n)suffix.push_back(item.full[n]);
-      if(item.loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;for(std::size_t n=0;n<std::min(wrapEnd,item.full.size());++n)suffix.push_back(item.full[n]);}
+      for(std::size_t n=0;n<phase61LoopWrapEnd(item,match);++n)suffix.push_back(item.full[n]);
       std::ostringstream fullPath,tail,alignment;for(std::size_t n=0;n<item.full.size();++n){if(n)fullPath<<'|';fullPath<<formatMatchEvent(item.full[n]);}
       for(std::size_t n=0;n<suffix.size();++n){if(n)tail<<'|';tail<<realizeContinuation(suffix[n],match.key,suffix[n].durationQN.value_or(4.)).label;}
       for(std::size_t n=0;n<match.alignmentTrace.size();++n){const auto& step=match.alignmentTrace[n];if(n)alignment<<'|';alignment<<alignmentOpName(step.operation)<<"(q=";if(step.queryIndex)alignment<<*step.queryIndex;else alignment<<'-';alignment<<",t=";if(step.templateIndex)alignment<<*step.templateIndex;else alignment<<'-';alignment<<",reason="<<reasonNames(step.reasons)<<')';}
@@ -1163,9 +1168,9 @@ int main(int argc,char** argv) {
      }
     }
     for(const auto& group:rec.groups)for(std::size_t a=0;a<group.size();++a)for(std::size_t b=a+1;b<group.size();++b){
-     auto& pp=pathPairs[corpusKey];++pp.pairs;const auto& left=group[a].continuation;const auto& right=group[b].continuation;const auto common=std::min(left.size(),right.size());std::size_t shared{};
+     auto& pp=pathPairs[corpusKey];++pp.pairs;const auto& left=group[a].continuation;const auto& right=group[b].continuation;const auto common=std::min(left.size(),right.size());const auto longer=std::max(left.size(),right.size());std::size_t shared{};
      while(shared<common&&left[shared].degree.degree==right[shared].degree.degree&&left[shared].degree.alteration==right[shared].degree.alteration)++shared;
-     if(shared>=2&&shared*2>=common)++pp.engineSimilar;
+     if(shared>=2&&shared*2>longer)++pp.engineSimilar;
      if(left.size()==right.size()&&std::equal(left.begin(),left.end(),right.begin(),[](const auto&x,const auto&y){return x.degree.degree==y.degree.degree&&x.degree.alteration==y.degree.alteration&&x.quality==y.quality;}))++pp.sameRelativePath;
     }
     ++pathPairs[corpusKey].runs;
@@ -1175,7 +1180,7 @@ int main(int argc,char** argv) {
     const auto selected=std::find_if(q.interpretations.begin(),q.interpretations.end(),[&](const auto& x){return x.key.key.tonic==match.key.tonic&&x.key.key.mode==match.key.mode;});
     if(selected==q.interpretations.end())continue;std::vector<MatchEvent> suffix;
     for(std::size_t n=match.continuationStartIndex;n<item.full.size();++n)suffix.push_back(item.full[n]);
-    if(item.loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;for(std::size_t n=0;n<std::min(wrapEnd,item.full.size());++n)suffix.push_back(item.full[n]);}
+    for(std::size_t n=0;n<phase61LoopWrapEnd(item,match);++n)suffix.push_back(item.full[n]);
     const auto intent=effective(item,suffix);const auto rhythm=estimateRhythmScale(match,q,item);
     float style=0.5f;if(request.style){style=0.25f;for(const auto& sw:item.styleWeights)if(sw.first==*request.style){style=sw.second;break;}}
     const float intentScore=request.preferredIntent?(intent==*request.preferredIntent?1.f:0.5f):0.5f;
@@ -1274,7 +1279,7 @@ int main(int argc,char** argv) {
    const auto& sample=independent[si];const auto& p=authored[si];const auto baseMidi=midiTransform(p,0,0,0,false,false,1.,0,false);if(!baseMidi){++failedRecognitions;++transformFailureReasons[lastTransformFailure];continue;}const auto base=logRun("independent",sample.id,"stability_base_midi",*baseMidi,sample.key,requests[si]);std::set<std::string> baseIds;std::map<std::string,std::pair<std::string,std::size_t>> baseRanks;for(std::size_t g=0;g<base.groups.size();++g)for(std::size_t r=0;r<base.groups[g].size();++r){const auto& c=base.groups[g][r];baseIds.insert(c.primaryTemplate);baseRanks[c.primaryTemplate]={intentName(c.intent),r+1};}
    const auto describeCandidates=[](const RecommendationSet& set){std::ostringstream out;bool first=true;for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t r=0;r<set.groups[g].size();++r){const auto& c=set.groups[g][r];const auto& s=c.subscores;if(!first)out<<';';first=false;out<<c.primaryTemplate<<'['<<intentName(c.intent)<<'#'<<r+1<<'='<<std::fixed<<std::setprecision(3)<<c.rankingScore<<";m="<<s.match<<";sk="<<s.skeleton<<";style="<<s.style<<";intent="<<s.intent<<";cad="<<s.cadence<<";cont="<<s.continuation<<";prior="<<s.prior<<";rhythm="<<s.rhythm<<";support="<<s.support<<']';}return out.str();};
    const auto baseDescription=describeCandidates(base);
-   const auto describeFocusMatch=[&](const RecommendationSet& set,std::string_view wanted){std::ostringstream out;for(const auto& match:set.matches)if(match.templateId==wanted){const auto found=rowOf.find(match.templateId);const auto* item=found==rowOf.end()?nullptr:&db.templates[found->second];out<<wanted<<"{sim="<<std::fixed<<std::setprecision(6)<<match.similarity<<";skeleton="<<match.subScores.skeletonHarmony<<";full="<<match.subScores.fullHarmony<<";key="<<match.subScores.keyCompatibility<<";rhythm="<<match.subScores.rhythmSimilarity<<";rawCost="<<match.rawCost<<";window="<<match.templateMatchStart<<".."<<match.templateMatchEnd<<";continuationStart="<<match.continuationStartIndex<<";hasContinuation="<<match.hasContinuation<<";loopable="<<(item?item->loopable:false)<<";score="<<match.candidateRankingScore<<";disposition="<<match.disposition<<";alignment=";for(std::size_t n=0;n<match.alignmentTrace.size();++n){const auto& step=match.alignmentTrace[n];if(n)out<<'|';out<<alignmentOpName(step.operation)<<"(q=";if(step.queryIndex)out<<*step.queryIndex;else out<<'-';out<<",t=";if(step.templateIndex)out<<*step.templateIndex;else out<<'-';out<<",reason="<<reasonNames(step.reasons)<<')';}if(item){out<<";suffix=";bool first=true;for(std::size_t n=match.continuationStartIndex;n<item->full.size();++n){if(!first)out<<'|';first=false;out<<realizeContinuation(item->full[n],match.key,item->full[n].durationQN.value_or(4.)).label;}if(item->loopable){const auto wrapEnd=match.templateMatchStart==0?1:match.templateMatchStart;for(std::size_t n=0;n<std::min(wrapEnd,item->full.size());++n){if(!first)out<<'|';first=false;out<<realizeContinuation(item->full[n],match.key,item->full[n].durationQN.value_or(4.)).label;}}}out<<'}';break;}return out.str();};
+   const auto describeFocusMatch=[&](const RecommendationSet& set,std::string_view wanted){std::ostringstream out;for(const auto& match:set.matches)if(match.templateId==wanted){const auto found=rowOf.find(match.templateId);const auto* item=found==rowOf.end()?nullptr:&db.templates[found->second];out<<wanted<<"{sim="<<std::fixed<<std::setprecision(6)<<match.similarity<<";skeleton="<<match.subScores.skeletonHarmony<<";full="<<match.subScores.fullHarmony<<";key="<<match.subScores.keyCompatibility<<";rhythm="<<match.subScores.rhythmSimilarity<<";rawCost="<<match.rawCost<<";window="<<match.templateMatchStart<<".."<<match.templateMatchEnd<<";continuationStart="<<match.continuationStartIndex<<";hasContinuation="<<match.hasContinuation<<";loopable="<<(item?item->loopable:false)<<";score="<<match.candidateRankingScore<<";disposition="<<match.disposition<<";alignment=";for(std::size_t n=0;n<match.alignmentTrace.size();++n){const auto& step=match.alignmentTrace[n];if(n)out<<'|';out<<alignmentOpName(step.operation)<<"(q=";if(step.queryIndex)out<<*step.queryIndex;else out<<'-';out<<",t=";if(step.templateIndex)out<<*step.templateIndex;else out<<'-';out<<",reason="<<reasonNames(step.reasons)<<')';}if(item){out<<";suffix=";bool first=true;for(std::size_t n=match.continuationStartIndex;n<item->full.size();++n){if(!first)out<<'|';first=false;out<<realizeContinuation(item->full[n],match.key,item->full[n].durationQN.value_or(4.)).label;}for(std::size_t n=0;n<phase61LoopWrapEnd(*item,match);++n){if(!first)out<<'|';first=false;out<<realizeContinuation(item->full[n],match.key,item->full[n].durationQN.value_or(4.)).label;}}out<<'}';break;}return out.str();};
    const auto baseA08=describeFocusMatch(base,"V4_A08"),baseB08=describeFocusMatch(base,"V4_B08");
     const auto variant=[&](const char* name,int semi,int octave,int bassOctave,bool inv,bool omit,double scale,int shape,bool open,bool splitChannels){
      ++variantRuns;const auto transformed=midiTransform(p,semi,octave,bassOctave,inv,omit,scale,shape,open,splitChannels);

@@ -1,6 +1,7 @@
 #include "demo/DemoScenario.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiWorkflow.h"
 #include "preview/PreviewSynth.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "session/ProductServices.h"
@@ -150,6 +151,38 @@ int main() {
         MatchResult match;match.templateId="source";match.templateName="Source";match.similarity=0.9f;
         match.templateLabels={"C","Am"};match.alignmentTrace.push_back({0,0,AlignmentOp::Match});
         const auto snap=snapshot::capture(input,candidate,{match},120,4,4,candidate.key,Style::Pop,PhraseIntent::Resolve);
+        auto representativeCandidate=candidate;
+        representativeCandidate.key={PitchClass::G,Mode::Major};
+        representativeCandidate.matchStart=7;representativeCandidate.matchEnd=8;
+        representativeCandidate.continuationStart=9;
+        MatchResult otherKey=match;otherKey.key={PitchClass::C,Mode::Major};
+        otherKey.templateMatchStart=7;otherKey.templateMatchEnd=8;otherKey.continuationStartIndex=9;
+        MatchResult wrongWindow=match;wrongWindow.key={PitchClass::G,Mode::Major};
+        wrongWindow.templateMatchStart=70;wrongWindow.templateMatchEnd=80;wrongWindow.continuationStartIndex=90;
+        MatchResult actualRepresentative=match;actualRepresentative.key={PitchClass::G,Mode::Major};
+        actualRepresentative.templateMatchStart=7;actualRepresentative.templateMatchEnd=8;
+        actualRepresentative.continuationStartIndex=9;
+        const auto representativeSnapshot=snapshot::capture(input,representativeCandidate,
+            {otherKey,wrongWindow,actualRepresentative},120,4,4,representativeCandidate.key,
+            Style::Pop,PhraseIntent::Resolve);
+        check(representativeSnapshot.match&&representativeSnapshot.match->key.tonic==PitchClass::G&&
+              representativeSnapshot.match->templateMatchStart==7&&
+              representativeSnapshot.match->continuationStartIndex==9,
+              "snapshot records the candidate's actual key and match-window representative");
+        auto realized=candidate;realized.sourceAnchorQN=32.;
+        MelodyConstraint top;top.startQN=40.5;top.durationQN=0.5;top.pitch=67;top.pitchClass=7;top.role=ConstraintRole::TopVoice;
+        realized.constraints.melody.push_back(top);
+        const auto realizedSnapshot=snapshot::deserialize(snapshot::serialize(snapshot::capture(input,realized,{},120,4,4)));
+        check(realizedSnapshot&&continuationMusicFingerprint(realized)==continuationMusicFingerprint(realizedSnapshot.value.candidate),
+              "snapshot normalizes realization timing without changing exact music identity");
+        for(auto mode:{midi::ArrangementMode::BlockChords,midi::ArrangementMode::VoiceLed}) {
+            midi::CandidateExportContext originalContext;originalContext.imported=input;originalContext.mode=mode;
+            auto restoredContext=originalContext;restoredContext.imported=realizedSnapshot.value.imported;
+            const auto original=midi::candidatePayload(originalContext,realized);
+            const auto restored=midi::candidatePayload(restoredContext,realizedSnapshot.value.candidate);
+            check(original&&restored&&original.payload.smfBytes==restored.payload.smfBytes,
+                  "snapshot preserves split events and explicit top voice in every realization mode");
+        }
         const auto json=snapshot::serialize(snap);const auto decoded=snapshot::deserialize(json);
         for(const auto width:{900.,1100.,1800.}) {
             const auto ignoredLayout=ui::computeLayout({width,900,2,session::Tab::Recommend,true,true});

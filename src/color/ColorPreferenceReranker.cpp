@@ -99,7 +99,7 @@ void sortWindows(std::span<const Candidate> candidates,ColorRankResult& result,C
     }
 }
 bool eligible(const ContinuationCandidate& c,std::span<const KeyCandidate> keys,std::optional<KeySignature> selected) {
-    if(!std::isfinite(c.rankingScore)||c.rankingScore<60.f||!c.melodyCompatibility.hardSatisfied)return false;
+    if(!c.hardConstraintsPassed||!c.baseQualified||c.exploratory||!std::isfinite(c.rankingScore)||!c.melodyCompatibility.hardSatisfied)return false;
     return keys.empty()||std::any_of(keys.begin(),keys.end(),[&](const auto& k){return sameKey(c.key,k.key);})||
         (selected&&sameKey(c.key,*selected));
 }

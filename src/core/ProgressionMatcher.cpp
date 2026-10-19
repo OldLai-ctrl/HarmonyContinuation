@@ -483,7 +483,8 @@ std::vector<std::size_t> CandidateIndex::shortlist(const MatchQuery& query, cons
 }
 
 std::vector<MatchResult> matchProgression(const MatchQuery& query, const CandidateIndex& index,
-                                          const MatchWeights& w, std::size_t topN, MatchRunStats* stats) {
+                                          const MatchWeights& w, std::size_t topN, MatchRunStats* stats,
+                                          bool retainKeyInterpretations) {
     using Clock = std::chrono::steady_clock;
     const auto started = Clock::now();
     const auto candidates = index.shortlist(query, w);
@@ -530,14 +531,17 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
             r.continuationLength = t.full.size() - r.continuationStartIndex;
             r.alignmentTrace = full.trace;
             for (const auto& event : t.full) r.templateLabels.push_back(formatMatchEvent(event));
-            if (!best || r.similarity > best->similarity) best = std::move(r);
+            if (retainKeyInterpretations) results.push_back(std::move(r));
+            else if (!best || r.similarity > best->similarity) best = std::move(r);
         }
         if (best) results.push_back(std::move(*best));
     }
     std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
-        return a.similarity == b.similarity ? a.templateId < b.templateId : a.similarity > b.similarity;
+        if (a.similarity != b.similarity) return a.similarity > b.similarity;
+        return std::tuple(a.templateId,a.key.tonic,a.key.mode) < std::tuple(b.templateId,b.key.tonic,b.key.mode);
     });
-    if (results.size() > topN) results.resize(topN);
+    const auto limit = retainKeyInterpretations ? topN * query.interpretations.size() : topN;
+    if (results.size() > limit) results.resize(limit);
     const auto finished = Clock::now();
     if (stats) {
         stats->imported=query.source.size();

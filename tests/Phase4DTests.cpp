@@ -412,7 +412,8 @@ int runPhase51R02(const std::filesystem::path& out,const std::filesystem::path& 
                         realized.push_back(realizeContinuation(itemIt->full[i],match->key,
                             itemIt->full[i].durationQN.value_or(4.)*rhythm.scale));
                     if(itemIt->loopable) {
-                        const auto wrapEnd=match->templateMatchStart==0?1:match->templateMatchStart;
+                        const auto wrapEnd=match->templateMatchStart==0
+                            ?(match->hasContinuation?0:itemIt->full.size()):match->templateMatchStart;
                         for(std::size_t i=0;i<std::min(wrapEnd,itemIt->full.size());++i)
                             realized.push_back(realizeContinuation(itemIt->full[i],match->key,
                                 itemIt->full[i].durationQN.value_or(4.)*rhythm.scale));
@@ -1345,7 +1346,8 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
                     const auto rhythm=estimateRhythmScale(*match,query,*item);std::vector<ConcreteChordEvent> realized;
                     for(std::size_t i=match->continuationStartIndex;i<item->full.size();++i)
                         realized.push_back(realizeContinuation(item->full[i],match->key,item->full[i].durationQN.value_or(4.)*rhythm.scale));
-                    if(item->loopable) {const auto wrapEnd=match->templateMatchStart==0?1:match->templateMatchStart;
+                    if(item->loopable) {const auto wrapEnd=match->templateMatchStart==0
+                        ?(match->hasContinuation?0:item->full.size()):match->templateMatchStart;
                         for(std::size_t i=0;i<std::min(wrapEnd,item->full.size());++i)
                             realized.push_back(realizeContinuation(item->full[i],match->key,item->full[i].durationQN.value_or(4.)*rhythm.scale));}
                     validSuffix=!realized.empty()&&match->disposition!="repeated_current_chord";suffix=suffixText(realized);
@@ -1682,6 +1684,7 @@ int runPhase6(const std::filesystem::path& out,const std::filesystem::path& fact
     std::cout<<"Phase6 PASS cases="<<cases.size()<<" r02Cells="<<r02CellCount<<" r02Targets="<<r02TargetRows<<" nonExactCases="<<nonExactCoverageCases.size()<<" ablationCases="<<ablationCases<<" blindPairs="<<blindPairNumber<<" oracleRows="<<oracleRows<<" oracleMismatches="<<oracleMismatches<<" phase51Rows="<<phase51Rows<<" phase51Mismatches="<<phase51Diffs<<" phase51MidiRows="<<phase51MidiRows<<" r01V5Rows="<<r01V5Rows<<" performanceRows="<<performanceRows<<" output="<<out.string()<<"\n";
     return 0;
 }
+#include "Phase61Benchmark.h"
 int main(int argc,char** argv) {
  try {
     const std::filesystem::path out=argc>1?argv[1]:"phase4d";std::filesystem::create_directories(out);
@@ -1696,6 +1699,9 @@ int main(int argc,char** argv) {
     }
     if(argc>3&&std::string(argv[3])=="phase5")return runPhase5(out,argv[2]);
     if(argc>3&&std::string(argv[3])=="phase6")return runPhase6(out,argc>2?argv[2]:HC_FACTORY_DB_PATH,argc>4?argv[4]:out/"oracle",argc>5?std::filesystem::path(argv[5]):std::filesystem::path{});
+    if(argc>3&&std::string(argv[3])=="phase61")return runPhase61(out,argc>2?std::filesystem::path(argv[2]):std::filesystem::path(HC_FACTORY_DB_PATH),argc>4&&std::string(argv[4])=="strict");
+    if(argc>3&&std::string(argv[3])=="phase62")return runPhase62(out,argv[2],argc>4&&std::string(argv[4])=="strict");
+    if(argc>3&&std::string(argv[3])=="consistency")return runDev9Consistency(out,argv[2],argc>4&&std::string(argv[4])=="strict");
     const auto db=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(db)&&db.templates.size()==657,"Factory V4 baseline");CandidateIndex index(db.templates);
     std::ofstream summary(out/"summary.txt"),trace(out/"candidate-traces.txt"),meters(out/"meters.tsv"),perf(out/"performance.tsv");
     summary<<"SYNTHETIC fixtures from user transcription; no captured Cubase MIDI/XML supplied.\n";
@@ -1972,5 +1978,5 @@ int main(int argc,char** argv) {
     summary<<"PASS checks="<<checks<<"; Factory=657; synthetic tests only; true R01 installed ON identity and R02 host cause require diagnostic export.\n";
     std::cout<<"Phase4D PASS "<<checks<<" checks\n";return 0;
   }catch(const std::exception& e){const auto phase=argc>3?std::string(argv[3]):std::string{};
-    std::cerr<<(phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":phase=="phase6"?"Phase6":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
+    std::cerr<<(phase=="phase51"?"Phase51":phase=="phase5"?"Phase5":phase=="phase6"?"Phase6":phase=="phase61"?"Phase61":"Phase4D")<<" FAIL after "<<checks<<": "<<e.what()<<'\n';return 1;}
 }

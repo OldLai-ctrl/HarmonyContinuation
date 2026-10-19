@@ -215,7 +215,8 @@ private:
 
 std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,
                                           const MatchWeights& = {}, std::size_t topN = 5,
-                                          MatchRunStats* stats = nullptr);
+                                          MatchRunStats* stats = nullptr,
+                                          bool retainKeyInterpretations = false);
 
 const char* alignmentOpName(AlignmentOp) noexcept;
 std::string reasonNames(MatchReasonFlags);
