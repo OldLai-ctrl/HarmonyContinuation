@@ -3,12 +3,52 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <sstream>
 
 namespace harmony::preview {
 namespace {
 bool durationOK(double n) { return std::isfinite(n) && n>0 && n<=128; }
 Chord convert(const ChordEvent& event) {
     return chordPitches(event);
+}
+bool templateProgression(const ProgressionTemplate& item,KeySignature key,ImportedProgressionSession& imported,
+    std::string& error) {
+    if(item.full.empty()||item.full.size()>64){error="invalid library progression";return false;}
+    Progression chords;double at{};
+    if(!item.rawChords.empty()) {
+        if(!item.rawChordKey||item.rawChords.size()!=item.full.size()){error="invalid stored chord data";return false;}
+        chords=item.rawChords;
+        const int shift=(static_cast<int>(key.tonic)-static_cast<int>(item.rawChordKey->tonic)+12)%12;
+        if(shift)for(auto& e:chords) {
+            const auto pitch=chordPitches(e);
+            if(pitch.root<0||pitch.bass<0){error="unsupported stored chord";return false;}
+            constexpr const char* notes[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+            e.root=static_cast<PitchClass>((pitch.root+shift)%12);e.bass=static_cast<PitchClass>((pitch.bass+shift)%12);
+            e.quality=pitch.quality;
+            const auto slash=e.name.find('/');
+            std::size_t rootEnd=(!e.name.empty()&&e.name[0]>='A'&&e.name[0]<='G')?1:0;
+            while(rootEnd<e.name.size()&&(e.name[rootEnd]=='#'||e.name[rootEnd]=='b'))++rootEnd;
+            const auto suffix=rootEnd?e.name.substr(rootEnd,slash==std::string::npos?slash:slash-rootEnd):std::string{};
+            e.name=notes[static_cast<int>(*e.root)]+suffix;
+            if(pitch.bass!=pitch.root||slash!=std::string::npos){e.name+="/";e.name+=notes[static_cast<int>(*e.bass)];}
+            e.keyNoteValue.reset();e.bassNoteValue.reset();e.extensions.pitches.reset();
+            std::ostringstream mask;mask<<"0x"<<std::hex<<(pitch.intervals|pitch.colorMask);e.extensions.mask=mask.str();
+        }
+    } else for(const auto& e:item.full) {
+        const double duration=e.durationQN.value_or(defaultOpenQN);
+        if(!durationOK(duration)){error="invalid library duration";return false;}
+        const auto concrete=realizeContinuation(e,key,duration);
+        ChordEvent chord=concrete.harmonicData.value_or(ChordEvent{});
+        chord.name=concrete.label;chord.quality=concrete.quality;
+        chord.startQN=at;chord.durationQN=duration;chord.openEnded=false;
+        chords.push_back(std::move(chord));at+=duration;
+    }
+    if(!imported.replace(std::move(chords),TimelineCoordinateMode::RelativeToSelection)) {
+        error="invalid library timeline";return false;
+    }
+    const double anchor=imported.events.front().startQN;
+    for(auto& event:imported.events)event.startQN-=anchor;
+    return true;
 }
 }
 double sanitizeTempo(double bpm) noexcept {
@@ -37,6 +77,73 @@ PreviewRange previewRange(const Sequence& sequence,PreviewScope scope) noexcept 
 Chord chordFromLabel(const std::string& label,ChordQuality hint) {
     ChordEvent event; event.name=label; event.quality=hint;
     return convert(event);
+}
+BuildResult buildTemplateSequence(const ProgressionTemplate& item,KeySignature key,double tempo) {
+    ImportedProgressionSession imported;std::string error;
+    if(!templateProgression(item,key,imported,error))return {{},error};
+    return buildSequence(imported,nullptr,tempo);
+}
+SourceRouteResult sourceRoute(const ImportedProgressionSession& input,const ContinuationCandidate& candidate,
+    const ProgressionTemplate& item) {
+    SourceRouteResult result;result.candidate=candidate;
+    result.meterNumerator=item.meterNumerator;result.meterDenominator=item.meterDenominator;
+    const auto boundary=candidate.continuationStart;
+    if(item.id!=candidate.primaryTemplate||boundary==0||boundary>item.full.size()||
+       candidate.matchStart>candidate.matchEnd||candidate.matchEnd+1!=boundary) {
+        result.error="source representative no longer matches";return result;
+    }
+    ImportedProgressionSession full;
+    if(!templateProgression(item,candidate.key,full,result.error))return result;
+    // Resolve OPEN data using the same library preview rules, before splitting the route.
+    const auto realized=buildSequence(full,nullptr,defaultTempoBPM);
+    if(!realized){result.error=realized.error;return result;}
+    for(std::size_t i=0;i<full.events.size();++i) {
+        full.events[i].durationQN=realized.sequence.events[i].durationQN;
+        full.events[i].openEnded=false;
+    }
+    result.imported=full;
+    result.imported.events.resize(boundary);
+    auto& projected=result.candidate;
+    projected.continuation.clear();projected.suggestedCurrentChordDurationQN.reset();
+    projected.rhythmScale=1;projected.sourceAnchorQN=0;
+    auto append=[&](std::size_t index) {
+        const auto& event=full.events[index];
+        auto concrete=realizeContinuation(item.full[index],candidate.key,*event.durationQN);
+        concrete.harmonicData=event;concrete.label=event.name;concrete.quality=event.quality;
+        projected.continuation.push_back(std::move(concrete));
+    };
+    for(std::size_t i=boundary;i<full.events.size();++i)append(i);
+    // Preserve the ranked route's finite loop return, now using the author's rhythm.
+    if(item.loopable) {
+        if(candidate.continuation.size()>64){result.error="too many continuation chords";return result;}
+        const auto remaining=full.events.size()-boundary;
+        if(candidate.continuation.size()<remaining){result.error="invalid loop representative";return result;}
+        for(std::size_t i=0;i<candidate.continuation.size()-remaining;++i)append(i%full.events.size());
+    }
+    if(!projected.constraints.melody.empty()) {
+        const auto original=buildSequence(input,&candidate,defaultTempoBPM);
+        if(!original){result.error=original.error;return result;}
+        double inputEnd{};
+        for(const auto& event:original.sequence.events)
+            if(event.segment!=Segment::Recommended)inputEnd=std::max(inputEnd,event.startQN+event.durationQN);
+        const double anchor=input.events.front().startQN;
+        const double begin=full.events[candidate.matchStart].startQN;
+        const auto& last=full.events[boundary-1];
+        const double end=last.startQN+*last.durationQN;
+        if(inputEnd<=0||end<=begin||candidate.rhythmScale<=0){result.error="invalid constraint alignment";return result;}
+        const auto mapTime=[&](double time) {
+            const double relative=time-anchor;
+            return relative<=inputEnd?begin+relative*(end-begin)/inputEnd:
+                end+(relative-inputEnd)/candidate.rhythmScale;
+        };
+        for(auto& melody:projected.constraints.melody) {
+            const double endQN=mapTime(melody.startQN+melody.durationQN);
+            melody.startQN=mapTime(melody.startQN);melody.durationQN=endQN-melody.startQN;
+        }
+    }
+    const auto checked=buildSequence(result.imported,&projected,defaultTempoBPM);
+    if(!checked)result.error=checked.error;
+    return result;
 }
 BuildResult buildSequence(const ImportedProgressionSession& imported,const ContinuationCandidate* candidate,double tempo,
     const HarmonyConstraintSet& explicitConstraints) {

@@ -81,7 +81,7 @@ public:
         actions.benchmarkSelect=[this](const ContinuationCandidate& c) { ratingCandidate_=c; };
         actions.auditionEnrichment=[this](const enrichment::EnrichmentCandidate& c) { auditionEnrichment(c); };
         actions.exportEnrichmentMidi=[this](const enrichment::EnrichmentCandidate& c) { return exportEnrichment(c); };
-        actions.midiPayload=[this](const ContinuationCandidate& c){return midi::candidatePayload(exportContext(),c);};
+        actions.midiPayload=[this](const ContinuationCandidate& c){return recommendationPayload(c);};
         actions.enrichmentMidiPayload=[this](const enrichment::EnrichmentCandidate& c){return midi::candidatePayload(exportContext(),c);};
         actions.saveMidiPayload=[this](const midi::MidiClipPayload& payload){return savePayload(payload);};
         actions.importMidiFiles=[this](std::vector<std::filesystem::path> paths){importGeneration_=importWorker_.submit(std::move(paths),false);};
@@ -300,8 +300,10 @@ private:
     }
     void audition(const ContinuationCandidate& candidate) {
         if (candidate.id==auditionId_) { stopAudition(); return; }
-        const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
-        playPreview(candidate.id,built);
+        if(!main_)return;
+        const auto route=main_->continuationRoute(candidate);
+        playPreview(candidate.id,route?preview::buildSequence(route.imported,&route.candidate,scenario_.tempo):
+            preview::BuildResult{{},route.error});
     }
     void auditionEnrichment(const enrichment::EnrichmentCandidate& candidate) {
         if (candidate.id==auditionId_) { stopAudition(); return; }
@@ -364,6 +366,14 @@ private:
         const auto key=state_.forcedKey?state_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
         return {state_.imported,scenario_.tempo,{scenario_.meterNumerator,scenario_.meterDenominator},key};
     }
+    midi::PayloadResult recommendationPayload(const ContinuationCandidate& candidate) const {
+        if(!main_)return {{},"Recommendation view is unavailable"};
+        const auto route=main_->continuationRoute(candidate);
+        if(!route)return {{},route.error};
+        auto context=exportContext();context.imported=route.imported;
+        context.meter={route.meterNumerator,route.meterDenominator};
+        return midi::candidatePayload(context,route.candidate);
+    }
     std::string savePayload(const midi::MidiClipPayload& payload) {
         const auto text=[this](const char* key){return std::string(localization::text(state_.locale,key));};
         const auto path=savePath(hostWindow_,std::wstring(payload.suggestedFilename.begin(),payload.suggestedFilename.end()),L"MIDI files\0*.mid\0\0",L"mid");
@@ -372,7 +382,7 @@ private:
         return text("midi.saved");
     }
     std::string exportRecommendation(const ContinuationCandidate& candidate) {
-        const auto result=midi::candidatePayload(exportContext(),candidate);
+        const auto result=recommendationPayload(candidate);
         return result?savePayload(result.payload):std::string(localization::text(state_.locale,"midi.saveFailed"));
     }
     std::string exportEnrichment(const enrichment::EnrichmentCandidate& candidate) {
@@ -435,8 +445,11 @@ private:
     }
     std::string saveRecommendationSnapshot(const ContinuationCandidate& candidate) {
         try {
-            auto snap=snapshot::capture(state_.imported,candidate,recommendations_.matches,
-                scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
+            if(!main_)return "Recommendation view is unavailable";
+            const auto route=main_->continuationRoute(candidate);
+            if(!route)return "Snapshot save: "+route.error;
+            auto snap=snapshot::capture(route.imported,route.candidate,recommendations_.matches,
+                scenario_.tempo,route.meterNumerator,route.meterDenominator,
                 state_.forcedKey?state_.forcedKey:std::optional(candidate.key),state_.style,state_.intent);
             snap.factoryLibraryVersion=static_cast<int>(state_.factoryLibraryVersion);
             auto name=midi::suggestedFilename(candidate.intent,candidate.key,1);

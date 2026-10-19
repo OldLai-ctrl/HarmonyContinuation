@@ -263,6 +263,7 @@ void Controller::pollRecommendation() noexcept {
         if (!recommendationWorker_) return;
         auto latest = recommendationWorker_->takeLatest();
         if (!latest || latest->generation!=recommendationGeneration_) return;
+        stopPreview(); // A new representative can change the complete authored route.
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
         recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
@@ -308,6 +309,9 @@ bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidat
     const auto fingerprint=session::continuationFingerprint(candidate);
     for(const auto& group:recommendations_.groups)for(const auto& current:group)
         if(current.id==candidate.id&&current.rankingScore==candidate.rankingScore&&
+            current.primaryTemplate==candidate.primaryTemplate&&current.key.tonic==candidate.key.tonic&&
+            current.key.mode==candidate.key.mode&&current.matchStart==candidate.matchStart&&
+            current.matchEnd==candidate.matchEnd&&current.continuationStart==candidate.continuationStart&&
             session::continuationFingerprint(current)==fingerprint)return true;
     return false;
 }
@@ -486,8 +490,10 @@ void Controller::replayPreview(const PreviewTarget& target) noexcept {
                 if (candidate.id!=target.id) continue;
                 if (candidate.rankingScore!=target.rankingScore||
                     session::continuationFingerprint(candidate)!=target.fingerprint||!currentCandidate(candidate)) return;
-                playPreview(target,harmony::preview::buildSequence(
-                    importedProgression_,&candidate,effectivePreviewBPM()));
+                if(!view_)return;
+                const auto route=view_->continuationRoute(candidate);
+                playPreview(target,route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
+                    harmony::preview::BuildResult{{},route.error});
                 return;
             }
             return;
@@ -513,9 +519,12 @@ void Controller::audition(const harmony::ContinuationCandidate& candidate) noexc
             if (view_) view_->setActionStatus("试听已停止");
             return;
         }
+        if(!view_)return;
+        const auto route=view_->continuationRoute(candidate);
         playPreview({candidate.id,PreviewTargetKind::Continuation,
                      session::continuationFingerprint(candidate),candidate.rankingScore},
-            harmony::preview::buildSequence(importedProgression_,&candidate,effectivePreviewBPM()));
+            route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
+                harmony::preview::BuildResult{{},route.error});
     } catch (const std::exception& e) {
         if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
     } catch (...) {
@@ -594,8 +603,11 @@ std::string saveCandidatePayload(const harmony::midi::PayloadResult& result,void
 }
 harmony::midi::PayloadResult Controller::midiPayload(const harmony::ContinuationCandidate& candidate) const {
     if(!currentCandidate(candidate))return {{},"Recommendation changed; choose a current result"};
-    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
-        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)}},candidate);
+    if(!view_)return {{},"Recommendation view is unavailable"};
+    const auto route=view_->continuationRoute(candidate);
+    if(!route)return {{},route.error};
+    return harmony::midi::candidatePayload({route.imported,lastTempoBPM_,
+        {route.meterNumerator,route.meterDenominator}},route.candidate);
 }
 harmony::midi::PayloadResult Controller::midiPayload(const harmony::enrichment::EnrichmentCandidate& candidate) const {
     if(!currentCandidate(candidate))return {{},"Recommendation changed; choose a current result"};
@@ -679,8 +691,11 @@ std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& it
 
 std::string Controller::saveSnapshot(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
     try {
-        auto snapshot=harmony::snapshot::capture(importedProgression_,candidate,matches_,lastTempoBPM_,
-            sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4),
+        if(!currentCandidate(candidate)||!view_)return "Recommendation changed; choose a current result";
+        const auto route=view_->continuationRoute(candidate);
+        if(!route)return "快照保存失败："+route.error;
+        auto snapshot=harmony::snapshot::capture(route.imported,route.candidate,matches_,lastTempoBPM_,
+            route.meterNumerator,route.meterDenominator,
             sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
             sessionState_.style,sessionState_.intent);
         snapshot.factoryLibraryVersion=static_cast<int>(sessionState_.factoryLibraryVersion);

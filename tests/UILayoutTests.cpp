@@ -104,6 +104,15 @@ int main(){
             !overlap(compact.recommendationHeading,compact.intentToolbar)&&
             !overlap(compact.intentToolbar,compact.cardsViewport)&&!overlap(compact.cardsViewport,compact.footer),
             "A3 region separation");
+        for(const auto toolbar:{compact.intentToolbar,computeCompactLayout(800,780,1.5).intentToolbar}) {
+            std::array<UiRect,5> tabs{};
+            for(std::size_t i=0;i<tabs.size();++i){
+                tabs[i]=compactIntentTabGeometry(toolbar,i);
+                check(inside(tabs[i],toolbar)&&tabs[i].width()>70,"A3 five intent tabs remain readable");
+                for(std::size_t j=0;j<i;++j)check(!overlap(tabs[j],tabs[i]),"A3 intent tabs do not overlap");
+            }
+            check(compactIntentTabGeometry(toolbar,5).width()==0,"A3 invalid intent tab is empty");
+        }
 
         const auto wideCard=compactCandidateGeometry({12,270,788,664},270,false);
         check(!wideCard.actionWrapped&&wideCard.row.height()==100&&

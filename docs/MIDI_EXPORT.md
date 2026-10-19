@@ -6,6 +6,10 @@
 
 Library items use `previewFromTemplate` and then the same clip builder and writer. The UI only invokes these APIs. No MIDI synthesis parameters or preview envelope are encoded.
 
+The dev.13 native recommendation UI treats the imported phrase as a search query. `preview::sourceRoute` projects the selected representative's complete library route in its matched key, including chords before the matched window, with authored chord qualities, basses, extensions, durations and meter. Its prefix ends at the source match boundary; its suffix is the authored continuation (including the existing finite return for loops). Cards, preview and MIDI consume this same projection. Ranking and the original imported Session remain unchanged. Explicit melody constraints are mapped onto the source window and still checked before output.
+
+New recommendation snapshots freeze the performed prefix and suffix in the existing Snapshot 3 fields. They remain self-contained and do not regenerate music from the active Factory. Historical snapshots and the low-level `buildSequence`/CLI input-plus-continuation behavior retain their embedded original music. No Session, Snapshot or library format migration is introduced.
+
 ## Arrangements and scopes
 
 - **Block Chords:** one bass note (MIDI 36–48) plus each pitch class of the chord in MIDI 60–71. All begin at the chord start and last for its full duration. Upper velocity is 80; bass velocity is 90.

@@ -25,11 +25,21 @@ struct Sequence {
 };
 struct PreviewRange { double startQN{}, endQN{}; };
 struct BuildResult { Sequence sequence; std::string error; explicit operator bool() const noexcept { return error.empty(); } };
+// Runtime output projection. The search query and ranked candidate stay unchanged.
+struct SourceRouteResult {
+    ImportedProgressionSession imported;
+    ContinuationCandidate candidate;
+    std::string error;
+    int meterNumerator{4},meterDenominator{4};
+    explicit operator bool() const noexcept { return error.empty(); }
+};
 double sanitizeTempo(double) noexcept;
 double qnToSeconds(double qn,double bpm) noexcept;
 std::int64_t qnToSamples(double qn,double bpm,double sampleRate) noexcept;
 PreviewRange previewRange(const Sequence&,PreviewScope) noexcept;
 BuildResult buildSequence(const ImportedProgressionSession&,const ContinuationCandidate*,double tempoBPM,
     const HarmonyConstraintSet& constraints={});
+BuildResult buildTemplateSequence(const ProgressionTemplate&,KeySignature,double tempoBPM);
+SourceRouteResult sourceRoute(const ImportedProgressionSession&,const ContinuationCandidate&,const ProgressionTemplate&);
 Chord chordFromLabel(const std::string&,ChordQuality hint=ChordQuality::Unknown);
 } // namespace harmony::preview

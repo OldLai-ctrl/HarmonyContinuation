@@ -97,6 +97,14 @@ inline CompactLayoutResult computeCompactLayout(double width,double height,doubl
     return out;
 }
 
+inline UiRect compactIntentTabGeometry(UiRect toolbar,std::size_t index,std::size_t count=5) noexcept {
+    if(count==0||index>=count)return {};
+    constexpr double gap=4.;
+    const double width=(toolbar.width()-gap*(count-1))/count;
+    const double left=toolbar.left+index*(width+gap);
+    return {left,toolbar.top,left+width,toolbar.bottom};
+}
+
 inline CompactCandidateGeometry compactCandidateGeometry(UiRect area,double y,bool detailed) {
     CompactCandidateGeometry out;
     // cardsViewport uses 12 logical pixels of horizontal inset on each side.

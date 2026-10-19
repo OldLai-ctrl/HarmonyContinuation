@@ -388,6 +388,12 @@ void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
     }
+    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&form_==Form::None){
+        const auto compact=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+        if(compact.cardsViewport.contains(point.x,point.y)){
+            compactScroll_=std::clamp(compactScroll_-delta,0.,compactScrollMax_);invalid();event.consumed=true;return;
+        }
+    }
     try {
     if(state_.tab==session::Tab::Recommend&&activeOverlayKind()!=OverlayKind::Modal&&
        (activeOverlayKind()!=OverlayKind::Transient||layout_.inspectorMode==InspectorMode::Side)&&layout_.content.contains(point.x,point.y)) {
@@ -912,8 +918,24 @@ bool MainView::runColorHintSmoke(CDrawContext* dc) {
     return !showColorHints_&&selectedCandidate()!=nullptr;
 }
 void MainView::setSnapshotMode(bool enabled) {
+    snapshotMode_=enabled;
     visibility_.includeExploratory=enabled;
     invalid();
+}
+preview::SourceRouteResult MainView::continuationRoute(const ContinuationCandidate& candidate) const {
+    if(snapshotMode_) {
+        preview::SourceRouteResult result;result.imported=state_.imported;result.candidate=candidate;
+        result.meterNumerator=state_.meterNumerator.value_or(4);
+        result.meterDenominator=state_.meterDenominator.value_or(4);
+        return result;
+    }
+    for(const auto* catalog:{&factory_,&user_}) {
+        const auto item=std::find_if(catalog->begin(),catalog->end(),[&](const auto& value){return value.id==candidate.primaryTemplate;});
+        if(item!=catalog->end())return preview::sourceRoute(state_.imported,candidate,*item);
+    }
+    preview::SourceRouteResult result;result.candidate=candidate;
+    result.error="source template is unavailable";
+    return result;
 }
 void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttempt) {
     rawText_=raw.substr(0,12000); parseText_=parsed.substr(0,8000);

@@ -11,6 +11,7 @@
 #include "ui/MainView.h"
 #include "library/LibraryStore.h"
 #include "session/PluginSessionState.h"
+#include "snapshot/RecommendationSnapshot.h"
 #include "public.sdk/source/vst/hosting/module.h"
 #include "public.sdk/source/vst/hosting/plugprovider.h"
 #include "public.sdk/source/vst/hosting/hostclasses.h"
@@ -94,8 +95,9 @@ std::optional<io::CompletedMidiImport> wait(io::AsyncMidiImport& worker){
 }
 }
 int main(int argc,char** argv){
-    if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui")) {
+    if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui"||std::string(argv[1])=="--source-route-ui")) {
         const bool exploration=std::string(argv[1])=="--exploration-ui";
+        const bool sourceRouteCase=std::string(argv[1])=="--source-route-ui";
         const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
         VSTGUI::init(GetModuleHandleW(nullptr));
         auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
@@ -114,6 +116,7 @@ int main(int argc,char** argv){
             require(chordsKey!=std::string::npos&&chordsBegin!=std::string::npos&&chordsEnd!=std::string::npos,
                     "Scenario B fixture has no chord array");
             const auto chordText=exploration?std::string_view(R"([{"name":"Am","start":0},{"name":"G#dim","start":4},{"name":"G","start":8},{"name":"D/F#","start":12}])"):
+                sourceRouteCase?std::string_view(R"([{"name":"C","start":0},{"name":"Fm","start":2},{"name":"G","start":4}])"):
                 std::string_view(fixture).substr(chordsBegin,chordsEnd-chordsBegin+1);
             auto parsed=dev::parseProgressionJson(chordText);
             require(static_cast<bool>(parsed),"Scenario B progression parse failed: "+parsed.error);
@@ -173,6 +176,38 @@ int main(int argc,char** argv){
             view->setWorkerStatus(workerResult->generation,workerResult->computationMs,false,
                                   workerResult->factoryCount,workerResult->userCount,true);
             view->setHostText(exploration?"R01 · exploration · isolated unified worker":"Scenario B · 120 BPM · isolated recommendation worker");
+            if(sourceRouteCase) {
+                const ContinuationCandidate* selected{};
+                for(const auto& group:workerResult->recommendations.groups)for(const auto& c:group)
+                    if(c.primaryTemplate=="V4_B12"&&c.key.tonic==PitchClass::C&&c.matchStart==3&&c.matchEnd==5)selected=&c;
+                require(selected,"actual Worker lost the seven-chord source representative");
+                const auto route=view->continuationRoute(*selected);
+                require(static_cast<bool>(route),"source route failed: "+route.error);
+                const auto heard=preview::buildSequence(route.imported,&route.candidate,120);
+                require(heard&&heard.sequence.events.size()==7&&heard.sequence.recommendationBoundary==6&&heard.sequence.totalQN==28,
+                    "source route must play all seven authored chords from the beginning");
+                require(heard.sequence.events.front().chord.quality==ChordQuality::Major7&&
+                    heard.sequence.events[3].chord.quality==ChordQuality::Major7&&
+                    heard.sequence.events[4].chord.root==5&&heard.sequence.events[4].chord.quality==ChordQuality::Major7,
+                    "source must retain authored Cmaj7/Fmaj7 instead of the abstract C/Fm input");
+                const auto frozen=snapshot::capture(route.imported,route.candidate,workerResult->recommendations.matches,120,
+                    route.meterNumerator,route.meterDenominator);
+                const auto restored=snapshot::deserialize(snapshot::serialize(frozen));
+                require(static_cast<bool>(restored),"source snapshot roundtrip failed");
+                for(const auto mode:{midi::ArrangementMode::BlockChords,midi::ArrangementMode::VoiceLed})
+                    for(const auto scope:{midi::ExportScope::FullPhrase,midi::ExportScope::CurrentOnly,midi::ExportScope::ContinuationOnly}) {
+                        midi::CandidateExportContext context{route.imported,120,{route.meterNumerator,route.meterDenominator}};
+                        context.mode=mode;context.scope=scope;
+                        const auto exported=midi::candidatePayload(context,route.candidate);
+                        context.imported=restored.value.imported;
+                        const auto fromSnapshot=midi::candidatePayload(context,restored.value.candidate);
+                        require(exported&&fromSnapshot&&exported.payload.smfBytes==fromSnapshot.payload.smfBytes,
+                            "actual source preview/MIDI/snapshot disagree");
+                    }
+                require(state.imported.events.size()==3&&state.imported.events[0].name=="C"&&state.imported.events[1].name=="Fm",
+                    "source output must preserve the original query");
+                std::cout<<"Source route actual Worker PASS: V4_B12 input 4-6/7; seven authored chords, 28 QN, boundary 24 QN; MIDI 2 modes x 3 scopes and frozen snapshot agree\n";
+            }
 
             const auto context=VSTGUI::COffscreenContext::create({800,780});
             require(static_cast<bool>(context),"compact UI offscreen context could not be created");

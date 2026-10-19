@@ -14,6 +14,7 @@
 #include "ui/WhyExplanation.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
+#include "preview/PreviewSequence.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -86,6 +87,7 @@ public:
     void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setSnapshotMode(bool enabled);
+    preview::SourceRouteResult continuationRoute(const ContinuationCandidate&) const;
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
@@ -117,7 +119,7 @@ public:
     bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
-    enum class CompactAction { Select, Audition, Midi, Details, Density, More, Intent, Key, Style,
+    enum class CompactAction { Select, Audition, Midi, Details, Density, More, Intent, Enrichment, Key, Style,
         Advanced, Library, Import, FullView, InputChord, Play, Stop, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
@@ -142,11 +144,12 @@ private:
     struct RibbonHit { VSTGUI::CRect rect; std::string id; double maximum{}; };
     std::vector<RibbonHit> compactRibbons_;
     void drawCompact(VSTGUI::CDrawContext*);
+    void drawCompactEnrichments(VSTGUI::CDrawContext*,const CompactLayoutResult&);
     void drawCompactTransport(VSTGUI::CDrawContext*);
     bool onCompactMouseDown(VSTGUI::CPoint&);
     void compactButton(VSTGUI::CDrawContext*,UiRect,const std::string&,CompactAction,
         std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
-    void drawCompactRibbon(VSTGUI::CDrawContext*,const ContinuationCandidate&,UiRect,bool detailed);
+    void drawCompactRibbon(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,UiRect);
     Actions actions_;
     session::PluginSessionState state_;
     session::RecommendationVisibilityPolicy visibility_;
@@ -183,7 +186,7 @@ private:
     std::optional<VSTGUI::CCoord> playheadX_;
     std::string previewCandidateId_;
     double previewQN_{}, previewTotalQN_{};
-    bool playing_{}, workerBusy_{}, recommendationResultReady_{}, sessionDirty_{};
+    bool playing_{}, workerBusy_{}, recommendationResultReady_{}, sessionDirty_{}, snapshotMode_{};
     std::uint64_t generation_{};
     double computationMs_{};
     std::size_t factoryCount_{}, userCount_{};
