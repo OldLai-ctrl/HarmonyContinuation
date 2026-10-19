@@ -11,6 +11,8 @@
 #include "ui/MainView.h"
 #include "library/LibraryStore.h"
 #include "session/PluginSessionState.h"
+#include "core/RecommendationPolicy.h"
+#include "preview/OfflinePreviewRenderer.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "public.sdk/source/vst/hosting/module.h"
 #include "public.sdk/source/vst/hosting/plugprovider.h"
@@ -124,10 +126,13 @@ int main(int argc,char** argv){
 
             session::PluginSessionState state;state.editorWidth=800;state.editorHeight=780;
             state.meterNumerator=4;state.meterDenominator=4;
+            if(sourceRouteCase)state.forcedKey=KeySignature{PitchClass::C,Mode::Major};
             require(state.imported.replace(std::move(parsed.events),TimelineCoordinateMode::RelativeToSelection),
                     "Scenario B progression could not be installed in the UI state");
             auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
             require(static_cast<bool>(factory),"configured test Factory database could not be loaded: "+factory.error);
+            std::optional<ProgressionTemplate> sourceFixture;
+            if(sourceRouteCase)for(const auto& item:factory.templates)if(item.id=="V4_B12")sourceFixture=item;
 
             const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
             const auto workerDirectory=std::filesystem::temp_directory_path()/
@@ -176,11 +181,21 @@ int main(int argc,char** argv){
             view->setWorkerStatus(workerResult->generation,workerResult->computationMs,false,
                                   workerResult->factoryCount,workerResult->userCount,true);
             view->setHostText(exploration?"R01 · exploration · isolated unified worker":"Scenario B · 120 BPM · isolated recommendation worker");
+            std::optional<std::size_t> focusedGroup;
             if(sourceRouteCase) {
+                bool sourceEvidence=false;
+                for(const auto& group:workerResult->recommendations.groups)for(const auto& c:group)for(const auto& e:c.evidence)
+                    sourceEvidence|=e.templateId=="V4_B12"&&e.key.tonic==PitchClass::C&&e.matchStart==3&&e.matchEnd==5;
+                require(sourceEvidence&&sourceFixture,"actual Worker lost the seven-chord source evidence");
+                // The full catalogue may elect another representative for an identical suffix.
+                // Isolate this stored source to verify its own full-route output without changing production ranking.
+                const auto focused=recommendContinuations(makeMatchQuery(state.imported.events,recommendationContext(state.analysisContext())),
+                    CandidateIndex({*sourceFixture}),{},recommendationWeights());
                 const ContinuationCandidate* selected{};
-                for(const auto& group:workerResult->recommendations.groups)for(const auto& c:group)
-                    if(c.primaryTemplate=="V4_B12"&&c.key.tonic==PitchClass::C&&c.matchStart==3&&c.matchEnd==5)selected=&c;
-                require(selected,"actual Worker lost the seven-chord source representative");
+                for(std::size_t group=0;group<focused.groups.size();++group)for(const auto& c:focused.groups[group])
+                    if(c.primaryTemplate=="V4_B12"&&c.key.tonic==PitchClass::C&&c.matchStart==3&&c.matchEnd==5){selected=&c;focusedGroup=group;}
+                require(selected,"stored source could not generate its own legal continuation");
+                view->setMatches(focused.matches,"Focused stored source output");view->setRecommendations(focused);
                 const auto route=view->continuationRoute(*selected);
                 require(static_cast<bool>(route),"source route failed: "+route.error);
                 const auto heard=preview::buildSequence(route.imported,&route.candidate,120);
@@ -190,7 +205,9 @@ int main(int argc,char** argv){
                     heard.sequence.events[3].chord.quality==ChordQuality::Major7&&
                     heard.sequence.events[4].chord.root==5&&heard.sequence.events[4].chord.quality==ChordQuality::Major7,
                     "source must retain authored Cmaj7/Fmaj7 instead of the abstract C/Fm input");
-                const auto frozen=snapshot::capture(route.imported,route.candidate,workerResult->recommendations.matches,120,
+                const auto audio=preview::renderOffline(heard.sequence,8000);
+                require(!audio.left.empty()&&audio.peak>0.01,"complete source could not render audible preview data");
+                const auto frozen=snapshot::capture(route.imported,route.candidate,focused.matches,120,
                     route.meterNumerator,route.meterDenominator);
                 const auto restored=snapshot::deserialize(snapshot::serialize(frozen));
                 require(static_cast<bool>(restored),"source snapshot roundtrip failed");
@@ -206,13 +223,19 @@ int main(int argc,char** argv){
                     }
                 require(state.imported.events.size()==3&&state.imported.events[0].name=="C"&&state.imported.events[1].name=="Fm",
                     "source output must preserve the original query");
-                std::cout<<"Source route actual Worker PASS: V4_B12 input 4-6/7; seven authored chords, 28 QN, boundary 24 QN; MIDI 2 modes x 3 scopes and frozen snapshot agree\n";
+                std::cout<<"Source route PASS: full Worker retains V4_B12 evidence; focused stored source input 4-6/7 plays seven authored chords, 28 QN, boundary 24 QN; audible preview, MIDI 2 modes x 3 scopes and frozen snapshot agree\n";
             }
 
             const auto context=VSTGUI::COffscreenContext::create({800,780});
             require(static_cast<bool>(context),"compact UI offscreen context could not be created");
             require(view->runCompactSmoke(context.get()),"compact UI interaction smoke failed");
             require(!view->captureEditorUiState().detailedCards,"compact UI smoke did not restore the summary view");
+            if(focusedGroup) {
+                const auto target=ui::compactIntentTabGeometry(ui::computeCompactLayout(800,780).intentToolbar,*focusedGroup);
+                VSTGUI::CPoint point{(target.left+target.right)/2,(target.top+target.bottom)/2};
+                view->onMouseDown(point,VSTGUI::CButtonState{VSTGUI::kLButton});
+                view->onMouseUp(point,VSTGUI::CButtonState{VSTGUI::kLButton});
+            }
             const auto saveScreenshot=[&](const char* name){
                 context->beginDraw();view->drawRect(context,{0,0,800,780});context->endDraw();
                 const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
@@ -224,6 +247,15 @@ int main(int argc,char** argv){
             require(saveScreenshot("A3-main.png"),"A3-main.png could not be saved");
             auto detailed=view->captureEditorUiState();detailed.detailedCards=true;view->restoreEditorUiState(detailed);
             require(saveScreenshot("A2-detailed.png"),"A2-detailed.png could not be saved");
+            if(sourceRouteCase) {
+                detailed.detailedCards=false;view->restoreEditorUiState(detailed);
+                const auto toolbar=ui::computeCompactLayout(800,780).intentToolbar;
+                const auto upgrade=ui::compactIntentTabGeometry(toolbar,4);
+                VSTGUI::CPoint point{(upgrade.left+upgrade.right)/2,(upgrade.top+upgrade.bottom)/2};
+                view->onMouseDown(point,VSTGUI::CButtonState{VSTGUI::kLButton});
+                view->onMouseUp(point,VSTGUI::CButtonState{VSTGUI::kLButton});
+                require(saveScreenshot("A3-enrichment.png"),"A3-enrichment.png could not be saved");
+            }
             frame->close();frame=nullptr;frameOpened=false;passed=true;
             std::cout<<"Compact UI PNGs: "<<(output/"A3-main.png").string()<<"; "<<(output/"A2-detailed.png").string()<<'\n';
         } catch(const std::exception& e) {

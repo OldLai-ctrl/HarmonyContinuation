@@ -8,6 +8,8 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <cstdio>
+#include <stdexcept>
 
 namespace harmony::ui {
 using namespace VSTGUI;
@@ -83,7 +85,7 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
     ConcatClip clip(*dc,rect(area));double x=area.left-offset,position{};
     for(const auto& e:cells){const double w=width*e.qn/total;
         fill(dc,{x,area.top,x+w-1,area.bottom-3},e.source?CColor(48,58,73,255):CColor(52,75,112,255));
-        text(dc,e.label,{x+3,area.top,x+w-3,area.top+19},detailed?13:11,fg,kCenterText);
+        text(dc,e.label,{x+3,area.top,x+w-3,area.top+19},detailedCards_?13:11,fg,kCenterText);
         text(dc,(e.suggested?std::string("≈ "):std::string{})+number(e.qn),{x+2,area.top+18,x+w-2,area.bottom-3},10,secondary,kCenterText);
         position+=e.qn;x+=w;
         if(std::abs(position-sourceQN)<1e-7)fill(dc,{x-1,area.top,x+1,area.bottom-3},blue);
@@ -276,7 +278,7 @@ void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult
                 compactButton(dc,cg.select,selected?"✓":"+",CompactAction::Select,candidate.id,index,selected,true,true);
                 std::string path;for(const auto& event:candidate.progression){if(!path.empty())path+=" → ";path+=event.name;}
                 text(dc,path,cg.name,13);
-                text(dc,(zh?"评分 ":"Score ")+number(candidate.score)+" · "+std::to_string(candidate.progression.size())+
+                text(dc,(zh?"评分 ":"Score ")+number(std::round(candidate.score*10)/10)+" · "+std::to_string(candidate.progression.size())+
                     (zh?" 和弦":" chords"),cg.facts,10,secondary,kRightText);
                 text(dc,t(titles[group])+" · "+(zh?"已保留骨架 ":"skeleton ")+number(candidate.skeletonPreservation),cg.location,10,secondary);
                 std::string badges;for(const auto technique:candidate.techniques){if(!badges.empty())badges+=" · ";badges+=t("technique."+std::string(enrichment::techniqueName(technique)));}
@@ -404,7 +406,7 @@ bool MainView::onCompactMouseDown(CPoint& where){
                     std::vector<std::size_t> refs=enrichmentOrder(group);std::vector<std::string> labels;
                     for(const auto i:refs){const auto& candidate=candidates[i];std::string path;
                         for(const auto& event:candidate.progression){if(!path.empty())path+=" → ";path+=event.name;}
-                        labels.push_back(number(candidate.score)+" · "+path);}
+                        labels.push_back(number(std::round(candidate.score*10)/10)+" · "+path);}
                     const auto revision=state_.imported.revision,generation=generation_;const auto choice=popup(labels,where);
                     if(choice>=0&&static_cast<std::size_t>(choice)<refs.size()&&revision==state_.imported.revision&&
                        generation==generation_&&!workerBusy_&&recommendationResultReady_){
@@ -486,14 +488,16 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
     actions_.saveMidiPayload=[&](const auto& payload){saves+=!payload.smfBytes.empty();return std::string("Saved (test receiver)");};
     actions_.stateChanged={};
     const auto paint=[&]{dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();};
-    const auto get=[&](CompactAction action)->std::optional<CompactHit>{for(const auto& h:compactHits_)if(h.action==action&&h.enabled)return h;return std::nullopt;};
-    const auto click=[&](CompactAction action){const auto h=get(action);if(!h){okay=false;return;}
+    const auto get=[&](CompactAction action,std::optional<std::size_t> index={})->std::optional<CompactHit>{for(const auto& h:compactHits_)if(h.action==action&&h.enabled&&(!index||h.index==*index))return h;return std::nullopt;};
+    const auto click=[&](CompactAction action,std::optional<std::size_t> index={}){const auto h=get(action,index);if(!h){okay=false;return;}
         CPoint point{(h->rect.left+h->rect.right)/2*userZoom(),(h->rect.top+h->rect.bottom)/2*userZoom()};
         onMouseDown(point,CButtonState{kLButton});onMouseUp(point,CButtonState{kLButton});};
+    const auto checkpoint=[&](const char* stage){if(!okay)throw std::runtime_error(stage);};
     try{
         state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;
         const auto presentation=continuationPresentation();bool found=false;
         for(std::size_t group=0;group<4;++group)if(!presentation[group].empty()){compactGroup_=group;found=true;break;}
+        const auto continuationGroup=compactGroup_;
         okay=okay&&found;compactSelected_.clear();selectedCandidate_.reset();compactExtra_.clear();detailedCards_=false;compactScroll_=0;
         for(const auto zoom:{100u,125u,150u}){
             state_.uiZoomPercent=zoom;resizeLayout(800,780);paint();
@@ -506,10 +510,12 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
             std::size_t tabs=0;for(const auto& h:compactHits_)tabs+=h.action==CompactAction::Intent||h.action==CompactAction::Enrichment;
             okay=okay&&tabs==5&&circles>0&&get(CompactAction::Play).has_value()&&get(CompactAction::Density).has_value();
         }
+        checkpoint("five tabs and default cards across zoom levels");
         state_.uiZoomPercent=100;resizeLayout(800,780);paint();
         click(CompactAction::InputChord);paint();okay=okay&&selectedChord_.has_value()&&compactDetailRect_.height()>0;
         {CPoint close{compactDetailRect_.left+26,compactDetailRect_.top+20};onMouseDown(close,CButtonState{kLButton});onMouseUp(close,CButtonState{kLButton});}
         paint();okay=okay&&!selectedChord_;
+        checkpoint("input inspector");
         state_.uiZoomPercent=150;resizeLayout(800,640);paint();
         const auto small=computeCompactLayout(800,640,userZoom());
         for(const auto& band:compactRibbons_)if(band.id!="@input")okay=okay&&band.rect.bottom<=small.cardsViewport.bottom&&band.rect.top>=small.cardsViewport.top;
@@ -525,18 +531,25 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
             click(CompactAction::Details);paint();okay=okay&&!selectedEnrichment_;
             saves=0;
         }
-        click(CompactAction::Intent);paint();okay=okay&&state_.productMode==session::ProductMode::Continue;
+        checkpoint("enrichment select, audition, MIDI and details");
+        click(CompactAction::Intent,continuationGroup);paint();okay=okay&&state_.productMode==session::ProductMode::Continue;
         state_.tab=session::Tab::Library;paint();okay=okay&&layout_.content.bottom<=computeCompactLayout(800,780).footer.top&&get(CompactAction::Stop).has_value();
         state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;state_.uiZoomPercent=100;resizeLayout(800,780);paint();
+        checkpoint("return from enrichment and library");
         const auto expectedId=compactSelected_;
         click(CompactAction::Play);okay=okay&&auditions==1&&auditionId==expectedId&&routeProjection;
+        checkpoint("continuation audition");
         click(CompactAction::Stop);okay=okay&&stops==1;
         click(CompactAction::Scope);click(CompactAction::TempoMode);okay=okay&&settings==2;
+        checkpoint("continuation preview settings");
         click(CompactAction::Midi);okay=okay&&payloads==1&&saves==1;
+        checkpoint("continuation MIDI");
         click(CompactAction::Details);paint();okay=okay&&selectedCandidate_.has_value()&&compactDetailRect_.height()>0;
         click(CompactAction::Details);paint();okay=okay&&!selectedCandidate_;
+        checkpoint("continuation detail toggles");
         click(CompactAction::Density);paint();okay=okay&&detailedCards_&&captureEditorUiState().detailedCards;
         okay=okay&&std::any_of(compactRibbons_.begin(),compactRibbons_.end(),[](const auto& h){return h.id.find("@source")!=std::string::npos;});
+        checkpoint("continuation transport, MIDI and details");
         const auto access=session::continuationAccess(recommendations_.groups[1]);
         for(const auto i:access.more)if(recommendations_.groups[1][i].exploratory){
             compactGroup_=1;compactExtra_=recommendations_.groups[1][i].id;compactSelected_=compactExtra_;selectedCandidate_.reset();compactScroll_=0;paint();
@@ -545,7 +558,8 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
         setWorkerStatus(generation_+1,0,true,factoryCount_,userCount_,false);paint();
         if(stale){CPoint point{(stale->rect.left+stale->rect.right)/2,(stale->rect.top+stale->rect.bottom)/2};onMouseDown(point,CButtonState{kLButton});}
         okay=okay&&payloads==count&&!get(CompactAction::Midi)&&!get(CompactAction::Play);
-    }catch(...){okay=false;}
+    }catch(const std::exception& error){std::fprintf(stderr,"Compact smoke: %s\n",error.what());okay=false;}
+    catch(...){okay=false;}
     actions_=savedActions;state_=savedState;restoreEditorUiState(savedUi);compactGroup_=savedGroup;compactSelected_=savedSelected;compactExtra_=savedExtra;
     snapshotMode_=savedSnapshotMode;
     generation_=oldGeneration;workerBusy_=false;recommendationResultReady_=true;auditionCustom_=false;auditionSuffix_=false;actionStatus_=savedStatus;
