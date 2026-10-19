@@ -2,6 +2,19 @@
 
 ## 本轮工作与下一步
 
+2026-10-19：dev.12 同步审计与新增输出/UI要求完成。当前分支 `development/source-route-ui-20261019`，生产源码 / BuildCommit `0db40a3681a2ed0d7b4ebf4599e4d7902da6cccc`（`0db40a3`）已推送 origin 同名分支；后续状态文档提交不改变构建身份。唯一新增测试包：[0.10.0-dev.13 Setup](../HarmonyContinuation-dev13-delivery-20261019/HarmonyContinuation-0.10.0-dev.13-Setup.exe)，Release / Factory V5 / Schema 2 / 658 条；二进制、moduleinfo、Setup版本一致，暂存插件及Factory与最终构建字节一致。原dev.12包保留。
+
+- 主界面：收束、发展、循环、色彩、升级进行五个同级入口。升级复用A3卡片、逐和弦QN、More、试听/MIDI/详情和固定试听栏；不修改独立Phase7工作树。
+- 输出：输入作为检索条件保留在顶部和Session；选中候选使用其真实代表来源的完整路线，从头包括匹配位置前的和弦，采用库中性质、扩展、低音、转位、节奏和拍号。循环保留已有有限回接；显式旋律硬约束仍需通过。评分、门槛、用途证据及精确续写聚合不改；多来源仍由统一引擎选择完整代表解释。
+- 实际路线检查：真实V4_B12合法匹配4–6/7，通过隔离该库条目的定向检索验证 Cmaj7–Ebmaj7–Dbmaj7–Cmaj7–Fmaj7–G7–Cmaj7，7和弦/28QN，续写边界24QN；全库Worker保留其来源证据，不要求它固定胜出代表竞争。音频渲染、两种配音×三个MIDI范围与快照读回一致。
+- 兼容：新快照用现有Snapshot3字段冻结实际演奏前段/后段；旧快照继续使用内嵌音乐，不从当前曲库重建。Session5、Snapshot3、Factory、UserLibrary格式不改。原始输入、评分和宿主音频线程契约保留；过期代表来源操作被拒绝。
+- 必要验证：[8项定向检查](../HarmonyContinuation-source-route-validation-20261019/tests.txt)全部通过（UILayout、MIDI、Preview、Productization与Library snapshot/user/factory）；[真实来源输出及原生界面](../HarmonyContinuation-source-route-validation-20261019/source-ui.txt)、[R01探索入口](../HarmonyContinuation-source-route-validation-20261019/exploration-ui.txt)通过。原生图在同目录source-ui/，升级试听/MIDI/详情及100/125/150%入口检查通过。沙箱临时目录的文件替换限制改用项目临时目录后通过；未改数据代码。只制作一个Setup，未重跑全量CTest、Validator或安装生命周期。
+- GitHub审计：unified本地/远端 `013b4c2`，Phase7本地/远端 `c17a795`，两分支仅MAP/NOW文档不同，均含dev.12源码 `e164ccd`；main本地/远端仍为 `bf77019`。统一执行链、旧调用归一、V5继承V4的657条及独立15634125路线完整保留；复用dev.12七例/2522检查等原证据，未重新开发算法。
+
+工程、定向自动化和原生界面检查完成。主代理负责输出语义、实现审查及集中门禁；子代理承担只读基线审计和局部UI实现。尚未安装此包、未完成真实Cubase加载/拖放/MIDI/保存重开验收或人工音乐听评，均为Pending。可提交RC技术评审；RC验收与正式发布仍待决定。关闭Cubase后安装主程序及Factory V5，在About核对 `dev.13 / 0db40a3`，听评完整来源适配、循环回接及探索路线。未合并main、未创建正式Tag/Release；原有未提交协作文档保留。
+
+### dev.12 已交付基线（历史）
+
 2026-10-19：统一推荐引擎、版本化流行变体及已批准的 Phase 7 正式界面已完成本地集成。开发分支 `development/unified-engine-20261019`；真实生产源码 / BuildCommit `e164ccdee38683459e74656d0c1555c3bfa1fb0f`（`e164ccd`）。唯一测试包为 [0.10.0-dev.12 Setup](../HarmonyContinuation-dev12-delivery-20261019/HarmonyContinuation-0.10.0-dev.12-Setup.exe)，Release / Factory Library 5 / Schema 2 / 658 条。暂存插件与 Factory 均和该构建字节一致，moduleinfo 与二进制版本/提交一致。
 
 - 单一引擎：复用原和声检索、HarmonyFirst 结构/节奏资格分离及严格方向扩展兼容；保留 dev.11 精确身份、有限多调性解释、硬约束、用途证据和中性资格。门槛仍为60，不求三模式并集、不填满Top3。调性置信度只解释，不再进入音乐质量；候选和调性并列顺序归一到输入根音，十二调同分性质检查通过。旧实验状态未持久化，旧调用归一到同一 Worker；正式 Controller/UI 无三算法分支。
@@ -10,7 +23,7 @@
 - Phase 7：按独立工作线提交 `adb88dd` 合并保留设计历史；正式800×780，详细/简略切换、全组More/探索、独立MIDI手柄及固定试听栏。完整/后续与跟随宿主/自定义BPM按实例工作，后续从完整配音裁切，原始QN及MIDI导出独立；旧无尺寸Session迁移默认保留。没有重写算法/配音或宿主音频契约。
 - 必要验证：[七个定向目标](../HarmonyContinuation-unified-validation-20261019/targeted-tests.txt)、[七例真实Worker/Snapshot/Preview/MIDI集成](../HarmonyContinuation-unified-validation-20261019/integration-result.txt)（2522检查，含13个扩展兼容方向门禁）、合并后的[五个直接相关目标](../HarmonyContinuation-unified-validation-20261019/merged-tests.txt)及[真实R01原生探索入口](../HarmonyContinuation-unified-validation-20261019/exploration-ui.txt)均通过。V5新路线快照/MIDI回读通过；Session、Snapshot及个人库格式不变。仅一次最终Release插件构建和一次Setup，未跑全量CTest、Validator、安装生命周期或全库排列。
 
-本地工程和测试包完成；未安装或核验真实Cubase。关闭Cubase后安装主程序与Factory V5，About核对 `dev.12 / e164ccd`。待用户听评新长线变体、D/F#→Em及三条探索路线、借用iv回接；新版UI的真实宿主拖放和试听交互仍需验收。远端上传曾在UI工作线被自动审批拒绝（缺少本轮具体远端上传授权），整合分支保持本地，等待明确上传授权；未合并main、未建Tag、未正式发布。既有未提交协作文档改动保留。
+本地工程和测试包完成；未安装或核验真实Cubase。关闭Cubase后安装主程序与Factory V5，About核对 `dev.12 / e164ccd`。待用户听评新长线变体、D/F#→Em及三条探索路线、借用iv回接；新版UI的真实宿主拖放和试听交互仍需验收。2026-10-19 Fetch确认unified与Phase7两分支已在GitHub完整保存e164ccd，源码相同，仅状态文档不同；未合并main、未建Tag、未正式发布。既有未提交协作文档改动保留。
 
 ### dev.11 已交付基线（历史）
 
