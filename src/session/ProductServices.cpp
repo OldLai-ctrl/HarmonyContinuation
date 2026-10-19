@@ -10,6 +10,16 @@
 #include <iomanip>
 
 namespace harmony::session {
+ContinuationAccess continuationAccess(const std::vector<ContinuationCandidate>& group) {
+    ContinuationAccess access;
+    for(std::size_t i=0;i<group.size();++i) {
+        const auto& c=group[i];
+        if(!c.hardConstraintsPassed||!c.baseQualified||!std::isfinite(c.rankingScore))continue;
+        access.more.push_back(i);
+        access.exploratory+=c.exploratory;
+    }
+    return access;
+}
 std::string recommendationDiagnostics(const Progression& p,const AnalysisContext& ctx,
     const RecommendationRequest& request,const RecommendationSet& set) {
     std::ostringstream out;out<<std::setprecision(17);
@@ -66,7 +76,7 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
           <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
           // Show More lists every retained worker candidate (MainView), without
           // the default presentation's score/diversity/path filtering.
-          <<" MORE_ACCESSIBLE=1 sources=";
+          <<" MORE_ACCESSIBLE="<<(c.hardConstraintsPassed&&c.baseQualified&&std::isfinite(c.rankingScore))<<" sources=";
         for(const auto& id:c.supportingTemplates)out<<id<<',';
         out<<" rhythmScale="<<c.rhythmScale<<" rhythmConfidence="<<c.rhythmConfidence<<" OPENhold="<<c.suggestedCurrentChordDurationQN.value_or(-1)
             <<" path=";for(const auto& e:c.continuation)out<<e.label<<'@'<<e.durationQN<<"QN -> ";out<<'\n';
