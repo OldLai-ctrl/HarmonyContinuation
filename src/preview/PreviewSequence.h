@@ -12,6 +12,8 @@ inline constexpr double minimumTempoBPM=20.0;
 inline constexpr double maximumTempoBPM=400.0;
 inline constexpr double defaultOpenQN=4.0;
 enum class Segment { Existing, CurrentOpen, Recommended };
+enum class PreviewTempoMode { FollowHost, Custom };
+enum class PreviewScope { Full, Suffix };
 using Chord=harmony::ChordPitchSet;
 struct Event { Chord chord; double startQN{}, durationQN{}; Segment segment{}; std::optional<int> topVoice; };
 struct Sequence {
@@ -21,10 +23,12 @@ struct Sequence {
     std::size_t recommendationBoundary{};
     std::string sourceRecommendation;
 };
+struct PreviewRange { double startQN{}, endQN{}; };
 struct BuildResult { Sequence sequence; std::string error; explicit operator bool() const noexcept { return error.empty(); } };
 double sanitizeTempo(double) noexcept;
 double qnToSeconds(double qn,double bpm) noexcept;
 std::int64_t qnToSamples(double qn,double bpm,double sampleRate) noexcept;
+PreviewRange previewRange(const Sequence&,PreviewScope) noexcept;
 BuildResult buildSequence(const ImportedProgressionSession&,const ContinuationCandidate*,double tempoBPM,
     const HarmonyConstraintSet& constraints={});
 Chord chordFromLabel(const std::string&,ChordQuality hint=ChordQuality::Unknown);

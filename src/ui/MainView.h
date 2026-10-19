@@ -34,6 +34,7 @@ public:
         double contentScroll{},timelineScroll{},inspectorScroll{};
         std::vector<std::string> pinnedEnrichmentIds;
         bool showColorHints{true};
+        bool detailedCards{};
         color::Preference colorPreference{color::Preference::Off};
     };
     void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
@@ -49,6 +50,8 @@ public:
         std::function<std::string(const ProgressionTemplate&)> updateUser;
         std::function<std::string(const std::string&)> deleteUser;
         std::function<void(const ContinuationCandidate&)> audition;
+        std::function<void()> stopAudition;
+        std::function<void(bool,double,bool)> previewSettings; // custom tempo, BPM, suffix only
         std::function<std::string(const ContinuationCandidate&)> exportMidi;
         std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
         std::function<std::string(const ProgressionTemplate&)> exportLibraryMidi;
@@ -105,6 +108,8 @@ public:
     void setUserZoom(std::uint32_t percent);
     bool runHostInteractionSmoke();
     bool runStructureSmoke();
+    bool runCompactSmoke(VSTGUI::CDrawContext*);
+    void setAuditionState(bool custom,double bpm,bool suffix,bool hostValid,double effectiveBpm);
     std::string recommendationUiDiagnostics();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
@@ -116,6 +121,36 @@ public:
     bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
+    enum class CompactAction { Select, Audition, Midi, Details, Density, More, Intent, Key, Style,
+        Advanced, Library, Import, FullView, InputChord, Play, Stop, TempoMode, Tempo, Scope };
+    struct CompactHit {
+        VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
+        std::optional<VSTGUI::CRect> clip;
+        bool contains(VSTGUI::CPoint p) const {
+            if(clip&&!clip->pointInside(p))return false;
+            if(!rect.pointInside(p))return false;
+            if(action!=CompactAction::Select)return true;
+            const auto dx=p.x-(rect.left+rect.right)/2,dy=p.y-(rect.top+rect.bottom)/2;
+            return dx*dx+dy*dy<=rect.getWidth()*rect.getWidth()/4;
+        }
+    };
+    std::vector<CompactHit> compactHits_;
+    bool compactInCards_{};
+    std::string compactSelected_, compactExtra_;
+    std::size_t compactGroup_{};
+    bool detailedCards_{}, auditionCustom_{}, auditionSuffix_{}, auditionHostValid_{};
+    double auditionBpm_{120}, auditionEffectiveBpm_{120}, compactScroll_{}, compactScrollMax_{};
+    VSTGUI::CRect compactHover_{}, compactPressed_{};
+    UiRect compactDetailRect_;
+    std::unordered_map<std::string,double> compactRibbonScroll_;
+    struct RibbonHit { VSTGUI::CRect rect; std::string id; double maximum{}; };
+    std::vector<RibbonHit> compactRibbons_;
+    void drawCompact(VSTGUI::CDrawContext*);
+    void drawCompactTransport(VSTGUI::CDrawContext*);
+    bool onCompactMouseDown(VSTGUI::CPoint&);
+    void compactButton(VSTGUI::CDrawContext*,UiRect,const std::string&,CompactAction,
+        std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
+    void drawCompactRibbon(VSTGUI::CDrawContext*,const ContinuationCandidate&,UiRect,bool detailed);
     Actions actions_;
     plugin::DevelopmentAlgorithmPreset algorithmPreset_{plugin::DevelopmentAlgorithmPreset::Legacy};
     session::PluginSessionState state_;
@@ -176,7 +211,7 @@ private:
     std::array<double,3> enrichmentScroll_{};
     double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
     std::uint64_t paintGeneration_{};
-    enum class Form { None, Save, Rename, Search, Melody } form_{Form::None};
+    enum class Form { None, Save, Rename, Search, Melody, Tempo } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
     VSTGUI::CTextEdit* noteEdit_{};

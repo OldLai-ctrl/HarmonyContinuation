@@ -28,8 +28,8 @@ struct PluginSessionState {
     std::uint32_t factoryLibraryVersion{2};
     std::optional<int> meterNumerator;
     std::optional<int> meterDenominator;
-    std::uint32_t editorWidth{1100};  // logical VSTGUI units, never physical DPI pixels
-    std::uint32_t editorHeight{900};
+    std::uint32_t editorWidth{800};  // logical VSTGUI units, never physical DPI pixels
+    std::uint32_t editorHeight{780};
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
     std::uint32_t uiZoomPercent{100};

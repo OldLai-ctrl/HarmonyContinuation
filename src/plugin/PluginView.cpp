@@ -103,13 +103,17 @@ bool PLUGIN_API PluginView::open(void* parent) {
         actions.refresh=[pluginController]() { pluginController->requestSnapshot(); };
         actions.clipboard=[pluginController]() { pluginController->inspectClipboard(); };
         actions.stateChanged=[pluginController](const harmony::session::PluginSessionState& state) { pluginController->applySessionState(state); };
-        actions.algorithmChanged=[pluginController](DevelopmentAlgorithmPreset preset) { pluginController->setAlgorithmPreset(preset); };
         actions.save=[pluginController](const harmony::ContinuationCandidate& candidate,const harmony::session::SaveMetadata& metadata) {
             return pluginController->saveRecommendation(candidate,metadata); };
         actions.updateUser=[pluginController](const harmony::ProgressionTemplate& item) { return pluginController->updateUserProgression(item); };
         actions.deleteUser=[pluginController](const std::string& id) { return pluginController->deleteUserProgression(id); };
         actions.audition=[pluginController](const harmony::ContinuationCandidate& candidate) {
             pluginController->audition(candidate); };
+        actions.stopAudition=[pluginController] { pluginController->stopPreview(); };
+        actions.previewSettings=[pluginController](bool custom,double bpm,bool suffix) {
+            pluginController->setPreviewSettings(custom?preview::PreviewTempoMode::Custom:preview::PreviewTempoMode::FollowHost,
+                bpm,suffix?preview::PreviewScope::Suffix:preview::PreviewScope::Full);
+        };
         actions.midiPayload=[pluginController](const harmony::ContinuationCandidate& c){return pluginController->midiPayload(c);};
         actions.enrichmentMidiPayload=[pluginController](const harmony::enrichment::EnrichmentCandidate& c){return pluginController->midiPayload(c);};
         actions.saveMidiPayload=[pluginController,parent](const harmony::midi::MidiClipPayload& p){return pluginController->saveMidiPayload(p,parent);};
@@ -269,6 +273,9 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
             impl_->controller->pollRecommendation();
             impl_->controller->pollTransport();
             impl_->controller->pollPreview();
+            if(impl_->main){const auto s=impl_->controller->previewStatus();
+                impl_->main->setAuditionState(s.bpmMode==preview::PreviewTempoMode::Custom,s.customBPM,
+                    s.scope==preview::PreviewScope::Suffix,s.hostValid,s.effectiveBPM);}
         }
         return result;
     }

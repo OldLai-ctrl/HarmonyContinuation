@@ -2,6 +2,15 @@
 
 ## 本轮工作与下一步
 
+2026-10-19：用户批准正式 A3 VSTGUI，并明确保留“详细模式 / 简略模式”。实现工作树及分支见 [MAP](MAP.md)。设计历史 `ecaeb90` 与 dev.11 基线已合并保留；正式 UI 不再显示三个实验算法入口，统一引擎由独立工作线集成。
+
+- 原生主界面默认800×780：名称、真实时值、输入定位、续写边界、长度/和弦数和匹配摘要；默认Top3、全组More/探索、独立MIDI手柄、详情和输入和弦分析。详细模式增加逐个输入及来源对齐轨道；折叠状态按实例保留，不增加Session字段。
+- 固定试听栏接入Controller：完整/仅后续、跟随宿主/自定义20–400 BPM、停止及当前对象；设置变化停止并重播有效对象。播放中显示该WAV冻结BPM，宿主无有效速度回退120；音频经Windows设备播放。后缀从全段声部结果裁切，导出继续使用独立原始QN路径。
+- 直接相关检查已通过：UILayoutTests、PreviewTests 81项、既有HostContractHarness新增的`--compact-ui`入口。后者使用隔离worker/user.db，核对原生绘制、三档缩放、圆形与独立按钮命中、输入分析/详情/模式切换、真实MIDI payload派发及过期门禁；生成原生A3/A2 PNG，位于同级`HarmonyContinuation-phase7-build/ui-evidence/`。未重跑浏览器设计矩阵或安装生命周期。
+- 当前交付节点为UI源码与定向证据。统一引擎工作线在合并后集中制作一个最终测试Setup；本工作树不另做旧引擎UI安装器。真实Cubase加载、中文/DPI、外部拖放及音乐听评仍待最终包验收，不合并main或正式发布。
+
+### dev.11 已交付基线（历史）
+
 2026-10-17：方案 A 核心推荐决策链修复已完成。独立分支 `development/core-decision-chain-20261017`；生产源码提交 `1c671521603949768eae666656a120b9f56f5f18`，已推送 origin。唯一测试包为 [0.10.0-dev.11 Setup](../HarmonyContinuation-dev11-delivery-20261017/HarmonyContinuation-0.10.0-dev.11-Setup.exe)，BuildCommit `1c67152`；一次 Release 插件构建和一次打包通过，暂存插件与构建字节一致，moduleinfo 与二进制版本/提交一致，Factory V4 / Schema 2 / 657 条。
 
 - 决策链：有限 template–key 解释保留至实化及硬约束；精确音乐聚合保留低音、性质、扩展、精确 QN、OPEN 和按输入锚点归一的实现约束。每条音乐只占一个位置，代表解释来自真实匹配，不拼接 subscores。来源数只作证据，支持分为零。

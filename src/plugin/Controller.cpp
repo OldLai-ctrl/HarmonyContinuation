@@ -219,7 +219,7 @@ IPlugView* PLUGIN_API Controller::createView(FIDString name) {
 }
 
 void Controller::editorSizeChanged(int width,int height) noexcept {
-    if (width<900 || width>2200 || height<640 || height>1400) return;
+    if (width<800 || width>2200 || height<640 || height>1400) return;
     sessionState_.editorWidth=static_cast<std::uint32_t>(width);
     sessionState_.editorHeight=static_cast<std::uint32_t>(height);
     if(view_)view_->setEditorSizeState(width,height);
@@ -418,7 +418,8 @@ void Controller::stopPreview() noexcept {
     if (previewOwnership_.release()) PlaySoundW(nullptr,nullptr,0);
 #endif
     previewCandidateId_.clear();
-    previewTotalQN_=previewSeconds_=0;
+    previewTarget_.reset();
+    previewBPMAtStart_=previewStartQN_=previewTotalQN_=previewSeconds_=0;
     if (view_) view_->setPreviewPosition({},0,0);
     if (!previewFile_.empty()) {
         std::error_code error;
@@ -427,12 +428,43 @@ void Controller::stopPreview() noexcept {
     }
 }
 
-void Controller::playPreview(std::string id,const harmony::preview::BuildResult& built) noexcept {
+double Controller::effectivePreviewBPM() const noexcept {
+    if (previewTempoMode_==harmony::preview::PreviewTempoMode::Custom)
+        return harmony::preview::sanitizeTempo(customPreviewBPM_);
+    return hostTempoValid_?harmony::preview::sanitizeTempo(lastTempoBPM_):harmony::preview::defaultTempoBPM;
+}
+
+PreviewStatus Controller::previewStatus() const noexcept {
+    const bool active=previewActive();
+    return {previewTempoMode_,customPreviewBPM_,active?previewBPMAtStart_:effectivePreviewBPM(),
+            hostTempoValid_,previewScope_,active};
+}
+
+void Controller::setPreviewSettings(harmony::preview::PreviewTempoMode mode,double customBPM,
+                                    harmony::preview::PreviewScope scope) noexcept {
+    try {
+        if ((mode!=harmony::preview::PreviewTempoMode::FollowHost&&mode!=harmony::preview::PreviewTempoMode::Custom)||
+            (scope!=harmony::preview::PreviewScope::Full&&scope!=harmony::preview::PreviewScope::Suffix)) return;
+        customBPM=harmony::preview::sanitizeTempo(customBPM);
+        if (mode==previewTempoMode_&&customBPM==customPreviewBPM_&&scope==previewScope_) return;
+        const bool wasActive=previewActive();
+        const auto target=previewTarget_;
+        if (wasActive) stopPreview();
+        previewTempoMode_=mode;
+        customPreviewBPM_=customBPM;
+        previewScope_=scope;
+        if (wasActive&&target) replayPreview(*target);
+    } catch (...) {
+        stopPreview();
+    }
+}
+
+void Controller::playPreview(const PreviewTarget& target,const harmony::preview::BuildResult& built) noexcept {
     try {
         stopPreview();
         if (!built) { if (view_) view_->setActionStatus("试听失败："+built.error); return; }
 #if defined(_WIN32)
-        const auto audio=harmony::preview::renderOffline(built.sequence,48000);
+        const auto audio=harmony::preview::renderOffline(built.sequence,48000,previewScope_);
         if (audio.left.empty() || audio.sampleRate<=0) {
             if (view_) view_->setActionStatus("试听失败：音频生成失败");
             return;
@@ -451,12 +483,16 @@ void Controller::playPreview(std::string id,const harmony::preview::BuildResult&
             stopPreview();
             return;
         }
-        previewCandidateId_=std::move(id);
-        previewTotalQN_=built.sequence.totalQN;
+        previewTarget_=target;
+        previewCandidateId_=target.id;
+        previewBPMAtStart_=built.sequence.tempoBPM;
+        const auto range=harmony::preview::previewRange(built.sequence,previewScope_);
+        previewStartQN_=range.startQN;
+        previewTotalQN_=range.endQN;
         previewSeconds_=static_cast<double>(audio.left.size())/audio.sampleRate;
         previewStarted_=std::chrono::steady_clock::now();
         if (view_) {
-            view_->setPreviewPosition(previewCandidateId_,0,previewTotalQN_);
+            view_->setPreviewPosition(previewCandidateId_,previewStartQN_,previewTotalQN_);
             view_->setActionStatus("正在通过 Windows 默认播放设备试听");
         }
 #else
@@ -471,15 +507,44 @@ void Controller::playPreview(std::string id,const harmony::preview::BuildResult&
     }
 }
 
+void Controller::replayPreview(const PreviewTarget& target) noexcept {
+    try {
+        if (target.kind==PreviewTargetKind::Continuation) {
+            if (!recommendationResultReady_) return;
+            for (const auto& group:recommendations_.groups) for (const auto& candidate:group) {
+                if (candidate.id!=target.id) continue;
+                if (candidate.rankingScore!=target.rankingScore||
+                    session::continuationFingerprint(candidate)!=target.fingerprint||!currentCandidate(candidate)) return;
+                playPreview(target,harmony::preview::buildSequence(
+                    importedProgression_,&candidate,effectivePreviewBPM()));
+                return;
+            }
+            return;
+        }
+        if (!enrichmentResultReady_) return;
+        for (const auto& group:enrichments_.groups) for (const auto& candidate:group) {
+            if (candidate.id!=target.id) continue;
+            if (candidate.fingerprint!=target.fingerprint||!currentCandidate(candidate)) return;
+            harmony::ImportedProgressionSession transformed;
+            if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection)) return;
+            playPreview(target,harmony::preview::buildSequence(
+                transformed,nullptr,effectivePreviewBPM(),candidate.constraints));
+            return;
+        }
+    } catch (...) { stopPreview(); }
+}
+
 void Controller::audition(const harmony::ContinuationCandidate& candidate) noexcept {
     try {
         if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("Recommendation changed; choose a current result");return;}
-        if (previewCandidateId_==candidate.id) {
+        if (previewTarget_&&previewTarget_->kind==PreviewTargetKind::Continuation&&previewCandidateId_==candidate.id) {
             stopPreview();
             if (view_) view_->setActionStatus("试听已停止");
             return;
         }
-        playPreview(candidate.id,harmony::preview::buildSequence(importedProgression_,&candidate,lastTempoBPM_));
+        playPreview({candidate.id,PreviewTargetKind::Continuation,
+                     session::continuationFingerprint(candidate),candidate.rankingScore},
+            harmony::preview::buildSequence(importedProgression_,&candidate,effectivePreviewBPM()));
     } catch (const std::exception& e) {
         if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
     } catch (...) {
@@ -490,7 +555,7 @@ void Controller::audition(const harmony::ContinuationCandidate& candidate) noexc
 void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandidate& candidate) noexcept {
     try {
         if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("Recommendation changed; choose a current result");return;}
-        if (previewCandidateId_==candidate.id) {
+        if (previewTarget_&&previewTarget_->kind==PreviewTargetKind::Enrichment&&previewCandidateId_==candidate.id) {
             stopPreview();
             if (view_) view_->setActionStatus("试听已停止");
             return;
@@ -500,7 +565,8 @@ void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandida
             if (view_) view_->setActionStatus("试听失败：升级进行时间轴无效");
             return;
         }
-        playPreview(candidate.id,harmony::preview::buildSequence(transformed,nullptr,lastTempoBPM_,candidate.constraints));
+        playPreview({candidate.id,PreviewTargetKind::Enrichment,candidate.fingerprint,0},
+            harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints));
     } catch (const std::exception& e) {
         if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
     } catch (...) {
@@ -514,7 +580,8 @@ void Controller::pollPreview() noexcept {
     const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-previewStarted_).count();
     if (elapsed>=previewSeconds_) { stopPreview(); return; }
     if (view_ && previewSeconds_>0)
-        view_->setPreviewPosition(previewCandidateId_,previewTotalQN_*elapsed/previewSeconds_,previewTotalQN_);
+        view_->setPreviewPosition(previewCandidateId_,
+            std::min(previewTotalQN_,previewStartQN_+elapsed*previewBPMAtStart_/60.0),previewTotalQN_);
 }
 
 namespace {
@@ -798,6 +865,7 @@ tresult PLUGIN_API Controller::notify(IMessage* message) {
                 const auto context=HostContextAdapter::timeline(snapshot);
                 hostEnvironment_.observeTimeline(context);
                 lastProjectQN_=context.projectTimeMusic;
+                hostTempoValid_=context.tempo.has_value();
                 if(context.tempo)lastTempoBPM_=*context.tempo;
                 lastTimeSigNumerator_=context.timeSignature?std::optional(context.timeSignature->first):std::nullopt;
                 lastTimeSigDenominator_=context.timeSignature?std::optional(context.timeSignature->second):std::nullopt;
