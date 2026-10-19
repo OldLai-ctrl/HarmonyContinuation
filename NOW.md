@@ -2,12 +2,15 @@
 
 ## 本轮工作与下一步
 
-2026-10-19：用户批准正式 A3 VSTGUI，并明确保留“详细模式 / 简略模式”。实现工作树及分支见 [MAP](MAP.md)。设计历史 `ecaeb90` 与 dev.11 基线已合并保留；正式 UI 不再显示三个实验算法入口，统一引擎由独立工作线集成。
+2026-10-19：统一推荐引擎、版本化流行变体及已批准的 Phase 7 正式界面已完成本地集成。开发分支 `development/unified-engine-20261019`；真实生产源码 / BuildCommit `e164ccdee38683459e74656d0c1555c3bfa1fb0f`（`e164ccd`）。唯一测试包为 [0.10.0-dev.12 Setup](../HarmonyContinuation-dev12-delivery-20261019/HarmonyContinuation-0.10.0-dev.12-Setup.exe)，Release / Factory Library 5 / Schema 2 / 658 条。暂存插件与 Factory 均和该构建字节一致，moduleinfo 与二进制版本/提交一致。
 
-- 原生主界面默认800×780：名称、真实时值、输入定位、续写边界、长度/和弦数和匹配摘要；默认Top3、全组More/探索、独立MIDI手柄、详情和输入和弦分析。详细模式增加逐个输入及来源对齐轨道；折叠状态按实例保留，不增加Session字段。
-- 固定试听栏接入Controller：完整/仅后续、跟随宿主/自定义20–400 BPM、停止及当前对象；设置变化停止并重播有效对象。播放中显示该WAV冻结BPM，宿主无有效速度回退120；音频经Windows设备播放。后缀从全段声部结果裁切，导出继续使用独立原始QN路径。
-- 直接相关检查已通过：UILayoutTests、PreviewTests 81项、既有HostContractHarness新增的`--compact-ui`入口。后者使用隔离worker/user.db，核对原生绘制、三档缩放、圆形与独立按钮命中、输入分析/详情/模式切换、真实MIDI payload派发及过期门禁；生成原生A3/A2 PNG，位于同级`HarmonyContinuation-phase7-build/ui-evidence/`。未重跑浏览器设计矩阵或安装生命周期。
-- 当前交付节点为UI源码与定向证据。统一引擎工作线在合并后集中制作一个最终测试Setup；本工作树不另做旧引擎UI安装器。真实Cubase加载、中文/DPI、外部拖放及音乐听评仍待最终包验收，不合并main或正式发布。
+- 单一引擎：复用原和声检索、HarmonyFirst 结构/节奏资格分离及严格方向扩展兼容；保留 dev.11 精确身份、有限多调性解释、硬约束、用途证据和中性资格。门槛仍为60，不求三模式并集、不填满Top3。调性置信度只解释，不再进入音乐质量；候选和调性并列顺序归一到输入根音，十二调同分性质检查通过。旧实验状态未持久化，旧调用归一到同一 Worker；正式 Controller/UI 无三算法分支。
+- 曲库：只追加完整 `15634125`，与既有 `15634145` 保持独立身份。冻结 V4 的657条完整payload/typedData逐条一致；新库独立版本目录、防降级及旧库官方内容识别通过。后续按[有限家族审校与前缀门禁](data/factory-proposals/20261019-pop-variants/family-review.md)收录，不自动组合生成。
+- 实际输出：C–G–Am 的 Em–F–G–C、Em–F–C–F–G、Em–F–C–Dm–G 均默认可达。Am–G#dim–G–D/F# 仍为默认 Em 1条，加 G–C–Em、C–G–Em、Em–D–C 三条通过资格的探索路线；后者基础分63.27、排序63.51，单独 More 可访问，不宣称优质 Develop/Loop。F–G–Am Auto 保留色彩后续，固定调性继续约束解释；四和弦及借用iv循环通过。排名和数量不代表听感质量。
+- Phase 7：按独立工作线提交 `adb88dd` 合并保留设计历史；正式800×780，详细/简略切换、全组More/探索、独立MIDI手柄及固定试听栏。完整/后续与跟随宿主/自定义BPM按实例工作，后续从完整配音裁切，原始QN及MIDI导出独立；旧无尺寸Session迁移默认保留。没有重写算法/配音或宿主音频契约。
+- 必要验证：[七个定向目标](../HarmonyContinuation-unified-validation-20261019/targeted-tests.txt)、[七例真实Worker/Snapshot/Preview/MIDI集成](../HarmonyContinuation-unified-validation-20261019/integration-result.txt)（2522检查，含13个扩展兼容方向门禁）、合并后的[五个直接相关目标](../HarmonyContinuation-unified-validation-20261019/merged-tests.txt)及[真实R01原生探索入口](../HarmonyContinuation-unified-validation-20261019/exploration-ui.txt)均通过。V5新路线快照/MIDI回读通过；Session、Snapshot及个人库格式不变。仅一次最终Release插件构建和一次Setup，未跑全量CTest、Validator、安装生命周期或全库排列。
+
+本地工程和测试包完成；未安装或核验真实Cubase。关闭Cubase后安装主程序与Factory V5，About核对 `dev.12 / e164ccd`。待用户听评新长线变体、D/F#→Em及三条探索路线、借用iv回接；新版UI的真实宿主拖放和试听交互仍需验收。远端上传曾在UI工作线被自动审批拒绝（缺少本轮具体远端上传授权），整合分支保持本地，等待明确上传授权；未合并main、未建Tag、未正式发布。既有未提交协作文档改动保留。
 
 ### dev.11 已交付基线（历史）
 
@@ -28,7 +31,7 @@ Phase 3 系统审计、Phase 3A 受控减和弦插入实验、Phase 4A 决策分
 ## 功能基线
 
 - 当前正式版本：`0.9.0`；发布提交与 `v0.9.0` Tag 均为 `ddc4f89babd4520daac3eae74824d6f581ce0e75`。源码清理提交不改变该正式包的构建身份。
-- 正式版为 Factory Library 3；本轮独立开发版本为 Library 4。Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2 保持；生产数据与宿主适配未改。
+- 正式版为 Factory Library 3；本轮独立开发版本为 Library 5（继承冻结V4并追加一条路线）。Factory Schema 2 / User Schema 2 / Session 5 / Continuation Snapshot 3 / Enrichment Snapshot 2 保持；生产数据与宿主适配未改。
 - Factory V3 为 155 条 canonical 历史记录加 474 条新进行，共 629 条；六条 QUESTIONABLE 留在非生产清单。统计见 [LIBRARY_V3_SUMMARY](LIBRARY_V3_SUMMARY.md)，兼容与降级边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。
 
 ## 历史接续记录
