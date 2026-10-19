@@ -2,6 +2,21 @@
 
 ## 本轮工作与下一步
 
+2026-10-19：dev.14 推荐展示与匹配解释升级完成。开发分支 `development/recommendation-browser-20261019`；源码 / BuildCommit `b4e6f65ebefad14e7345d797d941af6d49abbb5d`（`b4e6f65`）已推送 origin 同名分支。唯一测试包：[0.10.0-dev.14 Setup](../HarmonyContinuation-dev14-delivery-20261019/HarmonyContinuation-0.10.0-dev.14-Setup.exe)，Release / Factory V5 / Schema 2 / 658条。包、moduleinfo、二进制版本与提交一致，暂存插件/Factory与最终构建字节一致；dev.13源码和安装包保留。
+
+- 推荐浏览：五类入口保留；所有展示合格候选进入同一滚动列表，每页最多10条。Top3仅为优先标识，探索有独立标签。引擎取消资格之后的每类10条截断；检索预算、硬约束、中性资格门槛60、精确聚合、评分与用途策略不变。不能将新增可见数量解释为音乐质量提升。
+- 总览：当前分类全部结果与主卡片共享最终索引顺序；可定位到正确页及卡片，复制含来源、指纹、匹配位置、插入/跳过计数及用途依据的完整文本。升级按已有润色→丰富→进阶顺序合并，不作跨组重评分。翻页、分类、详情、试听和MIDI使用原候选引用，刷新清理失效选中及手势。
+- 对齐：上方完整来源播放带保留数据库和弦、QN与级数；下方原输入对照消费Matcher轨迹。R01实际得到 Am→iv、G#dim→输入插入、G→III、D/F#→VII、Em→i；模板跳过保留独立红色缺口，输入插入为褐色，均有文字及OPEN/续写边界。没有原query的Snapshot仅显示冻结路线，对齐标为不可用。Session5 / Snapshot3 / UserLibrary格式及Factory数据未修改。
+- 自动化：[首轮相关目标](../HarmonyContinuation-dev14-validation-20261019/tests.log)中7项通过；UILayout发现小窗口候选区被分页条挤压，移到固定试听栏末行后，[最终UILayout与CompactEditorUI](../HarmonyContinuation-dev14-validation-20261019/tests-final-ui.log)通过，共9个不同定向目标。新增覆盖0/1/3/4/10/11/20/21分页、完整列表/总览同序、跨页动作身份、保存意图恢复与失效选中、11条合格路线的有限/无限保留同资格同分、trace/缺口与旧快照降级。未重复全量CTest、Validator或安装生命周期。
+- 音乐集成：[8组真实Worker检查](../HarmonyContinuation-dev14-validation-20261019/integration/unified.txt)通过，3493检查；C–G–Am保留15634125、四和弦Loop、R02两种节奏的Color、借用iv回接及R01一条默认/三条探索均保留。308是八组结果累计，包含重复输入，不作为覆盖或质量评分。
+- 原生界面：[R01](../HarmonyContinuation-dev14-validation-20261019/R01-ui.log)、[模板跳过](../HarmonyContinuation-dev14-validation-20261019/template-skip-ui.log)、[七和弦来源](../HarmonyContinuation-dev14-validation-20261019/source-route-ui.log)通过；含100/125/150%入口与点击、详情、MIDI分发，七和弦离线音频及2种配音×3范围MIDI/Snapshot一致。[四张交付截图](../HarmonyContinuation-dev14-delivery-20261019/screenshots/)为真实VSTGUI渲染；模板跳过使用既有M05测试数据，不加入Factory。
+
+工程、定向自动化、原生渲染与唯一测试包完成。主代理负责候选保留/来源语义、UI集成和最终复核；Luna完成只读链路审计、纯展示模型与性质测试补丁、状态风险审查。未修改独立Phase7工作树，未合并main、未建Tag/Release。现有未提交协作文档保留。
+
+安装、Cubase实机与人工音乐听评均为Pending。关闭Cubase后安装主程序及Factory V5，About核对 `0.10.0-dev.14 / b4e6f65`；复验分页/分类/总览、试听及完整/续写MIDI与拖放对象、保存重开和旧快照。听评原来源与输入差异、R01探索及借用iv回接。旧Snapshot缺原query时无法恢复原输入对齐；总览过长文本可复制完整清单。可进入RC技术评审，人工验收和正式发布待决定。
+
+### dev.13 已交付基线（历史）
+
 2026-10-19：dev.12 同步审计与新增输出/UI要求完成。当前分支 `development/source-route-ui-20261019`，生产源码 / BuildCommit `0db40a3681a2ed0d7b4ebf4599e4d7902da6cccc`（`0db40a3`）已推送 origin 同名分支；后续状态文档提交不改变构建身份。唯一新增测试包：[0.10.0-dev.13 Setup](../HarmonyContinuation-dev13-delivery-20261019/HarmonyContinuation-0.10.0-dev.13-Setup.exe)，Release / Factory V5 / Schema 2 / 658 条；二进制、moduleinfo、Setup版本一致，暂存插件及Factory与最终构建字节一致。原dev.12包保留。
 
 - 主界面：收束、发展、循环、色彩、升级进行五个同级入口。升级复用A3卡片、逐和弦QN、More、试听/MIDI/详情和固定试听栏；不修改独立Phase7工作树。

@@ -7,8 +7,8 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `development/source-route-ui-20261019` | dev.13源码/BuildCommit `0db40a3`已推送同名开发分支；升级同级入口与完整来源输出；未合并main，验收见[NOW](NOW.md) |
-| 当前验证与测试包 | 同级 `HarmonyContinuation-source-route-validation-20261019/`、`HarmonyContinuation-dev13-delivery-20261019/` | 8项定向检查、真实来源/原生升级与探索入口、唯一dev.13 Setup；dev.12验证/交付与更早对照保留 |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/recommendation-browser-20261019` | dev.14源码/BuildCommit `b4e6f65`已推送同名开发分支；完整分页列表、总览及trace对齐；main未合并，验收见[NOW](NOW.md) |
+| 当前验证与测试包 | 同级 `HarmonyContinuation-dev14-validation-20261019/`、`HarmonyContinuation-dev14-delivery-20261019/` | 9个不同定向目标、8组Worker/3493检查、原生截图及唯一dev.14 Setup；dev.13/source-route与更早验证和安装包保留 |
 | Phase 7 UI 原型 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016` | 独立工作树；Phase6.1 没有修改 MainView |
 | Phase 7 正式 UI | 同级 `HarmonyContinuation-phase7-vstgui/` → `development/phase7-vstgui-20261019` | 保留A3设计历史，正式源码adb88dd已合入统一引擎dev.12单包；远端c17a795与unified/013b4c2源码相同，dev.13新增输出/UI在主开发分支；当前状态见[NOW](NOW.md)；定向构建/原生图在同级`HarmonyContinuation-phase7-build/` |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
