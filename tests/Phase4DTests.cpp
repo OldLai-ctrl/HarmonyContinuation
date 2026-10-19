@@ -1729,7 +1729,8 @@ int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem
     add("F-G-Am forced A minor",phrase({"F","G","Am"},{4,4,4},true),KeySignature{PitchClass::A,Mode::Minor});
     add("C-Fm-G Auto",phrase({"C","Fm","G"},{2,2,2},true),std::nullopt);
     add("C-Fm-G forced C major",phrase({"C","Fm","G"},{2,2,2},true),KeySignature{PitchClass::C,Mode::Major});
-    require(cases.size()==7,"exactly seven requested input/key cases");
+    add("F-G-Am Auto 3-5-OPEN",phrase({"F","G","Am"},{3,5,4},true),std::nullopt);
+    require(cases.size()==8,"eight targeted input/key/rhythm cases");
 
     plugin::RecommendationWorker worker(factoryPath,out/"unified-user.db",out/"unified-factory-store");
     constexpr std::array<const char*,4> groups{"Resolve","Develop","Loop","Color"};
@@ -1769,8 +1770,8 @@ int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem
                     "every Worker output passed hard and base qualification");
                 const bool shown=std::find(visible[g].begin(),visible[g].end(),n)!=visible[g].end();
                 const bool inMore=std::find(access.more.begin(),access.more.end(),n)!=access.more.end();
-                require(inMore,"retained qualified output is accessible in More");
-                if(c.exploratory)require(!shown,"exploratory candidate is outside default positions");
+                require(inMore,"retained qualified output is accessible in the qualified list");
+                if(c.exploratory)require(!shown,"exploratory candidate is outside Top3 priority positions");
                 ++total;++caseTotal;++moreTotal;++caseMore;
                 if(shown){++defaultsTotal;++caseDefault;}
                 if(c.exploratory){++exploreTotal;++caseExplore;}
@@ -1791,7 +1792,7 @@ int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem
                     if(unifiedPathIs(c,v5pop)&&unifiedSourceTraceable(c,rec,"V5_POP_VARIANT_001"))v5Full=true;
                 }
                 if(test==1&&g==2&&c.intent==PhraseIntent::Loop&&phase61CandidateRepeatsInput(item.input,c))fourLoop=true;
-                if((test==3||test==4)&&g==3&&c.intent==PhraseIntent::Color)color=true;
+                if((test==3||test==4||test==7)&&g==3&&c.intent==PhraseIntent::Color)color=true;
                 if((test==5||test==6)&&g==2&&c.intent==PhraseIntent::Loop&&unifiedPathIs(c,{"Dm"})&&shown)dmLoop=true;
                 if(test==2) {
                     if(unifiedPathIs(c,{"G","C","Em"})&&c.baseQualified&&c.exploratory&&inMore)gce=true;
@@ -1821,7 +1822,7 @@ int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem
                 }
             }
             require(access.exploratory==static_cast<std::size_t>(std::count_if(rec.groups[g].begin(),
-                rec.groups[g].end(),[](const auto& c){return c.exploratory;})),"More exploratory count agrees with qualified cards");
+                rec.groups[g].end(),[](const auto& c){return c.exploratory;})),"Qualified-list exploratory count agrees with qualified cards");
         }
         log<<"COUNTS candidates="<<caseTotal<<" defaultVisible="<<caseDefault<<" more="<<caseMore
            <<" exploratory="<<caseExplore<<'\n';
@@ -1831,8 +1832,8 @@ int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem
             require(v5Full,"full V5_POP_VARIANT_001 suffix Em-F-C-Dm-G is source-traceable");
         }
         if(test==1)require(fourLoop,"C-G-Am-F retains its complete four-chord Loop");
-        if(test==2)require(gce&&cge,"G-C-Em and C-G-Em are qualified exploratory More routes");
-        if(test==3)require(color,"F-G-Am Auto retains actual Color continuations");
+        if(test==2)require(gce&&cge,"G-C-Em and C-G-Em are qualified exploratory list routes");
+        if(test==3||test==7)require(color,"F-G-Am Auto retains actual Color continuations");
         // Forced A minor constrains the search. The Auto Color paths above use F major;
         // absence of those paths under a different forced key is not a coverage regression.
         if(test==4)log<<"KEY_CONSTRAINT forced A minor excludes the F-major Auto Color interpretations\n";

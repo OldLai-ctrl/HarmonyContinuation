@@ -12,6 +12,7 @@
 #include "ui/EffectiveScale.h"
 #include "ui/ColorHint.h"
 #include "ui/WhyExplanation.h"
+#include "ui/RecommendationBrowse.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "preview/PreviewSequence.h"
@@ -35,6 +36,10 @@ public:
         std::vector<std::string> pinnedEnrichmentIds;
         bool showColorHints{true};
         bool detailedCards{};
+        std::array<std::size_t,5> browsePages{};
+        std::array<double,5> browseScroll{};
+        std::array<std::string,5> browseSelected{};
+        std::size_t browseCategory{};
         color::Preference colorPreference{color::Preference::Off};
     };
     void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
@@ -107,6 +112,7 @@ public:
     bool runHostInteractionSmoke();
     bool runStructureSmoke();
     bool runCompactSmoke(VSTGUI::CDrawContext*);
+    bool runBrowseSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     void setAuditionState(bool custom,double bpm,bool suffix,bool hostValid,double effectiveBpm);
     std::string recommendationUiDiagnostics();
     bool runZoomSmoke();
@@ -119,7 +125,8 @@ public:
     bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
-    enum class CompactAction { Select, Audition, Midi, Details, Density, More, Intent, Enrichment, Key, Style,
+    enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
+        OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
         Advanced, Library, Import, FullView, InputChord, Play, Stop, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
@@ -134,8 +141,26 @@ private:
     };
     std::vector<CompactHit> compactHits_;
     bool compactInCards_{};
-    std::string compactSelected_, compactExtra_;
+    std::string compactSelected_;
     std::size_t compactGroup_{};
+    std::array<std::vector<BrowseEntry>,5> browseRows_;
+    std::array<std::size_t,5> browsePages_{};
+    std::array<double,5> browseScroll_{};
+    std::array<std::string,5> browseSelected_{};
+    bool browseDirty_{true},overviewOpen_{};
+    double overviewScroll_{},overviewScrollMax_{};
+    UiRect overviewRect_,overviewBody_;
+    std::size_t browseCategory() const {return state_.productMode==session::ProductMode::Enrich?4:compactGroup_;}
+    void refreshBrowse();
+    const std::vector<BrowseEntry>& browseRows();
+    void changeBrowseCategory(std::size_t);
+    void focusBrowseEntry(std::size_t);
+    void drawBrowseControls(VSTGUI::CDrawContext*,const CompactLayoutResult&);
+    void drawRecommendationOverview(VSTGUI::CDrawContext*);
+    std::string recommendationListText();
+    std::string browseName(const BrowseEntry&) const;
+    std::string browsePath(const BrowseEntry&) const;
+    void drawRecommendationAlignment(VSTGUI::CDrawContext*,const ContinuationCandidate&,UiRect);
     bool detailedCards_{}, auditionCustom_{}, auditionSuffix_{}, auditionHostValid_{};
     double auditionBpm_{120}, auditionEffectiveBpm_{120}, compactScroll_{}, compactScrollMax_{};
     VSTGUI::CRect compactHover_{}, compactPressed_{};

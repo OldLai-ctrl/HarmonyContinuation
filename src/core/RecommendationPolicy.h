@@ -10,7 +10,9 @@ inline AnalysisContext recommendationContext(AnalysisContext context) {
 }
 inline RecommendationWeights recommendationWeights() {
     RecommendationWeights weights;
-    weights.perGroup=10;
+    // The matcher already bounds retrieval. Keep every display-qualified result;
+    // pagination is a presentation responsibility (zero means no retention cap).
+    weights.perGroup=0;
     weights.abstractChordCompatibility=true;
     return weights;
 }

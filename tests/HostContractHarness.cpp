@@ -4,11 +4,13 @@
 #include "plugin/HostAdapters.h"
 #include "plugin/RecommendationWorker.h"
 #include "ProgressionJson.h"
+#include "TemplateJson.h"
 #include "io/AsyncMidiImport.h"
 #include "io/FileDropRouter.h"
 #include "io/MidiDragService.h"
 #include "ui/EffectiveScale.h"
 #include "ui/MainView.h"
+#include "ui/RecommendationAlignment.h"
 #include "library/LibraryStore.h"
 #include "session/PluginSessionState.h"
 #include "core/RecommendationPolicy.h"
@@ -97,9 +99,10 @@ std::optional<io::CompletedMidiImport> wait(io::AsyncMidiImport& worker){
 }
 }
 int main(int argc,char** argv){
-    if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui"||std::string(argv[1])=="--source-route-ui")) {
+    if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui"||std::string(argv[1])=="--source-route-ui"||std::string(argv[1])=="--template-skip-ui")) {
         const bool exploration=std::string(argv[1])=="--exploration-ui";
         const bool sourceRouteCase=std::string(argv[1])=="--source-route-ui";
+        const bool templateSkipCase=std::string(argv[1])=="--template-skip-ui";
         const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
         VSTGUI::init(GetModuleHandleW(nullptr));
         auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
@@ -117,7 +120,8 @@ int main(int argc,char** argv){
             const auto chordsEnd=fixture.find(']',chordsBegin);
             require(chordsKey!=std::string::npos&&chordsBegin!=std::string::npos&&chordsEnd!=std::string::npos,
                     "Scenario B fixture has no chord array");
-            const auto chordText=exploration?std::string_view(R"([{"name":"Am","start":0},{"name":"G#dim","start":4},{"name":"G","start":8},{"name":"D/F#","start":12}])"):
+            const auto chordText=templateSkipCase?std::string_view(R"([{"name":"C","start":0},{"name":"Dm","start":4},{"name":"G","start":8}])"):
+                exploration?std::string_view(R"([{"name":"Am","start":0},{"name":"G#dim","start":4},{"name":"G","start":8},{"name":"D/F#","start":12}])"):
                 sourceRouteCase?std::string_view(R"([{"name":"C","start":0},{"name":"Fm","start":2},{"name":"G","start":4}])"):
                 std::string_view(fixture).substr(chordsBegin,chordsEnd-chordsBegin+1);
             auto parsed=dev::parseProgressionJson(chordText);
@@ -126,7 +130,7 @@ int main(int argc,char** argv){
 
             session::PluginSessionState state;state.editorWidth=800;state.editorHeight=780;
             state.meterNumerator=4;state.meterDenominator=4;
-            if(sourceRouteCase)state.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+            if(sourceRouteCase||templateSkipCase)state.forcedKey=KeySignature{PitchClass::C,Mode::Major};
             require(state.imported.replace(std::move(parsed.events),TimelineCoordinateMode::RelativeToSelection),
                     "Scenario B progression could not be installed in the UI state");
             auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
@@ -166,7 +170,18 @@ int main(int argc,char** argv){
                     "exploration UI uses the delivered unified engine and V5");
                 require(session::presentationIndices(rec,{})[1].empty()&&access.exploratory==3&&access.more.size()==3,
                     "R01 empty default Develop retains three accessible exploratory routes");
-                std::cout<<"R01 UI: default Develop=0, exploratory More=3; actual cards and MIDI hit regions follow\n";
+                bool alignedR01=false;
+                for(const auto& c:rec.groups[0])if(c.continuation.size()==1&&c.continuation.front().label=="Em")for(const auto& m:rec.matches)if(representativeMatch(c,m)){
+                    const auto rows=ui::recommendationAlignment(state.imported,c,m);
+                    alignedR01=rows.size()==5&&rows[0].queryIndex==0&&rows[1].kind==ui::AlignmentCellKind::InputInsertion&&rows[1].queryIndex==1&&
+                        rows[2].queryIndex==2&&rows[3].queryIndex==3&&rows[4].continuationBoundary&&
+                        rows[0].templateIndex&&m.templateLabels[*rows[0].templateIndex]=="iv"&&
+                        rows[2].templateIndex&&m.templateLabels[*rows[2].templateIndex]=="III"&&
+                        rows[3].templateIndex&&m.templateLabels[*rows[3].templateIndex]=="VII"&&
+                        rows[4].templateIndex&&m.templateLabels[*rows[4].templateIndex]=="i";
+                }
+                require(alignedR01,"real R01 Worker trace produces the requested five aligned cells");
+                std::cout<<"R01 UI: default Develop=0, exploratory list=3; actual cards and MIDI hit regions follow\n";
             }
             frame=new VSTGUI::CFrame({0,0,800,780},nullptr);
             auto* view=new ui::MainView({0,0,800,780},{});frame->addView(view);
@@ -226,6 +241,20 @@ int main(int argc,char** argv){
                 std::cout<<"Source route PASS: full Worker retains V4_B12 evidence; focused stored source input 4-6/7 plays seven authored chords, 28 QN, boundary 24 QN; audible preview, MIDI 2 modes x 3 scopes and frozen snapshot agree\n";
             }
 
+            if(templateSkipCase){
+                std::ifstream templatesFile(std::filesystem::path(HC_FIXTURE_DIR)/"progressions"/"templates.json",std::ios::binary);
+                const auto parsedTemplates=dev::parseTemplateJson(std::string(std::istreambuf_iterator<char>{templatesFile},{}));
+                require(bool(parsedTemplates),"template-skip fixture parses");
+                const auto item=std::find_if(parsedTemplates.templates.begin(),parsedTemplates.templates.end(),[](const auto& p){return p.id=="M05";});
+                require(item!=parsedTemplates.templates.end(),"existing M05 matcher fixture exists");
+                const auto focused=recommendContinuations(makeMatchQuery(state.imported.events,recommendationContext(state.analysisContext())),CandidateIndex({*item}),{},recommendationWeights());
+                bool hasSkip=false;
+                for(std::size_t g=0;g<focused.groups.size();++g)for(const auto& c:focused.groups[g])for(const auto& m:focused.matches)if(representativeMatch(c,m))
+                    for(const auto& step:m.alignmentTrace)if(step.operation==AlignmentOp::TemplateDeletion){hasSkip=true;focusedGroup=g;}
+                require(hasSkip,"qualified M05 result retains a real matcher template deletion");
+                view->setLibrary({*item},{});view->setMatches(focused.matches,"Existing M05 matcher fixture");view->setRecommendations(focused);
+            }
+
             const auto context=VSTGUI::COffscreenContext::create({800,780});
             require(static_cast<bool>(context),"compact UI offscreen context could not be created");
             require(view->runCompactSmoke(context.get()),"compact UI interaction smoke failed");
@@ -244,6 +273,7 @@ int main(int argc,char** argv){
                 file.close();
                 return file.good()&&!png.empty();
             };
+            require(view->runBrowseSmoke(context.get(),[&](const std::string& name){require(saveScreenshot(name.c_str()),"browser screenshot failed");}),"complete browser interaction smoke failed");
             require(saveScreenshot("A3-main.png"),"A3-main.png could not be saved");
             auto detailed=view->captureEditorUiState();detailed.detailedCards=true;view->restoreEditorUiState(detailed);
             require(saveScreenshot("A2-detailed.png"),"A2-detailed.png could not be saved");

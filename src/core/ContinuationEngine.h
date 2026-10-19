@@ -74,7 +74,7 @@ struct RecommendationWeights {
     float unexplainedInsertionPenalty{8.f};
     float templateDeletionPenalty{2.f};
     float intentCompletionTieBreak{0.005f}; // at most 0.25 points in either direction
-    std::size_t perGroup{3};
+    std::size_t perGroup{3}; // zero keeps all qualified results within the existing retrieval budget
     bool diminishedPassingInsertionException{false}; // internal experiment, never persisted
     bool abstractChordCompatibility{false}; // internal retrieval experiment, never persisted
 };

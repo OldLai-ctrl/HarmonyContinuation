@@ -5,6 +5,8 @@
 #include "library/ProgressionLibrary.h"
 #include "plugin/RecommendationWorker.h"
 #include <algorithm>
+#include <array>
+#include <string>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -65,6 +67,55 @@ int main() {
           "C OPEN duration");
     check(std::abs(path->continuation[0].durationQN - 2.) < 0.001, "A suffix duration");
     check(first.groups[0].size() == 1, "H resolve grouping");
+    // Changing perGroup changes only post-qualification retention.
+    constexpr std::array<std::string_view, 11> retentionTails{
+        "V I", "ii V I", "iii V I", "IV V I", "vi V I",
+        "I ii V I", "I iii V I", "I IV V I", "I vi V I",
+        "ii IV V I", "iii vi V I"
+    };
+    std::vector<ProgressionTemplate> retentionRoutes;
+    retentionRoutes.reserve(retentionTails.size());
+    for (std::size_t i = 0; i < retentionTails.size(); ++i) {
+        const auto id = "retention_" + std::to_string(i);
+        const auto json = std::string("[{\"id\":\"") + id +
+            "\",\"mode\":\"major\",\"sequence\":\"I vi ii " +
+            std::string(retentionTails[i]) +
+            "\",\"intent\":\"resolve\",\"cadence\":\"authentic\"}]";
+        auto route = templates(json);
+        retentionRoutes.push_back(std::move(route.front()));
+    }
+    RecommendationWeights finiteRetention;
+    finiteRetention.perGroup = 10;
+    auto unlimitedRetention = finiteRetention;
+    unlimitedRetention.perGroup = 0;
+    const auto finitePage = recommendContinuations(query(a), CandidateIndex(retentionRoutes), {}, finiteRetention);
+    const auto unlimitedPage = recommendContinuations(query(a), CandidateIndex(retentionRoutes), {}, unlimitedRetention);
+    check(unlimitedPage.groups[0].size() == retentionTails.size(),
+          "zero perGroup retains all eleven distinct base-qualified Resolve routes");
+    check(finitePage.groups[0].size() == 10 &&
+          finitePage.stats.scorePassed == unlimitedPage.stats.scorePassed &&
+          unlimitedPage.stats.scorePassed == retentionTails.size(),
+          "finite perGroup truncates only after identical qualification");
+    check(finitePage.stats.output == 10 && unlimitedPage.stats.output == retentionTails.size(),
+          "perGroup alone controls retained output count");
+    check(std::all_of(unlimitedPage.groups[0].begin(), unlimitedPage.groups[0].end(),
+          [](const auto& candidate) {
+              return candidate.hardConstraintsPassed && candidate.baseQualified &&
+                     std::isfinite(candidate.eligibilityScore);
+          }), "every retained fixture route satisfies hard and base qualification");
+    bool samePrefix = finitePage.groups[0].size() <= unlimitedPage.groups[0].size();
+    for (std::size_t i = 0; samePrefix && i < finitePage.groups[0].size(); ++i) {
+        const auto& finite = finitePage.groups[0][i];
+        const auto& unlimited = unlimitedPage.groups[0][i];
+        samePrefix = finite.id == unlimited.id &&
+            finite.primaryTemplate == unlimited.primaryTemplate &&
+            finite.hardConstraintsPassed == unlimited.hardConstraintsPassed &&
+            finite.baseQualified == unlimited.baseQualified &&
+            finite.exploratory == unlimited.exploratory &&
+            std::abs(finite.eligibilityScore - unlimited.eligibilityScore) < 0.0001f &&
+            std::abs(finite.rankingScore - unlimited.rankingScore) < 0.0001f;
+    }
+    check(samePrefix, "finite retention preserves qualification, scores, and ranking prefix");
     const auto autoFirst=recommendContinuations(makeMatchQuery(a),CandidateIndex(basic));
     const auto* autoPath=findSuffix(autoFirst,"G","C");
     check(autoPath&&path&&std::abs(autoPath->eligibilityScore-path->eligibilityScore)<0.0001f&&

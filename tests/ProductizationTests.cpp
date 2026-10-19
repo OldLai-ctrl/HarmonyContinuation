@@ -2,8 +2,10 @@
 #include "demo/DemoScenario.h"
 #include "library/LibraryStore.h"
 #include "session/ProductServices.h"
+#include "ui/RecommendationBrowse.h"
 #include "plugin/RecommendationWorker.h"
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
@@ -399,6 +401,44 @@ int main() {
         const auto differentTones=session::presentationIndices(display,presentationPolicy);
         check(differentTones[0]==std::vector<std::size_t>({0,1}),
               "same displayed name with different actual tones stays visible");
+        const std::array<std::size_t,8> browseTotals{0,1,3,4,10,11,20,21};
+        for (const auto total:browseTotals) {
+            const auto first=ui::browsePage(total,0);
+            const auto expectedPages=total/10+(total%10!=0);
+            std::vector<std::size_t> visits(total);
+            bool partition=first.total==total&&first.pages==expectedPages;
+            if(total==0) partition=partition&&first.page==0&&first.begin==0&&first.end==0;
+            for(std::size_t page=0;page<first.pages;++page) {
+                const auto current=ui::browsePage(total,page);
+                const auto expectedBegin=page*ui::recommendationPageSize;
+                const auto expectedEnd=std::min(total,expectedBegin+ui::recommendationPageSize);
+                partition=partition&&current.page==page&&current.pages==expectedPages&&
+                    current.begin==expectedBegin&&current.end==expectedEnd;
+                for(auto index=current.begin;index<current.end;++index)++visits[index];
+            }
+            partition=partition&&std::all_of(visits.begin(),visits.end(),[](auto count){return count==1;});
+            check(partition,"browse pages cover every item once");
+        }
+        const auto emptyBrowse=ui::browsePage(0,99);
+        check(emptyBrowse.page==0&&emptyBrowse.pages==0&&emptyBrowse.begin==0&&
+              emptyBrowse.end==0&&emptyBrowse.total==0,"empty browse page");
+        const auto clampedBrowse=ui::browsePage(21,99);
+        check(clampedBrowse.page==2&&clampedBrowse.pages==3&&clampedBrowse.begin==20&&
+              clampedBrowse.end==21&&clampedBrowse.total==21,"browse request clamps to last page");
+        auto browseGroup=std::vector<ContinuationCandidate>{
+            accessCandidate("browse-explore",62,true,true,"C"),
+            accessCandidate("browse-below-sixty",59,true,false,"Dm"),
+            accessCandidate("browse-hard-fail",90,true,false,"G"),
+            accessCandidate("browse-base-fail",99,false,true,"Am"),
+            accessCandidate("browse-preferred",75,true,false,"F")};
+        browseGroup[2].hardConstraintsPassed=false;
+        const auto browseOrder=ui::qualifiedBrowseOrder(browseGroup,{99,4,2,4});
+        check(browseOrder==std::vector<std::size_t>({4,0,1}),
+              "browse order keeps preferred qualified items and appends omitted eligible items");
+        check(std::find(browseOrder.begin(),browseOrder.end(),0)!=browseOrder.end()&&
+              std::find(browseOrder.begin(),browseOrder.end(),1)!=browseOrder.end()&&
+              browseGroup[0].exploratory&&browseGroup[1].rankingScore<60,
+              "qualified support, exploration, and sub-60 rank remain browsable");
         const auto query=makeMatchQuery(a.chords);
         const auto rec=recommendContinuations(query,index,{},weights);
         const ContinuationCandidate* choice{};

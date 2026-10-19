@@ -1,6 +1,7 @@
 #include "ui/UILayout.h"
 #include "ui/OverlayPolicy.h"
 #include "ui/ProgressionTimeline.h"
+#include "ui/RecommendationAlignment.h"
 #include <array>
 #include <iostream>
 #include <stdexcept>
@@ -12,8 +13,135 @@ void check(bool okay,const char* name){if(!okay)throw std::runtime_error(name);+
 bool inside(UiRect r,UiRect p){return r.left>=p.left&&r.top>=p.top&&r.right<=p.right&&r.bottom<=p.bottom&&r.width()>=0&&r.height()>=0;}
 bool overlap(UiRect a,UiRect b){return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;}
 }
+void recommendationAlignmentChecks() {
+    harmony::ImportedProgressionSession imported;
+    for (const auto* name : {"Am", "G#dim", "G", "D/F#"}) {
+        harmony::ChordEvent event;
+        event.name = name;
+        event.startQN = static_cast<double>(imported.events.size()) * 4.;
+        event.durationQN = 4.;
+        event.openEnded = false;
+        imported.events.push_back(std::move(event));
+    }
+    imported.events.back().durationQN.reset();
+    imported.events.back().openEnded = true;
+
+    harmony::MatchResult match;
+    match.templateId = "r01";
+    match.key = {harmony::PitchClass::E, harmony::Mode::Minor};
+    match.templateMatchStart = 1;
+    match.templateMatchEnd = 4;
+    match.continuationStartIndex = 5;
+    match.hasContinuation = true;
+    match.continuationLength = 1;
+    match.templateLabels = {"V", "iv", "G#dim", "III", "VII", "i"};
+    match.alignmentTrace = {
+        {0, 1, harmony::AlignmentOp::Match},
+        {std::nullopt, 2, harmony::AlignmentOp::TemplateDeletion},
+        {1, std::nullopt, harmony::AlignmentOp::QueryInsertion},
+        {2, 3, harmony::AlignmentOp::Match},
+        {3, 4, harmony::AlignmentOp::Substitute}
+    };
+
+    harmony::ContinuationCandidate candidate;
+    candidate.primaryTemplate = match.templateId;
+    candidate.key = match.key;
+    candidate.matchStart = match.templateMatchStart;
+    candidate.matchEnd = match.templateMatchEnd;
+    candidate.continuationStart = match.continuationStartIndex;
+    candidate.continuation.push_back({"Em"});
+
+    const auto cells = recommendationAlignment(imported, candidate, match);
+    check(cells.size() == 6, "R01 alignment rows omit source prefix");
+    check(cells[0].kind == AlignmentCellKind::Aligned &&
+        cells[0].queryIndex == 0 && cells[0].templateIndex == 1,
+        "R01 Am follows matched iv trace");
+    check(cells[1].kind == AlignmentCellKind::TemplateSkip &&
+        !cells[1].queryIndex && cells[1].templateIndex == 2,
+        "R01 skipped template event remains a gap");
+    check(cells[2].kind == AlignmentCellKind::InputInsertion &&
+        cells[2].queryIndex == 1 && !cells[2].templateIndex,
+        "R01 G sharp diminished stays an input insertion");
+    check(cells[3].kind == AlignmentCellKind::Aligned &&
+        cells[3].queryIndex == 2 && cells[3].templateIndex == 3,
+        "R01 G follows matched III trace");
+    check(cells[4].kind == AlignmentCellKind::Aligned &&
+        cells[4].queryIndex == 3 && cells[4].templateIndex == 4,
+        "R01 D over F sharp follows matched VII trace");
+    check(cells[4].queryIndex && imported.events[*cells[4].queryIndex].openEnded,
+        "OPEN input event remains reachable by query index");
+    check(cells[5].kind == AlignmentCellKind::Continuation &&
+        !cells[5].queryIndex && cells[5].templateIndex == 5 &&
+        cells[5].continuationBoundary,
+        "R01 continuation begins at actual template i");
+    std::array<int, 4> queryCoverage{};
+    for (const auto& cell : cells) if (cell.queryIndex) ++queryCoverage[*cell.queryIndex];
+    for (const auto count : queryCoverage)
+        check(count == 1, "every imported query event appears exactly once");
+
+    auto missingTrace = match;
+    missingTrace.alignmentTrace.clear();
+    check(recommendationAlignment(imported, candidate, missingTrace).empty(),
+        "alignment without trace is empty");
+    auto incompleteTrace = match;
+    incompleteTrace.alignmentTrace.pop_back();
+    check(recommendationAlignment(imported, candidate, incompleteTrace).empty(),
+        "incomplete query coverage is empty");
+    auto outOfRange = match;
+    outOfRange.alignmentTrace[0].queryIndex = imported.events.size();
+    check(recommendationAlignment(imported, candidate, outOfRange).empty(),
+        "out of range query index is empty");
+    outOfRange = match;
+    outOfRange.alignmentTrace[0].templateIndex = match.templateLabels.size();
+    check(recommendationAlignment(imported, candidate, outOfRange).empty(),
+        "out of range template index is empty");
+    check(recommendationAlignment(imported, candidate, match, true).empty(),
+        "snapshot alignment does not reuse lost query indices");
+
+    harmony::ImportedProgressionSession wrapInput;
+    for (const auto* name : {"Am", "G#dim", "G"}) {
+        harmony::ChordEvent event;
+        event.name = name;
+        event.startQN = static_cast<double>(wrapInput.events.size()) * 4.;
+        event.durationQN = 4.;
+        event.openEnded = false;
+        wrapInput.events.push_back(std::move(event));
+    }
+    harmony::MatchResult wrapMatch;
+    wrapMatch.templateId = "wrap";
+    wrapMatch.key = match.key;
+    wrapMatch.templateMatchStart = 2;
+    wrapMatch.templateMatchEnd = 3;
+    wrapMatch.continuationStartIndex = 4;
+    wrapMatch.hasContinuation = true;
+    wrapMatch.continuationLength = 1;
+    wrapMatch.templateLabels = {"a", "b", "c", "d", "e"};
+    wrapMatch.alignmentTrace = {
+        {0, 2, harmony::AlignmentOp::Match},
+        {1, std::nullopt, harmony::AlignmentOp::QueryInsertion},
+        {2, 3, harmony::AlignmentOp::Substitute}
+    };
+    harmony::ContinuationCandidate wrapCandidate;
+    wrapCandidate.primaryTemplate = wrapMatch.templateId;
+    wrapCandidate.key = wrapMatch.key;
+    wrapCandidate.matchStart = wrapMatch.templateMatchStart;
+    wrapCandidate.matchEnd = wrapMatch.templateMatchEnd;
+    wrapCandidate.continuationStart = wrapMatch.continuationStartIndex;
+    wrapCandidate.continuation.resize(3);
+    const auto wrapped = recommendationAlignment(wrapInput, wrapCandidate, wrapMatch);
+    check(wrapped.size() == 6 && wrapped[3].templateIndex == 4 &&
+        wrapped[4].templateIndex == 0 && wrapped[5].templateIndex == 1,
+        "continuation follows finite suffix and one template wrap");
+    check(wrapped[3].continuationBoundary && !wrapped[4].continuationBoundary &&
+        !wrapped[5].continuationBoundary,
+        "only first continuation row marks the boundary");
+    wrapCandidate.continuation.resize(4);
+    check(recommendationAlignment(wrapInput, wrapCandidate, wrapMatch).empty(),
+        "continuation rejects repeated wraps beyond engine output");
+}
 int main(){
     try {
+        recommendationAlignmentChecks();
         check(UILayoutResult::minimumWidth==800&&UILayoutResult::minimumHeight==640,"global minimum size");
         check(UILayoutResult::defaultWidth==800&&UILayoutResult::defaultHeight==780,"global default size");
         const auto defaultLayout=computeLayout({});

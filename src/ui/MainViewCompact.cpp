@@ -4,6 +4,8 @@
 #include "vstgui/lib/cgraphicspath.h"
 #include "vstgui/lib/cgraphicstransform.h"
 #include "vstgui/lib/cfont.h"
+#include "vstgui/lib/cclipboard.h"
+#include "RecommendationAlignment.h"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -29,6 +31,128 @@ void rounded(CDrawContext* dc,UiRect r,CColor color,CColor border=edge,double ra
     dc->setFillColor(color);dc->drawGraphicsPath(path,CDrawContext::kPathFilled);
     dc->setFrameColor(border);dc->setLineWidth(1);dc->drawGraphicsPath(path,CDrawContext::kPathStroked);
 }
+}
+
+void MainView::refreshBrowse(){
+    if(!browseDirty_)return;
+    const auto priority=continuationPresentation();
+    refreshColorRanking();
+    for(std::size_t g=0;g<4;++g){
+        auto preferred=priority[g];
+        preferred.insert(preferred.end(),colorRanks_[g].order.begin(),colorRanks_[g].order.end());
+        auto& rows=browseRows_[g];rows.clear();
+        for(const auto i:qualifiedBrowseOrder(recommendations_.groups[g],preferred))
+            rows.push_back({g,i,!recommendations_.groups[g][i].exploratory&&std::find(priority[g].begin(),priority[g].end(),i)!=priority[g].end(),recommendations_.groups[g][i].exploratory});
+    }
+    auto& rows=browseRows_[4];rows.clear();
+    for(std::size_t g=0;g<3;++g)for(const auto i:enrichmentOrder(g))
+        rows.push_back({g,i,rows.size()<3,false});
+    for(std::size_t g=0;g<5;++g){
+        browsePages_[g]=browsePage(browseRows_[g].size(),browsePages_[g]).page;
+        const auto valid=[&](const std::string& id){return std::any_of(browseRows_[g].begin(),browseRows_[g].end(),[&](const auto& row){
+            return (g==4?enrichments_.groups[row.group][row.index].id:recommendations_.groups[row.group][row.index].id)==id;});};
+        if(!valid(browseSelected_[g]))browseSelected_[g].clear();
+        if(g==browseCategory()&&!valid(compactSelected_))compactSelected_.clear();
+    }
+    browseDirty_=false;
+}
+const std::vector<BrowseEntry>& MainView::browseRows(){refreshBrowse();return browseRows_[browseCategory()];}
+void MainView::changeBrowseCategory(std::size_t category){
+    browseScroll_[browseCategory()]=compactScroll_;browseSelected_[browseCategory()]=compactSelected_;
+    state_.productMode=category==4?session::ProductMode::Enrich:session::ProductMode::Continue;
+    if(category<4){compactGroup_=category;constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};state_.intent=intents[category];}
+    compactSelected_=browseSelected_[category];compactScroll_=browseScroll_[category];
+    selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();
+    overviewOpen_=false;midiPending_.reset();midiClick_={};notifyState();
+}
+void MainView::focusBrowseEntry(std::size_t rank){
+    const auto& rows=browseRows();if(rank>=rows.size())return;
+    const auto& row=rows[rank];compactSelected_=browseCategory()==4?enrichments_.groups[row.group][row.index].id:recommendations_.groups[row.group][row.index].id;
+    browsePages_[browseCategory()]=rank/recommendationPageSize;compactScroll_=0;
+    const auto geometry=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+    for(auto i=browsePage(rows.size(),browsePages_[browseCategory()]).begin;i<rank;++i){
+        auto card=compactCandidateGeometry(geometry.cardsViewport,0,detailedCards_);
+        if(browseCategory()!=4&&!snapshotMode_){const auto& c=recommendations_.groups[rows[i].group][rows[i].index];
+            const auto m=std::find_if(matches_.begin(),matches_.end(),[&](const auto& v){return representativeMatch(c,v);});
+            const bool gaps=m!=matches_.end()&&std::any_of(m->alignmentTrace.begin(),m->alignmentTrace.end(),[](const auto& st){return st.operation==AlignmentOp::QueryInsertion||st.operation==AlignmentOp::TemplateDeletion;});
+            if(detailedCards_||gaps)card.row.bottom=std::max(card.row.bottom,card.timeBand.bottom+116.);
+        }
+        compactScroll_+=card.row.height()+8;
+    }
+    selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();overviewOpen_=false;
+}
+std::string MainView::browseName(const BrowseEntry& row) const {
+    if(browseCategory()==4){constexpr const char* names[]{"group.polish","group.rich","group.advanced"};return t(names[row.group]);}
+    const auto& c=recommendations_.groups[row.group][row.index];
+    for(const auto* catalog:{&factory_,&user_})for(const auto& p:*catalog)if(p.id==c.primaryTemplate)
+        return state_.locale==session::Locale::ZhCN&&!p.nameZh.empty()?p.nameZh:!p.nameEn.empty()?p.nameEn:p.name;
+    for(const auto& m:matches_)if(representativeMatch(c,m))return m.templateName;
+    return c.primaryTemplate;
+}
+std::string MainView::browsePath(const BrowseEntry& row) const {
+    std::string path;const auto append=[&](const auto& label){if(!path.empty())path+=" → ";path+=label;};
+    if(browseCategory()==4){for(const auto& e:enrichments_.groups[row.group][row.index].progression)append(e.name);}
+    else {const auto& c=recommendations_.groups[row.group][row.index];const auto route=continuationRoute(c);
+        for(const auto& e:route?route.candidate.continuation:c.continuation)append(e.label);}
+    return path;
+}
+std::string MainView::recommendationListText(){
+    const bool zh=state_.locale==session::Locale::ZhCN;std::ostringstream out;
+    const auto& rows=browseRows();out<<(zh?"完整推荐清单":"Complete recommendations")<<" ("<<rows.size()<<")\n";
+    for(std::size_t rank=0;rank<rows.size();++rank){const auto& r=rows[rank];
+        out<<rank+1<<". "<<(r.exploratory?(zh?"探索":"Explore"):(zh?"默认":"Default"))<<(r.priority?" [Top 3]":"")<<" | "<<browseName(r)<<" | "<<browsePath(r);
+        if(browseCategory()==4){const auto& c=enrichments_.groups[r.group][r.index];out<<" | "<<(zh?"升级进行":"Enrichment")<<" | score="<<c.score<<" | id="<<c.id<<" | fingerprint="<<c.fingerprint;}
+        else {const auto& c=recommendations_.groups[r.group][r.index];std::size_t ins{},skip{};
+            for(const auto& m:matches_)if(representativeMatch(c,m))for(const auto& step:m.alignmentTrace){ins+=step.operation==AlignmentOp::QueryInsertion;skip+=step.operation==AlignmentOp::TemplateDeletion;}
+            out<<" | "<<tIntent(c.intent)<<" | score="<<c.rankingScore<<" | base="<<c.eligibilityScore<<" | id="<<c.id<<" | source="<<c.primaryTemplate
+               <<" | key="<<formatKey(c.key)<<" | match="<<c.matchStart+1<<'-'<<c.matchEnd+1<<" | inputInsertions="<<ins<<" | templateSkips="<<skip
+               <<" | intentEvidence="<<completionReasonKey(c.completion.reason)<<" | fingerprint="<<continuationMusicFingerprint(c);}
+        out<<'\n';
+    }return out.str();
+}
+void MainView::drawBrowseControls(CDrawContext* dc,const CompactLayoutResult& g){
+    const bool zh=state_.locale==session::Locale::ZhCN;const auto& rows=browseRows();
+    const auto page=browsePage(rows.size(),browsePages_[browseCategory()]);browsePages_[browseCategory()]=page.page;
+    const bool ready=!workerBusy_&&recommendationResultReady_;
+    compactButton(dc,{g.recommendationHeading.right-150,g.recommendationHeading.top,g.recommendationHeading.right,g.recommendationHeading.bottom},
+        (zh?"推荐总览（":"Overview (")+std::to_string(rows.size())+(zh?"）":")"),CompactAction::Overview,{},0,false,ready);
+    const double y=g.footer.bottom-25;
+    text(dc,(zh?"共 ":"Total ")+std::to_string(page.total)+(zh?" 条 · 优先推荐 Top 3":" · Priority Top 3"),{g.cardsViewport.left+4,y,g.cardsViewport.right-220,y+22},10,secondary);
+    text(dc,(page.pages?std::to_string(page.page+1):"0")+" / "+std::to_string(page.pages),{g.cardsViewport.right-150,y,g.cardsViewport.right-68,y+22},11,secondary,kCenterText);
+    compactButton(dc,{g.cardsViewport.right-216,y,g.cardsViewport.right-152,y+22},zh?"上一页":"Prev",CompactAction::PagePrevious,{},0,false,ready&&page.page>0);
+    compactButton(dc,{g.cardsViewport.right-64,y,g.cardsViewport.right,y+22},zh?"下一页":"Next",CompactAction::PageNext,{},0,false,ready&&page.page+1<page.pages);
+}
+void MainView::drawRecommendationOverview(CDrawContext* dc){
+    if(!overviewOpen_)return;
+    const auto g=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+    const bool zh=state_.locale==session::Locale::ZhCN;
+    fill(dc,g.viewport,CColor(15,17,22,245));compactHits_.clear();compactRibbons_.clear();compactInCards_=false;
+    overviewRect_={12,18,g.viewport.right-12,g.viewport.bottom-18};rounded(dc,overviewRect_,surface,blue,10);
+    const auto& rows=browseRows();const double l=overviewRect_.left+12,r=overviewRect_.right-12,y=overviewRect_.top;
+    text(dc,(zh?"推荐总览（":"Recommendation overview (")+std::to_string(rows.size())+(zh?"）":")"),{l,y+8,r-212,y+36},15);
+    compactButton(dc,{r-204,y+8,r-68,y+38},zh?"复制完整推荐清单":"Copy full list",CompactAction::OverviewCopy);
+    compactButton(dc,{r-60,y+8,r,y+38},zh?"关闭":"Close",CompactAction::OverviewClose);
+    text(dc,zh?"当前分类全部合格结果 · 点击行定位卡片 · Esc 关闭":"All qualified results in this category · select a row · Esc closes",{l,y+42,r,y+64},10,secondary);
+    const double height=g.narrow?60.:48.;overviewBody_={l,y+70,r,overviewRect_.bottom-30};
+    overviewScrollMax_=std::max(0.,rows.size()*height-overviewBody_.height());overviewScroll_=std::clamp(overviewScroll_,0.,overviewScrollMax_);
+    {
+    ConcatClip clip(*dc,rect(overviewBody_));
+    for(std::size_t i=0;i<rows.size();++i){const auto& row=rows[i];const double top=overviewBody_.top+i*height-overviewScroll_;
+        if(top+height<overviewBody_.top||top>overviewBody_.bottom)continue;
+        fill(dc,{l,top,r,top+height-2},i%2?raised:CColor(31,35,43,255));
+        const auto label=std::to_string(i+1)+" · "+(row.exploratory?(zh?"探索":"Explore"):row.priority?(zh?"默认·优先":"Default·Top3"):(zh?"默认":"Default"));
+        text(dc,label,{l+4,top+2,l+92,top+24},11,row.exploratory?CColor(235,193,125,255):blue);
+        text(dc,browseName(row),{l+94,top+2,r-104,top+24},11);
+        const auto score=browseCategory()==4?enrichments_.groups[row.group][row.index].score:recommendations_.groups[row.group][row.index].rankingScore;
+        const auto intent=browseCategory()==4?(zh?std::string("升级"):std::string("Enrich")):tIntent(recommendations_.groups[row.group][row.index].intent);
+        text(dc,intent+" · "+number(std::round(double(score)*10.)/10.),{r-104,top+2,r-4,top+24},10,secondary,kRightText);
+        text(dc,browsePath(row),{l+8,top+23,r-8,top+height-3},11);
+        auto hit=rect({l,top,r,top+height-2});hit.bound(rect(overviewBody_));if(hit.getHeight()>0)compactHits_.push_back({hit,CompactAction::OverviewSelect,{},i,true,{}});
+    }}
+    text(dc,zh?"探索：通过基础资格，实际用途证据不足。复制清单含来源、匹配位置和缺口。":"Explore: qualified with insufficient intent evidence. Copy includes source and alignment diagnostics.",
+        {l,overviewRect_.bottom-27,r,overviewRect_.bottom-5},10,secondary);
+    if(overviewScrollMax_>0){const double h=overviewBody_.height()*overviewBody_.height()/(overviewBody_.height()+overviewScrollMax_);
+        const double top=overviewBody_.top+(overviewBody_.height()-h)*overviewScroll_/overviewScrollMax_;fill(dc,{r-3,top,r,top+h},secondary);}
 }
 
 void MainView::setAuditionState(bool custom,double bpm,bool suffix,bool valid,double effective){
@@ -58,21 +182,21 @@ void MainView::compactButton(CDrawContext* dc,UiRect r,const std::string& label,
 
 void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResult& route,UiRect area){
     if(!route){text(dc,(state_.locale==session::Locale::ZhCN?"来源路线不可用 · ":"Source route unavailable · ")+route.error,area,11,secondary);return;}
-    struct Cell {std::string label;double qn;bool source{},suggested{};};
+    struct Cell {std::string label;double qn;bool source{},suggested{};std::optional<std::size_t> sourceIndex;};
     std::vector<Cell> cells;double sourceQN{};bool unknown=false;
     const auto& candidate=route.candidate;
     const double anchor=route.imported.events.empty()?0:route.imported.events.front().startQN;
-    for(const auto& e:route.imported.events){
+    for(std::size_t sourceIndex=0;sourceIndex<route.imported.events.size();++sourceIndex){const auto& e=route.imported.events[sourceIndex];
         const bool open=e.openEnded||!e.durationQN;
         const auto qn=open?candidate.suggestedCurrentChordDurationQN:e.durationQN;
         if(!qn||!std::isfinite(*qn)||*qn<=0){unknown=true;break;}
         const double start=e.startQN-anchor;
         if(start<sourceQN-1e-7){unknown=true;break;}
-        if(start>sourceQN+1e-7)cells.push_back({"—",start-sourceQN,true,false});
-        sourceQN=start+*qn;cells.push_back({e.name,*qn,true,open});
+        if(start>sourceQN+1e-7)cells.push_back({"—",start-sourceQN,true,false,{}});
+        sourceQN=start+*qn;cells.push_back({e.name,*qn,true,open,sourceIndex});
     }
     if(unknown){text(dc,state_.locale==session::Locale::ZhCN?"来源进行时值待定或重叠":"Source route duration pending or overlapping",area,11,secondary);return;}
-    for(const auto& e:candidate.continuation){if(!std::isfinite(e.durationQN)||e.durationQN<=0){text(dc,"Duration pending",area,11,secondary);return;}cells.push_back({e.label,e.durationQN,false,false});}
+    for(std::size_t i=0;i<candidate.continuation.size();++i){const auto& e=candidate.continuation[i];if(!std::isfinite(e.durationQN)||e.durationQN<=0){text(dc,"Duration pending",area,11,secondary);return;}cells.push_back({e.label,e.durationQN,false,false,candidate.continuationStart+i});}
     if(cells.empty())return;
     double total{},minQN=1e9;for(const auto& e:cells){total+=e.qn;minQN=std::min(minQN,e.qn);}
     if(total<=0||minQN<=0)return;
@@ -82,11 +206,14 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
     auto& offset=compactRibbonScroll_[candidate.id];offset=std::clamp(offset,0.,maximum);
     auto ribbonHit=rect(area);if(compactInCards_)ribbonHit.bound(rect(computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom()).cardsViewport));
     if(ribbonHit.getWidth()>0&&ribbonHit.getHeight()>0)compactRibbons_.push_back({ribbonHit,candidate.id,maximum});
+    const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(candidate,m);});
+    const bool degrees=!snapshotMode_&&match!=matches_.end()&&!match->templateLabels.empty()&&route.imported.events.size()==candidate.continuationStart;
     ConcatClip clip(*dc,rect(area));double x=area.left-offset,position{};
     for(const auto& e:cells){const double w=width*e.qn/total;
         fill(dc,{x,area.top,x+w-1,area.bottom-3},e.source?CColor(48,58,73,255):CColor(52,75,112,255));
         text(dc,e.label,{x+3,area.top,x+w-3,area.top+19},detailedCards_?13:11,fg,kCenterText);
-        text(dc,(e.suggested?std::string("≈ "):std::string{})+number(e.qn),{x+2,area.top+18,x+w-2,area.bottom-3},10,secondary,kCenterText);
+        const auto degree=degrees&&e.sourceIndex?" · "+match->templateLabels[*e.sourceIndex%match->templateLabels.size()]:std::string{};
+        text(dc,(e.suggested?std::string("≈ "):std::string{})+number(e.qn)+" QN"+degree,{x+2,area.top+18,x+w-2,area.bottom-3},10,secondary,kCenterText);
         position+=e.qn;x+=w;
         if(std::abs(position-sourceQN)<1e-7)fill(dc,{x-1,area.top,x+1,area.bottom-3},blue);
     }
@@ -95,6 +222,36 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
     }
     if(maximum>0){const double thumb=area.width()*area.width()/width;
         const double left=area.left+(area.width()-thumb)*offset/maximum;fill(dc,{left,area.bottom-2,left+thumb,area.bottom},secondary);}
+}
+
+void MainView::drawRecommendationAlignment(CDrawContext* dc,const ContinuationCandidate& c,UiRect area){
+    const bool zh=state_.locale==session::Locale::ZhCN;
+    text(dc,(zh?std::string("输入与匹配 · 上方播放来源，下方原输入 · "):std::string("Input alignment · source above / query below · "))+formatKey(c.key),{area.left,area.top,area.right,area.top+18},10,secondary);
+    const auto found=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
+    const auto cells=found==matches_.end()?std::vector<RecommendationAlignmentCell>{}:recommendationAlignment(state_.imported,c,*found,snapshotMode_);
+    if(cells.empty()){text(dc,zh?"原始输入匹配关系不可用":"Original query alignment unavailable",{area.left,area.top+22,area.right,area.bottom},11,secondary);return;}
+    const double top=area.top+21,width=std::max(area.width(),cells.size()*100.);
+    auto& offset=compactRibbonScroll_[c.id+"@source"];offset=std::clamp(offset,0.,width-area.width());
+    auto hit=rect({area.left,top,area.right,area.bottom});hit.bound(rect(computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom()).cardsViewport));
+    if(hit.getWidth()>0&&hit.getHeight()>0)compactRibbons_.push_back({hit,c.id+"@source",width-area.width()});
+    ConcatClip clip(*dc,rect({area.left,top,area.right,area.bottom}));const double cellWidth=width/cells.size();std::size_t suffix{};
+    const auto route=continuationRoute(c);
+    for(std::size_t i=0;i<cells.size();++i){const auto& cell=cells[i];const double x=area.left-offset+i*cellWidth;
+        const bool insert=cell.kind==AlignmentCellKind::InputInsertion,skip=cell.kind==AlignmentCellKind::TemplateSkip;
+        const auto color=insert?CColor(92,70,38,255):skip?CColor(91,48,63,255):cell.kind==AlignmentCellKind::Continuation?CColor(52,75,112,255):CColor(48,58,73,255);
+        fill(dc,{x,top,x+cellWidth-1,area.bottom-3},color);
+        std::string chord="—",duration,degree;
+        if(cell.queryIndex){const auto& e=state_.imported.events[*cell.queryIndex];chord=e.name;duration=e.openEnded||!e.durationQN?"OPEN":number(*e.durationQN)+" QN";}
+        else if(cell.kind==AlignmentCellKind::Continuation){const auto& events=route?route.candidate.continuation:c.continuation;
+            if(suffix<events.size()){chord=events[suffix].label;duration=number(events[suffix].durationQN)+" QN";}++suffix;}
+        if(cell.templateIndex)degree=found->templateLabels[*cell.templateIndex];
+        if(insert)degree=zh?"输入插入":"Input insertion";
+        text(dc,chord,{x+3,top,x+cellWidth-3,top+21},12,fg,kCenterText);
+        text(dc,duration,{x+3,top+21,x+cellWidth-3,top+36},10,secondary,kCenterText);
+        text(dc,degree,{x+3,top+36,x+cellWidth-3,top+57},11,fg,kCenterText);
+        if(skip)text(dc,zh?"模板跳过":"Template skip",{x+3,top+56,x+cellWidth-3,area.bottom-3},10,CColor(255,192,205,255),kCenterText);
+        if(cell.continuationBoundary)fill(dc,{x-1,top,x+1,area.bottom-3},blue);
+    }
 }
 
 void MainView::drawCompact(CDrawContext* dc){
@@ -142,18 +299,10 @@ void MainView::drawCompact(CDrawContext* dc){
     compactButton(dc,compactIntentTabGeometry(g.intentToolbar,4),zh?"升级进行":"Enrich",CompactAction::Enrichment,{},0,
         state_.productMode==session::ProductMode::Enrich);
     if(state_.productMode==session::ProductMode::Enrich){
-        drawCompactEnrichments(dc,g);compactInCards_=false;drawCompactTransport(dc);drawResponsiveForm(dc);return;
+        drawCompactEnrichments(dc,g);compactInCards_=false;drawCompactTransport(dc);drawResponsiveForm(dc);drawRecommendationOverview(dc);return;
     }
-    std::size_t moreCount=0,exploreCount=0;
-    for(const auto& group:recommendations_.groups){const auto access=session::continuationAccess(group);moreCount+=access.more.size();exploreCount+=access.exploratory;}
-    text(dc,zh?"时值 QN · 长轨道可滚轮横移":"QN · scroll long tracks",{g.recommendationHeading.left+110,g.recommendationHeading.top,g.recommendationHeading.right-154,g.recommendationHeading.bottom},10,secondary);
-    compactButton(dc,{g.recommendationHeading.right-148,g.recommendationHeading.top,g.recommendationHeading.right,g.recommendationHeading.bottom},
-        (zh?"更多 ":"More ")+std::to_string(moreCount)+(exploreCount?(zh?" · 探索 ":" · Explore ")+std::to_string(exploreCount):""),CompactAction::More,{},0,false,moreCount>0&&!workerBusy_&&recommendationResultReady_);
-    auto presentation=continuationPresentation();auto shown=presentation[compactGroup_];
-    if(!compactExtra_.empty()){const auto& group=recommendations_.groups[compactGroup_];
-        const auto it=std::find_if(group.begin(),group.end(),[&](const auto& c){return c.id==compactExtra_;});
-        if(it!=group.end()){const auto i=static_cast<std::size_t>(it-group.begin());if(std::find(shown.begin(),shown.end(),i)==shown.end())shown.insert(shown.begin(),i);}}
-    if(compactSelected_.empty()&&!shown.empty())compactSelected_=recommendations_.groups[compactGroup_][shown.front()].id;
+    const auto& all=browseRows();const auto page=browsePage(all.size(),browsePages_[browseCategory()]);
+    if(compactSelected_.empty()&&page.begin<page.end)compactSelected_=recommendations_.groups[compactGroup_][all[page.begin].index].id;
     const bool ready=!workerBusy_&&recommendationResultReady_;
     double cy=g.cardsViewport.top-compactScroll_,end=cy;
     {
@@ -163,13 +312,16 @@ void MainView::drawCompact(CDrawContext* dc){
         compactDetailRect_={g.cardsViewport.left,cy,g.cardsViewport.right,cy+250};layout_.inspector=compactDetailRect_;layout_.inspectorMode=InspectorMode::Overlay;
         drawResponsiveInspector(dc);cy+=258;end=cy;
     }
-    if(!ready||shown.empty())text(dc,workerBusy_?t("status.analyzing"):
-        exploreCount?(zh?"暂无默认推荐，可从“更多 / 探索”查看近似路线":"No default result. Open More / Explore."):t("candidate.none"),
+    if(!ready||all.empty())text(dc,workerBusy_?t("status.analyzing"):t("candidate.none"),
         {g.cardsViewport.left+8,cy+16,g.cardsViewport.right-8,cy+65},12,secondary);
-    if(ready)for(std::size_t row=0;row<shown.size();++row){
-        const auto index=shown[row];const auto& c=recommendations_.groups[compactGroup_][index];
+    if(ready)for(std::size_t row=page.begin;row<page.end;++row){
+        const auto index=all[row].index;const auto& c=recommendations_.groups[compactGroup_][index];
         const auto route=continuationRoute(c);
-        const auto cg=compactCandidateGeometry(g.cardsViewport,cy,detailedCards_);
+        auto cg=compactCandidateGeometry(g.cardsViewport,cy,detailedCards_);
+        const auto aligned=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
+        const bool gaps=aligned!=matches_.end()&&std::any_of(aligned->alignmentTrace.begin(),aligned->alignmentTrace.end(),[](const auto& st){return st.operation==AlignmentOp::QueryInsertion||st.operation==AlignmentOp::TemplateDeletion;});
+        const bool showAlignment=!snapshotMode_&&(detailedCards_||gaps);
+        if(showAlignment)cg.row.bottom=std::max(cg.row.bottom,cg.timeBand.bottom+116.);
         const bool expanded=selectedCandidate_&&selectedCandidate_->first==compactGroup_&&selectedCandidate_->second==index;
         const bool selected=compactSelected_==c.id;
         if(cg.row.bottom>=g.cardsViewport.top&&cg.row.top<=g.cardsViewport.bottom){
@@ -178,7 +330,7 @@ void MainView::drawCompact(CDrawContext* dc){
             const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
             const auto libraryItem=[&]() -> const ProgressionTemplate*{for(const auto* catalog:{&factory_,&user_})for(const auto& p:*catalog)if(p.id==c.primaryTemplate)return &p;return nullptr;}();
             const auto name=libraryItem?((zh&&!libraryItem->nameZh.empty())?libraryItem->nameZh:(!zh&&!libraryItem->nameEn.empty())?libraryItem->nameEn:libraryItem->name):match!=matches_.end()?match->templateName:c.primaryTemplate;
-            text(dc,name,cg.name,14);
+            text(dc,(all[row].priority?(zh?std::string("优先 · "):std::string("Top 3 · ")):c.exploratory?(zh?std::string("探索 · "):std::string("Explore · ")):std::string{})+name,cg.name,13);
             double qn=0;if(route)for(const auto& e:route.candidate.continuation)qn+=e.durationQN;
             const double bar=route&&route.meterDenominator>0?route.meterNumerator*4. / route.meterDenominator:0;
             text(dc,route?(zh?"续写 ":"Next ")+number(bar>0?qn/bar:qn)+(bar>0?(zh?" 小节 · ":" bars · "):" QN · ")+std::to_string(route.candidate.continuation.size())+(zh?" 和弦":" chords"):
@@ -191,7 +343,7 @@ void MainView::drawCompact(CDrawContext* dc){
             if(match!=matches_.end())for(const auto& step:match->alignmentTrace){substitutions+=step.operation==AlignmentOp::Substitute;gaps+=step.operation==AlignmentOp::TemplateDeletion;insertions+=step.operation==AlignmentOp::QueryInsertion;}
             std::string difference;
             const auto append=[&](std::size_t count,const char* chinese,const char* english){if(!count)return;if(!difference.empty())difference+=" · ";difference+=std::to_string(count)+(zh?chinese:english);};
-            append(substitutions,"处替代"," substitutions");append(insertions,"处输入插入"," input insertions");append(gaps,"个来源未覆盖"," source gaps");
+            append(substitutions,"处替代"," substitutions");append(insertions,"处输入插入"," input insertions");append(gaps,"处模板跳过"," template skips");
             if(difference.empty())difference=match==matches_.end()?(zh?"匹配明细待取":"Match details pending"):(zh?"逐项对齐":"Aligned");
             if(c.exploratory)difference=(zh?std::string("探索 · "):std::string("Explore · "))+difference;
             text(dc,difference,cg.match,10,secondary,kRightText);
@@ -201,24 +353,9 @@ void MainView::drawCompact(CDrawContext* dc){
                 static_cast<bool>(actions_.midiPayload)&&static_cast<bool>(route));
             compactButton(dc,cg.details,zh?(expanded?"收起 −":"详情 +"):(expanded?"Less −":"Details +"),CompactAction::Details,c.id,index,expanded);
             drawCompactRibbon(dc,route,cg.timeBand);
-            if(detailedCards_){
-                text(dc,(zh?"来源定位 · 实际匹配调性 ":"Source position · actual match key ")+formatKey(c.key)+" · "+difference,cg.sourceLocation,11,secondary);
-                if(match!=matches_.end()&&!match->templateLabels.empty()){
-                    const auto a=cg.inputTimes;const auto& labels=match->templateLabels;
-                    const double width=std::max(a.width(),labels.size()*58.);auto& offset=compactRibbonScroll_[c.id+"@source"];
-                    offset=std::clamp(offset,0.,width-a.width());auto sourceHit=rect(a);sourceHit.bound(rect(g.cardsViewport));
-                    if(sourceHit.getWidth()>0&&sourceHit.getHeight()>0)compactRibbons_.push_back({sourceHit,c.id+"@source",width-a.width()});
-                    ConcatClip sourceClip(*dc,rect(a));const double cell=width/labels.size();
-                    for(std::size_t i=0;i<labels.size();++i){
-                        bool matched=false,gap=false;
-                        for(const auto& step:match->alignmentTrace)if(step.templateIndex&&*step.templateIndex==i){matched|=step.queryIndex.has_value();gap|=step.operation==AlignmentOp::TemplateDeletion;}
-                        const double x=a.left-offset+i*cell;
-                        fill(dc,{x,a.top,x+cell-1,a.bottom-3},matched?CColor(66,82,111,255):raised);
-                        text(dc,labels[i],{x+2,a.top,x+cell-3,a.top+18},11,matched?fg:secondary,kCenterText);
-                        text(dc,std::to_string(i+1)+(gap?(zh?" 未覆盖":" gap"):matched?(zh?" 输入":" input"):""),{x+2,a.top+18,x+cell-3,a.bottom-3},9,secondary,kCenterText);
-                    }
-                }
-            }
+            if(showAlignment)drawRecommendationAlignment(dc,c,{cg.timeBand.left,cg.timeBand.bottom+4,cg.timeBand.right,cg.row.bottom-7});
+            else if(detailedCards_)text(dc,snapshotMode_?(zh?"冻结来源路线 · 原始输入对齐不可用":"Frozen source route · original query alignment unavailable"):(zh?"来源完整进行":"Full source route"),cg.sourceLocation,10,secondary);
+
         }
         cy=cg.row.bottom+8;
         if(expanded){compactDetailRect_={g.cardsViewport.left,cy,g.cardsViewport.right,cy+290};
@@ -236,6 +373,7 @@ void MainView::drawCompact(CDrawContext* dc){
         fill(dc,{g.cardsViewport.right-3,top,g.cardsViewport.right,top+h},secondary);}
     drawCompactTransport(dc);
     drawResponsiveForm(dc);
+    drawRecommendationOverview(dc);
 }
 
 void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult& g){
@@ -246,39 +384,22 @@ void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult
     compactInCards_=true;
     {
     ConcatClip clip(*dc,rect(g.cardsViewport));
-    for(std::size_t group=0;group<enrichments_.groups.size();++group){
-        const auto& candidates=enrichments_.groups[group];
-        const auto& order=enrichmentOrder(group);
-        std::vector<std::size_t> shown;
-        if(compactSelected_.empty()&&!order.empty())compactSelected_=candidates[order.front()].id;
-        if(selectedEnrichment_&&selectedEnrichment_->first==group&&selectedEnrichment_->second<candidates.size())
-            shown.push_back(selectedEnrichment_->second);
-        for(const auto index:order)if(shown.size()<2&&std::find(shown.begin(),shown.end(),index)==shown.end())shown.push_back(index);
-        const UiRect heading{g.cardsViewport.left,cy,g.cardsViewport.right,cy+28};
-        text(dc,t(titles[group]),{heading.left+4,heading.top,heading.right-112,heading.bottom},13,blue);
-        const auto omitted=order.size()>shown.size()?order.size()-shown.size():0;
-        if(omitted)compactButton(dc,{heading.right-108,heading.top,heading.right,heading.bottom},
-            (zh?"更多 ":"More ")+std::to_string(omitted),CompactAction::More,"enrichment",group,false,
-            ready);
-        cy+=32;
-        if(!ready||shown.empty()){
-            const auto message=!ready?t("status.analyzing"):candidates.empty()?
-                t(enrichments_.diagnostics.hardFiltered?"enrich.constraints":
-                    enrichments_.diagnostics.protectedChords?"enrich.protected":"status.noEnrichment"):std::string{};
-            if(!message.empty())text(dc,message,{g.cardsViewport.left+8,cy+8,g.cardsViewport.right-8,cy+42},11,secondary);
-            cy+=48;end=cy;continue;
-        }
-        for(const auto index:shown){
+    const auto& rows=browseRows();const auto page=browsePage(rows.size(),browsePages_[4]);
+    if(ready&&rows.empty())text(dc,t("status.noEnrichment"),{g.cardsViewport.left+8,cy+8,g.cardsViewport.right-8,cy+42},11,secondary);
+    if(ready)for(std::size_t row=page.begin;row<page.end;++row){
+            const auto group=rows[row].group,index=rows[row].index;
+            const auto& candidates=enrichments_.groups[group];
+            if(compactSelected_.empty())compactSelected_=candidates[index].id;
             const auto& candidate=candidates[index];
             const auto cg=compactCandidateGeometry(g.cardsViewport,cy,detailedCards_);
             const bool expanded=selectedEnrichment_&&selectedEnrichment_->first==group&&selectedEnrichment_->second==index;
             const bool selected=compactSelected_==candidate.id||expanded;
             if(cg.row.bottom>=g.cardsViewport.top&&cg.row.top<=g.cardsViewport.bottom){
                 rounded(dc,cg.row,selected?CColor(40,46,58,255):surface,selected?blue:edge,10);
-                compactButton(dc,cg.select,selected?"✓":"+",CompactAction::Select,candidate.id,index,selected,true,true);
+                compactButton(dc,cg.select,selected?"✓":std::to_string(row+1),CompactAction::Select,candidate.id,index,selected,true,true);
                 std::string path;for(const auto& event:candidate.progression){if(!path.empty())path+=" → ";path+=event.name;}
-                text(dc,path,cg.name,13);
-                text(dc,(zh?"评分 ":"Score ")+number(std::round(candidate.score*10)/10)+" · "+std::to_string(candidate.progression.size())+
+                text(dc,(rows[row].priority?(zh?std::string("优先 · "):std::string("Top 3 · ")):std::string{})+path,cg.name,13);
+                text(dc,(zh?"评分 ":"Score ")+number(std::round(double(candidate.score)*10.)/10.)+" · "+std::to_string(candidate.progression.size())+
                     (zh?" 和弦":" chords"),cg.facts,10,secondary,kRightText);
                 text(dc,t(titles[group])+" · "+(zh?"已保留骨架 ":"skeleton ")+number(candidate.skeletonPreservation),cg.location,10,secondary);
                 std::string badges;for(const auto technique:candidate.techniques){if(!badges.empty())badges+=" · ";badges+=t("technique."+std::string(enrichment::techniqueName(technique)));}
@@ -317,8 +438,6 @@ void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult
                 cy+=298;
             }
             end=cy;
-        }
-        cy+=12;end=cy;
     }
     compactInCards_=false;
     }
@@ -352,12 +471,13 @@ void MainView::drawCompactTransport(CDrawContext* dc){
     compactButton(dc,{fl+228,by,fl+310,by+30},number(auditionCustom_?auditionBpm_:auditionEffectiveBpm_)+" BPM",CompactAction::Tempo);
     text(dc,auditionCustom_?(zh?"仅影响试听":"Audition only"):auditionHostValid_?(zh?"宿主速度有效":"Host tempo valid"):(zh?"宿主不可用 · 回退 ":"Host unavailable · fallback ")+number(auditionEffectiveBpm_),
         {fl+318,by,fr,by+30},10,secondary);
-    if(g.narrow)text(dc,zh?"试听范围与 MIDI 导出独立 · 改速后重播":"Audition and MIDI are independent · tempo restarts playback",{fl,by+35,fr,by+57},10,secondary);
+    if(state_.tab==session::Tab::Recommend)drawBrowseControls(dc,g);
+
 }
 
 bool MainView::onCompactMouseDown(CPoint& where){
     if(form_!=Form::None)return false;
-    if(state_.productMode==session::ProductMode::Enrich&&compactDetailRect_.contains(where.x,where.y))return false;
+    if(!overviewOpen_&&state_.productMode==session::ProductMode::Enrich&&compactDetailRect_.contains(where.x,where.y))return false;
     for(const auto& h:compactHits_)if(h.contains(where)){
         if(!h.enabled)return true;
         compactPressed_=h.rect;
@@ -396,37 +516,17 @@ bool MainView::onCompactMouseDown(CPoint& where){
             } else if(c){if(selectedCandidate_&&selectedCandidate_->first==compactGroup_&&selectedCandidate_->second==index)selectedCandidate_.reset();
                 else{selectedCandidate_={{compactGroup_,index}};selectedChord_.reset();selectedEnrichment_.reset();inspectorScroll_=0;}}
             break;
-        case CompactAction::Intent:state_.productMode=session::ProductMode::Continue;compactGroup_=index;compactExtra_.clear();compactSelected_.clear();selectedCandidate_.reset();selectedEnrichment_.reset();compactScroll_=0;
-            {constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};state_.intent=intents[index];notifyState();}break;
-        case CompactAction::Enrichment:state_.productMode=session::ProductMode::Enrich;compactSelected_.clear();selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();compactScroll_=0;notifyState();break;
-        case CompactAction::More:{
-            if(state_.productMode==session::ProductMode::Enrich){
-                if(index<enrichments_.groups.size()){
-                    const auto group=index;const auto& candidates=enrichments_.groups[group];
-                    std::vector<std::size_t> refs=enrichmentOrder(group);std::vector<std::string> labels;
-                    for(const auto i:refs){const auto& candidate=candidates[i];std::string path;
-                        for(const auto& event:candidate.progression){if(!path.empty())path+=" → ";path+=event.name;}
-                        labels.push_back(number(std::round(candidate.score*10)/10)+" · "+path);}
-                    const auto revision=state_.imported.revision,generation=generation_;const auto choice=popup(labels,where);
-                    if(choice>=0&&static_cast<std::size_t>(choice)<refs.size()&&revision==state_.imported.revision&&
-                       generation==generation_&&!workerBusy_&&recommendationResultReady_){
-                        const auto originalIndex=refs[choice];const auto& original=candidates[originalIndex];const auto& current=enrichments_.groups[group];
-                        const auto found=std::find_if(current.begin(),current.end(),[&](const auto& item){return item.id==original.id&&item.fingerprint==original.fingerprint;});
-                        if(found!=current.end()){const auto resolved=static_cast<std::size_t>(found-current.begin());
-                            selectedEnrichment_={{group,resolved}};selectedCandidate_.reset();selectedChord_.reset();
-                            compactSelected_=found->id;compactScroll_=0;inspectorScroll_=0;}
-                    }
-                }
-                break;
-            }
-            std::vector<std::pair<std::size_t,std::size_t>> refs;std::vector<std::string> labels;
-            for(std::size_t group=0;group<4;++group){const auto access=session::continuationAccess(recommendations_.groups[group]);
-                for(const auto i:access.more){const auto& candidate=recommendations_.groups[group][i];std::string path;
-                    for(const auto& e:candidate.continuation){if(!path.empty())path+=" → ";path+=e.label;}
-                    refs.emplace_back(group,i);labels.push_back((candidate.exploratory?(zh?std::string("探索 · "):std::string("Explore · ")):tIntent(candidate.intent)+" · ")+path);}}
-            const auto revision=state_.imported.revision,generation=generation_;const auto choice=popup(labels,where);
-            if(choice>=0&&static_cast<std::size_t>(choice)<refs.size()&&revision==state_.imported.revision&&generation==generation_&&!workerBusy_&&recommendationResultReady_){
-                const auto [group,i]=refs[choice];compactGroup_=group;compactExtra_=recommendations_.groups[group][i].id;compactSelected_=compactExtra_;compactScroll_=0;selectedCandidate_.reset();}break;}
+        case CompactAction::Intent:changeBrowseCategory(index);break;
+        case CompactAction::Enrichment:changeBrowseCategory(4);break;
+        case CompactAction::Overview:overviewOpen_=true;overviewScroll_=0;midiPending_.reset();midiClick_={};break;
+        case CompactAction::OverviewClose:overviewOpen_=false;break;
+        case CompactAction::OverviewCopy:CClipboard::setString(recommendationListText().c_str());break;
+        case CompactAction::OverviewSelect:{
+            focusBrowseEntry(index);break;}
+        case CompactAction::PagePrevious:case CompactAction::PageNext:{
+            auto& page=browsePages_[browseCategory()];if(action==CompactAction::PagePrevious){if(page)--page;}else ++page;
+            page=browsePage(browseRows().size(),page).page;compactScroll_=0;
+            selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();midiPending_.reset();midiClick_={};break;}
         case CompactAction::Play:if(!workerBusy_&&recommendationResultReady_){if(state_.productMode==session::ProductMode::Enrich){if(const auto* selected=findEnrichment(compactSelected_);selected&&actions_.auditionEnrichment)actions_.auditionEnrichment(*selected);}else if(const auto* selected=findCandidate(compactSelected_);selected&&actions_.audition&&continuationRoute(*selected))actions_.audition(*selected);}break;
         case CompactAction::Stop:if(actions_.stopAudition)actions_.stopAudition();actionStatus_=zh?"试听已停止":"Audition stopped";break;
         case CompactAction::TempoMode:auditionCustom_=!auditionCustom_;settings();break;
@@ -444,11 +544,14 @@ bool MainView::onCompactMouseDown(CPoint& where){
             // Existing advanced handlers retain actual curve/library/diagnostic operations.
             const auto n=popup({zh?"色彩偏好":"Color preference",zh?"旋律约束":"Melody constraint",zh?"和声倾向":"Harmonic tendency",zh?"固定 / 取消固定当前候选":"Pin / unpin selected",zh?"查看固定候选":"Pinned candidates",zh?"设置 / 诊断 / About":"Settings / Diagnostics / About"},where);
             if(n==3){if(const auto* selected=findCandidate(compactSelected_)){if(state_.unpin(selected->id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==selected->id;});else if(state_.pin(selected->id,session::continuationFingerprint(*selected)))pinnedSnapshots_.push_back(*selected);notifyState();}}
-            else if(n==4){std::vector<std::string> names;for(const auto& pin:pinnedSnapshots_)names.push_back(pin.primaryTemplate+" · "+formatKey(pin.key));const auto picked=popup(names,where);if(picked>=0&&static_cast<std::size_t>(picked)<pinnedSnapshots_.size()){compactExtra_=pinnedSnapshots_[picked].id;compactSelected_=compactExtra_;for(std::size_t group=0;group<4;++group)for(const auto& candidate:recommendations_.groups[group])if(candidate.id==compactExtra_)compactGroup_=group;compactScroll_=0;}}
+            else if(n==4){std::vector<std::string> names;for(const auto& pin:pinnedSnapshots_)names.push_back(pin.primaryTemplate+" · "+formatKey(pin.key));const auto picked=popup(names,where);if(picked>=0&&static_cast<std::size_t>(picked)<pinnedSnapshots_.size()){const auto target=pinnedSnapshots_[picked].id;refreshBrowse();bool found=false;
+                for(std::size_t group=0;group<4;++group)for(std::size_t rank=0;rank<browseRows_[group].size();++rank){const auto& row=browseRows_[group][rank];if(recommendations_.groups[group][row.index].id==target){changeBrowseCategory(group);browsePages_[group]=rank/recommendationPageSize;compactSelected_=target;compactScroll_=0;found=true;}}
+                if(!found)actionStatus_=zh?"固定候选不在本次合格结果中":"Pinned candidate is not qualified in the current result";}}
             else if(n>=0){const auto control=n==0?layout_.constraintControls[3]:n==1?layout_.constraintControls[0]:n==2?layout_.constraintControls[2]:layout_.topControls[3];CPoint oldPoint{(control.left+control.right)/2,(control.top+control.bottom)/2};onMouseDownResponsive(oldPoint);}break;}
         }
         invalid();return true;
     }
+    if(overviewOpen_){if(!overviewRect_.contains(where.x,where.y)){overviewOpen_=false;invalid();}return true;}
     if(state_.tab!=session::Tab::Recommend)return false;
     if(state_.productMode==session::ProductMode::Enrich){
         if(compactDetailRect_.contains(where.x,where.y))return false;
@@ -459,11 +562,103 @@ bool MainView::onCompactMouseDown(CPoint& where){
     return true;
 }
 
+bool MainView::runBrowseSmoke(CDrawContext* dc,const std::function<void(const std::string&)>& capture){
+    if(!dc||workerBusy_||!recommendationResultReady_)return false;
+    const auto savedUi=captureEditorUiState();const auto savedState=state_;const auto savedRec=recommendations_;
+    const auto savedMatches=matches_;const auto savedActions=actions_;const auto savedSelection=compactSelected_;
+    const auto savedSnapshot=snapshotMode_;const auto savedGeneration=generation_;
+    bool okay=true;
+    const auto require=[&](bool value,const char* stage){if(!value)throw std::runtime_error(stage);};
+    const auto paint=[&]{dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();};
+    const auto click=[&](CompactAction action,std::optional<std::size_t> rank={}){
+        const auto it=std::find_if(compactHits_.begin(),compactHits_.end(),[&](const auto& h){return h.action==action&&h.enabled&&(!rank||h.index==*rank);});
+        require(it!=compactHits_.end(),"browser control missing");const auto hit=*it;
+        CPoint p{(hit.rect.left+hit.rect.right)/2*userZoom(),(hit.rect.top+hit.rect.bottom)/2*userZoom()};
+        onMouseDown(p,CButtonState{kLButton});onMouseUp(p,CButtonState{kLButton});
+    };
+    try {
+        actions_.stateChanged={};state_.uiZoomPercent=100;state_.tab=session::Tab::Recommend;
+        state_.productMode=session::ProductMode::Continue;compactGroup_=0;detailedCards_=false;compactScroll_=0;
+        snapshotMode_=false;selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();browsePages_.fill(0);browseDirty_=true;
+        const ContinuationCandidate* seed{};for(const auto& g:savedRec.groups)if(!g.empty()){seed=&g.front();break;}
+        require(seed,"browser test needs a real realized source");
+        for(const auto count:{0u,1u,3u,4u,10u,11u,20u,21u}){
+            RecommendationSet fixture;
+            // Presentation-only fixtures exercise identities and boundaries. They do not enter the matcher.
+            for(std::size_t i=0;i<count;++i){auto c=*seed;c.id="browser-fixture-"+std::to_string(i);c.intent=PhraseIntent::Resolve;c.exploratory=i%4==3;fixture.groups[0].push_back(c);}
+            setRecommendations(fixture);compactSelected_.clear();compactScroll_=0;browsePages_[0]=0;
+            const auto& rows=browseRows();require(rows.size()==count,"browser lost qualified candidates");
+            std::vector<std::string> visited;
+            const auto pageCount=browsePage(count,0).pages;
+            for(std::size_t page=0;page<pageCount;++page){
+                require(browsePages_[0]==page,"next page state");paint();const auto range=browsePage(count,page);
+                for(auto i=range.begin;i<range.end;++i)visited.push_back(recommendations_.groups[0][rows[i].index].id);
+                if(page+1<pageCount){click(CompactAction::PageNext);paint();}
+            }
+            std::sort(visited.begin(),visited.end());require(visited.size()==count&&std::adjacent_find(visited.begin(),visited.end())==visited.end(),"pages duplicate or omit candidates");
+            paint();click(CompactAction::Overview);paint();require(overviewOpen_,"overview opens");
+            const auto list=recommendationListText();std::size_t position{};
+            for(const auto& row:rows){const auto id="id="+recommendations_.groups[row.group][row.index].id+" |";
+                const auto found=list.find(id,position);require(found!=std::string::npos,"overview copy misses or reorders a card");position=found+id.size();}
+            if(count){click(CompactAction::OverviewSelect,0);paint();require(!overviewOpen_&&browsePages_[0]==0,"overview locates correct page");}
+            else {click(CompactAction::OverviewClose);paint();}
+        }
+        // Loading Session intent and replacing results must restore a valid category/object.
+        auto restoredState=state_;restoredState.intent=PhraseIntent::Color;setSessionState(restoredState);
+        require(compactGroup_==3,"Session restores the saved browsing category");
+        compactGroup_=0;browseSelected_[0]="removed-candidate";compactSelected_="removed-candidate";
+        setRecommendations({});paint();changeBrowseCategory(1);changeBrowseCategory(0);paint();
+        require(compactSelected_.empty()&&browseSelected_[0].empty(),"removed selection cannot survive a refresh");
+        // Real data: overview, category state and page actions all resolve the original candidate.
+        setRecommendations(savedRec);matches_=savedMatches;compactSelected_.clear();browsePages_.fill(0);compactScroll_=0;
+        std::size_t selectedGroup{};for(std::size_t g=0;g<4;++g)if(savedRec.groups[g].size()>savedRec.groups[selectedGroup].size())selectedGroup=g;
+        compactGroup_=selectedGroup;paint();const auto count=browseRows().size();require(count>0,"actual list empty");
+        std::string auditionId,midiId;actions_.audition=[&](const auto& c){auditionId=c.id;};
+        actions_.midiPayload=[&](const auto& c){midiId=c.id;const auto route=continuationRoute(c);if(!route)return midi::PayloadResult{{},route.error};
+            midi::CandidateExportContext context{route.imported,120,{route.meterNumerator,route.meterDenominator}};return midi::candidatePayload(context,route.candidate);};
+        actions_.saveMidiPayload=[](const auto&){return std::string("browser smoke");};paint();
+        click(CompactAction::Select);const auto expected=compactSelected_;
+        click(CompactAction::Audition);click(CompactAction::Midi);
+        require(auditionId==expected&&midiId==expected,"selected audition/MIDI identity");
+        click(CompactAction::Details);paint();require(selectedCandidate()&&selectedCandidate()->id==expected,"detail identity");
+        click(CompactAction::Details);paint();
+        if(count>recommendationPageSize){
+            click(CompactAction::PageNext);paint();click(CompactAction::Select);const auto nextId=compactSelected_;
+            click(CompactAction::Audition);click(CompactAction::Midi);click(CompactAction::Details);paint();
+            require(nextId!=expected&&auditionId==nextId&&midiId==nextId&&selectedCandidate()&&selectedCandidate()->id==nextId,"second-page action identity");
+            click(CompactAction::PagePrevious);paint();require(!selectedCandidate_,"paging closes the old detail object");
+            focusBrowseEntry(0);paint();
+        }
+        click(CompactAction::Overview);paint();
+        if(capture)capture("recommendation-overview.png");
+        KeyboardEvent escape;escape.type=EventType::KeyDown;escape.virt=VirtualKey::Escape;onKeyboardEvent(escape);
+        require(escape.consumed&&!overviewOpen_,"Escape closes overview");paint();
+        if(capture)capture("recommendation-list.png");
+        const auto before=captureEditorUiState();changeBrowseCategory(4);paint();changeBrowseCategory(selectedGroup);paint();
+        require(compactSelected_==expected&&browsePages_[selectedGroup]==before.browsePages[selectedGroup],"category returns to selected object/page");
+        const auto restore=captureEditorUiState();restoreEditorUiState(restore);paint();require(compactSelected_==expected,"editor reopen browse identity");
+        bool capturedInsertion=false,capturedSkip=false;
+        for(std::size_t g=0;g<4;++g)for(std::size_t rank=0;rank<browseRows_[g].size();++rank){const auto& row=browseRows_[g][rank];const auto& c=recommendations_.groups[g][row.index];
+            const auto m=std::find_if(matches_.begin(),matches_.end(),[&](const auto& value){return representativeMatch(c,value);});
+            if(m==matches_.end())continue;
+            const auto cells=recommendationAlignment(state_.imported,c,*m);
+            const auto insertion=std::any_of(cells.begin(),cells.end(),[](const auto& cell){return cell.kind==AlignmentCellKind::InputInsertion;});
+            if(insertion&&capture&&!capturedInsertion){compactGroup_=g;detailedCards_=true;focusBrowseEntry(rank);paint();capture("R01-input-insertion.png");capturedInsertion=true;}
+            const auto skip=std::any_of(cells.begin(),cells.end(),[](const auto& cell){return cell.kind==AlignmentCellKind::TemplateSkip;});
+            if(skip&&capture&&!capturedSkip){compactGroup_=g;detailedCards_=true;focusBrowseEntry(rank);paint();capture("template-skip.png");capturedSkip=true;}
+        }
+        overviewOpen_=true;setWorkerStatus(savedGeneration+1,0,true,factoryCount_,userCount_,false);require(!overviewOpen_&&!midiPending_,"new work invalidates modal and MIDI gesture");
+    } catch(const std::exception& e){std::fprintf(stderr,"Browse smoke: %s\n",e.what());okay=false;}
+    actions_=savedActions;state_=savedState;matches_=savedMatches;setRecommendations(savedRec);snapshotMode_=savedSnapshot;
+    generation_=savedGeneration;workerBusy_=false;recommendationResultReady_=true;restoreEditorUiState(savedUi);compactSelected_=savedSelection;
+    overviewOpen_=false;paint();return okay;
+}
+
 bool MainView::runCompactSmoke(CDrawContext* dc){
     if(!dc||workerBusy_||!recommendationResultReady_)return false;
     const auto savedActions=actions_;const auto savedState=state_;const auto savedUi=captureEditorUiState();
     const auto oldSize=getViewSize();const auto savedGroup=compactGroup_;const auto savedSelected=compactSelected_;
-    const auto savedExtra=compactExtra_,savedStatus=actionStatus_;const auto oldGeneration=generation_;
+    const auto savedStatus=actionStatus_;const auto oldGeneration=generation_;
     const bool savedSnapshotMode=snapshotMode_;
     std::size_t auditions=0,stops=0,settings=0,payloads=0,saves=0,enrichmentAuditions=0,enrichmentPayloads=0;
     std::string auditionId,enrichmentId;bool routeProjection=false;
@@ -494,11 +689,11 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
         onMouseDown(point,CButtonState{kLButton});onMouseUp(point,CButtonState{kLButton});};
     const auto checkpoint=[&](const char* stage){if(!okay)throw std::runtime_error(stage);};
     try{
-        state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;
+        state_.tab=session::Tab::Recommend;state_.productMode=session::ProductMode::Continue;browsePages_.fill(0);
         const auto presentation=continuationPresentation();bool found=false;
         for(std::size_t group=0;group<4;++group)if(!presentation[group].empty()){compactGroup_=group;found=true;break;}
         const auto continuationGroup=compactGroup_;
-        okay=okay&&found;compactSelected_.clear();selectedCandidate_.reset();compactExtra_.clear();detailedCards_=false;compactScroll_=0;
+        okay=okay&&found;compactSelected_.clear();selectedCandidate_.reset();detailedCards_=false;compactScroll_=0;
         for(const auto zoom:{100u,125u,150u}){
             state_.uiZoomPercent=zoom;resizeLayout(800,780);paint();
             const auto g=computeCompactLayout(800,780,userZoom());
@@ -552,15 +747,17 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
         checkpoint("continuation transport, MIDI and details");
         const auto access=session::continuationAccess(recommendations_.groups[1]);
         for(const auto i:access.more)if(recommendations_.groups[1][i].exploratory){
-            compactGroup_=1;compactExtra_=recommendations_.groups[1][i].id;compactSelected_=compactExtra_;selectedCandidate_.reset();compactScroll_=0;paint();
-            okay=okay&&get(CompactAction::More).has_value()&&get(CompactAction::Midi)&&get(CompactAction::Midi)->id==compactExtra_;break;}
+            compactGroup_=1;compactSelected_=recommendations_.groups[1][i].id;selectedCandidate_.reset();compactScroll_=0;
+            const auto& rows=browseRows();const auto chosen=std::find_if(rows.begin(),rows.end(),[&](const auto& r){return r.index==i;});
+            if(chosen==rows.end()){okay=false;break;}browsePages_[1]=(chosen-rows.begin())/recommendationPageSize;paint();
+            okay=okay&&get(CompactAction::Overview).has_value()&&get(CompactAction::Midi).has_value();break;}
         const auto stale=get(CompactAction::Midi);const auto count=payloads;
         setWorkerStatus(generation_+1,0,true,factoryCount_,userCount_,false);paint();
         if(stale){CPoint point{(stale->rect.left+stale->rect.right)/2,(stale->rect.top+stale->rect.bottom)/2};onMouseDown(point,CButtonState{kLButton});}
         okay=okay&&payloads==count&&!get(CompactAction::Midi)&&!get(CompactAction::Play);
     }catch(const std::exception& error){std::fprintf(stderr,"Compact smoke: %s\n",error.what());okay=false;}
     catch(...){okay=false;}
-    actions_=savedActions;state_=savedState;restoreEditorUiState(savedUi);compactGroup_=savedGroup;compactSelected_=savedSelected;compactExtra_=savedExtra;
+    actions_=savedActions;state_=savedState;restoreEditorUiState(savedUi);compactGroup_=savedGroup;compactSelected_=savedSelected;
     snapshotMode_=savedSnapshotMode;
     generation_=oldGeneration;workerBusy_=false;recommendationResultReady_=true;auditionCustom_=false;auditionSuffix_=false;actionStatus_=savedStatus;
     detailedCards_=false;compactScroll_=0;selectedCandidate_.reset();resizeLayout(static_cast<int>(oldSize.getWidth()),static_cast<int>(oldSize.getHeight()));

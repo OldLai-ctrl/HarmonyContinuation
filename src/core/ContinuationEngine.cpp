@@ -576,13 +576,15 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
     }
     for (auto& group:result.groups) {
-        // Exploration shares More's existing bounded list, after supported routes.
+        // Supported routes retain priority over exploration in the complete list.
         std::sort(group.begin(),group.end(),[](const auto& a,const auto& b) {
             if (a.exploratory!=b.exploratory) return !a.exploratory;
             return higherRank(a,b);
         });
-        for (std::size_t i=w.perGroup;i<group.size();++i) mark(group[i],"retained_limit");
-        if (group.size()>w.perGroup) group.resize(w.perGroup);
+        if (w.perGroup>0) {
+            for (std::size_t i=w.perGroup;i<group.size();++i) mark(group[i],"retained_limit");
+            if (group.size()>w.perGroup) group.resize(w.perGroup);
+        }
         for (const auto& c:group) mark(c,c.exploratory?"EXPLORATORY_RETAINED":"TARGET_RETAINED");
         result.stats.output+=group.size();
     }
