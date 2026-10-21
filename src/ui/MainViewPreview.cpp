@@ -102,7 +102,7 @@ void MainView::drawRelativeColorCurve(CDrawContext* dc,const preview::SourceRout
         const auto x=timelineX(display);dc->setFrameColor(cursorColor);dc->setLineWidth(1.5);dc->drawLine({x,plot.top},{x,plot.bottom-8});
         dc->setFillColor(cursorColor);dc->setFrameColor(cursorColor);
         dc->drawPolygon({{x-5,plot.bottom-8},{x+5,plot.bottom-8},{x,plot.bottom-1}},kDrawFilledAndStroked);
-        cursorHit={x-11,plot.top,x+11,plot.bottom};cursorHit.bound(rect(plot));
+        cursorHit={x-11,plot.top,x+11,plot.bottom};cursorHit.bound(CRect{plot.left,plot.top,plot.right,plot.bottom});
     }
     if(inferredTime&&!missing)label(zh?"OPEN：按试听规划时值":"OPEN: planned preview timing",{plot.left+5,area.top+14,area.right-110,area.top+28});
     if(missing)label(zh?"数据不足的节点留空":"Unavailable nodes are left blank",{plot.left+5,area.top+14,area.right-110,area.top+28});

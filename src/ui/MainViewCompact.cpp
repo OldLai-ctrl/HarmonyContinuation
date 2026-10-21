@@ -996,11 +996,11 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
                     const auto scrolled=std::find_if(seekHits_.begin(),seekHits_.end(),[&](const auto& h){return h.id==expectedId&&h.cursorRect.getWidth()>0;});
                     okay=okay&&scrolled!=seekHits_.end()&&std::abs(scrolled->originX-(syntheticBand.left-offset))<1e-7;
                     if(scrolled!=seekHits_.end()){
-                        const auto scrollHit=*scrolled;point={(scrollHit.cursorRect.left+scrollHit.cursorRect.right)*.5,scrollHit.cursorRect.top+2};
-                        onMouseDown(point,CButtonState{kLButton});okay=okay&&seekGesture_.has_value();
-                        point.x=syntheticBand.right-8;onMouseMoved(point,CButtonState{kLButton});
-                        const auto scrollQN=std::clamp((point.x-scrollHit.originX)/scrollHit.width*scrollHit.totalQN,scrollHit.minimumQN,scrollHit.totalQN);
-                        onMouseUp(point,CButtonState{});okay=okay&&seeks==5&&std::abs(soughtQN-scrollQN)<1e-7&&!seekGesture_;
+                        const auto scrollHit=*scrolled;CPoint scrollPoint{(scrollHit.cursorRect.left+scrollHit.cursorRect.right)*.5,scrollHit.cursorRect.top+2};
+                        onMouseDown(scrollPoint,CButtonState{kLButton});okay=okay&&seekGesture_.has_value();
+                        scrollPoint.x=syntheticBand.right-8;onMouseMoved(scrollPoint,CButtonState{kLButton});
+                        const auto scrollQN=std::clamp((scrollPoint.x-scrollHit.originX)/scrollHit.width*scrollHit.totalQN,scrollHit.minimumQN,scrollHit.totalQN);
+                        onMouseUp(scrollPoint,CButtonState{});okay=okay&&seeks==5&&std::abs(soughtQN-scrollQN)<1e-7&&!seekGesture_;
                     }
                 }
             }
