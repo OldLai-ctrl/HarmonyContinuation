@@ -1,6 +1,7 @@
 #pragma once
 #include "core/CurrentChordLocator.h"
 #include "core/ContinuationEngine.h"
+#include "enrichment/EnrichmentProvenance.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "localization/Localization.h"
 #include "session/PluginSessionState.h"
@@ -17,6 +18,7 @@
 #include "midi/MidiWorkflow.h"
 #include "preview/PreviewSequence.h"
 #include "preview/PreviewTransport.h"
+#include "vstgui/lib/ccolor.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -43,7 +45,7 @@ public:
         std::size_t browseCategory{};
         color::Preference colorPreference{color::Preference::Off};
     };
-    void prepareForDetach() { seekGesture_.reset();actions_={};midiPending_.reset();midiClick_={}; }
+    void prepareForDetach() { seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;actions_={};midiPending_.reset();midiClick_={}; }
     EditorUiState captureEditorUiState() const;
     void restoreEditorUiState(const EditorUiState&);
     struct Actions {
@@ -181,10 +183,14 @@ private:
         std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
     void drawCompactRibbon(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,UiRect);
     void drawRelativeColorCurve(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,std::optional<KeySignature>,UiRect);
-    struct SeekHit { VSTGUI::CRect rect;std::string id;double originX{},width{},totalQN{},minimumQN{}; };
+    static VSTGUI::CColor enrichmentProvenanceColor(enrichment::EnrichmentProvenanceKind,bool accent=false) noexcept;
+    static double relativeColorTimelineX(double left,double width,double qn,double totalQN) noexcept;
+    struct SeekHit { VSTGUI::CRect rect;std::string id;double originX{},width{},totalQN{},minimumQN{};VSTGUI::CRect cursorRect; };
     struct SeekGesture { SeekHit hit;std::uint64_t generation{};double targetQN{}; };
     std::vector<SeekHit> seekHits_;
     std::optional<SeekGesture> seekGesture_;
+    std::string previewSeekHoverId_;
+    bool previewSeekCursorHover_{};
     bool beginPreviewSeek(VSTGUI::CPoint);
     void movePreviewSeek(VSTGUI::CPoint);
     double previewDisplayQN(const std::string&) const;
