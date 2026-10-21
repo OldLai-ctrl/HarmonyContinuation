@@ -11,6 +11,8 @@
 #include "session/ProductServices.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "preview/PreviewSequence.h"
+#include "preview/PreviewExchange.h"
+#include "preview/WindowsPreview.h"
 #include "midi/MidiWorkflow.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include <cstdint>
@@ -30,6 +32,9 @@ struct PreviewStatus {
     bool hostValid{};
     harmony::preview::PreviewScope scope{harmony::preview::PreviewScope::Full};
     bool active{};
+    harmony::preview::PlaybackState state{harmony::preview::PlaybackState::Stopped};
+    bool hostBackend{true};
+    bool hostAvailable{},pending{};
 };
 class Controller final : public Steinberg::Vst::EditController {
 public:
@@ -52,10 +57,16 @@ public:
     void auditionEnrichment(const harmony::enrichment::EnrichmentCandidate&) noexcept;
     void pollPreview() noexcept;
     void stopPreview() noexcept;
+    void pausePreview() noexcept;
+    void resumePreview() noexcept;
+    void setPreviewBackend(bool host) noexcept;
+    void seekPreview(const std::string& candidateId,double positionQN) noexcept;
     void setPreviewSettings(harmony::preview::PreviewTempoMode,double customBPM,
                            harmony::preview::PreviewScope) noexcept;
     PreviewStatus previewStatus() const noexcept;
-    bool previewActive() const noexcept { return !previewCandidateId_.empty(); }
+    bool previewActive() const noexcept {
+        return previewPlaybackState_!=harmony::preview::PlaybackState::Stopped||previewPending_;
+    }
     std::string exportMidi(const harmony::ContinuationCandidate&, void* owner) noexcept;
     std::string exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate&, void* owner) noexcept;
     harmony::midi::PayloadResult midiPayload(const harmony::ContinuationCandidate&) const;
@@ -81,8 +92,8 @@ public:
 private:
     host::HostEnvironment hostEnvironment_;
     std::unique_ptr<HostAdapter> hostAdapter_{makeHostAdapter(host::HostFamily::GenericVst3)};
+    std::unique_ptr<harmony::preview::WindowsPreview> windowsPreview_;
     std::unique_ptr<io::AsyncMidiImport> midiImportWorker_;
-    host::PreviewOwnership previewOwnership_;
     harmony::enrichment::EnrichmentResult enrichments_;
     std::optional<harmony::ui::MainView::EditorUiState> editorUiState_;
     void pollMidiImport();
@@ -125,14 +136,41 @@ private:
         std::string fingerprint;
         float rankingScore{};
     };
-    std::filesystem::path previewFile_;
     std::string previewCandidateId_;
     std::optional<PreviewTarget> previewTarget_;
-    double previewBPMAtStart_{}, previewStartQN_{}, previewTotalQN_{}, previewSeconds_{};
-    std::chrono::steady_clock::time_point previewStarted_{};
+    harmony::preview::PreparedPreview preparedPreview_{};
+    bool preparedPreviewValid_{};
+    std::uint64_t previewSerial_{},previewClipId_{},previewSeekId_{};
+    harmony::preview::PlaybackState previewPlaybackState_{harmony::preview::PlaybackState::Stopped};
+    harmony::preview::AudioBackend previewBackend_{harmony::preview::AudioBackend::Host};
+    harmony::preview::AudioBackend activePreviewBackend_{harmony::preview::AudioBackend::Host};
+    bool activePreviewBackendValid_{},previewAvailable_{},previewPending_{},previewBackendManual_{};
+    double previewBPMAtStart_{},previewStartQN_{},previewTotalQN_{},previewPositionQN_{};
+    harmony::preview::TransportFeedback hostPreviewFeedback_{},windowsPreviewFeedback_{};
+    bool hostPreviewFeedbackSeen_{},hostPreviewMuted_{true},hostPreviewQuiescent_{},windowsPreviewFeedbackSeen_{},windowsDeviceConfirmed_{};
+    std::uint64_t lastHostBlocks_{},hostCommandBlockBaseline_{};
+    std::chrono::steady_clock::time_point lastHostOutputBlock_{},hostPreviewStatusAt_{},previewCommandStarted_{};
+    enum class PreviewTransitionPhase : std::uint8_t { None, StopCurrent, SwitchStop, SwitchStart };
+    struct PreviewTransition {
+        PreviewTransitionPhase phase{PreviewTransitionPhase::None};
+        harmony::preview::AudioBackend target{harmony::preview::AudioBackend::Host};
+        harmony::preview::PlaybackState state{harmony::preview::PlaybackState::Stopped};
+        double positionQN{};
+        std::uint64_t serial{},blockBaseline{};
+        std::chrono::steady_clock::time_point deadline{};
+    } previewTransition_;
     double effectivePreviewBPM() const noexcept;
-    void playPreview(const PreviewTarget&, const harmony::preview::BuildResult&) noexcept;
-    void replayPreview(const PreviewTarget&) noexcept;
+    void playPreview(const PreviewTarget&,const harmony::preview::BuildResult&,
+                     harmony::preview::PlaybackState,std::optional<double>) noexcept;
+    void replayPreview(const PreviewTarget&,harmony::preview::PlaybackState,double) noexcept;
+    bool ensureWindowsPreview() noexcept;
+    bool submitPreviewState(harmony::preview::AudioBackend,harmony::preview::PlaybackState,
+                            double positionQN,bool seek) noexcept;
+    double currentPreviewPosition() const noexcept;
+    bool hostPreviewFresh(std::chrono::steady_clock::time_point) const noexcept;
+    void updatePreviewUi() noexcept;
+    void advancePreviewTransition(std::chrono::steady_clock::time_point) noexcept;
+    bool buildPreviewTarget(const std::string&,PreviewTarget&,harmony::preview::BuildResult&) const;
     void submitRecommendation(bool rankingOnly = false);
     bool currentCandidate(const harmony::ContinuationCandidate&) const;
     bool currentCandidate(const harmony::enrichment::EnrichmentCandidate&) const;

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.10.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.14" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_PRERELEASE "dev.15" CACHE STRING "Product prerelease suffix (empty for a release)")
 set(HC_FACTORY_LIBRARY_VERSION 5 CACHE STRING "Versioned Factory content; V4 remains frozen")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
@@ -106,7 +106,7 @@ if(HC_BUILD_PLUGIN)
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
         src/plugin/RecommendationWorker.cpp src/plugin/HostAdapters.cpp
-        src/ui/MainView.cpp src/ui/MainViewCompact.cpp)
+        src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
     endif()
@@ -132,7 +132,8 @@ add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAna
 target_link_libraries(harmony_core PUBLIC harmony_version)
 target_include_directories(harmony_core PUBLIC src)
 target_compile_features(harmony_core PUBLIC cxx_std_20)
-add_library(harmony_color STATIC src/color/HarmonyColorAnalyzer.cpp src/color/ColorPreferenceReranker.cpp)
+add_library(harmony_color STATIC src/color/HarmonyColorAnalyzer.cpp src/color/ColorPreferenceReranker.cpp
+    src/color/RelativeColorCurve.cpp)
 target_link_libraries(harmony_color PUBLIC harmony_core)
 target_compile_features(harmony_color PUBLIC cxx_std_20)
 if(MSVC)
@@ -181,7 +182,10 @@ if(MSVC)
 endif()
 add_library(harmony_preview STATIC src/preview/PreviewSequence.cpp
     src/preview/PreviewSynth.cpp src/preview/OfflinePreviewRenderer.cpp
-    src/preview/VoiceLeadingMetrics.cpp)
+    src/preview/VoiceLeadingMetrics.cpp src/preview/PreviewTransport.cpp src/preview/WindowsPreview.cpp)
+if(WIN32)
+    target_link_libraries(harmony_preview PUBLIC winmm)
+endif()
 target_link_libraries(harmony_preview PUBLIC harmony_core)
 target_include_directories(harmony_preview PUBLIC src)
 target_compile_features(harmony_preview PUBLIC cxx_std_20)
@@ -249,7 +253,7 @@ add_executable(benchmark_compare tools/benchmark_compare.cpp)
 target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
-        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp)
+        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
     target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment harmony_host harmony_io vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
@@ -545,7 +549,7 @@ if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
     target_link_libraries(hc_sdk_host_loader PUBLIC sdk_hosting)
     target_compile_features(hc_sdk_host_loader PRIVATE cxx_std_17)
     add_executable(HostContractHarness tests/HostContractHarness.cpp
-        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp
 )
     target_link_libraries(HostContractHarness PRIVATE harmony_host harmony_io harmony_product harmony_xml harmony_snapshot hc_sdk_host_loader vstgui_support winmm)
     target_link_libraries(HostContractHarness PRIVATE harmony_color)

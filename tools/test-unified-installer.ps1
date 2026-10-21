@@ -1,4 +1,4 @@
-param([string]$PackageDirectory='build-installer/rc-0.9.0-rc.3-unified', [string]$TestRoot='build-installer/unified-smoke', [string]$BuildDirectory='build-v3-plugin')
+param([string]$PackageDirectory='build-installer/rc-0.9.0-rc.3-unified', [string]$TestRoot='build-installer/unified-smoke', [string]$BuildDirectory='build-v3-plugin', [string]$PreviousPackageDirectory='', [string]$PreviousVersion='')
 $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot
 $root=[IO.Path]::GetFullPath((Join-Path $repo $TestRoot))
@@ -7,16 +7,31 @@ $reg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuat
 $oldReg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-FactoryLibrary-IsolatedTest_is1'
 if ((Test-Path $reg) -or (Test-Path $oldReg)) { throw 'An isolated registration already exists; do not overwrite it.' }
 New-Item -ItemType Directory -Path $root | Out-Null
-$stage=Join-Path $repo "$PackageDirectory/stage-3"
+$header=Get-Content (Join-Path $repo "$BuildDirectory/generated/ProductVersionGenerated.h") -Raw
+if ($header -notmatch 'HC_PRODUCT_FACTORY_LIBRARY_VERSION\s+(\d+)') { throw 'Missing Factory version.' }
+$libraryVersion=$Matches[1]
+$stage=Join-Path $repo "$PackageDirectory/stage-$libraryVersion"
+$manager=Join-Path $stage 'library_manager.exe'
+$info=& $manager inspect (Join-Path $stage 'factory.db')
+if ($LASTEXITCODE -ne 0 -or $info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
+$entryCount=$Matches[1]
 $iscc=Join-Path $repo 'build-installer/tools/Inno/ISCC.exe'
 $version=(Select-String -Path (Join-Path $repo "$BuildDirectory/generated/ProductVersionGenerated.h") -Pattern '^#define HC_PRODUCT_VERSION "([^"]+)"').Matches.Groups[1].Value
 $factoryHash=(Get-FileHash (Join-Path $stage 'factory.db')).Hash
 $legacyHash=(Get-FileHash (Join-Path $repo "$BuildDirectory/factory-v2.db")).Hash
 $script:checks=0
 function Check([bool]$ok,[string]$message) { if (!$ok) { throw $message }; $script:checks++ }
-function Compile([string]$where,[bool]$legacy=$false,[bool]$library=$false) {
+function Compile([string]$where,[bool]$legacy=$false,[bool]$library=$false,[bool]$previous=$false) {
  $output=Join-Path $where 'packages'; New-Item -ItemType Directory -Force -Path $output | Out-Null
- $source=Join-Path $repo 'packaging/UnifiedSetup.iss'; $payload=$stage
+ $source=Join-Path $repo 'packaging/UnifiedSetup.iss'; $payload=$stage;$compileVersion=$version
+ if ($previous) {
+  if (!$PreviousPackageDirectory -or !$PreviousVersion) { throw 'Previous package and exact version are required.' }
+  $payload=Join-Path $repo "$PreviousPackageDirectory/stage-$libraryVersion"
+  $previousInfo=Get-Content (Join-Path $payload 'HarmonyContinuation.vst3/Contents/Resources/moduleinfo.json') -Raw
+  if ($previousInfo -notmatch '"Version":\s*"([^"]+)"' -or $Matches[1] -ne $PreviousVersion) { throw 'Previous payload version mismatch.' }
+  if ((Get-FileHash (Join-Path $payload 'factory.db')).Hash -ne $factoryHash) { throw 'Same-Factory upgrade fixture required.' }
+  $compileVersion=$PreviousVersion
+ }
  if ($legacy) {
   $payload=Join-Path $repo 'build-installer/rc-0.9.0-rc.2/stage-3'
   $source=Join-Path $output 'Legacy.iss'
@@ -25,7 +40,7 @@ function Compile([string]$where,[bool]$legacy=$false,[bool]$library=$false) {
   $text=$text.Replace('InfoBeforeFile=installer-info.txt',('InfoBeforeFile='+$repo+'\packaging\installer-info.txt')).Replace('MessagesFile: "ChineseSimplified.isl"',('MessagesFile: "'+$repo+'\packaging\ChineseSimplified.isl"'))
   [IO.File]::WriteAllText($source,$text,[Text.UTF8Encoding]::new($false))
  }
- $hcArgs=@('/Qp',"/DStageDir=$payload","/DOutputPath=$output","/DProductVersion=$version",'/DLibraryVersion=3',"/DFactoryHash=$factoryHash","/DLegacyFactoryHash=$legacyHash","/DTestRoot=$where")
+ $hcArgs=@('/Qp',"/DStageDir=$payload","/DOutputPath=$output","/DProductVersion=$compileVersion","/DLibraryVersion=$(if($legacy){3}else{$libraryVersion})","/DFactoryEntryCount=$entryCount","/DFactoryHash=$factoryHash","/DLegacyFactoryHash=$legacyHash","/DTestRoot=$where")
  if ($library) { $hcArgs+='/DLibraryOnly' }
  & $iscc @hcArgs $source *> (Join-Path $output ('compile-'+$legacy+'-'+$library+'.log'))
  if ($LASTEXITCODE -ne 0) { throw 'Isolated compiler failed; see compile log.' }
@@ -39,7 +54,7 @@ function Run([string]$exe,[string]$log,[string[]]$extra=@(),[bool]$success=$true
  Check (($process.ExitCode -eq 0) -eq $success) "Unexpected exit $($process.ExitCode): $log"
 }
 function Paths([string]$where) {
- return @{app=(Join-Path $where 'HarmonyContinuation');plugin=(Join-Path $where 'VST3/HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3');db=(Join-Path $where 'Data/Libraries/Factory/3/factory.db');personal=(Join-Path $where 'Data/User/user.db')}
+ return @{app=(Join-Path $where 'HarmonyContinuation');plugin=(Join-Path $where 'VST3/HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3');db=(Join-Path $where "Data/Libraries/Factory/$libraryVersion/factory.db");personal=(Join-Path $where 'Data/User/user.db')}
 }
 $fresh=Join-Path $root 'fresh';$setup=Compile $fresh;$p=Paths $fresh
 New-Item -ItemType Directory -Force (Split-Path $p.personal) | Out-Null
@@ -66,6 +81,31 @@ Run (Join-Path $p.app 'unins000.exe') (Join-Path $fresh 'uninstall.log')
 Check (!(Test-Path $p.plugin) -and !(Test-Path $p.db) -and !(Test-Path $reg)) 'Full uninstall left managed components or registration'
 Check ((Get-FileHash $p.personal).Hash -eq $userHash -and (Test-Path $foreign) -and (Test-Path $inside)) 'Uninstall touched personal/unmanaged data'
 "Fresh and maintenance checks passed: $checks" | Set-Content (Join-Path $root 'fresh-result.txt')
+if ($PreviousPackageDirectory) {
+ $migration=Join-Path $root 'upgrade';$p=Paths $migration
+ $oldSetup=Compile $migration $false $false $true
+ New-Item -ItemType Directory -Force (Split-Path $p.personal),(Join-Path $migration 'Data/Libraries/Factory/4') | Out-Null
+ [IO.File]::WriteAllText($p.personal,'Existing user collection unchanged')
+ $userHash=(Get-FileHash $p.personal).Hash
+ $history=Join-Path $migration 'Data/Libraries/Factory/4/factory.db'
+ Copy-Item -LiteralPath (Join-Path $stage 'official-factory/factory-v4.db') -Destination $history
+ $historyHash=(Get-FileHash $history).Hash
+ Run $oldSetup (Join-Path $migration 'previous-install.log')
+ $oldPluginHash=(Get-FileHash $p.plugin).Hash
+ $setup=Compile $migration
+ Run $setup (Join-Path $migration 'library-only-update.log') @('/OPERATION=modify','/COMPONENTS=library')
+ Check ((Get-FileHash $p.plugin).Hash -eq $oldPluginHash) 'Library-only upgrade changed the old plugin'
+ $lock=[IO.File]::Open($p.plugin,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
+ try { Run $setup (Join-Path $migration 'locked-update.log') @('/COMPONENTS=plugin') $false } finally { $lock.Dispose() }
+ Run $setup (Join-Path $migration 'plugin-update.log') @('/COMPONENTS=plugin')
+ Check ((Get-FileHash $p.plugin).Hash -eq (Get-FileHash (Join-Path $stage 'HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3')).Hash) 'Plugin upgrade identity mismatch'
+ Check ((Get-FileHash $p.db).Hash -eq $factoryHash -and (Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Upgrade changed Factory history or user data'
+ Run (Join-Path $p.app 'unins000.exe') (Join-Path $migration 'uninstall.log')
+ Check (!(Test-Path $reg) -and !(Test-Path $p.plugin) -and !(Test-Path $p.db)) 'Upgraded uninstall left managed components'
+ Check ((Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Upgraded uninstall damaged historical Factory or user data'
+ "Unified isolated lifecycle $checks checks PASS; fresh/modify/repair/remove, $PreviousVersion to $version upgrade, lock rejection, uninstall, user and V4 history protection" | Tee-Object (Join-Path $root 'result.txt')
+ return
+}
 $migration=Join-Path $root 'migration';$p=Paths $migration
 $legacyFull=Compile $migration $true $false;$legacyLibrary=Compile $migration $true $true;$setup=Compile $migration
 New-Item -ItemType Directory -Force (Split-Path $p.personal),(Join-Path $migration 'Data/Libraries/Factory/2') | Out-Null

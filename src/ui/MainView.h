@@ -16,6 +16,7 @@
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "preview/PreviewSequence.h"
+#include "preview/PreviewTransport.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -42,7 +43,7 @@ public:
         std::size_t browseCategory{};
         color::Preference colorPreference{color::Preference::Off};
     };
-    void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
+    void prepareForDetach() { seekGesture_.reset();actions_={};midiPending_.reset();midiClick_={}; }
     EditorUiState captureEditorUiState() const;
     void restoreEditorUiState(const EditorUiState&);
     struct Actions {
@@ -55,6 +56,9 @@ public:
         std::function<std::string(const std::string&)> deleteUser;
         std::function<void(const ContinuationCandidate&)> audition;
         std::function<void()> stopAudition;
+        std::function<void()> pauseAudition,resumeAudition;
+        std::function<void(bool)> previewBackend;
+        std::function<void(const std::string&,double)> seekAudition;
         std::function<void(bool,double,bool)> previewSettings; // custom tempo, BPM, suffix only
         std::function<std::string(const ContinuationCandidate&)> exportMidi;
         std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
@@ -91,6 +95,7 @@ public:
     void setRecommendations(const RecommendationSet&);
     void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
+    void setPreviewTransport(preview::PlaybackState,bool hostBackend,bool hostAvailable,bool pending=false);
     void setSnapshotMode(bool enabled);
     preview::SourceRouteResult continuationRoute(const ContinuationCandidate&) const;
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
@@ -127,7 +132,7 @@ public:
 private:
     enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
         OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
-        Advanced, Library, Import, FullView, InputChord, Play, Stop, TempoMode, Tempo, Scope };
+        Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Backend, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
         std::optional<VSTGUI::CRect> clip;
@@ -175,6 +180,16 @@ private:
     void compactButton(VSTGUI::CDrawContext*,UiRect,const std::string&,CompactAction,
         std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
     void drawCompactRibbon(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,UiRect);
+    void drawRelativeColorCurve(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,std::optional<KeySignature>,UiRect);
+    struct SeekHit { VSTGUI::CRect rect;std::string id;double originX{},width{},totalQN{},minimumQN{}; };
+    struct SeekGesture { SeekHit hit;std::uint64_t generation{};double targetQN{}; };
+    std::vector<SeekHit> seekHits_;
+    std::optional<SeekGesture> seekGesture_;
+    bool beginPreviewSeek(VSTGUI::CPoint);
+    void movePreviewSeek(VSTGUI::CPoint);
+    double previewDisplayQN(const std::string&) const;
+    preview::PlaybackState auditionState_{preview::PlaybackState::Stopped};
+    bool auditionHostBackend_{},auditionHostAvailable_{},auditionPending_{};
     Actions actions_;
     session::PluginSessionState state_;
     session::RecommendationVisibilityPolicy visibility_;

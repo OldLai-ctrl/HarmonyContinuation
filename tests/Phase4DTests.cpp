@@ -9,6 +9,8 @@
 #include "preview/OfflinePreviewRenderer.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "color/ColorPreferenceReranker.h"
+#include "color/RelativeColorCurve.h"
+#include "ui/EnrichmentProvenance.h"
 #include <algorithm>
 #include <chrono>
 #include <cctype>
@@ -38,6 +40,87 @@ Progression phrase(std::vector<std::string> names,std::vector<double> durations,
     Progression p;double at{};
     for(std::size_t i=0;i<names.size();++i){ChordEvent e;e.name=names[i];e.startQN=at;e.durationQN=durations[i];e.openEnded=false;p.push_back(e);at+=durations[i];}
     if(open){p.back().durationQN.reset();p.back().openEnded=true;}return p;
+}
+void runCurveChecks() {
+    using color::RelativeColorComponent;
+    using ui::EnrichmentProvenanceKind;
+    constexpr auto baseIndex=static_cast<std::size_t>(RelativeColorComponent::Base);
+    constexpr auto structureIndex=static_cast<std::size_t>(RelativeColorComponent::SpecialStructure);
+    constexpr auto alteredIndex=static_cast<std::size_t>(RelativeColorComponent::Altered);
+    constexpr auto contrastIndex=static_cast<std::size_t>(RelativeColorComponent::Contrast);
+
+    const auto source=phrase({"C","G"},{4.,4.});
+    const auto inserted=phrase({"C","Dm","G"},{2.,2.,4.});
+    const auto insertionMarks=ui::enrichmentProvenance(source,inserted);
+    require(insertionMarks.size()==3&&insertionMarks[0].kind==EnrichmentProvenanceKind::Original&&
+        insertionMarks[1].kind==EnrichmentProvenanceKind::Inserted&&!insertionMarks[1].sourceIndex&&
+        insertionMarks[2].kind==EnrichmentProvenanceKind::Original&&insertionMarks[2].sourceIndex==1,
+        "visual provenance identifies only the internal onset as inserted");
+
+    const auto replaced=ui::enrichmentProvenance(source,phrase({"C","F"},{4.,4.}));
+    require(replaced[1].kind==EnrichmentProvenanceKind::Replaced&&replaced[1].sourceIndex==1,
+        "visual provenance keeps a same-onset replacement separate from insertion");
+    const auto triadChanged=ui::enrichmentProvenance(source,phrase({"Cm","G"},{4.,4.}));
+    require(triadChanged[0].kind==EnrichmentProvenanceKind::Replaced,
+        "visual provenance detects a defining third change at a stable root");
+    const auto extended=ui::enrichmentProvenance(source,phrase({"Cmaj7","G"},{4.,4.}));
+    require(extended[0].kind==EnrichmentProvenanceKind::Modified&&extended[0].sourceIndex==0,
+        "visual provenance treats a seventh as a modification");
+    const auto inversion=ui::enrichmentProvenance(source,phrase({"C/G","G"},{4.,4.}));
+    require(inversion[0].kind==EnrichmentProvenanceKind::Modified,
+        "visual provenance treats an inversion as a modification");
+    const auto incomplete=ui::enrichmentProvenance(source,phrase({"C"},{4.}));
+    require(incomplete.size()==1&&incomplete[0].kind==EnrichmentProvenanceKind::Unknown&&
+        !incomplete[0].sourceIndex,"visual provenance degrades incomplete onset coverage to unknown");
+    Progression malformed=source;
+    malformed[0].name="unparsed chord";
+    const auto unknownChord=ui::enrichmentProvenance(source,malformed);
+    require(unknownChord[0].kind==EnrichmentProvenanceKind::Unknown&&unknownChord[0].sourceIndex==0,
+        "visual provenance preserves onset mapping but marks malformed pitch data unknown");
+
+    const KeySignature cMajor{PitchClass::C,Mode::Major};
+    const auto plain=color::analyzeRelativeColorCurve(phrase({"C"},{4.}),cMajor);
+    const auto seventh=color::analyzeRelativeColorCurve(phrase({"Cmaj7"},{4.}),cMajor);
+    const auto extension=color::analyzeRelativeColorCurve(phrase({"C9"},{4.}),cMajor);
+    require(plain.size()==1&&seventh.size()==1&&extension.size()==1&&plain[0].value&&
+        seventh[0].value&&extension[0].value&&*seventh[0].value>*plain[0].value&&
+        *extension[0].value>*plain[0].value,"relative curve raises seven-note and extension structure");
+    const auto repeated=color::analyzeRelativeColorCurve(phrase({"C","G7","Am","F"},{2.,2.,2.,2.}),cMajor);
+    const auto repeatedAgain=color::analyzeRelativeColorCurve(phrase({"C","G7","Am","F"},{2.,2.,2.,2.}),cMajor);
+    const auto transposed=color::analyzeRelativeColorCurve(phrase({"D","A7","Bm","G"},{2.,2.,2.,2.}),
+        KeySignature{PitchClass::D,Mode::Major});
+    require(repeated.size()==4&&repeatedAgain.size()==4&&transposed.size()==4,
+        "relative curve returns one point per resolved event");
+    for(std::size_t i=0;i<repeated.size();++i)
+        require(repeated[i].value&&repeatedAgain[i].value&&transposed[i].value&&
+            std::abs(*repeated[i].value-*repeatedAgain[i].value)<1e-9&&
+            std::abs(*repeated[i].value-*transposed[i].value)<1e-9,
+            "relative curve is deterministic and transposition/key invariant");
+    const auto timed=color::analyzeRelativeColorCurve(inserted,cMajor);
+    require(timed.size()==3&&timed[0].startQN==0.&&timed[0].durationQN==2.&&
+        timed[1].startQN==2.&&timed[1].durationQN==2.&&timed[2].startQN==4.&&
+        timed[2].durationQN==4.,"relative curve preserves event QN and duration");
+
+    const auto special=color::analyzeRelativeColorCurve(phrase({"Cdim","Caug"},{4.,4.}),cMajor);
+    require(special.size()==2&&special[0].value&&special[1].value&&
+        special[0].contributions[structureIndex]==20.&&special[0].contributions[alteredIndex]==0.&&
+        special[1].contributions[structureIndex]==18.&&special[1].contributions[alteredIndex]==0.,
+        "diminished and augmented fifths receive structure bonuses without duplicate alteration");
+
+    Progression invalidThenKnown=phrase({"C","G7"},{4.,4.});
+    invalidThenKnown[0].name="unparsed chord";
+    const auto degraded=color::analyzeRelativeColorCurve(invalidThenKnown,cMajor);
+    require(degraded.size()==2&&!degraded[0].value&&degraded[1].value&&
+        degraded[1].contributions[baseIndex]==10.&&degraded[1].contributions[contrastIndex]==0.,
+        "unknown chord leaves a gap and resets contrast context");
+    const auto diminishedSeventh=color::analyzeRelativeColorCurve(phrase({"Cdim7"},{4.}),cMajor);
+    require(diminishedSeventh[0].value&&diminishedSeventh[0].contributions[static_cast<std::size_t>(RelativeColorComponent::Seventh)]==12.&&
+        diminishedSeventh[0].contributions[static_cast<std::size_t>(RelativeColorComponent::Extensions)]==0.,"dim7 structure is not an added thirteenth");
+    const auto pendingTime=color::analyzeRelativeColorCurve(phrase({"C"},{4.},true),cMajor);
+    require(!pendingTime[0].value&&!pendingTime[0].durationQN,"unresolved OPEN timing leaves a curve gap");
+    const auto noKey=color::analyzeRelativeColorCurve(source,std::nullopt);
+    require(noKey.size()==2&&!noKey[0].value&&!noKey[1].value,
+        "relative curve does not invent color without a key");
 }
 Progression symbolic(const Progression& source,bool omitFifth=false) {
     std::ostringstream xml;xml<<"<vst-xml version=\"1.4\"><sourceApp>Phase4DSynthetic</sourceApp>";
@@ -1707,6 +1790,7 @@ bool unifiedSourceTraceable(const ContinuationCandidate& c,const RecommendationS
     });
 }
 int runUnifiedIntegration(const std::filesystem::path& out,const std::filesystem::path& factoryPath) {
+    runCurveChecks();
     std::filesystem::create_directories(out);
     std::ofstream log(out/"unified.txt");
     require(bool(log),"unified evidence opens");

@@ -14,7 +14,6 @@
 #include "pluginterfaces/base/ibstream.h"
 #include "session/ProductServices.h"
 #include "library/LibraryStore.h"
-#include "preview/OfflinePreviewRenderer.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "midi/MidiImportWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
@@ -35,7 +34,6 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <commdlg.h>
-#include <mmsystem.h>
 #endif
 
 namespace harmony::plugin {
@@ -389,18 +387,35 @@ std::string Controller::deleteUserProgression(const std::string& id) noexcept {
 }
 
 void Controller::stopPreview() noexcept {
-#if defined(_WIN32)
-    if (previewOwnership_.release()) PlaySoundW(nullptr,nullptr,0);
-#endif
-    previewCandidateId_.clear();
-    previewTarget_.reset();
-    previewBPMAtStart_=previewStartQN_=previewTotalQN_=previewSeconds_=0;
-    if (view_) view_->setPreviewPosition({},0,0);
-    if (!previewFile_.empty()) {
-        std::error_code error;
-        std::filesystem::remove(previewFile_,error);
-        previewFile_.clear();
-    }
+    try {
+        if (activePreviewBackendValid_) {
+            const auto previousPosition=currentPreviewPosition();
+            if (!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,
+                                    previewStartQN_,false)) {
+                previewPositionQN_=previousPosition;
+                previewAvailable_=false;
+                if (view_) view_->setActionStatus("试听停止请求失败");
+                updatePreviewUi();return;
+            } else {
+                previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+                previewPositionQN_=previewStartQN_;
+                previewCandidateId_.clear();previewTarget_.reset();
+                previewTransition_={};
+                previewTransition_.phase=PreviewTransitionPhase::StopCurrent;
+                previewTransition_.serial=previewSerial_;
+                previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(1200);
+                previewPending_=true;
+            }
+        } else {
+            previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPositionQN_=previewStartQN_;
+            previewPending_=false;previewTransition_={};
+            previewCandidateId_.clear();previewTarget_.reset();
+            previewAvailable_=false;
+            preparedPreviewValid_=false;
+        }
+        updatePreviewUi();
+    } catch (...) { previewAvailable_=false; previewPending_=false; }
 }
 
 double Controller::effectivePreviewBPM() const noexcept {
@@ -411,8 +426,76 @@ double Controller::effectivePreviewBPM() const noexcept {
 
 PreviewStatus Controller::previewStatus() const noexcept {
     const bool active=previewActive();
-    return {previewTempoMode_,customPreviewBPM_,active?previewBPMAtStart_:effectivePreviewBPM(),
-            hostTempoValid_,previewScope_,active};
+    return {previewTempoMode_,customPreviewBPM_,preparedPreviewValid_&&previewPlaybackState_!=harmony::preview::PlaybackState::Stopped
+                ?previewBPMAtStart_:effectivePreviewBPM(),
+            hostTempoValid_,previewScope_,active,previewPlaybackState_,
+            previewBackend_==harmony::preview::AudioBackend::Host,hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_};
+}
+
+bool Controller::ensureWindowsPreview() noexcept {
+#if defined(_WIN32)
+    try { if (!windowsPreview_) windowsPreview_=std::make_unique<harmony::preview::WindowsPreview>(); return true; }
+    catch (...) { return false; }
+#else
+    return false;
+#endif
+}
+
+bool Controller::submitPreviewState(harmony::preview::AudioBackend backend,
+                                    harmony::preview::PlaybackState state,double positionQN,bool seek) noexcept {
+    try {
+        harmony::preview::TransportRequest request{};
+        request.serial=++previewSerial_;
+        if (!request.serial) request.serial=++previewSerial_;
+        request.clipId=preparedPreviewValid_?previewClipId_:0;
+        request.seekId=seek?++previewSeekId_:previewSeekId_;
+        request.state=state;
+        request.positionQN=std::isfinite(positionQN)?positionQN:previewPositionQN_;
+        if (preparedPreviewValid_) request.clip=preparedPreview_;
+        if (!harmony::preview::validTransportRequest(request)) return false;
+        previewPositionQN_=request.positionQN;
+        previewCommandStarted_=std::chrono::steady_clock::now();
+        if (backend==harmony::preview::AudioBackend::Host) {
+            auto message=owned(allocateMessage());
+            if (!message) return false;
+            message->setMessageID("HC.PreviewCommand");
+            if (message->getAttributes()->setBinary("request",&request,sizeof(request))!=kResultOk) return false;
+            hostCommandBlockBaseline_=hostPreviewFeedbackSeen_?hostPreviewFeedback_.blocks:lastHostBlocks_;
+            return sendMessage(message)==kResultOk;
+        }
+        if (!ensureWindowsPreview()||!windowsPreview_->submit(request)) return false;
+        return true;
+    } catch (...) { return false; }
+}
+
+double Controller::currentPreviewPosition() const noexcept {
+    if (activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Windows&&
+        windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewSerial_&&windowsPreviewFeedback_.clipId==previewClipId_&&
+        std::isfinite(windowsPreviewFeedback_.positionQN)) return windowsPreviewFeedback_.positionQN;
+    if (activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Host&&
+        hostPreviewFeedbackSeen_&&hostPreviewFeedback_.serial>=previewSerial_&&hostPreviewFeedback_.clipId==previewClipId_&&
+        std::isfinite(hostPreviewFeedback_.positionQN)) return hostPreviewFeedback_.positionQN;
+    return previewPositionQN_;
+}
+
+bool Controller::hostPreviewFresh(std::chrono::steady_clock::time_point now) const noexcept {
+    return hostPreviewFeedbackSeen_&&hostPreviewFeedback_.outputActive&&lastHostOutputBlock_!=std::chrono::steady_clock::time_point{}&&
+        now-lastHostOutputBlock_<=std::chrono::milliseconds(750);
+}
+
+void Controller::updatePreviewUi() noexcept {
+    if (!view_) return;
+    if (!previewCandidateId_.empty()&&preparedPreviewValid_) {
+        previewPositionQN_=std::clamp(previewPositionQN_,previewStartQN_,previewTotalQN_);
+        view_->setPreviewPosition(previewCandidateId_,previewPositionQN_,previewTotalQN_);
+    } else view_->setPreviewPosition({},0,0);
+    const bool available=previewBackend_==harmony::preview::AudioBackend::Host
+        ?hostPreviewFresh(std::chrono::steady_clock::now())
+        :(windowsDeviceConfirmed_&&windowsPreviewFeedbackSeen_&&
+          windowsPreviewFeedback_.error==harmony::preview::AudioError::None);
+    previewAvailable_=available;
+    view_->setPreviewTransport(previewPlaybackState_,previewBackend_==harmony::preview::AudioBackend::Host,
+                               hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_);
 }
 
 void Controller::setPreviewSettings(harmony::preview::PreviewTempoMode mode,double customBPM,
@@ -422,146 +505,324 @@ void Controller::setPreviewSettings(harmony::preview::PreviewTempoMode mode,doub
             (scope!=harmony::preview::PreviewScope::Full&&scope!=harmony::preview::PreviewScope::Suffix)) return;
         customBPM=harmony::preview::sanitizeTempo(customBPM);
         if (mode==previewTempoMode_&&customBPM==customPreviewBPM_&&scope==previewScope_) return;
-        const bool wasActive=previewActive();
+        if (previewTransition_.phase==PreviewTransitionPhase::SwitchStop) {
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+        }
+        const auto wasState=previewPlaybackState_;
+        const auto position=currentPreviewPosition();
         const auto target=previewTarget_;
-        if (wasActive) stopPreview();
-        previewTempoMode_=mode;
-        customPreviewBPM_=customBPM;
-        previewScope_=scope;
-        if (wasActive&&target) replayPreview(*target);
-    } catch (...) {
-        stopPreview();
-    }
+        previewTempoMode_=mode;customPreviewBPM_=customBPM;previewScope_=scope;
+        if (target&&preparedPreviewValid_) replayPreview(*target,wasState,position);
+        else updatePreviewUi();
+    } catch (...) { stopPreview(); }
 }
 
-void Controller::playPreview(const PreviewTarget& target,const harmony::preview::BuildResult& built) noexcept {
+void Controller::playPreview(const PreviewTarget& target,const harmony::preview::BuildResult& built,
+                              harmony::preview::PlaybackState state,std::optional<double> requestedQN) noexcept {
     try {
-        stopPreview();
-        if (!built) { if (view_) view_->setActionStatus("试听失败："+built.error); return; }
-#if defined(_WIN32)
-        const auto audio=harmony::preview::renderOffline(built.sequence,48000,previewScope_);
-        if (audio.left.empty() || audio.sampleRate<=0) {
-            if (view_) view_->setActionStatus("试听失败：音频生成失败");
-            return;
+        if (!built) { if(view_)view_->setActionStatus("试听失败："+built.error);return; }
+        if (previewTransition_.phase==PreviewTransitionPhase::SwitchStop) {
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
         }
-        previewFile_=std::filesystem::temp_directory_path()/
-            (L"HarmonyContinuation-"+std::to_wstring(GetCurrentProcessId())+L"-"+
-             std::to_wstring(reinterpret_cast<std::uintptr_t>(this))+L".wav");
-        std::string error;
-        if (!harmony::preview::writeWav16(audio,previewFile_,error)) {
-            if(view_)view_->setActionStatus("Preview failed");stopPreview();return;
-        }
-        previewOwnership_.claim();
-        if (
-            !PlaySoundW(previewFile_.c_str(),nullptr,SND_ASYNC|SND_FILENAME|SND_NODEFAULT)) {
-            if (view_) view_->setActionStatus("试听失败："+(error.empty()?"系统播放设备不可用":error));
-            stopPreview();
-            return;
-        }
-        previewTarget_=target;
-        previewCandidateId_=target.id;
-        previewBPMAtStart_=built.sequence.tempoBPM;
-        const auto range=harmony::preview::previewRange(built.sequence,previewScope_);
-        previewStartQN_=range.startQN;
-        previewTotalQN_=range.endQN;
-        previewSeconds_=static_cast<double>(audio.left.size())/audio.sampleRate;
-        previewStarted_=std::chrono::steady_clock::now();
-        if (view_) {
-            view_->setPreviewPosition(previewCandidateId_,previewStartQN_,previewTotalQN_);
-            view_->setActionStatus("正在通过 Windows 默认播放设备试听");
-        }
-#else
-        if (view_) view_->setActionStatus("当前平台不支持试听");
-#endif
-    } catch (const std::exception& e) {
-        stopPreview();
-        if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
-    } catch (...) {
-        stopPreview();
-        if (view_) view_->setActionStatus("试听失败");
-    }
-}
-
-void Controller::replayPreview(const PreviewTarget& target) noexcept {
-    try {
-        if (target.kind==PreviewTargetKind::Continuation) {
-            if (!recommendationResultReady_) return;
-            for (const auto& group:recommendations_.groups) for (const auto& candidate:group) {
-                if (candidate.id!=target.id) continue;
-                if (candidate.rankingScore!=target.rankingScore||
-                    session::continuationFingerprint(candidate)!=target.fingerprint||!currentCandidate(candidate)) return;
-                if(!view_)return;
-                const auto route=view_->continuationRoute(candidate);
-                playPreview(target,route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
-                    harmony::preview::BuildResult{{},route.error});
-                return;
+        const auto scope=target.kind==PreviewTargetKind::Enrichment?harmony::preview::PreviewScope::Full:previewScope_;
+        auto prepared=harmony::preview::preparePreview(built.sequence,scope);
+        if (!prepared) { if(view_)view_->setActionStatus("试听失败："+prepared.error);return; }
+        const auto range=harmony::preview::previewRange(built.sequence,scope);
+        previewTarget_=target;previewCandidateId_=target.id;preparedPreview_=std::move(prepared.clip);
+        preparedPreviewValid_=true;previewBPMAtStart_=built.sequence.tempoBPM;
+        previewStartQN_=range.startQN;previewTotalQN_=range.endQN;
+        previewPositionQN_=std::clamp(requestedQN.value_or(previewStartQN_),previewStartQN_,previewTotalQN_);
+        ++previewClipId_;if(!previewClipId_)++previewClipId_;++previewSeekId_;
+        previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
+        if(!previewBackendManual_&&!activePreviewBackendValid_)
+            previewBackend_=hostPreviewFresh(std::chrono::steady_clock::now())?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+        const auto selected=previewBackend_;
+        if (activePreviewBackendValid_&&activePreviewBackend_!=selected) {
+            previewTransition_.phase=PreviewTransitionPhase::SwitchStop;
+            previewTransition_.target=selected;previewTransition_.state=previewPlaybackState_;
+            previewTransition_.positionQN=previewPositionQN_;
+            if (!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,
+                                    currentPreviewPosition(),false)) {
+                previewTransition_={};previewPending_=false;previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+                if(view_)view_->setActionStatus("无法停止当前试听设备；未切换设备");updatePreviewUi();return;
             }
-            return;
+            previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostPreviewFeedback_.blocks;
+            previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(1200);
+            previewPending_=true;updatePreviewUi();return;
         }
-        if (!enrichmentResultReady_) return;
-        for (const auto& group:enrichments_.groups) for (const auto& candidate:group) {
-            if (candidate.id!=target.id) continue;
-            if (candidate.fingerprint!=target.fingerprint||!currentCandidate(candidate)) return;
-            harmony::ImportedProgressionSession transformed;
-            if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection)) return;
-            playPreview(target,harmony::preview::buildSequence(
-                transformed,nullptr,effectivePreviewBPM(),candidate.constraints));
-            return;
+        activePreviewBackend_=selected;activePreviewBackendValid_=true;
+        if (!submitPreviewState(selected,previewPlaybackState_,previewPositionQN_,true)) {
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;previewAvailable_=false;previewPending_=false;
+            if(view_)view_->setActionStatus("试听启动失败；所选设备不可用");updatePreviewUi();return;
         }
+        previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=selected;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.positionQN=previewPositionQN_;previewTransition_.serial=previewSerial_;
+        previewTransition_.blockBaseline=selected==harmony::preview::AudioBackend::Host?hostCommandBlockBaseline_:0;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);
+        previewPending_=true;updatePreviewUi();
+        if(view_)view_->setActionStatus(selected==harmony::preview::AudioBackend::Host?
+            "正在请求宿主音频输出":"宿主音频处理不可用或已选择系统输出；正在请求 Windows Audio");
+    } catch (const std::exception& e) { if(view_)view_->setActionStatus(std::string("试听失败：")+e.what()); }
+    catch (...) { if(view_)view_->setActionStatus("试听失败"); }
+}
+
+bool Controller::buildPreviewTarget(const std::string& id,PreviewTarget& target,
+                                    harmony::preview::BuildResult& built) const {
+    if (recommendationResultReady_&&view_) for(const auto& group:recommendations_.groups) for(const auto& candidate:group) {
+        if(candidate.id!=id)continue;
+        if(!currentCandidate(candidate))return false;
+        const auto route=view_->continuationRoute(candidate);
+        if(!route){built={{},route.error};return false;}
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore};
+        built=harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM());return bool(built);
+    }
+    if (enrichmentResultReady_) for(const auto& group:enrichments_.groups) for(const auto& candidate:group) {
+        if(candidate.id!=id)continue;
+        if(!currentCandidate(candidate))return false;
+        harmony::ImportedProgressionSession transformed;
+        if(!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection))return false;
+        target={candidate.id,PreviewTargetKind::Enrichment,candidate.fingerprint,0};
+        built=harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints);return bool(built);
+    }
+    return false;
+}
+
+void Controller::replayPreview(const PreviewTarget& target,harmony::preview::PlaybackState state,double positionQN) noexcept {
+    try {
+        PreviewTarget current;harmony::preview::BuildResult built;
+        if(!buildPreviewTarget(target.id,current,built)||current.kind!=target.kind||current.fingerprint!=target.fingerprint||
+           current.rankingScore!=target.rankingScore) {
+            if(view_)view_->setActionStatus("试听目标已变化，请重新选择");stopPreview();return;
+        }
+        playPreview(current,built,state,positionQN);
     } catch (...) { stopPreview(); }
 }
 
 void Controller::audition(const harmony::ContinuationCandidate& candidate) noexcept {
     try {
-        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("Recommendation changed; choose a current result");return;}
-        if (previewTarget_&&previewTarget_->kind==PreviewTargetKind::Continuation&&previewCandidateId_==candidate.id) {
-            stopPreview();
-            if (view_) view_->setActionStatus("试听已停止");
-            return;
-        }
+        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("推荐结果已变化，请重新选择");return;}
+        if(previewTarget_&&previewTarget_->kind==PreviewTargetKind::Continuation&&previewCandidateId_==candidate.id&&
+           previewPlaybackState_!=harmony::preview::PlaybackState::Stopped){stopPreview();return;}
         if(!view_)return;
         const auto route=view_->continuationRoute(candidate);
-        playPreview({candidate.id,PreviewTargetKind::Continuation,
-                     session::continuationFingerprint(candidate),candidate.rankingScore},
+        playPreview({candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore},
             route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
-                harmony::preview::BuildResult{{},route.error});
-    } catch (const std::exception& e) {
-        if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
-    } catch (...) {
-        if (view_) view_->setActionStatus("试听失败");
-    }
+                  harmony::preview::BuildResult{{},route.error},harmony::preview::PlaybackState::Playing,std::nullopt);
+    } catch (...) { if(view_)view_->setActionStatus("试听失败"); }
 }
 
 void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandidate& candidate) noexcept {
     try {
-        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("Recommendation changed; choose a current result");return;}
-        if (previewTarget_&&previewTarget_->kind==PreviewTargetKind::Enrichment&&previewCandidateId_==candidate.id) {
-            stopPreview();
-            if (view_) view_->setActionStatus("试听已停止");
-            return;
-        }
+        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("推荐结果已变化，请重新选择");return;}
+        if(previewTarget_&&previewTarget_->kind==PreviewTargetKind::Enrichment&&previewCandidateId_==candidate.id&&
+           previewPlaybackState_!=harmony::preview::PlaybackState::Stopped){stopPreview();return;}
         harmony::ImportedProgressionSession transformed;
-        if (!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection)) {
-            if (view_) view_->setActionStatus("试听失败：升级进行时间轴无效");
-            return;
-        }
+        if(!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection)){
+            if(view_)view_->setActionStatus("试听失败：升级进行时间轴无效");return;}
         playPreview({candidate.id,PreviewTargetKind::Enrichment,candidate.fingerprint,0},
-            harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints));
-    } catch (const std::exception& e) {
-        if (view_) view_->setActionStatus(std::string("试听失败：")+e.what());
-    } catch (...) {
-        if (view_) view_->setActionStatus("试听失败");
+            harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints),
+            harmony::preview::PlaybackState::Playing,std::nullopt);
+    } catch (...) { if(view_)view_->setActionStatus("试听失败"); }
+}
+
+void Controller::pausePreview() noexcept {
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;}
+    if(previewPlaybackState_!=harmony::preview::PlaybackState::Playing||!activePreviewBackendValid_)return;
+    previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+    previewPending_=true;
+    if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,false)){
+        previewAvailable_=false;if(view_)view_->setActionStatus("暂停试听请求失败");}
+    else {previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+    updatePreviewUi();
+}
+
+void Controller::resumePreview() noexcept {
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;}
+    if(previewPlaybackState_!=harmony::preview::PlaybackState::Paused||!activePreviewBackendValid_||!preparedPreviewValid_)return;
+    previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Playing;
+    previewPending_=true;
+    if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,false)){
+        previewPlaybackState_=harmony::preview::PlaybackState::Paused;previewAvailable_=false;
+        if(view_)view_->setActionStatus("继续试听请求失败");}
+    else {previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+    updatePreviewUi();
+}
+
+void Controller::setPreviewBackend(bool host) noexcept {
+    const auto target=host?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+    if(previewTransition_.phase!=PreviewTransitionPhase::None){
+        if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
     }
+    if(host&&!hostPreviewFresh(std::chrono::steady_clock::now())){
+        if(view_)view_->setActionStatus("Host Audio 尚无有效处理回调；请启用宿主监听，当前输出保持不变");return;
+    }
+    previewBackendManual_=true;
+    if(previewBackend_==target)return;
+    if(!activePreviewBackendValid_||previewPlaybackState_==harmony::preview::PlaybackState::Stopped){
+        previewBackend_=target;updatePreviewUi();return;}
+    const auto previousBackend=previewBackend_;
+    const auto state=previewPlaybackState_;const auto position=currentPreviewPosition();
+    previewPlaybackState_=state;previewPositionQN_=position;previewPending_=true;
+    previewTransition_.phase=PreviewTransitionPhase::SwitchStop;previewTransition_.target=target;
+    previewTransition_.state=state;previewTransition_.positionQN=position;
+    if(!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,position,false)){
+        previewTransition_={};previewPending_=false;previewPositionQN_=position;previewBackend_=previousBackend;
+        previewAvailable_=false;if(view_)view_->setActionStatus("无法停止当前试听设备；未切换设备");updatePreviewUi();return;
+    }
+    previewBackend_=target;
+    previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostPreviewFeedback_.blocks;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);
+    updatePreviewUi();
+}
+
+void Controller::seekPreview(const std::string& candidateId,double positionQN) noexcept {
+    try {
+        if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+        }
+        if(!std::isfinite(positionQN))return;
+        PreviewTarget target;harmony::preview::BuildResult built;
+        if(!buildPreviewTarget(candidateId,target,built)){if(view_)view_->setActionStatus("试听目标已变化，请重新选择");return;}
+        if(!preparedPreviewValid_||!previewTarget_||previewCandidateId_!=candidateId||
+           previewTarget_->kind!=target.kind||previewTarget_->fingerprint!=target.fingerprint){
+            playPreview(target,built,harmony::preview::PlaybackState::Paused,positionQN);return;
+        }
+        const auto state=previewPlaybackState_==harmony::preview::PlaybackState::Stopped?
+            harmony::preview::PlaybackState::Paused:previewPlaybackState_;
+        previewPositionQN_=std::clamp(positionQN,previewStartQN_,previewTotalQN_);
+        previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
+        if(!activePreviewBackendValid_){activePreviewBackend_=previewBackend_;activePreviewBackendValid_=true;}
+        if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,true)){
+            previewAvailable_=false;if(view_)view_->setActionStatus("定位试听请求失败");}
+        else {previewPending_=true;previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+            previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+            previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+            previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+        updatePreviewUi();
+    } catch (...) { if(view_)view_->setActionStatus("定位试听失败"); }
+}
+
+void Controller::advancePreviewTransition(std::chrono::steady_clock::time_point now) noexcept {
+    auto hostStoppedAck=[&]{return hostPreviewFeedbackSeen_&&hostPreviewStatusAt_>=previewCommandStarted_&&hostPreviewMuted_&&
+        (!hostPreviewFeedback_.outputActive||
+         (hostPreviewFeedback_.serial>=previewTransition_.serial&&hostPreviewFeedback_.state==harmony::preview::PlaybackState::Stopped)||
+         (!hostPreviewFresh(now)&&hostPreviewQuiescent_));};
+    auto windowsStoppedAck=[&]{return windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewTransition_.serial&&
+        windowsPreviewFeedback_.state==harmony::preview::PlaybackState::Stopped&&!windowsPreviewFeedback_.outputActive&&
+        windowsPreviewFeedback_.error==harmony::preview::AudioError::None;};
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){
+        const bool stopped=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostStoppedAck():windowsStoppedAck();
+        if(stopped){
+            activePreviewBackend_=previewTransition_.target;activePreviewBackendValid_=true;
+            const auto state=previewTransition_.state;const auto position=previewTransition_.positionQN;
+            if(!submitPreviewState(activePreviewBackend_,state,position,true)){
+                previewTransition_={};previewPending_=false;previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+                previewAvailable_=false;if(view_)view_->setActionStatus("目标试听设备启动失败；当前试听已暂停");updatePreviewUi();return;}
+            previewTransition_.phase=PreviewTransitionPhase::SwitchStart;previewTransition_.target=activePreviewBackend_;
+            previewTransition_.state=state;previewTransition_.positionQN=position;previewTransition_.serial=previewSerial_;
+            previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+            previewTransition_.deadline=now+std::chrono::milliseconds(750);
+        }
+    }
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStart){
+        bool acknowledged=false;
+        if(activePreviewBackend_==harmony::preview::AudioBackend::Host)
+            acknowledged=hostPreviewFeedbackSeen_&&hostPreviewFeedback_.error==harmony::preview::AudioError::None&&hostPreviewFeedback_.serial>=previewTransition_.serial&&
+                hostPreviewFeedback_.state==previewTransition_.state&&
+                (previewTransition_.state==harmony::preview::PlaybackState::Stopped
+                    ?hostPreviewMuted_ :hostPreviewFresh(now)&&hostPreviewFeedback_.blocks>previewTransition_.blockBaseline);
+        else acknowledged=windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewTransition_.serial&&
+            windowsPreviewFeedback_.error==harmony::preview::AudioError::None&&
+            windowsPreviewFeedback_.state==previewTransition_.state&&
+            (previewTransition_.state==harmony::preview::PlaybackState::Stopped?!windowsPreviewFeedback_.outputActive:
+                windowsPreviewFeedback_.outputActive);
+        if(acknowledged){
+            if(previewTransition_.state==harmony::preview::PlaybackState::Stopped)activePreviewBackendValid_=false;
+            previewTransition_={};previewPending_=false;previewAvailable_=true;
+            if(view_)view_->setActionStatus(activePreviewBackend_==harmony::preview::AudioBackend::Host?
+                "宿主音频处理已响应":"Windows 音频输出已确认");}
+    }
+    if((previewTransition_.phase==PreviewTransitionPhase::SwitchStop||previewTransition_.phase==PreviewTransitionPhase::SwitchStart)&&
+       now>=previewTransition_.deadline){
+        const auto phase=previewTransition_.phase;const auto expectedState=previewTransition_.state;previewTransition_={};previewPending_=false;previewAvailable_=false;
+        if(phase==PreviewTransitionPhase::SwitchStop){
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+            if(view_)view_->setActionStatus("旧试听设备未确认静音，未启动新设备");
+        }else if(expectedState!=harmony::preview::PlaybackState::Stopped){
+            const auto pos=currentPreviewPosition();previewPositionQN_=std::clamp(pos,previewStartQN_,previewTotalQN_);
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+            (void)submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Paused,previewPositionQN_,false);
+            if(view_)view_->setActionStatus(activePreviewBackend_==harmony::preview::AudioBackend::Host?
+                "宿主音频处理已停止；试听已暂停，可启用监听或切换 Windows Audio":"Windows 音频设备不可用；试听已暂停");
+        }else{
+            previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPositionQN_=previewTotalQN_;
+            if(view_)view_->setActionStatus("试听已停止");
+        }
+    }
+    if(previewTransition_.phase==PreviewTransitionPhase::StopCurrent){
+        const bool stopped=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostStoppedAck():windowsStoppedAck();
+        if(stopped||now>=previewTransition_.deadline){
+            const bool confirmed=stopped;previewTransition_={};previewPending_=false;
+            if(confirmed)activePreviewBackendValid_=false;
+            preparedPreviewValid_=false;previewTarget_.reset();previewCandidateId_.clear();
+            previewStartQN_=previewTotalQN_=previewBPMAtStart_=0;previewPositionQN_=0;
+            if(!confirmed&&view_)view_->setActionStatus("停止试听尚未得到设备确认");
+        }
+    }
+    if(previewPlaybackState_==harmony::preview::PlaybackState::Playing&&
+       activePreviewBackend_==harmony::preview::AudioBackend::Host&&
+       previewTransition_.phase==PreviewTransitionPhase::None&&!hostPreviewFresh(now)&&
+       now-previewCommandStarted_>std::chrono::milliseconds(750)){
+        previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+        previewPending_=false;previewAvailable_=false;
+        (void)submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Paused,previewPositionQN_,false);
+        if(view_)view_->setActionStatus("宿主音频处理已停止；试听已暂停，可启用监听或切换 Windows Audio");
+    }
+    if(activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Windows&&
+       windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.error!=harmony::preview::AudioError::None&&
+       previewPlaybackState_==harmony::preview::PlaybackState::Playing){
+        previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+        previewPending_=false;previewAvailable_=false;
+        if(view_)view_->setActionStatus("Windows 音频设备不可用；试听已暂停");
+    }
+    if(preparedPreviewValid_&&previewPlaybackState_==harmony::preview::PlaybackState::Playing){
+        const auto& feedback=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostPreviewFeedback_:windowsPreviewFeedback_;
+        const bool seen=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostPreviewFeedbackSeen_:windowsPreviewFeedbackSeen_;
+        if(seen&&feedback.clipId==previewClipId_&&feedback.state==harmony::preview::PlaybackState::Stopped&&
+           std::isfinite(feedback.positionQN)&&feedback.positionQN>=previewTotalQN_-0.01){
+            previewPositionQN_=previewTotalQN_;previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPending_=false;previewAvailable_=false;previewTransition_={};activePreviewBackendValid_=false;
+        } else previewPositionQN_=currentPreviewPosition();
+    }
+    else if(preparedPreviewValid_&&previewPlaybackState_==harmony::preview::PlaybackState::Paused)
+        previewPositionQN_=currentPreviewPosition();
+    updatePreviewUi();
 }
 
 void Controller::pollPreview() noexcept {
-    if (previewCandidateId_.empty()) return;
-    if (!previewOwnership_.owns()) {stopPreview();return;}
-    const auto elapsed=std::chrono::duration<double>(std::chrono::steady_clock::now()-previewStarted_).count();
-    if (elapsed>=previewSeconds_) { stopPreview(); return; }
-    if (view_ && previewSeconds_>0)
-        view_->setPreviewPosition(previewCandidateId_,
-            std::min(previewTotalQN_,previewStartQN_+elapsed*previewBPMAtStart_/60.0),previewTotalQN_);
+    try {
+        auto poll=owned(allocateMessage());
+        if(poll){poll->setMessageID("HC.PreviewPoll");sendMessage(poll);}
+        if(windowsPreview_){
+            windowsPreviewFeedback_=windowsPreview_->feedback();windowsPreviewFeedbackSeen_=true;
+            if(windowsPreviewFeedback_.error!=harmony::preview::AudioError::None)windowsDeviceConfirmed_=false;
+            else if(windowsPreviewFeedback_.outputActive)windowsDeviceConfirmed_=true;
+        }
+        if(!previewBackendManual_&&!activePreviewBackendValid_&&previewTransition_.phase==PreviewTransitionPhase::None){
+            const auto automatic=hostPreviewFresh(std::chrono::steady_clock::now())?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+            if(automatic!=previewBackend_){previewBackend_=automatic;if(view_&&automatic==harmony::preview::AudioBackend::Windows)
+                view_->setActionStatus("未观察到宿主音频处理；使用 Windows Audio，可在启用监听后切回 Host Audio");}
+        }
+        advancePreviewTransition(std::chrono::steady_clock::now());
+    } catch (...) {}
 }
 
 namespace {
@@ -825,6 +1086,25 @@ void Controller::inspectClipboard() noexcept {
 
 tresult PLUGIN_API Controller::notify(IMessage* message) {
     try {
+        if (message&&message->getMessageID()&&std::strcmp(message->getMessageID(),"HC.PreviewStatus")==0) {
+            const void* data{};uint32 size{};int64 muted{},quiescent{};
+            auto* attributes=message->getAttributes();
+            if(!attributes||attributes->getBinary("status",data,size)!=kResultOk||!data||
+               size!=sizeof(harmony::preview::TransportFeedback)||attributes->getInt("muted",muted)!=kResultOk||attributes->getInt("quiescent",quiescent)!=kResultOk)
+                return kResultFalse;
+            harmony::preview::TransportFeedback status{};std::memcpy(&status,data,sizeof(status));
+            if((status.state!=harmony::preview::PlaybackState::Stopped&&status.state!=harmony::preview::PlaybackState::Playing&&
+                status.state!=harmony::preview::PlaybackState::Paused)||
+               (status.error!=harmony::preview::AudioError::None&&status.error!=harmony::preview::AudioError::DeviceUnavailable&&
+                status.error!=harmony::preview::AudioError::InvalidClip&&status.error!=harmony::preview::AudioError::CallbackAbsent)||
+               !std::isfinite(status.positionQN)||!std::isfinite(status.sampleRate)||status.sampleRate<0)return kResultFalse;
+            if(hostPreviewFeedbackSeen_&&status.serial<hostPreviewFeedback_.serial&&status.blocks>=hostPreviewFeedback_.blocks)return kResultOk;
+            const bool advanced=!hostPreviewFeedbackSeen_||status.blocks>hostPreviewFeedback_.blocks;
+            hostPreviewFeedback_=status;hostPreviewFeedbackSeen_=true;hostPreviewMuted_=muted!=0;hostPreviewQuiescent_=quiescent!=0;
+            lastHostBlocks_=status.blocks;hostPreviewStatusAt_=std::chrono::steady_clock::now();
+            if(advanced&&status.outputActive)lastHostOutputBlock_=hostPreviewStatusAt_;
+            return kResultOk;
+        }
         if (message && message->getMessageID() &&
             (std::strcmp(message->getMessageID(), "HC.Snapshot") == 0 ||
              std::strcmp(message->getMessageID(), "HC.TransportSnapshot") == 0)) {

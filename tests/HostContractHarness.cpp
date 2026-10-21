@@ -14,6 +14,8 @@
 #include "library/LibraryStore.h"
 #include "session/PluginSessionState.h"
 #include "core/RecommendationPolicy.h"
+#include "preview/PreviewExchange.h"
+#include "pluginterfaces/vst/ivstmessage.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "public.sdk/source/vst/hosting/module.h"
@@ -38,6 +40,7 @@
 #include <iterator>
 #include <iostream>
 #include <chrono>
+#include <cmath>
 #include <system_error>
 #include <barrier>
 #include <string_view>
@@ -90,6 +93,55 @@ struct Instance {
     bool restore(std::string& bytes){MemoryStream stream(bytes.data(),bytes.size());return ok(controller->setState(&stream));}
     session::PluginSessionState state(){auto bytes=save();require(bytes.size()>4);auto decoded=session::deserialize(bytes.substr(4));require(static_cast<bool>(decoded));return decoded.state;}
 };
+void previewAudioContract(Instance& instance){
+    FUnknownPtr<IAudioProcessor> processor(instance.component);FUnknownPtr<IConnectionPoint> messages(instance.component);
+    require(processor&&messages,"actual processor interfaces exist");
+    preview::Sequence sequence;sequence.tempoBPM=120;sequence.totalQN=4;
+    sequence.events.push_back({chordPitches("Cmaj7"),0,4,preview::Segment::Existing,{}});
+    const auto prepared=preview::preparePreview(sequence);require(bool(prepared),"preview fixture prepares: "+prepared.error);
+    std::uint64_t serial{};
+    const auto send=[&](preview::TransportRequest request,bool valid=true){
+        auto message=owned(new HostMessage);message->setMessageID("HC.PreviewCommand");
+        message->getAttributes()->setBinary("request",&request,sizeof(request));
+        require(ok(messages->notify(message))==valid,"actual prepared-preview protocol validation");
+    };
+    for(const int channels:{1,2})for(const auto sampleSize:{kSample32,kSample64}){
+        SpeakerArrangement arrangement=channels==1?SpeakerArr::kMono:SpeakerArr::kStereo;
+        require(ok(processor->setBusArrangements(&arrangement,1,&arrangement,1)),"existing mono/stereo bus arrangement");
+        ProcessSetup setup{};setup.processMode=kRealtime;setup.symbolicSampleSize=sampleSize;setup.maxSamplesPerBlock=256;setup.sampleRate=48000;
+        require(ok(processor->setupProcessing(setup))&&ok(instance.component->setActive(true))&&ok(processor->setProcessing(true)),"preview setup");
+        preview::TransportRequest request;request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=prepared.clip;request.state=preview::PlaybackState::Playing;
+        send(request);
+        std::array<std::array<float,256>,2> in32{},out32{};std::array<std::array<double,256>,2> in64{},out64{};
+        float* i32[]{in32[0].data(),in32[1].data()};float* o32[]{out32[0].data(),out32[1].data()};
+        double* i64[]{in64[0].data(),in64[1].data()};double* o64[]{out64[0].data(),out64[1].data()};
+        for(auto& a:in32)a.fill(.125f);for(auto& a:in64)a.fill(.125);
+        AudioBusBuffers input{},output{};input.numChannels=output.numChannels=channels;
+        if(sampleSize==kSample32){input.channelBuffers32=i32;output.channelBuffers32=o32;}
+        else{input.channelBuffers64=i64;output.channelBuffers64=o64;}
+        ProcessData data{};data.numSamples=256;data.numInputs=data.numOutputs=1;data.inputs=&input;data.outputs=&output;data.symbolicSampleSize=sampleSize;
+        const auto render=[&]{require(ok(processor->process(data)),"actual audio processing");double energy{};
+            for(int c=0;c<channels;++c)for(int n=0;n<256;++n){const auto value=sampleSize==kSample32?double(out32[c][n]):out64[c][n];require(std::isfinite(value),"finite audio output");energy+=std::abs(value-.125);}
+            return energy;
+        };
+        require(render()>.01,"preview is added to actual host output buffers");
+        request.serial=++serial;request.state=preview::PlaybackState::Paused;send(request);require(render()<1e-7,"pause preserves passthrough and silences preview");
+        request.serial=++serial;request.state=preview::PlaybackState::Playing;send(request);require(render()>.01,"resume emits actual preview audio");
+        request.serial=++serial;++request.seekId;request.positionQN=2;send(request);require(render()>.01,"mid-chord seek immediately restores sounding notes");
+        double maximumMs{},totalMs{};constexpr int stressBlocks=4000;
+        for(int block=0;block<stressBlocks;++block){
+            if(block%32==0){request.serial=++serial;++request.seekId;request.positionQN=double(block%4)*.75;send(request);}
+            const auto started=std::chrono::steady_clock::now();require(ok(processor->process(data)),"sustained actual process");
+            const double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
+            maximumMs=std::max(maximumMs,elapsed);totalMs+=elapsed;
+            for(int c=0;c<channels;++c)for(int n=0;n<256;++n)require(std::isfinite(sampleSize==kSample32?double(out32[c][n]):out64[c][n]),"stress finite output");
+        }
+        std::cout<<"Host process stress channels="<<channels<<" bits="<<(sampleSize==kSample32?32:64)<<" blocks="<<stressBlocks<<" averageMs="<<totalMs/stressBlocks<<" maximumMs="<<maximumMs<<" budgetMs="<<256./48.<<'\n';
+        request.serial=++serial;request.state=preview::PlaybackState::Stopped;send(request);require(render()<1e-7,"stop preserves original audio exactly");
+        auto malformed=request;malformed.serial=++serial;malformed.clip.count=preview::maximumPreviewChords+1;send(malformed,false);require(render()<1e-7,"invalid clip cannot change output");
+        require(ok(processor->setProcessing(false))&&ok(instance.component->setActive(false)),"preview deactivation");
+    }
+}
 std::string streamState(const session::PluginSessionState& state){
     const auto json=session::serialize(state);const auto n=static_cast<uint32_t>(json.size());std::string bytes;
     for(int i=0;i<4;++i)bytes.push_back(static_cast<char>(n>>(i*8)));return bytes+json;
@@ -97,6 +149,61 @@ std::string streamState(const session::PluginSessionState& state){
 std::optional<io::CompletedMidiImport> wait(io::AsyncMidiImport& worker){
     for(int i=0;i<500;++i){if(auto ready=worker.takeLatest())return ready;std::this_thread::sleep_for(std::chrono::milliseconds(10));}return {};
 }
+struct VstGuiWindowSearch { HWND found{}; };
+BOOL CALLBACK enumVstGuiWindow(HWND child,LPARAM parameter){
+    auto& search=*reinterpret_cast<VstGuiWindowSearch*>(parameter);
+    wchar_t name[128]{};const auto length=GetClassNameW(child,name,static_cast<int>(std::size(name)));
+    constexpr wchar_t prefix[]=L"VSTGUI";
+    if(length>=6){bool matches=true;for(int i=0;i<6;++i)matches=matches&&name[i]==prefix[i];if(matches){search.found=child;return FALSE;}}
+    return TRUE;
+}
+HWND findVstGuiWindow(HWND parent){VstGuiWindowSearch search;EnumChildWindows(parent,enumVstGuiWindow,reinterpret_cast<LPARAM>(&search));return search.found;}
+void sendVstGuiClick(HWND target,const RECT& client,double logicalX,double logicalY){
+    require(target&&client.right>0&&client.bottom>0,"actual VSTGUI frame has usable client geometry");
+    const auto x=static_cast<SHORT>(std::clamp<long>(std::lround(logicalX*client.right/800.),0,client.right-1));
+    const auto y=static_cast<SHORT>(std::clamp<long>(std::lround(logicalY*client.bottom/780.),0,client.bottom-1));
+    const auto point=MAKELPARAM(x,y);
+    SendMessageW(target,WM_MOUSEMOVE,0,point);
+    SendMessageW(target,WM_LBUTTONDOWN,MK_LBUTTON,point);
+    SendMessageW(target,WM_LBUTTONUP,0,point);
+}
+void pumpNativeMessages(){
+    MSG message{};
+    while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){
+        if(message.message==WM_QUIT){PostQuitMessage(static_cast<int>(message.wParam));break;}
+        TranslateMessage(&message);DispatchMessageW(&message);
+    }
+}
+class HostAudioProbe {
+public:
+    explicit HostAudioProbe(Instance& instance):instance_(instance),processor_(instance.component){
+        require(static_cast<bool>(processor_),"actual host audio probe has IAudioProcessor");
+        SpeakerArrangement arrangement=SpeakerArr::kStereo;
+        require(ok(processor_->setBusArrangements(&arrangement,1,&arrangement,1)),"actual host audio probe configures stereo");
+        ProcessSetup setup{};setup.processMode=kRealtime;setup.symbolicSampleSize=kSample32;setup.maxSamplesPerBlock=256;setup.sampleRate=48000;
+        require(ok(processor_->setupProcessing(setup))&&ok(instance_.component->setActive(true))&&ok(processor_->setProcessing(true)),
+            "actual host audio probe activates processor");
+        input_.numChannels=output_.numChannels=2;input_.channelBuffers32=inputChannels_;output_.channelBuffers32=outputChannels_;
+        data_.processMode=kRealtime;data_.symbolicSampleSize=kSample32;data_.numSamples=256;
+        data_.numInputs=data_.numOutputs=1;data_.inputs=&input_;data_.outputs=&output_;
+    }
+    ~HostAudioProbe(){if(processor_)processor_->setProcessing(false);if(instance_.component)instance_.component->setActive(false);}
+    double process(){
+        for(auto& channel:inputSamples_)channel.fill(.125f);
+        require(ok(processor_->process(data_)),"actual plugin processor accepts host audio block");
+        double energy{};
+        for(const auto& channel:outputSamples_)for(const auto value:channel){
+            require(std::isfinite(value),"actual plugin host output is finite");energy+=std::abs(double(value)-.125);
+        }
+        return energy;
+    }
+private:
+    Instance& instance_;FUnknownPtr<IAudioProcessor> processor_;
+    std::array<std::array<float,256>,2> inputSamples_{},outputSamples_{};
+    float* inputChannels_[2]{inputSamples_[0].data(),inputSamples_[1].data()};
+    float* outputChannels_[2]{outputSamples_[0].data(),outputSamples_[1].data()};
+    AudioBusBuffers input_{},output_{};ProcessData data_{};
+};
 }
 int main(int argc,char** argv){
     if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui"||std::string(argv[1])=="--source-route-ui"||std::string(argv[1])=="--template-skip-ui")) {
@@ -313,13 +420,14 @@ int main(int argc,char** argv){
         frame->close();VSTGUI::exit();CoUninitialize();std::cout<<"Structure view / FULL-SKELETON / More MIDI identity "<<(passed?"PASS":"FAIL");
         std::cout<<'\n';return passed?0:1;
     }
-    if(argc<3){std::cerr<<"usage: HostContractHarness plugin.vst3 host-name [report]\n";return 2;}
+    if(argc<3){std::cerr<<"usage: HostContractHarness plugin.vst3 host-name [report] [--native-audio]\n";return 2;}
     std::cout<<std::unitbuf;
     CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);OleInitialize(nullptr);
     int passed=0,total=0;std::ofstream report;if(argc>3)report.open(argv[3]);
     auto test=[&](const char* name,const std::function<void()>& run){++total;try{run();++passed;std::cout<<"PASS "<<name<<'\n';if(report)report<<"PASS "<<name<<'\n';}
         catch(const std::exception& e){std::cout<<"FAIL "<<name<<": "<<e.what()<<'\n';if(report)report<<"FAIL "<<name<<": "<<e.what()<<'\n';}};
     try{
+    const bool nativeAudio=argc>4&&std::string(argv[4])=="--native-audio";
     const std::string profile=argv[2];host::HostEnvironment env;env.identify(profile);
     const auto fixtures=std::filesystem::path(HC_MIDI_FIXTURES);
     const auto outputRoot=std::filesystem::path(HC_TEST_OUTPUT_DIR);
@@ -378,6 +486,91 @@ int main(int argc,char** argv){
     for(const auto& item:factory.classInfos())if(item.category()==kVstAudioEffectClass){info=item;break;}require(info.has_value());
     std::unique_ptr<Instance> instance;Window window,other;require(window.handle&&other.handle);
     test("24 actual SDK initialize state without view",[&]{instance=std::make_unique<Instance>(factory,*info);require(instance->restore(initial));require(instance->state().uiZoomPercent==125&&instance->state().imported.events.size()==4);});
+    test("24a existing bus host preview mono/stereo float/double pause resume seek",[&]{previewAudioContract(*instance);});
+    test("24b actual SDK editor mouse transport gates host audio",[&]{
+        Window uiHost;require(uiHost.handle,"isolated native host window created");
+        require(SetWindowPos(uiHost.handle,HWND_TOP,0,0,860,850,SWP_NOACTIVATE)!=FALSE,"isolated native host window sized");
+        ShowWindow(uiHost.handle,SW_SHOWNOACTIVATE);UpdateWindow(uiHost.handle);
+        struct HideWindow { HWND handle{};~HideWindow(){if(handle)ShowWindow(handle,SW_HIDE);} } hide{uiHost.handle};
+
+        auto phrase=dev::parseProgressionJson(R"([{"name":"C","start":0},{"name":"G","start":4},{"name":"Am","start":8}])");
+        require(static_cast<bool>(phrase)&&sortAndInferDurations(phrase.events),"C-G-Am editor fixture parses");
+        session::PluginSessionState editorState;editorState.editorWidth=800;editorState.editorHeight=780;editorState.uiZoomPercent=100;
+        editorState.factoryLibraryVersion=configuredFactory.libraryVersion;
+        require(editorState.imported.replace(std::move(phrase.events),TimelineCoordinateMode::RelativeToSelection),
+            "C-G-Am editor fixture installs without constraints");
+        auto editorBytes=streamState(editorState);
+        Instance editor(factory,*info);require(editor.restore(editorBytes),"isolated actual SDK instance restores editor fixture");
+        editor.create();editor.attach(uiHost.handle);
+        const auto frame=findVstGuiWindow(uiHost.handle);require(frame,"actual child VSTGUI HWND located by SDK window class");
+        ShowWindow(frame,SW_SHOWNA);UpdateWindow(frame);pumpNativeMessages();
+        RECT client{};require(GetClientRect(frame,&client)!=FALSE&&client.right>=800&&client.bottom>=780,
+            "actual VSTGUI editor has the requested 800x780 logical client area");
+
+        HostAudioProbe audio(editor);
+        const auto processBlock=[&]{pumpNativeMessages();UpdateWindow(frame);const auto energy=audio.process();pumpNativeMessages();return energy;};
+        const auto click=[&](double x,double y){sendVstGuiClick(frame,client,x,y);pumpNativeMessages();};
+        const auto quietWithin=[&](std::chrono::milliseconds limit){
+            const auto until=std::chrono::steady_clock::now()+limit;
+            while(std::chrono::steady_clock::now()<until){if(processBlock()<1e-7)return true;std::this_thread::sleep_for(std::chrono::milliseconds(8));}
+            return false;
+        };
+        const auto pauseUntilQuiet=[&](std::chrono::milliseconds limit){
+            const auto until=std::chrono::steady_clock::now()+limit;
+            while(std::chrono::steady_clock::now()<until){click(86,696);if(processBlock()<1e-7)return true;std::this_thread::sleep_for(std::chrono::milliseconds(12));}
+            return false;
+        };
+        const auto switchBackendUntilQuiet=[&](std::chrono::milliseconds limit){
+            const auto until=std::chrono::steady_clock::now()+limit;
+            while(std::chrono::steady_clock::now()<until){click(724,694);if(processBlock()<1e-7)return true;std::this_thread::sleep_for(std::chrono::milliseconds(12));}
+            return false;
+        };
+        const auto audibleWithPlayClick=[&](std::chrono::milliseconds limit){
+            const auto until=std::chrono::steady_clock::now()+limit;
+            while(std::chrono::steady_clock::now()<until){
+                click(36,696);if(processBlock()>.01)return true;std::this_thread::sleep_for(std::chrono::milliseconds(12));
+            }
+            return false;
+        };
+
+        const auto workerStarted=std::chrono::steady_clock::now();
+        const auto workerDeadline=workerStarted+std::chrono::seconds(6);
+        const auto hostWarmUntil=workerStarted+std::chrono::milliseconds(570);
+        while(std::chrono::steady_clock::now()<workerDeadline&&std::chrono::steady_clock::now()<hostWarmUntil){
+            (void)processBlock();std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        require(audibleWithPlayClick(std::chrono::duration_cast<std::chrono::milliseconds>(workerDeadline-std::chrono::steady_clock::now())),
+            "actual footer Play click starts the ready recommendation through Host Audio within the six-second worker bound");
+
+        require(pauseUntilQuiet(std::chrono::milliseconds(1000)),
+            "actual footer Pause click gates audition and restores exact host passthrough");
+        require(audibleWithPlayClick(std::chrono::milliseconds(2000)),
+            "actual footer Play click resumes the paused host audition");
+
+        if(nativeAudio){
+        require(switchBackendUntilQuiet(std::chrono::milliseconds(1000)),
+            "Host-to-Windows backend change waits for host stop and mutes host audition");
+        const auto windowsSettle=std::chrono::steady_clock::now()+std::chrono::milliseconds(1100);
+        while(std::chrono::steady_clock::now()<windowsSettle){
+            require(processBlock()<1e-7,"Windows backend never leaks audition audio into host buffers");
+            std::this_thread::sleep_for(std::chrono::milliseconds(8));
+        }
+        click(724,694);
+        require(audibleWithPlayClick(std::chrono::milliseconds(3000)),
+            "actual backend control returns to Host Audio and starts audible host output");
+
+        }
+
+        const auto callbackGap=std::chrono::steady_clock::now()+std::chrono::milliseconds(1200);
+        while(std::chrono::steady_clock::now()<callbackGap){
+            pumpNativeMessages();UpdateWindow(frame);std::this_thread::sleep_for(std::chrono::milliseconds(8));
+        }
+        require(processBlock()<1e-7,"after more than one second without host process callbacks, Host audition remains muted on resumption");
+        require(audibleWithPlayClick(std::chrono::milliseconds(2000)),
+            "explicit actual footer Play click restores Host audition after callback loss");
+        click(132,696);require(quietWithin(std::chrono::milliseconds(1000)),
+            "actual footer Stop click silences audition while preserving host passthrough");
+    });
     test("25 state before view attach",[&]{instance->create();instance->attach(window.handle);require(instance->state().style==Style::Jazz&&instance->state().constraints.melody.size()==1);});
     test("26 view before setState",[&]{auto changed=original;changed.uiZoomPercent=150;auto bytes=streamState(changed);require(instance->restore(bytes));require(instance->state().uiZoomPercent==150);});
     test("27 remove reattach recreated parent",[&]{auto before=instance->save();require(before.size()>4,"precondition: controller state is present");for(int i=0;i<6;++i){if(!ok(instance->view->removed()))throw std::runtime_error("view removal failed at cycle "+std::to_string(i));try{instance->attach(i%2?window.handle:other.handle);}catch(const std::exception& e){throw std::runtime_error("view reattach failed at cycle "+std::to_string(i)+": "+e.what());}const auto after=instance->save();if(after!=before)throw std::runtime_error("saved state changed at cycle "+std::to_string(i)+"; before="+before.substr(4)+"; after="+after.substr(4));}});
@@ -455,7 +648,21 @@ int main(int argc,char** argv){
     auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
     auto* uiFrame=new VSTGUI::CFrame({0,0,1100,900},nullptr);auto* main=new ui::MainView({0,0,1100,900},{});uiFrame->addView(main);require(uiFrame->open(window.handle,VSTGUI::PlatformType::kHWND));main->setSessionState(original);uiFrame->onActivate(true);
     test("39 focus ESC persistent compare host shortcuts",[&]{require(main->runHostInteractionSmoke());});
-    test("40 More scrolling drag input identity and UI restore",[&]{require(main->runMidiWorkflowSmoke());auto saved=main->captureEditorUiState();main->restoreEditorUiState(saved);require(main->captureEditorUiState().continuationId==saved.continuationId);});
+    test("40 current compact browser MIDI identities and UI restore",[&]{
+        auto parsed=dev::parseProgressionJson(R"([{"name":"C","start":0},{"name":"G","start":4},{"name":"Am","start":8}])");
+        require(bool(parsed)&&sortAndInferDurations(parsed.events),"browser input fixture");
+        session::PluginSessionState current;require(current.imported.replace(parsed.events,TimelineCoordinateMode::RelativeToSelection));
+        const auto catalog=library::loadFactory(HC_FACTORY_DB_PATH);require(bool(catalog));
+        const auto analysis=analyzeHarmony(current.imported.events,current.analysisContext());
+        const auto rec=recommendContinuations(makeMatchQuery(current.imported.events,recommendationContext(current.analysisContext())),CandidateIndex(catalog.templates),{},recommendationWeights());
+        main->setSessionState(current);main->setLibrary(catalog.templates,{});main->setAnalysis(analysis);main->setMatches(rec.matches,"Ready");main->setRecommendations(rec);
+        main->setEnrichments(enrichment::enrichProgression(current.imported.events,analysis));
+        main->setWorkerStatus(1,0,false,catalog.templates.size(),0,true);
+        const auto context=VSTGUI::COffscreenContext::create({1100,900});require(bool(context));
+        require(main->runCompactSmoke(context.get()),"current compact interaction contract");
+        require(main->runBrowseSmoke(context.get()),"all qualified pages and current MIDI identities");
+        const auto saved=main->captureEditorUiState();main->restoreEditorUiState(saved);require(main->captureEditorUiState().continuationId==saved.continuationId);
+    });
     uiFrame->close();VSTGUI::exit();
     }catch(const std::exception& e){++total;std::cerr<<"Harness setup failure: "<<e.what()<<'\n';}
     if(report)report<<"RESULT "<<passed<<'/'<<total<<" (standard SDK simulation; real FL pending)\n";
