@@ -963,7 +963,23 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
             auditionState_==preview::PlaybackState::Paused&&compactSelected_==expectedId&&previewQN_==beforeDensityQN;
         seek=std::find_if(seekHits_.begin(),seekHits_.end(),[&](const auto& h){return h.id==expectedId&&h.rect.getHeight()>20.&&h.cursorRect.getWidth()>0;});
         if(seek!=seekHits_.end()){
-            const auto curveHit=*seek;CPoint point{(curveHit.cursorRect.left+curveHit.cursorRect.right)*.5,curveHit.cursorRect.top+3};
+            const auto curveHit=*seek;const auto visibleLayout=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+            const auto& visible=visibleLayout.cardsViewport;
+            okay=okay&&curveHit.cursorRect.left>=visible.left&&curveHit.cursorRect.right<=visible.right&&
+                curveHit.cursorRect.top>=visible.top&&curveHit.cursorRect.bottom<=visible.bottom;
+            const auto previousSeekHits=seekHits_;const auto previousContent=layout_.content;const bool previousInCards=compactInCards_;
+            seekHits_.clear();compactInCards_=true;layout_.content=visible;
+            const UiRect partialCurve{visible.left,std::max(visible.top,visible.bottom-100.),visible.right,visibleLayout.footer.bottom};
+            dc->beginDraw();drawRelativeColorCurve(dc,playingRoute,playingRoute.candidate.key,partialCurve);dc->endDraw();
+            const auto partialHit=std::find_if(seekHits_.begin(),seekHits_.end(),[&](const auto& h){return h.id==expectedId&&h.cursorRect.getWidth()>0;});
+            okay=okay&&partialHit!=seekHits_.end();
+            if(partialHit!=seekHits_.end()){
+                const auto clipped=*partialHit;const CPoint footerPoint{(clipped.cursorRect.left+clipped.cursorRect.right)*.5,visibleLayout.footer.top+1};
+                okay=okay&&clipped.cursorRect.top>=visible.top&&clipped.cursorRect.bottom<=visible.bottom&&
+                    !clipped.cursorRect.pointInside(footerPoint);
+            }
+            seekHits_=previousSeekHits;layout_.content=previousContent;compactInCards_=previousInCards;paint();
+            CPoint point{(curveHit.cursorRect.left+curveHit.cursorRect.right)*.5,curveHit.cursorRect.top+3};
             onMouseDown(point,CButtonState{kLButton});okay=okay&&seekGesture_.has_value();
             point.x=curveHit.rect.left+curveHit.rect.getWidth()*.63;onMouseMoved(point,CButtonState{kLButton});
             const auto curveQN=std::clamp((point.x-curveHit.originX)/curveHit.width*curveHit.totalQN,curveHit.minimumQN,curveHit.totalQN);

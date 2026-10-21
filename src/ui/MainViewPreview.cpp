@@ -108,7 +108,10 @@ void MainView::drawRelativeColorCurve(CDrawContext* dc,const preview::SourceRout
     if(missing)label(zh?"数据不足的节点留空":"Unavailable nodes are left blank",{plot.left+5,area.top+14,area.right-110,area.top+28});
     auto hit=CRect{plot.left,plot.top,plot.right,plot.bottom};
     if(compactInCards_)hit.bound({layout_.content.left,layout_.content.top,layout_.content.right,layout_.content.bottom});
-    if(hit.getWidth()>0&&hit.getHeight()>0)seekHits_.push_back({hit,c.id,plot.left,plot.width(),end,
-        auditionSuffix_&&!findEnrichment(c.id)?boundary:0.,cursorHit});
+    if(hit.getWidth()>0&&hit.getHeight()>0){
+        if(cursorHit.getWidth()>0&&cursorHit.getHeight()>0)cursorHit.bound(hit);
+        seekHits_.push_back({hit,c.id,plot.left,plot.width(),end,
+            auditionSuffix_&&!findEnrichment(c.id)?boundary:0.,cursorHit});
+    }
 }
 }
