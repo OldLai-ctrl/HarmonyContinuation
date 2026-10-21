@@ -1,10 +1,39 @@
 # dev.15 与 v0.10.0 RC 技术评审
 
-本轮基线为 dev.14 / b4e6f65。用户明确报告 dev.14 已在 Cubase 全部验收通过；该结论不转移到 dev.15 新音频路径。
+RC1 接续基线为 `7336c1d`，dev.15 包为 `626f164`。用户在本轮明确报告 dev.15 的 Host/Windows 双输出、MIDI、工程恢复与稳定性已在 Cubase 验收通过。RC1 三项 UI 变化仍需用户复验，FL Studio 实机仍 Pending。下文保留 dev.15 的原始工程证据和历史测试契约。
 
-## 交付身份与结论
+## RC1 UI 修复与精简门禁
 
-结论：**CONDITIONAL**。五项功能完成，三项历史契约已完成审计与修订；2026-10-21 本轮独立完整 CTest 为 **34/34通过、0失败**。开发端技术测试门禁通过；dev.15 真实 Cubase 新音频路径、设备切换及人工听评仍为 Pending，FL Studio 实机仍为 Pending。
+- 版本：`0.10.0-rc.1` / Release / Windows x64；源码 / BuildCommit：`435ed852d50346d3c1ae8163451e6580fe4dac9e`（`435ed85`）。源码提交之后的交付文档提交不改变包身份。
+- 唯一 [RC1 Setup](../../HarmonyContinuation-rc1-delivery-20261021/HarmonyContinuation-0.10.0-rc.1-Setup.exe)；[SHA-256](../../HarmonyContinuation-rc1-delivery-20261021/HarmonyContinuation-0.10.0-rc.1-Setup.exe.sha256)：`74fda52d8b0958460db4ff34a8af1edde3b3c15040fd3c3334d493ee58c0e324`。保留 dev.15 包用于回退。隔离安装 helper 仅用于开发验证，不作为第二个用户包交付。
+- 修改范围：四个 `MainView` UI 文件、CMake 默认预发布版本及发布说明；未触及 PreviewTransport、音频后端、DSP、Processor、推荐评分、Session、Schema、Factory 或安装器逻辑。Factory 继续为 V5 / 658。
+- 光标：下端三角手柄，沿整根光标提供约 22 个逻辑像素的命中宽度；悬停/拖动用暖色反馈。任意进度带点击保留，QN 映射包含水平滚动偏移。命中区裁到可见卡片范围，MIDI 控件优先。
+- 升级高亮：保留 `EnrichmentProvenance` 分类，原始/插入/替换/修改分别使用既有中性/暖色/缺口色系/蓝色背景。名称无新增或替换前缀；底部图例及曲线节点形状保留区别。
+- 曲线：节点由区间中心改为 `startQN`，按真实 QN 映射；标签位于事件时段内，末项延伸至终点并画结束刻线。色彩指数和推荐分数不变。
+
+| 本轮检查 | 实际结果与范围 |
+| --- | --- |
+| Release 增量构建与身份 | PASS；生成版本 `rc.1 / 435ed85 / Factory V5`，commit override 为空；[最终构建日志](../../HarmonyContinuation-rc1-validation-20261021/build-final-435ed85.log)。Setup 版本、校验文件及构建/暂存插件字节[一致](../../HarmonyContinuation-rc1-validation-20261021/delivery-identity.txt) |
+| 定向 UI 测试 | [2/2 PASS，2.11 秒](../../HarmonyContinuation-rc1-validation-20261021/ctest-ui-final.log)：`UILayoutTests`、`CompactEditorUI`；整根光标/手柄、进度带点击、水平滚动、暂停释放、MIDI 优先、视口裁切、四类高亮、等时/不等时 QN 与曲线起点 |
+| 普通推荐与升级进行最小集成 | PASS，既有原生 UI smoke 内核对试听/暂停/定位回调、简略/详细按钮切换、选中对象、QN 与 MIDI 对象身份；复用同一音频实现的 dev.15 实际 SDK 音频及用户 Cubase 证据 |
+| RC 安装身份与隔离升级 | [PASS](../../HarmonyContinuation-rc1-validation-20261021/upgrade-result.txt)：一次 dev.15 / 626f164 → RC1 / 435ed85 升级；16 个插件文件与清单一致，Factory V5 / 658；用户样本与 V4 历史样本字节保留。隔离 AppId 清理完成，真实安装未改动；[升级日志](../../HarmonyContinuation-rc1-validation-20261021/upgrade-rc1-install.log) |
+| 安装后 SDK 编辑器加载 | [2/2 PASS](../../HarmonyContinuation-rc1-validation-20261021/installed-editorhost.log)：安装后的真实模块打开、子编辑器、resize、关闭；是 SDK 开发宿主，不是 Cubase 实机 |
+| 历史门禁复用 | dev.15 单次 CTest 34/34、Validator 47/47、原生宿主 42/42、隔离生命周期 26 项及 Factory V5 完整性；原始日志见下文。本轮没有重跑完整矩阵 |
+| Cubase 人工验收 | dev.15 已由用户报告通过；RC1 下方四项 Pending |
+| FL Studio / 正式发布 | FL Studio Pending；正式发布等待用户明确确认 RC1，通过前无 main 合并、Tag 或 Release |
+
+本轮主代理审查命中区域、时间语义、截图及发布门禁；LUNA实施明确的 UI 修正、既有 smoke 补充、构建与打包，主代理完成最小隔离升级/加载及最终身份核验。截图为实际 VSTGUI 开发端渲染，部分无音频接收器的按钮禁用，不作为 Cubase 截图。
+
+| 对比截图 | 修复前 | RC1 修复后 |
+| --- | --- | --- |
+| 升级高亮与起点曲线 | [dev.15](../../HarmonyContinuation-rc1-delivery-20261021/screenshots/before-enrichment-curve.png) | [RC1](../../HarmonyContinuation-rc1-delivery-20261021/screenshots/after-enrichment-curve.png) |
+| 主列表与播放手柄 | [dev.15 主列表](../../HarmonyContinuation-rc1-delivery-20261021/screenshots/before-main.png) | [RC1 暂停/悬停手柄](../../HarmonyContinuation-rc1-delivery-20261021/screenshots/after-cursor-handle.png) |
+
+手柄图展示暂停悬停状态；前后主列表图的播放状态不同。完整最终渲染仍保留在验证目录。综合结论 **CONDITIONAL**：本轮开发技术门禁通过，等待 RC1 精简 Cubase 验收；尚未执行正式发布。
+
+## dev.15 历史交付身份与结论
+
+结论：**CONDITIONAL**，等待 RC1 UI 的 Cubase 确认。dev.15 五项功能与三项历史契约审计完成；2026-10-21 独立完整 CTest **34/34通过、0失败**。dev.15 Cubase 双输出、MIDI、工程恢复与稳定性由用户报告通过；开发端自动化、模拟宿主与用户验收分别记录。
 
 - 版本：`0.10.0-dev.15` / Release / Windows x64。
 - 安装包源码 / BuildCommit：`626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`）。`848d4b0` 是功能提交，`626f164` 是集中审查修正；后续仅测试、测试配置与交付文档提交，不改变包内容。本轮以 `267ed3a8` 为接续基线，重新编译测试目标；未修改生产源码或重新构建插件、安装器。
@@ -21,7 +50,7 @@
 - 详细卡片：主播放带保留实际库路线、时值、级数及续写边界；原来重复的结果区域显示色彩曲线。输入与来源有替代或缺口时保留真实 Matcher 对照，输入插入和模板跳过继续使用不同颜色及文字。Why 保留来源、用途、约束、匹配轨迹等独立信息。
 - 输出：Host Audio 使用原有 Fx|Tools、原 FUID、原单声道/立体声输入输出总线，在原透传输出上混入试听。Windows Audio 使用独立线程上的 waveOut 原生输出，不再调用 PlaySound、生成临时 WAV 或凭墙钟估计播放位置。不直接打开 ASIO。
 - 播放、暂停、继续、停止：两个后端共用 PreviewTransport。暂停保持样本位置，继续不重置；停止回到当前范围起点。切换候选或分类、新输入和音乐设置变更停止旧对象；详情、滚动、翻页和总览保留当前试听对象。BPM / 范围修改重新准备配音，保留 QN 并裁到新范围，保持 Playing / Paused。升级进行固定完整范围。
-- 定位：卡片底部细进度带及详细曲线支持点击、拖动。拖动只画目标指示，释放提交一次；映射使用实际 QN、范围与横向滚动偏移，不按和弦等长推算。暂停选点保持暂停；另一候选选点先准备为暂停，不短暂发声；中途立即恢复应有和弦。到末端停止。MIDI 内容和候选身份不随定位改变。
+- 定位：卡片进度带及详细曲线支持点击、拖动；RC1 增加整根光标的命中宽度、下端三角手柄及悬停反馈。拖动只画目标指示，释放提交一次；映射使用实际 QN、范围与横向滚动偏移，不按和弦等长推算。暂停选点保持暂停；另一候选选点先准备为暂停，不短暂发声；中途立即恢复应有和弦。到末端停止。MIDI 内容和候选身份不随定位改变。
 
 ## 相对色彩指数定义
 
@@ -55,7 +84,7 @@ Host 可用性来自最近实际输出处理回调，不能由“Cubase”宿主
 
 开发端证明的是 SDK 合法性、实际模块输出缓冲和本机原生设备控制；Cubase 监听路由、硬件缓冲尾音及设备切换仍需实机验收。
 
-## 测试证据
+## dev.15 测试证据（RC1 复用）
 
 | 检查 | 实际结果与范围 |
 | --- | --- |
@@ -105,11 +134,12 @@ A7分析权重为 `0.66 + 0.06 - 0.12 - 0.13 - 0.13 = 0.34`，分别含功能、
 | 三项历史契约及有价值的实验性质 | PASS；跨版本A7、V4历史数据、V5正式Worker与Unified默认明确分开 |
 | Factory V5、Session/Snapshot、MIDI | PASS，本轮完整回归；数据/格式和生产源码未修改 |
 | 开发端音频 | PASS，复用同一626f164的SDK模块42/42与Windows原生设备/120秒349轮证据，本轮Preview及宿主契约完整复验；无新增设备听评 |
-| dev.15 Cubase真实路由、设备切换、工程重开与听评 | Pending；dev.14用户已验收不转移为dev.15结论 |
+| dev.15 Cubase双输出、MIDI、工程恢复与稳定性 | PASS，用户在本轮明确报告；不视作 RC1 三项 UI 的验收 |
+| RC1 三项 UI 的 Cubase 复验 | Pending；使用下方精简清单 |
 | FL Studio实机 | Pending |
 | 正式发布 | 未执行；无main合并、正式Tag或Release |
 
-本轮主代理决定音乐语义与旧契约取舍，并集中复核测试差异、实际日志和门禁；LUNA负责隔离复现、测试维护及重复执行。工程门禁已完成；整体RC为CONDITIONAL，待下面的真实宿主与人工验收。
+dev.15 门禁收尾由主代理决定音乐语义与旧契约取舍，并集中复核测试差异、实际日志和门禁；LUNA负责隔离复现、测试维护及重复执行。该工程门禁已完成；当前整体RC为CONDITIONAL，待 RC1 精简 Cubase 验收。
 
 ## Standards
 
@@ -121,13 +151,13 @@ A7分析权重为 `0.66 + 0.06 - 0.12 - 0.13 - 0.13 = 0.34`，分别含功能、
 
 两轴记录：Standards 1项已修正、1项性能观察有实测；Spec 2项已修正。主代理负责架构、RT门控、集成、证据与RC结论；Luna承担纯模型/测试/Demo补丁及独立审查。
 
-## Cubase 人工复验（dev.15 Pending）
+## Cubase 人工复验（RC1 Pending）
 
-1. 关闭 Cubase 后安装唯一 dev.15 包，About 核对版本、BuildCommit、Factory V5 / 658。
-2. 在现有可输出音频的轨道加载原插件并启用必要监听；观察 Host Audio 默认选择，试听经过 Cubase 路由；关闭处理后应提示暂停，可切 Windows。
-3. 两后端分别暂停、继续、停止；在和弦中途、边界、末端定位；Full / Suffix、自定义 BPM、非 4/4 和 OPEN 对齐。切换后端无持续双声，位置规则可预测。
-4. 比较升级新增、替换、扩展和转位标记及曲线；R01 默认与三条探索、R02 两种节奏色彩、15634125、借用 iv、七和弦完整来源及分页/总览保持可用。
-5. 播放时开关详情、滚动/翻页、切换候选及分类；试听、完整/后续 MIDI、拖放、Session 重开和旧 Snapshot 指向正确对象。
-6. 多实例、切换音频设备、关闭/重开工程及退出 Cubase，确认无残留声或挂起。人工听评包括新增结构、曲线直觉、音色、和弦切换及定位处的点击声/尾音。
+关闭 Cubase 后安装唯一 RC1 包，About 核对 `0.10.0-rc.1 / 435ed85 / Factory V5 / 658`。仅复验：
 
-FL Studio 实机仍为 Pending。正式版号、正式包及发布决定不在本轮执行；dev.14 安装包和分支保留用于回退，Factory V5 与个人库不迁移。
+1. 光标与下端手柄容易发现；整根光标可拖动，进度带可点击；横向滚动及暂停后定位正确。
+2. 升级进行插入为暖色，名称保持纯和弦名；简略/详细模式高亮一致。
+3. 等时值与不等时值进行的曲线节点位于和弦起点，播放指示与时间轴一致。
+4. 普通推荐和升级进行的试听、MIDI、工程恢复无明显回归。
+
+FL Studio 实机仍为 Pending。用户明确确认 RC1 通过后，按本轮有条件授权继续正常合并 main、正式构建、Tag 与 Release；确认前停在 RC1 交付。dev.15 及更早安装包保留，Factory V5 与个人库不迁移。

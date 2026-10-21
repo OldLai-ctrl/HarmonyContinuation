@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-dev.15 当前交付与条件RC结论见[正式RC评审](docs/DEV15_RC_REVIEW.md)：新增高亮、色彩曲线、双音频输出、暂停恢复及QN定位；BuildCommit `626f164`，Factory V5 / 658不变。dev.14由用户报告Cubase已全部验收通过；dev.15新功能仍需实机复验。
+RC1 当前交付与条件结论见[RC评审](docs/DEV15_RC_REVIEW.md)：播放手柄/整根命中、统一升级高亮及起点曲线；BuildCommit `435ed85`，Factory V5 / 658不变。UI定向2/2、最小隔离升级与安装后SDK加载通过；用户已报告dev.15 Cubase双输出、MIDI、工程恢复与稳定性通过，RC1四项复验仍Pending。[发布说明草案](docs/V0_10_RELEASE_NOTES.md)已准备，用户确认后继续正式发布。
 
 当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
 

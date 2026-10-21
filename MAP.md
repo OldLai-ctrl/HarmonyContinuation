@@ -7,8 +7,8 @@
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `development/preview-transport-20261021` | dev.15源码/BuildCommit `626f164`；双音频与共享播放状态、色彩曲线和新增高亮；RC为CONDITIONAL，详见[NOW](NOW.md)及[RC报告](docs/DEV15_RC_REVIEW.md) |
-| 当前验证与测试包 | 同级 `HarmonyContinuation-dev15-validation-20261021/`、`HarmonyContinuation-dev15-delivery-20261021/`；隔离生命周期在 `build-installer/dev15-rc-lifecycle-20261021/` | 唯一dev.15 Setup、6张原生截图与RC证据；dev.14产物保留；实际Cubase新功能与听评Pending |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/preview-transport-20261021` | RC1源码/BuildCommit `435ed85`；三项UI修复与精简门禁完成，待RC1 Cubase确认；详见[NOW](NOW.md)及[RC报告](docs/DEV15_RC_REVIEW.md) |
+| 当前验证与测试包 | 同级 `HarmonyContinuation-rc1-validation-20261021/`、`HarmonyContinuation-rc1-delivery-20261021/`；隔离升级复用既有dev.15 workspace fixture | 唯一RC1 Setup、前后截图、UI2/2及最小升级/SDK加载证据；dev.15产物和历史完整门禁保留，真实RC1 Cubase复验Pending |
 | Phase 7 UI 原型 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016` | 独立工作树；Phase6.1 没有修改 MainView |
 | Phase 7 正式 UI | 同级 `HarmonyContinuation-phase7-vstgui/` → `development/phase7-vstgui-20261019` | 保留A3设计历史，正式源码adb88dd已合入统一引擎dev.12单包；远端c17a795与unified/013b4c2源码相同，dev.13新增输出/UI在主开发分支；当前状态见[NOW](NOW.md)；定向构建/原生图在同级`HarmonyContinuation-phase7-build/` |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
