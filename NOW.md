@@ -2,6 +2,14 @@
 
 ## 本轮工作与下一步
 
+2026-10-21：dev.15 五项升级及本轮 RC 技术评审完成；结论 **CONDITIONAL**，剩余3项历史测试契约未通过，Cubase新功能与听评Pending。源码/BuildCommit `626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`），分支 `development/preview-transport-20261021`。唯一[dev.15 Setup](../HarmonyContinuation-dev15-delivery-20261021/HarmonyContinuation-0.10.0-dev.15-Setup.exe)；Factory V5 / 658 / Schema2、Session5 / Snapshot3不变；dev.14包保留。后续只有测试和交付文档提交，不改变构建包。
+
+新增/替换高亮、固定0–100色彩曲线、Host/Windows双输出、暂停恢复和QN点击/拖动定位已接入；实际SDK编辑器操作42/42、最终Validator47/47、Windows120秒349轮、隔离安装/升级/卸载26检查通过。完整CTest首轮30/34；修正历史测试对照10条截断后定向复验通过，累计31/34，未重复全套。未改Factory、推荐质量策略、Schema或插件身份，未合并main/Tag/Release。
+
+完整算法定义、源码/包/Factory身份、原生截图、三项剩余门禁及Cubase清单见[正式RC报告](docs/DEV15_RC_REVIEW.md)。本轮用户明确报告dev.14 Cubase验收全部通过；下方dev.14交付段为当时历史记录，不能把其旧Pending或成功转移到dev.15。
+
+### dev.14 历史交付（本轮用户报告Cubase验收已全部通过）
+
 2026-10-19：dev.14 推荐展示与匹配解释升级完成。开发分支 `development/recommendation-browser-20261019`；源码 / BuildCommit `b4e6f65ebefad14e7345d797d941af6d49abbb5d`（`b4e6f65`）已推送 origin 同名分支。唯一测试包：[0.10.0-dev.14 Setup](../HarmonyContinuation-dev14-delivery-20261019/HarmonyContinuation-0.10.0-dev.14-Setup.exe)，Release / Factory V5 / Schema 2 / 658条。包、moduleinfo、二进制版本与提交一致，暂存插件/Factory与最终构建字节一致；dev.13源码和安装包保留。
 
 - 推荐浏览：五类入口保留；所有展示合格候选进入同一滚动列表，每页最多10条。Top3仅为优先标识，探索有独立标签。引擎取消资格之后的每类10条截断；检索预算、硬约束、中性资格门槛60、精确聚合、评分与用途策略不变。不能将新增可见数量解释为音乐质量提升。

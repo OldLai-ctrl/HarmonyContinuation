@@ -4,6 +4,8 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
+dev.15 当前交付与条件RC结论见[正式RC评审](docs/DEV15_RC_REVIEW.md)：新增高亮、色彩曲线、双音频输出、暂停恢复及QN定位；BuildCommit `626f164`，Factory V5 / 658不变。dev.14由用户报告Cubase已全部验收通过；dev.15新功能仍需实机复验。
+
 当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
 
 Phase7入口为 [A3密度微调与审计](design/phase7/README.md) 和 [原型](design/phase7/index.html)。正式800×780界面已与统一引擎合入dev.12，dev.13增加同级升级入口与完整来源试听/MIDI，dev.14增加完整分页推荐列表、同序总览及Matcher轨迹对齐；Factory V5变体提案保留在 `data/factory-proposals/20261019-pop-variants/`，构建身份及验收以 NOW 为准。

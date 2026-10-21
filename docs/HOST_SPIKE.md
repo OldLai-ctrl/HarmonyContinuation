@@ -1,3 +1,5 @@
+dev.15新增宿主试听证据：原Fx|Tools身份与音频总线不变，实际SDK模块输出及编辑器控制已验证；真实Cubase路由、设备切换和听评仍Pending。架构、门控、回调缺失与实测边界见[dev.15 RC报告](DEV15_RC_REVIEW.md)。dev.14 Cubase全通过来自本轮用户确认，不等于dev.15通过。
+
 # HarmonyContinuation — Cubase 宿主集成记录
 
 记录日期：2026-09-24。测试宿主：Cubase Pro 15.0.30 Build 287（x64）。

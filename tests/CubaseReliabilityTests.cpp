@@ -35,7 +35,9 @@ int main(int argc,char** argv){
   auto parsed=plugin::VstXmlChordParser{}.parse(xml.str());if(!parsed.ok())return 3;auto p=parsed.chords;
   if(!open){p.back().durationQN=4.;p.back().openEnded=false;}
   AnalysisContext ctx;if(forced)ctx.forcedKey=KeySignature{PitchClass::C,Mode::Major};
-  auto query=makeMatchQuery(p,ctx);RecommendationWeights w;w.perGroup=10;auto rec=recommendContinuations(query,index,{},w);
+  auto query=makeMatchQuery(p,ctx);
+  // Match the production Worker: qualified results are unbounded after dev.14.
+  RecommendationWeights w;w.perGroup=0;auto rec=recommendContinuations(query,index,{},w);
   if(argc>2&&variant==2&&rhythm==0&&!forced) {
    plugin::RecommendationWorker worker(HC_FACTORY_DB_PATH,out/("worker-"+std::to_string(ci)+"-"+std::to_string(open)+".db"));
    auto generation=worker.submit(p,ctx);std::optional<plugin::WorkerResult> result;
