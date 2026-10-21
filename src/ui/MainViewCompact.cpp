@@ -6,7 +6,7 @@
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/cclipboard.h"
 #include "RecommendationAlignment.h"
-#include "EnrichmentProvenance.h"
+#include "enrichment/EnrichmentProvenance.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -17,6 +17,9 @@
 
 namespace harmony::ui {
 using namespace VSTGUI;
+using enrichment::EnrichmentProvenanceKind;
+using enrichment::EnrichmentProvenanceMark;
+using enrichment::enrichmentProvenance;
 namespace {
 const CColor bg{27,29,33,255},surface{36,39,45,255},raised{43,46,53,255},edge{74,80,91,255},
     fg{242,243,245,255},secondary{175,181,191,255},blue{166,186,255,255};
@@ -191,15 +194,19 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
     struct Cell {std::string label;double qn;bool source{},suggested{};std::optional<std::size_t> sourceIndex;};
     std::vector<Cell> cells;double sourceQN{};bool unknown=false;
     const auto& candidate=route.candidate;
+    const auto* enrichedRoute=findEnrichment(candidate.id);
     const double anchor=route.imported.events.empty()?0:route.imported.events.front().startQN;
-    for(std::size_t sourceIndex=0;sourceIndex<route.imported.events.size();++sourceIndex){const auto& e=route.imported.events[sourceIndex];
+    for(std::size_t routeIndex=0;routeIndex<route.imported.events.size();++routeIndex){const auto& e=route.imported.events[routeIndex];
         const bool open=e.openEnded||!e.durationQN;
         const auto qn=open?candidate.suggestedCurrentChordDurationQN:e.durationQN;
         if(!qn||!std::isfinite(*qn)||*qn<=0){unknown=true;break;}
         const double start=e.startQN-anchor;
         if(start<sourceQN-1e-7){unknown=true;break;}
         if(start>sourceQN+1e-7)cells.push_back({"—",start-sourceQN,true,false,{}});
-        sourceQN=start+*qn;cells.push_back({e.name,*qn,true,open,sourceIndex});
+        // Enrichment routes copy the entire candidate (including insertions);
+        // this index is not the original query/provenance source index.
+        const bool inferred=enrichedRoute&&routeIndex<enrichedRoute->progression.size()&&(enrichedRoute->progression[routeIndex].openEnded||!enrichedRoute->progression[routeIndex].durationQN);
+        sourceQN=start+*qn;cells.push_back({e.name,*qn,true,open||inferred,routeIndex});
     }
     if(unknown){text(dc,state_.locale==session::Locale::ZhCN?"来源进行时值待定或重叠":"Source route duration pending or overlapping",area,11,secondary);return;}
     for(std::size_t i=0;i<candidate.continuation.size();++i){const auto& e=candidate.continuation[i];if(!std::isfinite(e.durationQN)||e.durationQN<=0){text(dc,"Duration pending",area,11,secondary);return;}cells.push_back({e.label,e.durationQN,false,false,candidate.continuationStart+i});}
@@ -227,7 +234,7 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
         const auto badge=inserted?(state_.locale==session::Locale::ZhCN?"新增 ":"New "):replaced?(state_.locale==session::Locale::ZhCN?"替换 ":"Replaced "):"";
         text(dc,std::string(badge)+e.label,{x+3,area.top,x+w-3,area.top+19},detailedCards_?13:11,fg,kCenterText);
         const auto degree=degrees&&e.sourceIndex?" · "+match->templateLabels[*e.sourceIndex%match->templateLabels.size()]:std::string{};
-        text(dc,(e.suggested?std::string("≈ "):std::string{})+number(e.qn)+" QN"+degree,{x+2,area.top+18,x+w-2,area.bottom-3},10,secondary,kCenterText);
+        text(dc,(e.suggested?std::string("OPEN ≈ "):std::string{})+number(e.qn)+" QN"+degree,{x+2,area.top+18,x+w-2,area.bottom-3},10,secondary,kCenterText);
         position+=e.qn;x+=w;
         if(std::abs(position-sourceQN)<1e-7)fill(dc,{x-1,area.top,x+1,area.bottom-3},blue);
     }
@@ -415,7 +422,13 @@ void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult
             if(cg.row.bottom>=g.cardsViewport.top&&cg.row.top<=g.cardsViewport.bottom){
                 rounded(dc,cg.row,selected?CColor(40,46,58,255):surface,selected?blue:edge,10);
                 compactButton(dc,cg.select,selected?"✓":std::to_string(row+1),CompactAction::Select,candidate.id,index,selected,true,true);
-                std::string path;for(const auto& event:candidate.progression){if(!path.empty())path+=" → ";path+=event.name;}
+                const auto provenance=enrichmentProvenance(state_.imported.events,candidate.progression);
+                std::string path;for(std::size_t eventIndex=0;eventIndex<candidate.progression.size();++eventIndex){
+                    if(!path.empty())path+=" → ";
+                    if(provenance[eventIndex].kind==EnrichmentProvenanceKind::Inserted)path+=zh?"[新增] ":"[New] ";
+                    else if(provenance[eventIndex].kind==EnrichmentProvenanceKind::Replaced)path+=zh?"[替换] ":"[Replaced] ";
+                    path+=candidate.progression[eventIndex].name;
+                }
                 text(dc,(rows[row].priority?(zh?std::string("优先 · "):std::string("Top 3 · ")):std::string{})+path,cg.name,13);
                 text(dc,(zh?"评分 ":"Score ")+number(std::round(double(candidate.score)*10.)/10.)+" · "+std::to_string(candidate.progression.size())+
                     (zh?" 和弦":" chords"),cg.facts,10,secondary,kRightText);

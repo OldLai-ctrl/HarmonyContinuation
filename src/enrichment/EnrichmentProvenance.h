@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-namespace harmony::ui {
+namespace harmony::enrichment {
 
 enum class EnrichmentProvenanceKind { Original, Modified, Replaced, Inserted, Unknown };
 
@@ -113,4 +113,4 @@ inline std::vector<EnrichmentProvenanceMark> enrichmentProvenance(
     return result;
 }
 
-} // namespace harmony::ui
+} // namespace harmony::enrichment

@@ -1,5 +1,5 @@
 #include "MainView.h"
-#include "EnrichmentProvenance.h"
+#include "enrichment/EnrichmentProvenance.h"
 #include "color/RelativeColorCurve.h"
 #include "vstgui/lib/cdrawcontext.h"
 #include "vstgui/lib/cfont.h"
@@ -9,6 +9,9 @@
 
 namespace harmony::ui {
 using namespace VSTGUI;
+using enrichment::EnrichmentProvenanceKind;
+using enrichment::EnrichmentProvenanceMark;
+using enrichment::enrichmentProvenance;
 void MainView::setPreviewTransport(preview::PlaybackState state,bool host,bool available,bool pending){
     if(auditionState_==state&&auditionHostBackend_==host&&auditionHostAvailable_==available&&auditionPending_==pending)return;
     auditionState_=state;auditionHostBackend_=host;auditionHostAvailable_=available;auditionPending_=pending;invalid();
@@ -47,10 +50,12 @@ void MainView::drawRelativeColorCurve(CDrawContext* dc,const preview::SourceRout
     for(const auto& e:c.continuation){ChordEvent event=e.harmonicData.value_or(ChordEvent{});event.name=e.label;event.quality=e.quality;event.startQN=end;event.durationQN=e.durationQN;event.openEnded=false;path.push_back(event);end+=e.durationQN;}
     if(!std::isfinite(end)||end<=0){label(zh?"时值待定，无法绘制时间轴":"Timing unavailable",{area.left,area.top+20,area.right,area.bottom});return;}
     const auto qnLabel=[](double value){char buffer[48];std::snprintf(buffer,sizeof(buffer),"%.2f",value);std::string text=buffer;while(text.size()>1&&text.back()=='0')text.pop_back();if(text.back()=='.')text.pop_back();return text;};
-    label("0 – "+qnLabel(end)+" QN",{area.right-100,area.top+15,area.right,area.top+29});
+    const auto* enriched=findEnrichment(c.id);
+    const bool inferredTime=enriched&&std::any_of(enriched->progression.begin(),enriched->progression.end(),[](const auto& event){return event.openEnded||!event.durationQN;});
+    label(std::string(inferredTime?"≈ 0 – ":"0 – ")+qnLabel(end)+" QN",{area.right-100,area.top+15,area.right,area.top+29});
     const auto points=color::analyzeRelativeColorCurve(path,key);
     std::vector<EnrichmentProvenanceMark> marks;
-    if(const auto* enriched=findEnrichment(c.id))marks=enrichmentProvenance(state_.imported.events,enriched->progression);
+    if(enriched)marks=enrichmentProvenance(state_.imported.events,enriched->progression);
     const UiRect plot{area.left+25,area.top+30,area.right-5,area.bottom-24};
     if(plot.height()<25||plot.width()<=0)return;
     dc->setFrameColor({68,74,84,255});dc->setLineWidth(1);
@@ -75,6 +80,7 @@ void MainView::drawRelativeColorCurve(CDrawContext* dc,const preview::SourceRout
     }
     const double display=previewDisplayQN(c.id);
     if(display>=0){dc->setFrameColor({244,244,246,255});dc->setLineWidth(1);const auto x=timelineX(std::clamp(display,0.,end));dc->drawLine({x,plot.top},{x,plot.bottom});}
+    if(inferredTime&&!missing)label(zh?"OPEN：按试听规划时值":"OPEN: planned preview timing",{plot.left+5,area.top+14,area.right-110,area.top+28});
     if(missing)label(zh?"数据不足的节点留空":"Unavailable nodes are left blank",{plot.left+5,area.top+14,area.right-110,area.top+28});
     auto hit=CRect{plot.left,plot.top,plot.right,plot.bottom};
     if(compactInCards_)hit.bound({layout_.content.left,layout_.content.top,layout_.content.right,layout_.content.bottom});

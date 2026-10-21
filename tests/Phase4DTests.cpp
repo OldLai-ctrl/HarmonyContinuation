@@ -10,7 +10,7 @@
 #include "snapshot/RecommendationSnapshot.h"
 #include "color/ColorPreferenceReranker.h"
 #include "color/RelativeColorCurve.h"
-#include "ui/EnrichmentProvenance.h"
+#include "enrichment/EnrichmentProvenance.h"
 #include <algorithm>
 #include <chrono>
 #include <cctype>
@@ -43,7 +43,7 @@ Progression phrase(std::vector<std::string> names,std::vector<double> durations,
 }
 void runCurveChecks() {
     using color::RelativeColorComponent;
-    using ui::EnrichmentProvenanceKind;
+    using enrichment::EnrichmentProvenanceKind;
     constexpr auto baseIndex=static_cast<std::size_t>(RelativeColorComponent::Base);
     constexpr auto structureIndex=static_cast<std::size_t>(RelativeColorComponent::SpecialStructure);
     constexpr auto alteredIndex=static_cast<std::size_t>(RelativeColorComponent::Altered);
@@ -51,30 +51,30 @@ void runCurveChecks() {
 
     const auto source=phrase({"C","G"},{4.,4.});
     const auto inserted=phrase({"C","Dm","G"},{2.,2.,4.});
-    const auto insertionMarks=ui::enrichmentProvenance(source,inserted);
+    const auto insertionMarks=enrichment::enrichmentProvenance(source,inserted);
     require(insertionMarks.size()==3&&insertionMarks[0].kind==EnrichmentProvenanceKind::Original&&
         insertionMarks[1].kind==EnrichmentProvenanceKind::Inserted&&!insertionMarks[1].sourceIndex&&
         insertionMarks[2].kind==EnrichmentProvenanceKind::Original&&insertionMarks[2].sourceIndex==1,
         "visual provenance identifies only the internal onset as inserted");
 
-    const auto replaced=ui::enrichmentProvenance(source,phrase({"C","F"},{4.,4.}));
+    const auto replaced=enrichment::enrichmentProvenance(source,phrase({"C","F"},{4.,4.}));
     require(replaced[1].kind==EnrichmentProvenanceKind::Replaced&&replaced[1].sourceIndex==1,
         "visual provenance keeps a same-onset replacement separate from insertion");
-    const auto triadChanged=ui::enrichmentProvenance(source,phrase({"Cm","G"},{4.,4.}));
+    const auto triadChanged=enrichment::enrichmentProvenance(source,phrase({"Cm","G"},{4.,4.}));
     require(triadChanged[0].kind==EnrichmentProvenanceKind::Replaced,
         "visual provenance detects a defining third change at a stable root");
-    const auto extended=ui::enrichmentProvenance(source,phrase({"Cmaj7","G"},{4.,4.}));
+    const auto extended=enrichment::enrichmentProvenance(source,phrase({"Cmaj7","G"},{4.,4.}));
     require(extended[0].kind==EnrichmentProvenanceKind::Modified&&extended[0].sourceIndex==0,
         "visual provenance treats a seventh as a modification");
-    const auto inversion=ui::enrichmentProvenance(source,phrase({"C/G","G"},{4.,4.}));
+    const auto inversion=enrichment::enrichmentProvenance(source,phrase({"C/G","G"},{4.,4.}));
     require(inversion[0].kind==EnrichmentProvenanceKind::Modified,
         "visual provenance treats an inversion as a modification");
-    const auto incomplete=ui::enrichmentProvenance(source,phrase({"C"},{4.}));
+    const auto incomplete=enrichment::enrichmentProvenance(source,phrase({"C"},{4.}));
     require(incomplete.size()==1&&incomplete[0].kind==EnrichmentProvenanceKind::Unknown&&
         !incomplete[0].sourceIndex,"visual provenance degrades incomplete onset coverage to unknown");
     Progression malformed=source;
     malformed[0].name="unparsed chord";
-    const auto unknownChord=ui::enrichmentProvenance(source,malformed);
+    const auto unknownChord=enrichment::enrichmentProvenance(source,malformed);
     require(unknownChord[0].kind==EnrichmentProvenanceKind::Unknown&&unknownChord[0].sourceIndex==0,
         "visual provenance preserves onset mapping but marks malformed pitch data unknown");
 

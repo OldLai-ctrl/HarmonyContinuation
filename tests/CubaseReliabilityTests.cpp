@@ -62,31 +62,32 @@ int main(int argc,char** argv){
  }
 
  if(argc>2){
+  const auto failure=[&](const std::string& name){++failures;std::cerr<<"FAIL "<<name<<'\n';};
   auto host=[](const char* name,const char* pitches,int bass){ChordEvent e;e.name=name;e.rawName=e.name;e.source=ChordSource::CubaseDrop;e.keyNoteValue=0;e.bassNoteValue=bass;e.extensions.pitches=pitches;return e;};
   auto a=host("Cmaj9","C;E;B;D;",4);auto n=normalizeChord(a);
-  if(n.quality!=ChordQuality::Major7||n.explicitBass||n.performedBass!=PitchClass::E||!(n.matchingIntervalMask&(1u<<7))||n.intervalMask&(1u<<7))++failures;
-  auto b=normalizeChord(host("C9","C;E;Bb;D;",7));if(b.quality!=ChordQuality::Dominant7||b.matchingIntervalMask==n.matchingIntervalMask)++failures;
-  auto conflict=normalizeChord(host("Cmaj9","C;Eb;Bb;D;",0));if(!conflict.fieldConflict||conflict.compatibilityUncertainty<.35f)++failures;
-  auto slash=normalizeChord(host("C7/Bb","C;E;Bb;",4));if(!slash.explicitBass||slash.bass!=static_cast<PitchClass>(10))++failures;
-  auto altered=normalizeChord(host("C7#5","C;E;Ab;Bb;",0));if(altered.matchingIntervalMask&(1u<<7)||!(altered.matchingIntervalMask&(1u<<8)))++failures;
+  if(n.quality!=ChordQuality::Major7||n.explicitBass||n.performedBass!=PitchClass::E||!(n.matchingIntervalMask&(1u<<7))||n.intervalMask&(1u<<7))failure("Cmaj9 performed-bass and completed fifth");
+  auto b=normalizeChord(host("C9","C;E;Bb;D;",7));if(b.quality!=ChordQuality::Dominant7||b.matchingIntervalMask==n.matchingIntervalMask)failure("C9 and Cmaj9 matching distinction");
+  auto conflict=normalizeChord(host("Cmaj9","C;Eb;Bb;D;",0));if(!conflict.fieldConflict||conflict.compatibilityUncertainty<.35f)failure("Cmaj9 structured field conflict");
+  auto slash=normalizeChord(host("C7/Bb","C;E;Bb;",4));if(!slash.explicitBass||slash.bass!=static_cast<PitchClass>(10))failure("explicit slash overrides performed bass");
+  auto altered=normalizeChord(host("C7#5","C;E;Ab;Bb;",0));if(altered.matchingIntervalMask&(1u<<7)||!(altered.matchingIntervalMask&(1u<<8)))failure("altered fifth is not completed to a perfect fifth");
   // Explicit wrong slash/quality still cannot identify the protected template.
   for(const auto wrong:{"C7/A","Cm7/Bb","Cmaj7/Bb"}) {
    Progression p;for(const auto name:{"C","Cmaj7/B",wrong}){auto e=host(name,"",0);e.extensions.pitches.reset();e.startQN=p.size()*4.;p.push_back(e);}
    auto rec=recommendContinuations(makeMatchQuery(p),index);bool retained=false;
    for(const auto& g:rec.groups)for(const auto& c:g)if(std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),"V4_B08")!=c.supportingTemplates.end())retained=true;
-   if(retained)++failures;
+   if(retained)failure(std::string("historical protected-template exclusion: ")+wrong);
   }
   auto six=host("A6/9","A;Db;Gb;B;",9);six.keyNoteValue=9;auto sixn=normalizeChord(six);
-  if(sixn.explicitBass||!(sixn.matchingIntervalMask&(1u<<2))||!(sixn.matchingIntervalMask&(1u<<9)))++failures;
+  if(sixn.explicitBass||!(sixn.matchingIntervalMask&(1u<<2))||!(sixn.matchingIntervalMask&(1u<<9)))failure("A6/9 structure and performed bass");
   Progression skeleton;for(auto label:{"C","F","F#dim7","G"}){ChordEvent e;e.name=label;e.startQN=skeleton.size()*4.;e.durationQN=4.;e.openEnded=false;skeleton.push_back(e);}
-  if(analyzeHarmony(skeleton).skeletonIndices.size()!=4)++failures;
+  if(analyzeHarmony(skeleton).skeletonIndices.size()!=4)failure("diminished structural node remains in skeleton");
   // Direct MIDI extraction is separate evidence from the Cubase XML route.
   std::ofstream ml(out/"midi-timing.tsv");ml<<"variant\timported\tname\tstart\tduration\trecommendations\n";
   for(int variant=0;variant<5;++variant){midi::MidiFile f;f.ppq=960;f.format=0;f.totalQN=16.;f.tracks.push_back({0,"Synthetic timing",16,0});
    for(size_t i=0;i<skeleton.size();++i){auto tones=chordPitches(skeleton[i]);std::vector<int> pitches{36+tones.bass};for(int k=0;k<12;++k)if(tones.intervals&(1u<<k))pitches.push_back(60+tones.root+k);
     for(size_t k=0;k<pitches.size();++k){double shift=variant==2?k*.012:variant==4?.035:0.;double end=skeleton[i].startQN+4.+(variant==1?-.08:variant==3&&i<3?.06:0.);f.notes.push_back({pitches[k],90,0,0,skeleton[i].startQN+shift,end-skeleton[i].startQN-shift});}}
    auto extracted=midi::extractHarmony(f);auto rec=recommendContinuations(makeMatchQuery(extracted.chords),index);
-   if(!extracted||extracted.chords.size()!=4||!rec.stats.output)++failures;
+   if(!extracted||extracted.chords.size()!=4||!rec.stats.output)failure("historical four-node MIDI extraction/retrieval variant "+std::to_string(variant));
    for(auto& e:extracted.chords)ml<<variant<<'\t'<<extracted.chords.size()<<'\t'<<e.name<<'\t'<<e.startQN<<'\t'<<e.durationQN.value_or(-1)<<'\t'<<rec.stats.output<<'\n';
   }
  }
