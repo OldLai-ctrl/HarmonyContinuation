@@ -2,11 +2,11 @@
 
 ## 本轮工作与下一步
 
-2026-10-21：dev.15 五项升级及本轮 RC 技术评审完成；结论 **CONDITIONAL**，剩余3项历史测试契约未通过，Cubase新功能与听评Pending。源码/BuildCommit `626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`），分支 `development/preview-transport-20261021`。唯一[dev.15 Setup](../HarmonyContinuation-dev15-delivery-20261021/HarmonyContinuation-0.10.0-dev.15-Setup.exe)；Factory V5 / 658 / Schema2、Session5 / Snapshot3不变；dev.14包保留。后续只有测试和交付文档提交，不改变构建包。
+2026-10-21：dev.15 五项升级及本轮 RC 技术评审完成；结论 **CONDITIONAL**；三项历史契约已修订，本轮单次完整CTest **34/34通过、0失败**（164.90秒），Cubase新功能、听评与FL Studio实机仍Pending。源码/BuildCommit `626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`），分支 `development/preview-transport-20261021`。唯一[dev.15 Setup](../HarmonyContinuation-dev15-delivery-20261021/HarmonyContinuation-0.10.0-dev.15-Setup.exe)；Factory V5 / 658 / Schema2、Session5 / Snapshot3不变；dev.14包保留。后续只有测试和交付文档提交，不改变构建包。
 
-新增/替换高亮、固定0–100色彩曲线、Host/Windows双输出、暂停恢复和QN点击/拖动定位已接入；实际SDK编辑器操作42/42、最终Validator47/47、Windows120秒349轮、隔离安装/升级/卸载26检查通过。完整CTest首轮30/34；修正历史测试对照10条截断后定向复验通过，累计31/34，未重复全套。未改Factory、推荐质量策略、Schema或插件身份，未合并main/Tag/Release。
+新增/替换高亮、固定0–100色彩曲线、Host/Windows双输出、暂停恢复和QN点击/拖动定位已接入；实际SDK编辑器操作42/42、最终Validator47/47、Windows120秒349轮、隔离安装/升级/卸载26检查通过。本轮完成dev.14/dev.15短A7实际对照、冻结V4历史矩阵/V5正式Worker分离及Unified默认一致性修订；完整34项复验通过。首轮受限Temp的27/34及此前30/34原始证据保留，未累加冒充完整通过。未改Factory、推荐质量策略、Schema或插件身份，未合并main/Tag/Release。
 
-完整算法定义、源码/包/Factory身份、原生截图、三项剩余门禁及Cubase清单见[正式RC报告](docs/DEV15_RC_REVIEW.md)。本轮用户明确报告dev.14 Cubase验收全部通过；下方dev.14交付段为当时历史记录，不能把其旧Pending或成功转移到dev.15。
+完整算法定义、源码/包/Factory身份、原生截图、已修订契约、更新门禁表及Cubase清单见[正式RC报告](docs/DEV15_RC_REVIEW.md)。本轮用户明确报告dev.14 Cubase验收全部通过；下方dev.14交付段为当时历史记录，不能把其旧Pending或成功转移到dev.15。
 
 ### dev.14 历史交付（本轮用户报告Cubase验收已全部通过）
 

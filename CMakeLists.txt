@@ -595,7 +595,15 @@ endif()
 if(BUILD_TESTING)
  add_executable(RecommendationReliabilityTests tests/RecommendationReliabilityTests.cpp)
  target_link_libraries(RecommendationReliabilityTests PRIVATE harmony_product harmony_midi harmony_snapshot)
- target_compile_definitions(RecommendationReliabilityTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}")
+ set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${HC_FACTORY_DB}")
+ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+  set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
+  add_dependencies(RecommendationReliabilityTests factory_v4_reference)
+ endif()
+ target_compile_definitions(RecommendationReliabilityTests PRIVATE
+  HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
+  HC_RELIABILITY_MATRIX_FACTORY_PATH="${HC_RELIABILITY_MATRIX_FACTORY_PATH}"
+  HC_RELIABILITY_PRODUCT_FACTORY_VERSION=${HC_FACTORY_LIBRARY_VERSION})
  add_dependencies(RecommendationReliabilityTests factory_database)
  if(HC_BUILD_PLUGIN)
   target_sources(RecommendationReliabilityTests PRIVATE src/plugin/RecommendationWorker.cpp)

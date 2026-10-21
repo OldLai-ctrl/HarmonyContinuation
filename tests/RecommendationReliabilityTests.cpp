@@ -12,6 +12,7 @@
 #endif
 #include "library/ProgressionLibrary.h"
 #include "core/ContinuationEngine.h"
+#include "core/RecommendationPolicy.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "session/ProductServices.h"
 #include <fstream>
@@ -26,6 +27,7 @@
 #include <set>
 #include <unordered_map>
 #include <stdexcept>
+#include <string_view>
 #if defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -63,8 +65,81 @@ const char* retrievalTimingModeName(RetrievalTimingMode mode) {
   case RetrievalTimingMode::BarPositionIndependent:return "BarPositionIndependent";
   case RetrievalTimingMode::ContinuousStructure:return "ContinuousStructure";
   case RetrievalTimingMode::HarmonyFirst:return "HarmonyFirst";
+  case RetrievalTimingMode::Unified:return "Unified";
  }
  return "Unknown";
+}
+bool sameRecommendationResults(const RecommendationSet& a,const RecommendationSet& b) {
+ if(a.retrievalTimingMode!=b.retrievalTimingMode||a.abstractChordCompatibility!=b.abstractChordCompatibility||
+    a.phase3aEnabled!=b.phase3aEnabled)return false;
+ if(a.matches.size()!=b.matches.size())return false;
+ for(std::size_t i=0;i<a.matches.size();++i) {
+  const auto& x=a.matches[i];const auto& y=b.matches[i];
+  if(x.templateId!=y.templateId||x.templateName!=y.templateName||x.key.tonic!=y.key.tonic||x.key.mode!=y.key.mode||
+     x.similarity!=y.similarity||x.rawCost!=y.rawCost||x.disposition!=y.disposition||x.timingSource!=y.timingSource||
+     x.candidateRankingScore!=y.candidateRankingScore||x.candidateEligibilityScore!=y.candidateEligibilityScore||
+     x.keyPrior!=y.keyPrior||x.templateMatchStart!=y.templateMatchStart||x.templateMatchEnd!=y.templateMatchEnd||
+     x.continuationStartIndex!=y.continuationStartIndex||x.hasContinuation!=y.hasContinuation||
+     x.continuationLength!=y.continuationLength||x.templateLabels!=y.templateLabels||
+     x.subScores.skeletonHarmony!=y.subScores.skeletonHarmony||x.subScores.fullHarmony!=y.subScores.fullHarmony||
+     x.subScores.functionSimilarity!=y.subScores.functionSimilarity||x.subScores.roleSimilarity!=y.subScores.roleSimilarity||
+     x.subScores.rhythmSimilarity!=y.subScores.rhythmSimilarity||x.subScores.keyCompatibility!=y.subScores.keyCompatibility||
+     x.alignmentTrace.size()!=y.alignmentTrace.size())return false;
+  for(std::size_t j=0;j<x.alignmentTrace.size();++j) {
+   const auto& p=x.alignmentTrace[j];const auto& q=y.alignmentTrace[j];
+   if(p.queryIndex!=q.queryIndex||p.templateIndex!=q.templateIndex||p.operation!=q.operation||
+      p.cost!=q.cost||p.reasons!=q.reasons)return false;
+  }
+ }
+ for(std::size_t g=0;g<a.groups.size();++g) {
+  if(a.groups[g].size()!=b.groups[g].size())return false;
+  for(std::size_t i=0;i<a.groups[g].size();++i) {
+   const auto& x=a.groups[g][i];const auto& y=b.groups[g][i];
+   if(x.id!=y.id||x.primaryTemplate!=y.primaryTemplate||x.supportingTemplates!=y.supportingTemplates||
+      x.intent!=y.intent||x.key.tonic!=y.key.tonic||x.key.mode!=y.key.mode||
+      continuationMusicFingerprint(x)!=continuationMusicFingerprint(y)||
+      x.hardConstraintsPassed!=y.hardConstraintsPassed||x.baseQualified!=y.baseQualified||
+      x.exploratory!=y.exploratory||x.eligibilityScore!=y.eligibilityScore||x.rankingScore!=y.rankingScore)
+    return false;
+  }
+ }
+ return true;
+}
+bool sameMatchIdentity(const MatchResult& a,const MatchResult& b) {
+ if(a.templateId!=b.templateId||a.key.tonic!=b.key.tonic||a.key.mode!=b.key.mode||
+    a.templateMatchStart!=b.templateMatchStart||a.templateMatchEnd!=b.templateMatchEnd||
+    a.continuationStartIndex!=b.continuationStartIndex||a.alignmentTrace.size()!=b.alignmentTrace.size())return false;
+ for(std::size_t i=0;i<a.alignmentTrace.size();++i) {
+  const auto& x=a.alignmentTrace[i];const auto& y=b.alignmentTrace[i];
+  if(x.queryIndex!=y.queryIndex||x.templateIndex!=y.templateIndex||x.operation!=y.operation||
+     x.cost!=y.cost||x.reasons!=y.reasons)return false;
+ }
+ return true;
+}
+bool evidenceIdentifiesMatch(const ContinuationCandidate& candidate,const MatchResult& match) {
+ return representativeMatch(candidate,match)||std::any_of(candidate.evidence.begin(),candidate.evidence.end(),[&](const auto& evidence) {
+  return evidence.templateId==match.templateId&&evidence.key.tonic==match.key.tonic&&evidence.key.mode==match.key.mode&&
+   evidence.matchStart==match.templateMatchStart&&evidence.matchEnd==match.templateMatchEnd&&
+   evidence.continuationStart==match.continuationStartIndex;
+ });
+}
+const ContinuationCandidate* candidateForMatch(const RecommendationSet& recommendations,const MatchResult& match) {
+ for(const auto& group:recommendations.groups)for(const auto& candidate:group)
+  if(evidenceIdentifiesMatch(candidate,match))return &candidate;
+ return nullptr;
+}
+std::vector<const DiminishedInsertionDiagnostic*> correspondingDiagnostics(
+    const MatchResult& before,const MatchResult& after,const std::vector<DiminishedInsertionDiagnostic>& diagnostics) {
+ std::vector<const DiminishedInsertionDiagnostic*> result;
+ for(const auto& diagnostic:diagnostics)if(diagnostic.templateId==before.templateId&&
+    std::abs((before.candidateRankingScore-diagnostic.scoreBefore)-
+             (after.candidateRankingScore-diagnostic.scoreAfter))<=0.001f)
+  result.push_back(&diagnostic);
+ return result;
+}
+bool hasIntentEvidence(const ContinuationCandidate& candidate) {
+ return candidate.completion.reason!=CompletionReason::NoEvidence&&
+        candidate.completion.reason!=CompletionReason::ShortDevelopment;
 }
 const char* analysisFunctionName(HarmonicFunction f) {
  switch(f) {
@@ -201,7 +276,7 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
  }
  std::map<std::string,std::map<RetrievalTimingMode,std::set<std::string>>> visibleByTrial;
  std::map<std::string,std::map<RetrievalTimingMode,std::size_t>> colorByTrial;
- std::size_t failures{},midiRoundTrips{},engineRuns{};double engineTotalMs{};
+ std::size_t failures{},midiRoundTrips{},engineRuns{},unifiedConsistencyChecks{};double engineTotalMs{};
  std::size_t importPathChecks{},midiOutputChecks{};
  for(const auto& trial:trials) {
   Progression source;double cursor=trial.offset;
@@ -263,12 +338,15 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
    if(mode==RetrievalTimingMode::Legacy) {
     AnalysisContext defaultContext;defaultContext.forcedKey=context.forcedKey;defaultContext.timeSigNumerator=trial.numerator;defaultContext.timeSigDenominator=trial.denominator;
     const auto defaultQuery=makeMatchQuery(extraction.chords,defaultContext);
-    const auto explicitRec=recommendContinuations(query,index);
-    const auto defaultRec=recommendContinuations(defaultQuery,index);
-    bool same=explicitRec.matches.size()==defaultRec.matches.size();
-    for(std::size_t i=0;same&&i<explicitRec.matches.size();++i)
-     same=explicitRec.matches[i].templateId==defaultRec.matches[i].templateId&&explicitRec.matches[i].similarity==defaultRec.matches[i].similarity;
-    if(!same){++failures;std::cerr<<"PH4B Legacy flag changed default "<<trial.id<<'\n';}
+    auto unifiedContext=defaultContext;unifiedContext.retrievalTimingMode=RetrievalTimingMode::Unified;
+    const auto unifiedQuery=makeMatchQuery(extraction.chords,unifiedContext);
+    const auto productWeights=recommendationWeights();
+    const auto explicitUnified=recommendContinuations(unifiedQuery,index,{},productWeights);
+    const auto implicitDefault=recommendContinuations(defaultQuery,index,{},productWeights);
+    if(defaultQuery.retrievalTimingMode!=RetrievalTimingMode::Unified||
+       !sameRecommendationResults(explicitUnified,implicitDefault)) {
+     ++failures;std::cerr<<"PH4B explicit Unified differs from implicit product default "<<trial.id<<'\n';
+    } else ++unifiedConsistencyChecks;
    }
    RecommendationWeights weights;
    if(weights.minimumScore!=60.f){++failures;std::cerr<<"PH4B score threshold changed\n";}
@@ -370,16 +448,17 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
  // Exercise all 33 Phase 3A inputs under both retrieval schemes and both
  // compensation states. This is test-only injection; the plugin default stays OFF.
  const std::array<RetrievalTimingMode,2> phase3aModes{RetrievalTimingMode::Legacy,RetrievalTimingMode::HarmonyFirst};
- std::size_t phase3aRuns{};
+ std::size_t phase3aRuns{},phase3aRefundChecks{},phase3aMatchRefundChecks{},phase3aDiagnosticAmbiguities{};
  for(const auto& fixture:phase3a0AllCases()) {
   Progression source;double at{};
   for(std::size_t i=0;i<fixture.names.size();++i){ChordEvent e;e.name=fixture.names[i];e.startQN=at;e.durationQN=fixture.durations[i];e.openEnded=false;source.push_back(e);at+=fixture.durations[i];}
   midi::ExportSequence sequence;sequence.tempoBPM=120.;sequence.meter={4,4};sequence.chordCount=source.size();sequence.totalQN=at;
   for(const auto& e:source){const auto tones=chordPitches(e);sequence.notes.push_back({36+tones.bass+fixture.octaveShift,e.startQN,*e.durationQN,90,0,true});
    for(int n=0;n<12;++n)if(tones.intervals&(1<<n))sequence.notes.push_back({60+tones.root+n+fixture.octaveShift,e.startQN,*e.durationQN,80,0,false});}
-  const auto bytes=midi::writeToMemory(sequence);if(!bytes)return 72;
-  const auto raw=midi::readFromMemory(bytes.bytes);if(!raw)return 72;
-  const auto recognized=midi::extractHarmony(raw.file);if(!recognized||recognized.chords.size()!=fixture.names.size())return 72;
+  const auto bytes=midi::writeToMemory(sequence);if(!bytes){std::cerr<<"RHYTHM return72 midi write fixture="<<fixture.id<<"\n";return 72;}
+  const auto raw=midi::readFromMemory(bytes.bytes);if(!raw){std::cerr<<"RHYTHM return72 midi read fixture="<<fixture.id<<"\n";return 72;}
+  const auto recognized=midi::extractHarmony(raw.file);if(!recognized||recognized.chords.size()!=fixture.names.size()){
+   std::cerr<<"RHYTHM return72 extract fixture="<<fixture.id<<" recognized="<<bool(recognized)<<" count="<<recognized.chords.size()<<" expected="<<fixture.names.size()<<"\n";return 72;}
   std::ostringstream inputNames;for(std::size_t i=0;i<recognized.chords.size();++i){if(i)inputNames<<'|';inputNames<<recognized.chords[i].name;}
   for(const auto mode:phase3aModes) {
    AnalysisContext context;context.forcedKey=fixture.key;context.timeSigNumerator=4;context.timeSigDenominator=4;context.retrievalTimingMode=mode;
@@ -388,41 +467,78 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
    const auto baseline=recommendContinuations(query,index,request,off),enabled=recommendContinuations(query,index,request,on);
    if(off.diminishedPassingInsertionException||RecommendationWeights{}.diminishedPassingInsertionException||
       off.minimumScore!=60.f||on.minimumScore!=60.f||baseline.insertionDiagnostics.size()!=0||
-      baseline.matches.size()!=enabled.matches.size())return 72;
-   std::size_t visible{},color{};std::string conditions;
+      baseline.matches.size()!=enabled.matches.size()){
+    std::cerr<<"RHYTHM return72 OFF/ON setup fixture="<<fixture.id<<" mode="<<retrievalTimingModeName(mode)
+     <<" OFF/ON matches="<<baseline.matches.size()<<'/'<<enabled.matches.size()<<" diagnostics="<<baseline.insertionDiagnostics.size()
+     <<" thresholds="<<off.minimumScore<<'/'<<on.minimumScore<<" offException="<<off.diminishedPassingInsertionException<<" defaultException="<<RecommendationWeights{}.diminishedPassingInsertionException<<"\n";return 72;}
+   for(const auto& d:enabled.insertionDiagnostics) {
+    ++phase3aRefundChecks;
+    const bool expectedEligible=d.singleInsertion&&d.reliableAlignment&&d.diminished&&d.chromaticMotion&&
+     d.sharedTones&&d.compatibleCore&&d.validContinuation&&!d.alreadyExplained;
+    if(d.eligible!=expectedEligible||d.originalPenalty<0.f||d.refund<0.f||d.refund>d.originalPenalty||
+       std::abs((d.scoreAfter-d.scoreBefore)-d.refund)>0.001f||
+       std::abs(d.refund-(d.eligible?d.originalPenalty:0.f))>0.001f) {
+     std::cerr<<"RHYTHM Phase3A diagnostic contract failed fixture="<<fixture.id<<" mode="<<retrievalTimingModeName(mode)
+      <<" template="<<d.templateId<<" eligible="<<d.eligible<<" expectedEligible="<<expectedEligible
+      <<" refund="<<d.refund<<" penalty="<<d.originalPenalty<<" scoreBefore="<<d.scoreBefore<<" scoreAfter="<<d.scoreAfter
+      <<" flags="<<d.singleInsertion<<d.reliableAlignment<<d.diminished<<d.chromaticMotion<<d.sharedTones<<d.compatibleCore<<d.validContinuation<<d.alreadyExplained<<"\n";
+     return 72;
+    }
+   }
+   std::size_t visible{},color{};std::string conditions;bool v4A08RefundObserved{};
    for(std::size_t group=0;group<baseline.groups.size();++group){visible+=baseline.groups[group].size();if(group==3)color=baseline.groups[group].size();}
    phase3a<<"run\t"<<fixture.id<<'\t'<<retrievalTimingModeName(mode)<<"\tOFF\t-\t"<<inputNames.str()<<"\t-\t-\t-\t-\t-1\t-1\t-1\t-1\toutput="<<baseline.stats.output<<"\t0\t0\t60\t"<<visible<<'\t'<<color<<"\tthreshold unchanged; default exception flag="<<RecommendationWeights{}.diminishedPassingInsertionException<<'\n';
    phase3a<<"run\t"<<fixture.id<<'\t'<<retrievalTimingModeName(mode)<<"\tON\t-\t"<<inputNames.str()<<"\t-\t-\t-\t-\t-1\t-1\t-1\t-1\toutput="<<enabled.stats.output<<"\t0\t0\t60\t"<<enabled.stats.output<<'\t'<<enabled.groups[3].size()<<"\tthreshold unchanged; Phase3A explicitly injected ON\n";
    phase3aRuns+=2;
    for(const auto& m:baseline.matches) {
-    const auto n=std::find_if(enabled.matches.begin(),enabled.matches.end(),[&](const auto& x){return x.templateId==m.templateId;});
-    if(n==enabled.matches.end())return 72;
-    const auto d=std::find_if(enabled.insertionDiagnostics.begin(),enabled.insertionDiagnostics.end(),[&](const auto& x){return x.templateId==m.templateId;});
-    const float refund=d==enabled.insertionDiagnostics.end()?0.f:d->refund;
-    if(refund<0.f||(d!=enabled.insertionDiagnostics.end()&&refund>d->originalPenalty)||
-       std::abs((n->candidateRankingScore-m.candidateRankingScore)-refund)>0.001f)return 72;
-    if(d!=enabled.insertionDiagnostics.end())conditions="single="+std::to_string(d->singleInsertion)+",aligned="+std::to_string(d->reliableAlignment)+
+    const auto n=std::find_if(enabled.matches.begin(),enabled.matches.end(),[&](const auto& x){return sameMatchIdentity(m,x);});
+    if(n==enabled.matches.end()){
+     std::cerr<<"RHYTHM Phase3A missing exact ON match fixture="<<fixture.id<<" mode="<<retrievalTimingModeName(mode)
+      <<" template="<<m.templateId<<" OFF key="<<formatKey(m.key)<<" window="<<m.templateMatchStart<<'-'<<m.templateMatchEnd
+      <<" continuation="<<m.continuationStartIndex<<" OFF score="<<m.candidateRankingScore<<" ON same-template matches=";
+     for(const auto& x:enabled.matches)if(x.templateId==m.templateId)std::cerr<<formatKey(x.key)<<'@'<<x.templateMatchStart<<'-'<<x.templateMatchEnd<<'/'<<x.continuationStartIndex<<'='<<x.candidateRankingScore<<';';
+     std::cerr<<"\n";return 72;}
+    const float rankingRefund=n->candidateRankingScore-m.candidateRankingScore;
+    const float eligibilityRefund=n->candidateEligibilityScore-m.candidateEligibilityScore;
+    std::vector<const DiminishedInsertionDiagnostic*> correspondingDiagnostics;
+    for(const auto& d:enabled.insertionDiagnostics)if(d.templateId==m.templateId&&
+       std::abs((m.candidateRankingScore-d.scoreBefore)-(n->candidateRankingScore-d.scoreAfter))<=0.001f)
+     correspondingDiagnostics.push_back(&d);
+    if(correspondingDiagnostics.size()>1)++phase3aDiagnosticAmbiguities;
+    const DiminishedInsertionDiagnostic* d=correspondingDiagnostics.empty()?nullptr:correspondingDiagnostics.front();
+    const float refund=d?d->refund:0.f;
+    if(std::abs(rankingRefund-refund)>0.001f||std::abs(eligibilityRefund-refund)>0.001f||
+       std::any_of(correspondingDiagnostics.begin(),correspondingDiagnostics.end(),[&](const auto* value){return std::abs(value->refund-rankingRefund)>0.001f;})){
+     std::cerr<<"RHYTHM Phase3A exact refund mismatch fixture="<<fixture.id<<" mode="<<retrievalTimingModeName(mode)
+      <<" template="<<m.templateId<<" OFF key/window/next="<<formatKey(m.key)<<'/'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'/'<<m.continuationStartIndex
+      <<" ON key/window/next="<<formatKey(n->key)<<'/'<<n->templateMatchStart<<'-'<<n->templateMatchEnd<<'/'<<n->continuationStartIndex
+      <<" rankingScores="<<m.candidateRankingScore<<'/'<<n->candidateRankingScore<<" eligibilityScores="<<m.candidateEligibilityScore<<'/'<<n->candidateEligibilityScore
+      <<" rankingRefund="<<rankingRefund<<" eligibilityRefund="<<eligibilityRefund<<" matchedDiagnostics="<<correspondingDiagnostics.size()
+      <<" diagnostics=";for(const auto& x:enabled.insertionDiagnostics)if(x.templateId==m.templateId)std::cerr<<"before="<<x.scoreBefore<<" after="<<x.scoreAfter<<" refund="<<x.refund<<" penalty="<<x.originalPenalty<<" eligible="<<x.eligible<<';';
+     std::cerr<<"\n";return 72;}
+    ++phase3aMatchRefundChecks;
+    if(d)conditions="single="+std::to_string(d->singleInsertion)+",aligned="+std::to_string(d->reliableAlignment)+
       ",dim="+std::to_string(d->diminished)+",chromatic="+std::to_string(d->chromaticMotion)+",shared="+std::to_string(d->sharedTones)+
       ",core="+std::to_string(d->compatibleCore)+",continuation="+std::to_string(d->validContinuation)+",prior_explanation="+std::to_string(d->alreadyExplained);
+    if(fixture.id=="R01_ORIGINAL"&&m.templateId=="V4_A08"&&d&&d->eligible&&
+       std::abs(d->refund-8.f)<=0.001f&&std::abs(rankingRefund-d->refund)<=0.001f)v4A08RefundObserved=true;
     std::string trace,continuation;for(const auto& step:m.alignmentTrace){if(!trace.empty())trace+='|';trace+=(step.queryIndex?std::to_string(*step.queryIndex):"-");trace+=':';
      trace+=(step.templateIndex?std::to_string(*step.templateIndex):"-");trace+=':';trace+=alignmentOpName(step.operation);}
     const auto factory=factoryById.find(m.templateId);if(factory!=factoryById.end())for(std::size_t j=m.continuationStartIndex;j<factory->second->full.size();++j){if(!continuation.empty())continuation+='|';continuation+=formatMatchEvent(factory->second->full[j]);}
     phase3a<<"match\t"<<fixture.id<<'\t'<<retrievalTimingModeName(mode)<<"\tOFF\t"<<m.templateId<<'\t'<<inputNames.str()<<'\t'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'\t'<<m.continuationStartIndex<<'\t'<<continuation<<'\t'<<trace<<'\t'<<m.candidateRankingScore<<'\t'<<m.candidateRankingScore<<'\t'<<m.candidateRankingScore<<'\t'<<m.candidateEligibilityScore<<'\t'<<m.disposition<<"\t0\t0\t60\t"<<visible<<'\t'<<color<<'\t'<<conditions<<'\n';
-    const float scoreAfter=d!=enabled.insertionDiagnostics.end()?d->scoreAfter:n->candidateRankingScore;
-    phase3a<<"match\t"<<fixture.id<<'\t'<<retrievalTimingModeName(mode)<<"\tON\t"<<m.templateId<<'\t'<<inputNames.str()<<'\t'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'\t'<<m.continuationStartIndex<<'\t'<<continuation<<'\t'<<trace<<'\t'<<m.candidateRankingScore<<'\t'<<scoreAfter<<'\t'<<n->candidateRankingScore<<'\t'<<n->candidateEligibilityScore<<'\t'<<n->disposition<<'\t'<<refund<<'\t'<<(d!=enabled.insertionDiagnostics.end()&&d->eligible)<<"\t60\t"<<enabled.stats.output<<'\t'<<enabled.groups[3].size()<<'\t'<<conditions<<'\n';
+    const float scoreAfter=d?d->scoreAfter:n->candidateRankingScore;
+    phase3a<<"match\t"<<fixture.id<<'\t'<<retrievalTimingModeName(mode)<<"\tON\t"<<m.templateId<<'\t'<<inputNames.str()<<'\t'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'\t'<<m.continuationStartIndex<<'\t'<<continuation<<'\t'<<trace<<'\t'<<m.candidateRankingScore<<'\t'<<scoreAfter<<'\t'<<n->candidateRankingScore<<'\t'<<n->candidateEligibilityScore<<'\t'<<n->disposition<<'\t'<<refund<<'\t'<<(d&&d->eligible)<<"\t60\t"<<enabled.stats.output<<'\t'<<enabled.groups[3].size()<<'\t'<<conditions<<'\n';
    }
-   if(fixture.id=="R01_ORIGINAL") {
-    const auto v4=std::find_if(baseline.matches.begin(),baseline.matches.end(),[](const auto& m){return m.templateId=="V4_A08";});
-    const auto v4On=std::find_if(enabled.matches.begin(),enabled.matches.end(),[](const auto& m){return m.templateId=="V4_A08";});
-    if(v4==baseline.matches.end()||v4On==enabled.matches.end())return 72;
-    const float expected=mode==RetrievalTimingMode::Legacy?57.40387f:61.722977f;
-    if(std::abs(v4->candidateRankingScore-expected)>0.02f||
-       std::abs((v4On->candidateRankingScore-v4->candidateRankingScore)-8.f)>0.02f)return 72;
+   if(fixture.id=="R01_ORIGINAL"&&!v4A08RefundObserved) {
+    std::cerr<<"RHYTHM Phase3A expected an exact V4_A08 eligible +8 match refund fixture="<<fixture.id<<" mode="<<retrievalTimingModeName(mode)<<"\n";
+    for(const auto& m:baseline.matches)if(m.templateId=="V4_A08")std::cerr<<"  OFF "<<formatKey(m.key)<<'@'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'/'<<m.continuationStartIndex<<" score="<<m.candidateRankingScore<<" eligibility="<<m.candidateEligibilityScore<<"\n";
+    for(const auto& d:enabled.insertionDiagnostics)if(d.templateId=="V4_A08")std::cerr<<"  diagnostic before="<<d.scoreBefore<<" after="<<d.scoreAfter<<" refund="<<d.refund<<" penalty="<<d.originalPenalty<<" eligible="<<d.eligible<<"\n";
+    return 72;
    }
   }
  }
- if(phase3aRuns!=33u*2u*2u)return 72;
- phase3a<<"SUMMARY\tALL_33\tLegacy+HarmonyFirst\tOFF+ON\t132 runs; both production defaults OFF; threshold=60; Phase3A refund never exceeded original insertion penalty\n";
+ if(phase3aRuns!=33u*2u*2u){std::cerr<<"RHYTHM return72 Phase3A run count="<<phase3aRuns<<" expected="<<33u*2u*2u<<"\n";return 72;}
+ phase3a<<"SUMMARY\tALL_33\tLegacy+HarmonyFirst\tOFF+ON\t132 runs; both production defaults OFF; threshold=60; refunds checked per exact match; historical fixed scores retired because current ranking includes completion tie-break\n";
  struct StressInput {std::string name;Progression source;std::optional<KeySignature> key;int numerator{4},denominator{4};};
  const auto buildStressInput=[](std::string name,std::initializer_list<const char*> labels,std::optional<KeySignature> key,int n=4,int d=4,bool open=false){
   StressInput input;input.name=std::move(name);input.key=key;input.numerator=n;input.denominator=d;double at{};
@@ -506,7 +622,11 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
  }
  std::size_t defaults{};for(const auto& fixture:fixtures)defaults+=fixture.chords.size();
  exportCheck<<"SMF round-trips="<<midiRoundTrips<<"; importFile probes="<<importPathChecks<<"; output MIDI path checks="<<midiOutputChecks<<"; recommendation runs="<<engineRuns<<"; Phase3A matrix runs="<<phase3aRuns<<"; failures="<<failures<<"; wall engine ms="<<engineTotalMs<<"; fixed random seed=none\n";
- std::cout<<"PHASE4B_RHYTHM trials="<<trials.size()<<" smf_roundtrips="<<midiRoundTrips<<" runs="<<engineRuns<<" engine_ms="<<engineTotalMs<<" failures="<<failures<<" output="<<out.string()<<'\n';
+ std::cout<<"PHASE4B_RHYTHM Factory=V4/657 history_modes=Legacy,BarPositionIndependent,ContinuousStructure,HarmonyFirst"
+  <<" unified_default_checks="<<unifiedConsistencyChecks<<" phase3a_diagnostics="<<phase3aRefundChecks
+  <<" phase3a_match_refunds="<<phase3aMatchRefundChecks<<" ambiguous_diagnostic_matches="<<phase3aDiagnosticAmbiguities
+  <<" trials="<<trials.size()<<" smf_roundtrips="<<midiRoundTrips
+  <<" runs="<<engineRuns<<" engine_ms="<<engineTotalMs<<" failures="<<failures<<" output="<<out.string()<<'\n';
  (void)db;(void)defaults;
  return failures?71:0;
 }
@@ -514,14 +634,41 @@ int runPhase4BRhythmAudit(const std::filesystem::path& out,const library::LoadRe
 int main(int argc,char** argv) {
  const std::filesystem::path out=argc>1?argv[1]:"reliability";
  std::filesystem::create_directories(out);
- const auto db=library::loadFactory(HC_FACTORY_DB_PATH); if(!db)return 2;
+ const std::string_view runMode=argc>2?argv[2]:std::string_view{};
+ const bool strictMode=runMode=="strict";
+ const auto matrixFactoryPath=(strictMode||runMode=="rhythm-decoupling")?
+  std::filesystem::path(HC_RELIABILITY_MATRIX_FACTORY_PATH):std::filesystem::path(HC_FACTORY_DB_PATH);
+ const auto db=library::loadFactory(matrixFactoryPath); if(!db)return 2;
+ if((strictMode||runMode=="rhythm-decoupling")&&HC_RELIABILITY_PRODUCT_FACTORY_VERSION>=4&&
+    (db.libraryVersion!=4||db.templates.size()!=657)) {
+  std::cerr<<"historical reliability matrix requires frozen Factory V4/657; loaded version="
+   <<db.libraryVersion<<" rows="<<db.templates.size()<<" from "<<matrixFactoryPath<<'\n';
+  return 69;
+ }
  const CandidateIndex index(db.templates);
- if(argc>2&&std::string(argv[2])=="rhythm-decoupling")return runPhase4BRhythmAudit(out,db,index);
+ if(runMode=="rhythm-decoupling")return runPhase4BRhythmAudit(out,db,index);
+#if defined(HC_RELIABILITY_PLUGIN)
+ CandidateIndex productionIndex;
+ std::size_t productionFactoryCount{};
+ int productionFactoryVersion{};
+ if(strictMode) {
+  const auto productionFactory=library::loadFactory(HC_FACTORY_DB_PATH);
+  if(!productionFactory)return 70;
+  productionFactoryCount=productionFactory.templates.size();productionFactoryVersion=productionFactory.libraryVersion;
+  if(HC_RELIABILITY_PRODUCT_FACTORY_VERSION==5&&
+     (productionFactoryVersion!=5||productionFactoryCount!=658)) {
+   std::cerr<<"V5 Worker contract requires production Factory V5/658; loaded version="
+    <<productionFactoryVersion<<" rows="<<productionFactoryCount<<'\n';
+   return 70;
+  }
+  productionIndex=CandidateIndex(productionFactory.templates);
+ }
+#endif
  std::ofstream table(out/"matrix.tsv"),events(out/"events.tsv");
  table<<"input\trhythm\timport\topen\tforced\tkeys\tmatches\tcontinuations\tpolish\trich\tadvanced\tspecial\tstyle\tintent\tbestSimilarity\tkeyHypotheses\tshortlist\ttail\ttones\tpaths\tdeduped\tscorePassed\tuiVisible\n";
  events<<"input\trhythm\timport\tname\troot\tquality\tbass\tintervals\tcolors\tstart\tduration\topen\n";
  const std::vector<std::vector<std::string>> cases{{"C","Cmaj7/B"},{"C","Cmaj7/B","C7/Bb"},{"C","Cmaj7/B","C7/Bb","F/A"},{"C","Cmaj7/B","C7/Bb","F/A","Fm/Ab"},{"E7","A7"},{"E7","A7","D7"},{"C","B7","Em"},{"Cmaj9","Dbmaj9"},{"Cmaj9","Dbmaj9","Cmaj9"},{"C","Am","F","G"},{"C","F","G","C"},{"Am","Dm","E7","Am"},{"Dm7","G7","Cmaj7"},{"Cmaj7","Am7","Dm7","G7"},{"Cmaj9","Fmaj9","G13","Cmaj9"}};
- int failures=0;
+ int failures=0;std::size_t v5WorkerChecks{};
  for(std::size_t ci=0;ci<cases.size();++ci) for(int rhythm=0;rhythm<8;++rhythm) {
   Progression source;double at= rhythm==4?0.375:0.;
   for(std::size_t i=0;i<cases[ci].size();++i){
@@ -561,7 +708,28 @@ int main(int argc,char** argv) {
    for(std::size_t g=0;g<rec.groups.size();++g){if(rec.groups[g].size()!=enabledRec.groups[g].size())return 51;
     for(std::size_t i=0;i<rec.groups[g].size();++i)if(rec.groups[g][i].id!=enabledRec.groups[g][i].id||rec.groups[g][i].rankingScore!=enabledRec.groups[g][i].rankingScore)return 52;}
    std::size_t count=0;bool special=false;const char* target=ci<4?"V4_B08":ci<6?"V4_B01":ci==7||ci==8?"V4_B11":"";
-   for(const auto& g:rec.groups)for(const auto& c:g){++count;if(c.primaryTemplate==target||std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),target)!=c.supportingTemplates.end()){special=true;if(argc>2&&c.continuationStart!=p.size())return 15;}}
+   for(const auto& g:rec.groups)for(const auto& c:g){++count;if(c.primaryTemplate==target||std::find(c.supportingTemplates.begin(),c.supportingTemplates.end(),target)!=c.supportingTemplates.end()){
+    special=true;
+    bool targetEvidenceFound{},targetEvidenceMapped=true,representativeMapped=c.primaryTemplate!=target;
+    for(const auto& e:c.evidence)if(e.templateId==target) {
+     targetEvidenceFound=true;
+     const auto match=std::find_if(rec.matches.begin(),rec.matches.end(),[&](const auto& m) {
+      return m.templateId==e.templateId&&m.key.tonic==e.key.tonic&&m.key.mode==e.key.mode&&
+       m.templateMatchStart==e.matchStart&&m.templateMatchEnd==e.matchEnd&&m.continuationStartIndex==e.continuationStart;
+     });
+     if(match==rec.matches.end())targetEvidenceMapped=false;
+     else if(representativeMatch(c,*match))representativeMapped=true;
+    }
+    if(argc>2&&(!targetEvidenceFound||!targetEvidenceMapped||!representativeMapped)){
+     std::cerr<<"STRICT target evidence mismatch ci="<<ci<<" rhythm="<<rhythm<<" imported="<<imported<<" open="<<open<<" forced="<<forced
+      <<" target="<<target<<" inputCount="<<p.size()<<" candidate="<<c.id<<" primary="<<c.primaryTemplate
+      <<" candidateKey="<<formatKey(c.key)<<" candidateWindow="<<c.matchStart<<'-'<<c.matchEnd<<" candidateContinuationStart="<<c.continuationStart
+      <<" evidenceFound="<<targetEvidenceFound<<" evidenceMapped="<<targetEvidenceMapped<<" representativeMapped="<<representativeMapped<<"\n";
+     for(const auto& e:c.evidence)if(e.templateId==target)std::cerr<<"  evidence source="<<e.templateId<<" key="<<formatKey(e.key)<<" window="<<e.matchStart<<'-'<<e.matchEnd<<" continuationStart="<<e.continuationStart<<"\n";
+     for(const auto& m:rec.matches)if(m.templateId==target)std::cerr<<"  match target="<<m.templateId<<" key="<<formatKey(m.key)<<" similarity="<<m.similarity<<" window="<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<" continuationStart="<<m.continuationStartIndex<<" disposition="<<m.disposition<<"\n";
+     return 15;
+    }
+   }}
    if(argc>2){
     if(rec.stats.output!=count||rec.stats.output>rec.stats.scorePassed||rec.stats.scorePassed>rec.stats.distinct)return 19;
     // Every source node survives a safe upgrade; source tones/bass cannot be lost.
@@ -583,11 +751,24 @@ int main(int argc,char** argv) {
    const auto shown=session::presentationIndices(rec,{});std::size_t visible{};for(const auto& g:shown)visible+=g.size();
    table<<ci<<'\t'<<rhythm<<'\t'<<imported<<'\t'<<open<<'\t'<<forced<<'\t'<<query.interpretations.size()<<'\t'<<rec.matches.size()<<'\t'<<count<<'\t'<<enrich.groups[0].size()<<'\t'<<enrich.groups[1].size()<<'\t'<<enrich.groups[2].size()<<'\t'<<special<<"\tAUTO\tAUTO\t"<<(rec.matches.empty()?0:rec.matches.front().similarity)<<'\t'<<hypotheses<<'\t'<<rec.stats.shortlistSize<<'\t'<<rec.stats.tailPassed<<'\t'<<rec.stats.realizationPassed<<'\t'<<rec.stats.pathPassed<<'\t'<<rec.stats.distinct<<'\t'<<rec.stats.scorePassed<<'\t'<<visible<<'\n';
 #if defined(HC_RELIABILITY_PLUGIN)
-   if(argc>2&&rhythm==0&&imported==2&&!forced) {
-    plugin::RecommendationWorker worker(HC_FACTORY_DB_PATH,out/("worker-user-"+std::to_string(ci)+"-"+std::to_string(open)+".db"));
-    const auto generation=worker.submit(p,ctx,{},false,1);std::optional<plugin::WorkerResult> result;
+   if(strictMode&&rhythm==0&&imported==2&&!forced) {
+    const auto productionContext=recommendationContext(ctx);
+    const auto productionQuery=makeMatchQuery(p,productionContext);
+    const auto expectedProduction=recommendContinuations(productionQuery,productionIndex,{},recommendationWeights());
+    const auto workerId=std::to_string(ci)+"-"+std::to_string(open)+"-"+
+     std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+    plugin::RecommendationWorker worker(HC_FACTORY_DB_PATH,out/("worker-user-"+workerId+".db"),out/("worker-store-"+workerId));
+    const auto generation=worker.submit(p,productionContext,{},false,1);std::optional<plugin::WorkerResult> result;
     for(int wait=0;wait<1000&&!result;++wait){result=worker.takeLatest();if(!result)std::this_thread::sleep_for(std::chrono::milliseconds(5));}
-    if(!result||!result->error.empty()||result->generation!=generation||result->factoryCount!=657||result->recommendations.stats.output!=count)return 17;
+    if(!result||!result->error.empty()||result->generation!=generation||
+       result->factoryVersion!=productionFactoryVersion||result->factoryCount!=productionFactoryCount||
+       result->recommendations.retrievalTimingMode!=RetrievalTimingMode::Unified||
+       !result->recommendations.abstractChordCompatibility||result->recommendations.phase3aEnabled||
+       !sameRecommendationResults(result->recommendations,expectedProduction)) {
+     std::cerr<<"V5 Worker differs from direct Unified product recommendation for fixture="<<ci<<" OPEN="<<open<<'\n';
+     return 17;
+    }
+    ++v5WorkerChecks;
     for(std::size_t g=0;g<3;++g)if(result->enrichments.groups[g].size()!=enrich.groups[g].size())return 18;
    }
 #endif
@@ -890,24 +1071,35 @@ int main(int argc,char** argv) {
    for(const auto& chord:suffix)phase3a0<<chord<<" -> ";phase3a0<<'\n';
   }
  }
- // Phase 3A prerequisite: verify the original engine before scoring changes.
+ // Phase 3A contract: the historical insertion experiment may restore the
+ // narrow route's own charged penalty, but it cannot bypass current qualification.
  {
   Progression p;for(const auto* name:{"Am","G#dim","G","D/F#"}){ChordEvent e;e.name=name;e.startQN=p.size()*4.;e.durationQN=4.;p.push_back(e);}
   AnalysisContext ctx;ctx.forcedKey=KeySignature{PitchClass::A,Mode::Minor};ctx.timeSigNumerator=4;ctx.timeSigDenominator=4;
   const auto q=makeMatchQuery(p,ctx);
-  // A real intent preference exposes the existing candidate without lowering gates.
-  RecommendationRequest request;request.preferredIntent=PhraseIntent::Loop;
-  const auto r=recommendContinuations(q,index,request);
-  const auto m=std::find_if(r.matches.begin(),r.matches.end(),[](const auto& x){return x.templateId=="V4_A08";});
+  RecommendationRequest request;request.preferredIntent=PhraseIntent::Color;
+  RecommendationWeights off,on;on.diminishedPassingInsertionException=true;
+  const auto before=recommendContinuations(q,index,request,off),r=recommendContinuations(q,index,request,on);
+  const auto m=std::find_if(r.matches.begin(),r.matches.end(),[](const auto& x){return x.templateId=="V4_A08"&&
+   x.key.tonic==PitchClass::A&&x.key.mode==Mode::Minor&&x.templateMatchStart==2&&x.templateMatchEnd==4&&x.continuationStartIndex==5;});
   if(m==r.matches.end()||m->templateMatchStart!=2||m->templateMatchEnd!=4||m->continuationStartIndex!=5||m->alignmentTrace.size()!=4)return 40;
   const auto& t=m->alignmentTrace;
   if(t[0].queryIndex!=0||t[0].templateIndex!=2||t[0].operation!=AlignmentOp::Match||
      t[1].queryIndex!=1||t[1].templateIndex||t[1].operation!=AlignmentOp::QueryInsertion||
      t[2].queryIndex!=2||t[2].templateIndex!=3||t[2].operation!=AlignmentOp::Match||
      t[3].queryIndex!=3||t[3].templateIndex!=4||t[3].operation!=AlignmentOp::Substitute)return 41;
-  const ContinuationCandidate* c{};for(const auto& group:r.groups)for(const auto& x:group)if(x.id=="V4_A08")c=&x;
-  if(!c||c->continuation.size()!=3||c->continuation[0].label!="Am"||c->continuation[1].label!="Am"||c->continuation[2].label!="D")return 42;
+  const auto beforeMatch=std::find_if(before.matches.begin(),before.matches.end(),[&](const auto& x){return sameMatchIdentity(x,*m);});
+  if(beforeMatch==before.matches.end()||beforeMatch->candidateEligibilityScore>=off.minimumScore||
+     m->candidateEligibilityScore<on.minimumScore)return 42;
+  const auto mapped=correspondingDiagnostics(*beforeMatch,*m,r.insertionDiagnostics);
+  const auto d=std::find_if(mapped.begin(),mapped.end(),[](const auto* x){return x->eligible&&x->refund>0.f;});
+  if(d==mapped.end()||std::abs((m->candidateRankingScore-beforeMatch->candidateRankingScore)-(*d)->refund)>0.001f)return 63;
+  const auto* c=candidateForMatch(r,*m);
+  if(!c||!c->baseQualified||c->eligibilityScore<on.minimumScore||!c->hardConstraintsPassed||
+     c->continuation.size()!=3||c->continuation[0].label!="Am"||c->continuation[1].label!="Am"||c->continuation[2].label!="D"||
+     (c->exploratory==hasIntentEvidence(*c))||(c->exploratory&&c->intent!=PhraseIntent::Neutral))return 42;
   const auto output=continuationProgression(p,*c);std::string error;
+  if(output.size()!=7)return 42;
   if(!writeSyntheticMidi(output,0,out/"phase3a-A08-verified-path.mid",error))return 43;
   const auto read=midi::importFile(out/"phase3a-A08-verified-path.mid",false);
   // Extraction may merge adjacent identical tonics; raw MIDI preserves both events.
@@ -923,11 +1115,44 @@ int main(int argc,char** argv) {
     mask|=1u<<(n.pitch%12);++notes;if(std::abs(n.durationQN-4.)>1e-6)return 79;}
    if(notes!=4||mask!=(i<2?((1u<<9)|(1u<<0)|(1u<<4)):((1u<<2)|(1u<<6)|(1u<<9))))return 80;
   }
+  midi::CandidateExportContext fullContext;fullContext.imported.replace(p,TimelineCoordinateMode::RelativeToSelection);
+  fullContext.tempo=120.;fullContext.meter={4,4};fullContext.key=c->key;fullContext.scope=midi::ExportScope::FullPhrase;
+  const auto fullPayload=midi::candidatePayload(fullContext,*c);
+  auto suffixContext=fullContext;suffixContext.scope=midi::ExportScope::ContinuationOnly;
+  const auto suffixPayload=midi::candidatePayload(suffixContext,*c);
+  if(!fullPayload||!suffixPayload||fullPayload.payload.chordCount!=7||suffixPayload.payload.chordCount!=3)return 81;
+  const auto fullDecoded=midi::readFromMemory(fullPayload.payload.smfBytes),suffixDecoded=midi::readFromMemory(suffixPayload.payload.smfBytes);
+  if(!fullDecoded||!suffixDecoded)return 82;
+  const auto checkChordNotes=[](const std::vector<midi::MidiNoteEvent>& notes,double start,double duration,const ChordPitchSet& expected) {
+   unsigned pitchMask{};int bass=-1,lowestPitch=128;std::size_t count{};
+   for(const auto& note:notes)if(std::abs(note.startQN-start)<1e-6) {
+    if(std::abs(note.durationQN-duration)>1e-6)return false;
+    ++count;pitchMask|=1u<<((note.pitch%12+12)%12);
+    if(note.pitch<lowestPitch){lowestPitch=note.pitch;bass=(note.pitch%12+12)%12;}
+   }
+   unsigned expectedMask{};for(int interval=0;interval<12;++interval)if(expected.intervals&(1u<<interval))
+    expectedMask|=1u<<((expected.root+interval)%12+12)%12;
+   return count==4&&bass==expected.bass&&pitchMask==expectedMask;
+  };
+  for(std::size_t i=0;i<p.size();++i)if(!checkChordNotes(fullDecoded.file.notes,p[i].startQN,p[i].durationQN.value_or(4.),chordPitches(p[i])))return 83;
+  for(std::size_t i=0;i<c->continuation.size();++i) {
+   const auto expected=c->continuation[i].harmonicData?chordPitches(*c->continuation[i].harmonicData):chordPitches(c->continuation[i].label,c->continuation[i].quality);
+   if(!checkChordNotes(fullDecoded.file.notes,16.+4.*i,4.,expected)||!checkChordNotes(suffixDecoded.file.notes,4.*i,4.,expected))return 84;
+  }
+  auto allWeights=on;allWeights.perGroup=0;
+  const auto allQualified=recommendContinuations(q,index,request,allWeights);
+  const auto* allCandidate=candidateForMatch(allQualified,*m);
+  if(!allCandidate||allCandidate->id!=c->id||allCandidate->rankingScore!=c->rankingScore||allCandidate->eligibilityScore!=c->eligibilityScore)return 85;
+  const auto allFull=midi::candidatePayload(fullContext,*allCandidate),allSuffix=midi::candidatePayload(suffixContext,*allCandidate);
+  if(!allFull||!allSuffix||allFull.payload.smfBytes!=fullPayload.payload.smfBytes||allSuffix.payload.smfBytes!=suffixPayload.payload.smfBytes)return 86;
   std::ofstream trace(out/"phase3a-path-verification.txt");
-  trace<<"Factory index path=0:Am 1:D 2:Am 3:G 4:D 5:Am\nquery alignment=0->2 Match;1->gap QueryInsertion;2->3 Match;3->4 Substitute(BorrowedVariant)\nsuffix indices=5,0,1; labels=Am,Am,D; loopable=true; no reorder/deletion; duplicate tonic is source loop boundary\n";
+  trace<<"Factory index path=0:Am 1:D 2:Am 3:G 4:D 5:Am\nquery alignment=0->2 Match;1->gap QueryInsertion;2->3 Match;3->4 Substitute(BorrowedVariant)\nsuffix indices=5,0,1; labels=Am,Am,D; actual intent="<<intentName(c->intent)<<" exploratory="<<c->exploratory<<"; no reorder/deletion; duplicate tonic is source loop boundary\n";
+  trace<<"eligibility OFF="<<beforeMatch->candidateEligibilityScore<<" ON="<<m->candidateEligibilityScore<<" threshold=60 refund="<<(*d)->refund<<"\n";
   for(const auto& e:output)trace<<e.name<<'@'<<e.startQN<<'+'<<e.durationQN.value_or(-1)<<'\n';
   for(const auto& n:raw.file.notes)trace<<"MIDI "<<n.pitch<<'@'<<n.startQN<<'+'<<n.durationQN<<'\n';
   for(const auto& n:engineMidi.file.notes)trace<<"ENGINE_MIDI "<<n.pitch<<'@'<<n.startQN<<'+'<<n.durationQN<<'\n';
+  for(const auto& n:fullDecoded.file.notes)trace<<"FULL_PAYLOAD_MIDI "<<n.pitch<<'@'<<n.startQN<<'+'<<n.durationQN<<'\n';
+  for(const auto& n:suffixDecoded.file.notes)trace<<"SUFFIX_PAYLOAD_MIDI "<<n.pitch<<'@'<<n.startQN<<'+'<<n.durationQN<<'\n';
  }
  // Phase 3A enabled/off comparisons and adversarial trace tests.
  std::ofstream phase3a(out/"phase3a-implementation-diagnostics.txt");phase3a<<std::setprecision(9);
@@ -968,18 +1193,41 @@ int main(int argc,char** argv) {
    phase3a<<d.templateId<<" single="<<d.singleInsertion<<" trace="<<d.reliableAlignment<<" dim="<<d.diminished<<" chromatic="<<d.chromaticMotion<<" shared="<<d.sharedTones<<" core="<<d.compatibleCore<<" continuation="<<d.validContinuation<<" explained="<<d.alreadyExplained<<" eligible="<<d.eligible<<" totalPenalty="<<d.totalInsertionPenalty<<" penalty="<<d.originalPenalty<<" refund="<<d.refund<<" score="<<d.scoreBefore<<"->"<<d.scoreAfter<<" gate="<<(d.scoreAfter>=60)<<'\n';
   }
   const bool original=fixture.id.rfind("R01_",0)==0||fixture.id.rfind("TRANSPOSE_",0)==0;
-  if(original && (refunds!=1||after.stats.output!=1||after.groups[2].empty()||after.groups[2][0].id!="V4_A08"))return 56;
+  if(original) {
+   if(refunds!=1)return 56;
+   const auto targetTemplate=std::find_if(db.templates.begin(),db.templates.end(),[](const auto& item){return item.id=="V4_A08";});
+   if(targetTemplate==db.templates.end())return 56;
+   bool qualifiedTarget{};
+   for(const auto& match:after.matches)if(match.templateId=="V4_A08"&&evaluateDiminishedPassingInsertion(q,match,*targetTemplate).eligible) {
+    const auto* candidate=candidateForMatch(after,match);
+    if(candidate&&candidate->baseQualified&&candidate->hardConstraintsPassed&&candidate->eligibilityScore>=on.minimumScore)
+     qualifiedTarget=true;
+   }
+   if(!qualifiedTarget)return 56;
+  }
   if(fixture.id.rfind("NEG_",0)==0 && refunds!=0)return 57;
   if(fixture.id=="PASSING_FSHARP_DIM7" && refunds!=0)return 58;
   if(fixture.id=="CONTROL_NO_DIM" && refunds!=0)return 59;
   if(fixture.id.rfind("POS_",0)==0 && refunds==0)return 73;
   if(refunds)++refundedSamples;
   if(fixture.id=="R01_ORIGINAL") {
-   for(const auto& m:before.matches)if(m.candidateRankingScore>=0){const auto n=std::find_if(after.matches.begin(),after.matches.end(),[&](const auto& x){return x.templateId==m.templateId;});if(n==after.matches.end())return 60;
-    phase3a<<"R01_SCORE "<<m.templateId<<' '<<m.candidateRankingScore<<" -> "<<n->candidateRankingScore<<" disposition="<<n->disposition<<'\n';
-    if(m.templateId!="V4_A08" && m.candidateRankingScore!=n->candidateRankingScore)return 61;}
-   const auto found=std::find_if(before.matches.begin(),before.matches.end(),[](const auto& m){return m.templateId=="V4_A08";});if(found==before.matches.end())return 62;
-   if(before.stats.pathPassed!=5||before.stats.output!=0||std::abs(found->candidateRankingScore-57.40387f)>0.0001f)return 74;
+   for(const auto& m:before.matches)if(m.candidateRankingScore>=0){
+    const auto n=std::find_if(after.matches.begin(),after.matches.end(),[&](const auto& x){return sameMatchIdentity(x,m);});if(n==after.matches.end())return 60;
+    const auto mapped=correspondingDiagnostics(m,*n,after.insertionDiagnostics);
+    const float refund=mapped.empty()?0.f:mapped.front()->refund;
+    if(std::any_of(mapped.begin(),mapped.end(),[&](const auto* d){return std::abs(d->refund-refund)>0.001f;}))return 61;
+    if(std::abs((n->candidateRankingScore-m.candidateRankingScore)-refund)>0.001f||
+       std::abs((n->candidateEligibilityScore-m.candidateEligibilityScore)-refund)>0.001f)return 61;
+    phase3a<<"R01_SCORE "<<m.templateId<<' '<<formatKey(m.key)<<'@'<<m.templateMatchStart<<'-'<<m.templateMatchEnd<<'/'
+     <<m.continuationStartIndex<<' '<<m.candidateRankingScore<<" -> "<<n->candidateRankingScore<<" refund="<<refund
+     <<" diagnostics="<<mapped.size()<<" disposition="<<n->disposition<<'\n';
+   }
+   const auto found=std::find_if(before.matches.begin(),before.matches.end(),[&](const auto& m){
+    if(m.templateId!="V4_A08"||m.key.tonic!=PitchClass::A||m.key.mode!=Mode::Minor||m.templateMatchStart!=2||
+       m.templateMatchEnd!=4||m.continuationStartIndex!=5)return false;
+    const auto item=std::find_if(db.templates.begin(),db.templates.end(),[](const auto& t){return t.id=="V4_A08";});
+    return item!=db.templates.end()&&evaluateDiminishedPassingInsertion(q,m,*item).eligible;
+   });if(found==before.matches.end())return 62;
    const auto itemIt=std::find_if(db.templates.begin(),db.templates.end(),[](const auto& t){return t.id=="V4_A08";});auto item=*itemIt;
    if(!evaluateDiminishedPassingInsertion(q,*found,item).eligible)return 63;
    // Renaming proves that no Factory ID participates in eligibility.
@@ -1000,19 +1248,32 @@ int main(int argc,char** argv) {
    exhausted.full=std::vector<MatchEvent>(itemIt->full.begin()+2,itemIt->full.begin()+5);exhausted.skeletonIndices={0,1,2};
    const auto noTail=recommendContinuations(q,CandidateIndex({exhausted}),request,on);
    if(noTail.stats.output!=0||!noTail.insertionDiagnostics.empty())return 78;
-   for(float eventPenalty:{0.f,1.f,8.f,12.f}){auto varying=on;varying.unexplainedInsertionPenalty=eventPenalty;
-    const auto r=recommendContinuations(q,index,request,varying);
-    const auto d=std::find_if(r.insertionDiagnostics.begin(),r.insertionDiagnostics.end(),[](const auto& x){return x.templateId=="V4_A08";});
-    if(d==r.insertionDiagnostics.end()||d->originalPenalty!=eventPenalty||d->refund!=eventPenalty||std::abs(d->scoreAfter-65.40387f)>0.0001f)return 75;
+   auto zeroOff=off,zeroOn=on;zeroOff.unexplainedInsertionPenalty=zeroOn.unexplainedInsertionPenalty=0.f;
+   const auto zeroOffResults=recommendContinuations(q,index,request,zeroOff),zeroOnResults=recommendContinuations(q,index,request,zeroOn);
+   const auto zeroOffMatch=std::find_if(zeroOffResults.matches.begin(),zeroOffResults.matches.end(),[&](const auto& m){return sameMatchIdentity(m,*found);});
+   const auto zeroOnMatch=std::find_if(zeroOnResults.matches.begin(),zeroOnResults.matches.end(),[&](const auto& m){return sameMatchIdentity(m,*found);});
+   if(zeroOffMatch==zeroOffResults.matches.end()||zeroOnMatch==zeroOnResults.matches.end())return 75;
+   for(float eventPenalty:{0.f,1.f,8.f,12.f}) {
+    auto varyingOff=off,varyingOn=on;varyingOff.unexplainedInsertionPenalty=varyingOn.unexplainedInsertionPenalty=eventPenalty;
+    const auto offResults=recommendContinuations(q,index,request,varyingOff),onResults=recommendContinuations(q,index,request,varyingOn);
+    const auto offMatch=std::find_if(offResults.matches.begin(),offResults.matches.end(),[&](const auto& m){return sameMatchIdentity(m,*found);});
+    const auto onMatch=std::find_if(onResults.matches.begin(),onResults.matches.end(),[&](const auto& m){return sameMatchIdentity(m,*found);});
+    if(offMatch==offResults.matches.end()||onMatch==onResults.matches.end())return 75;
+    if(std::abs((offMatch->candidateRankingScore-zeroOffMatch->candidateRankingScore)+eventPenalty)>0.001f||
+       std::abs((offMatch->candidateEligibilityScore-zeroOffMatch->candidateEligibilityScore)+eventPenalty)>0.001f||
+       std::abs(onMatch->candidateRankingScore-zeroOnMatch->candidateRankingScore)>0.001f||
+       std::abs(onMatch->candidateEligibilityScore-zeroOnMatch->candidateEligibilityScore)>0.001f)return 75;
+    const auto mapped=correspondingDiagnostics(*offMatch,*onMatch,onResults.insertionDiagnostics);
+    if(mapped.size()!=1)return 75;
+    const auto& d=*mapped.front();
+    if(!d.eligible||std::abs(d.originalPenalty-eventPenalty)>0.001f||std::abs(d.refund-eventPenalty)>0.001f||
+       std::abs((d.scoreAfter-d.scoreBefore)-eventPenalty)>0.001f||
+       std::abs((onMatch->candidateRankingScore-offMatch->candidateRankingScore)-eventPenalty)>0.001f||
+       std::abs((onMatch->candidateEligibilityScore-offMatch->candidateEligibilityScore)-eventPenalty)>0.001f)return 75;
+    phase3a<<"R01_EVENT_PENALTY value="<<eventPenalty<<" OFF="<<offMatch->candidateRankingScore<<'/'<<offMatch->candidateEligibilityScore
+     <<" ON="<<onMatch->candidateRankingScore<<'/'<<onMatch->candidateEligibilityScore<<" diagnostic="<<d.scoreBefore<<"->"<<d.scoreAfter
+     <<" refund="<<d.refund<<" mapped="<<mapped.size()<<'\n';
    }
-   // MIDI of an unchanged candidate is byte-identical across scoring settings.
-   RecommendationRequest loopRequest;loopRequest.preferredIntent=PhraseIntent::Loop;
-   const auto left=recommendContinuations(q,index,loopRequest,off),right=recommendContinuations(q,index,loopRequest,on);
-   const ContinuationCandidate *a{},*b{};for(const auto& g:left.groups)for(const auto& c:g)if(c.id=="V4_A08")a=&c;
-   for(const auto& g:right.groups)for(const auto& c:g)if(c.id=="V4_A08")b=&c;
-   midi::CandidateExportContext ec;ec.imported.replace(p,TimelineCoordinateMode::RelativeToSelection);
-   if(!a||!b)return 71;const auto ma=midi::candidatePayload(ec,*a),mb=midi::candidatePayload(ec,*b);
-   if(!ma||!mb||ma.payload.smfBytes!=mb.payload.smfBytes)return 72;
    // Alternate OFF/ON in one process, fixed query/index, warm cache, 80 samples.
    for(int i=0;i<10;++i){recommendContinuations(q,index,request,off);recommendContinuations(q,index,request,on);}
    std::vector<double> timings[2];std::size_t allocated[2]{},calls[2]{};
@@ -1364,5 +1625,6 @@ int main(int argc,char** argv) {
 #endif
   std::cout<<"SYSTEM_AUDIT runs="<<totalRuns<<" wall_ms="<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-auditStarted).count()<<" output="<<auditDir.string()<<" recognitionFailures="<<failedRecognitions<<'\n';
  }
+ if(strictMode)std::cout<<"RELIABILITY_MATRIX historical=V4/657 V5_worker_direct_agreements="<<v5WorkerChecks<<'\n';
  std::cout<<"matrix failures="<<failures<<'\n';return failures?1:0;
 }

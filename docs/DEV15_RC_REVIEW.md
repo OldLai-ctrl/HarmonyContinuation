@@ -4,10 +4,10 @@
 
 ## 交付身份与结论
 
-结论：**CONDITIONAL**。五项功能及其集成检查完成，可评审本开发包；仍有三项历史测试契约未通过，不能写为 RC 门禁全绿。Cubase 新音频路径与人工听评仍为 Pending。
+结论：**CONDITIONAL**。五项功能完成，三项历史契约已完成审计与修订；2026-10-21 本轮独立完整 CTest 为 **34/34通过、0失败**。开发端技术测试门禁通过；dev.15 真实 Cubase 新音频路径、设备切换及人工听评仍为 Pending，FL Studio 实机仍为 Pending。
 
 - 版本：`0.10.0-dev.15` / Release / Windows x64。
-- 安装包源码 / BuildCommit：`626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`）。`848d4b0` 是功能提交，`626f164` 是集中审查修正；后续只有测试与交付文档提交，不改变包内容。
+- 安装包源码 / BuildCommit：`626f164b48793e2098a6d979cf9b2fac951839f1`（`626f164`）。`848d4b0` 是功能提交，`626f164` 是集中审查修正；后续仅测试、测试配置与交付文档提交，不改变包内容。本轮以 `267ed3a8` 为接续基线，重新编译测试目标；未修改生产源码或重新构建插件、安装器。
 - 分支：[development/preview-transport-20261021](https://github.com/OldLai-ctrl/HarmonyContinuation/tree/development/preview-transport-20261021)。本地与远端最终 HEAD 在最终回传中记录；源码提交、分支最新文档提交与构建身份分别核对。
 - 唯一 [dev.15 Setup](../../HarmonyContinuation-dev15-delivery-20261021/HarmonyContinuation-0.10.0-dev.15-Setup.exe)，[SHA-256](../../HarmonyContinuation-dev15-delivery-20261021/HarmonyContinuation-0.10.0-dev.15-Setup.exe.sha256)：`354d7b8c8e9a33d857f123e999d4f252a155d3965841a66e32c4d1f57c0d0311`。
 - Factory V5 / 658 条 / Schema 2；SHA-256 `f989a83ea9ef92ba7c272bf0e5e3c7073c225899dc81d60dd46c10ea6b48cb3c`。与保留的 dev.14 Factory 字节相同；V4 的 657 条继承数据及独立 15634125 路线通过现有检查。
@@ -59,8 +59,10 @@ Host 可用性来自最近实际输出处理回调，不能由“Cubase”宿主
 
 | 检查 | 实际结果与范围 |
 | --- | --- |
-| 完整相关 CTest | [首轮 34 项](../../HarmonyContinuation-dev15-validation-20261021/ctest-rc.log)：30 通过、4 失败。没有用定向成功覆盖这个结果。 |
-| 历史 Worker 对照兼容修正 | 其中 CubaseReliabilityFocused 的 direct 调用仍限制每类10条，Worker 自 dev.14 已输出全部合格结果，产生8个计数差异。只将测试上限对齐生产配置，不改产品、断言或音乐规则；[定向复验通过](../../HarmonyContinuation-dev15-validation-20261021/cubase-contract-final.log)。其余3项仍失败，因此累计31/34，未重复完整34项。 |
+| 本轮完整 CTest | [独立完整运行](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/ctest-full-final.log)：2026-10-21 13:37:19–13:40:09 +08:00，34注册项、34通过、0失败、164.90秒、exit 0；Release、parallel 2，未筛选测试或累加先前结果。[逐项输出](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/LastTest-full-final.log)覆盖统一引擎、Factory V5、Preview、宿主契约、Session/Snapshot及MIDI。 |
+| 本轮首轮完整运行 | [27/34、7失败](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/ctest-full-initial.log)，167.21秒；[原始输出](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/LastTest-full-initial.log)保留。失败集中于受限沙箱Temp的Windows原子替换拒绝；同一34项和parallel 2，在允许执行权限下显式TEMP/TMP设为工作区临时目录后全部通过。未为此改产品或断言。 |
+| 初次功能交付历史证据 | [最初30/34](../../HarmonyContinuation-dev15-validation-20261021/ctest-rc.log)及[旧Worker上限修正后的定向通过](../../HarmonyContinuation-dev15-validation-20261021/cubase-contract-final.log)保留。先前累计31/34仅为历史记录；本轮结论使用上面的单次完整34/34。 |
+| 本轮契约定向复验 | [三项均通过](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/contracts-targeted-final.log)；修订依据与保留的历史实验见下节。 |
 | 最终改动定向检查 | [Preview、Phase4D、Compact UI](../../HarmonyContinuation-dev15-validation-20261021/ctest-final-changes.log)通过；该日志中旧上限的 Cubase 失败由上一行复验处理。 |
 | 音乐与输出 | [8个固定案例 / 3512检查](../../HarmonyContinuation-dev15-validation-20261021/final-music/unified.txt)：R01一条默认与三条探索、R02两种节奏色彩、借用iv、四和弦循环、15634125均保留。308为累计候选，不表示质量提升。 |
 | 实际 SDK 模块与原生编辑器 | [最终42/42](../../HarmonyContinuation-dev15-validation-20261021/host-final-native.log)：真实子窗口鼠标驱动 Controller/Processor，Host播放/暂停/恢复/停止、Host↔Windows、回调中断后静音、32/64位单/双声道、2/4/8实例、重建视图、状态和MIDI对象检查通过。属于开发模拟宿主，不是真实Cubase或FL Studio。 |
@@ -73,13 +75,41 @@ Host 可用性来自最近实际输出处理回调，不能由“Cubase”宿主
 
 最终 [6张原生VSTGUI截图](../../HarmonyContinuation-dev15-delivery-20261021/screenshots/) 包含新增、详细曲线、R01对齐、模板跳过、七和弦来源和推荐总览；截图来自开发渲染夹具，部分音频按钮无接收器而禁用，不冒充Cubase运行截图。
 
-### 剩余三项回归契约
+### 已修订的三项历史契约
 
-1. `HarmonyAnalysisTests`：要求短A7不进入骨架，当前分析结果保留它。测试及核心分析代码在dev.14基线已是同一版本；没有单独重建dev.14复现，不把“本轮无diff”说成旧版测试通过。
-2. `RecommendationReliabilityFocused`：仍硬编码Worker Factory条数657，V5实际为658；该过期断言之后还包含历史矩阵，本轮不改门槛或重做阶段审计来补绿。需版本化测试契约并确认余下分支。
-3. `RecommendationRhythmDecoupling`：明确要求Legacy显式调用等同当前默认，统一引擎默认与历史Legacy的差异使断言失败。旧实验对照需要与正式引擎门禁分开定义，不能重新引入三算法或恢复旧音乐规则。
+原始三项失败已[重新复现并保留](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/original-contracts.log)。修改范围限现有两个测试程序及其 CMake 测试配置，没有禁用测试、删去关键 MIDI/轨迹断言或修改60分质量门槛。
 
-这些未通过项必须被明确处理后才能称为技术门禁全绿。涉及音乐策略的结论交决策端确认；本轮不调整核心评分、骨架、Factory或资格策略。
+**HarmonyAnalysisTests。** 从 dev.14 `b4e6f65` 与 dev.15 `626f164` 的独立源码归档实际编译和执行同一测试。dev.14 原测试[复现相同A7失败](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev14-original-contract.log)；修订后两版本均[dev.14通过](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev14-revised-contract-final.log)、[dev.15通过](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev15-revised-contract-final.log)。
+
+| 事件与上下文 | 时值 / 分析权重 | Legacy 检索与骨架 | Unified 检索与骨架 |
+| --- | --- | --- | --- |
+| C–Am–A7–Dm–G7–C 中的 A7，C大调 V7/ii | 1QN；中位4QN；0.340 | 0.340，骨架外 | 0.720，骨架内 |
+| C–C#dim7–Dm–G–C 中的 C#dim7，vii°7/ii | 0.5QN；0.300，低于目标Dm的0.857 | 0.300，骨架外 | 0.720，骨架内 |
+| Dm–G7–C 中的终止 G7 | 1QN；0.760 | 0.760，骨架内 | 0.880，骨架内 |
+
+A7分析权重为 `0.66 + 0.06 - 0.12 - 0.13 - 0.13 = 0.34`，分别含功能、相对时值、短次属及趋近影响。已批准的Unified检索解耦保留 `0.66 + 0.06 = 0.72`，达到0.55结构阈值；分析仍保留Approach与V7/ii目标，检索角色去掉Approach。A7的C#向Dm的D解决支持次属解释，短时值仍降低分析权重。原有Legacy可省略、长A7可结构化、短终止V7保留与时值缩放断言全部保留；为Unified新增独立契约。两版本[逐事件A7](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev14-secondary_dominant-final.log)、[次导音](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev14-short_approach-final.log)、[短V7](../../HarmonyContinuation-dev15-validation-20261021/rc-closeout/dev14-short_dominant-final.log)与对应dev15轨迹一致；这些事件colorMask为0且根音等于低音，没有扩展或转位保护干扰。
+
+**RecommendationReliabilityFocused。** 现有1440格历史矩阵明确加载冻结 `factory-v4.db`、断言V4/657并保留原检查；生产V5另行加载并断言V5/658。30次真实Worker/直接Unified调用使用同一正式权重配置，对比完整匹配解释、音乐身份、来源、硬约束、资格及排序分。现有 `FactoryV5Focused` 在完整回归中验证657条继承payload逐条一致、独立15634125路线、12调召回/同分、版本化store及降级保护。
+
+继续执行657断言之后的检查，修正了三类旧前提：模板内续写位置改为完整Matcher/evidence映射；音乐候选按来源证据查找，使用music-v1身份；原来固定Loop/输出数量/绝对分数改为实际资格、真实用途与补偿差分。保留Am–Am–D精确路线与匹配轨迹、负例不返还、合法正例、改名不影响资格、破坏轨迹及无后续检查及0/1/8/12点单事件惩罚。FullPhrase七事件与ContinuationOnly三事件均核对音高、低音、4QN和相邻Am不合并；相同音乐候选在有限/完整保留下的两种MIDI载荷字节一致。该旧直接导出夹具使用输入加后续；正式完整来源输出另由既有Factory/Phase4D检查覆盖。
+
+**RecommendationRhythmDecoupling。** Legacy、BarPositionIndependent、ContinuousStructure、HarmonyFirst作为显式历史测试调用保留，使用冻结V4数据；产品仍只执行Unified。新增331组隐式默认/显式Unified正式配置一致性检查；保留331次SMF往返、1324次历史模式调用、33组×两模式×OFF/ON的132次实验，以及505项诊断和13250次精确匹配补偿比较。本次诊断关联歧义为0。匹配关联包括调性、窗口、续写位置与轨迹，避免把同一模板的不同调性解释拼接。
+
+旧Legacy固定57.40387是完成度微调前的中间分；当前最终MatchResult为57.60387，OFF/ON仍相差8。断言改为同一实际解释的资格/排序差分及退款上限，保留事件惩罚抵消性质。Phase3A补偿仅在测试显式开启；正式Worker继续OFF。没有修改当前音乐输出、分类、权重、Factory、Schema或生产算法分支。
+
+### 更新后的 RC 门禁
+
+| 门禁 | 状态与依据 |
+| --- | --- |
+| 完整34项工程回归 | PASS，单次34/34，0失败；受限Temp失败日志单独保留 |
+| 三项历史契约及有价值的实验性质 | PASS；跨版本A7、V4历史数据、V5正式Worker与Unified默认明确分开 |
+| Factory V5、Session/Snapshot、MIDI | PASS，本轮完整回归；数据/格式和生产源码未修改 |
+| 开发端音频 | PASS，复用同一626f164的SDK模块42/42与Windows原生设备/120秒349轮证据，本轮Preview及宿主契约完整复验；无新增设备听评 |
+| dev.15 Cubase真实路由、设备切换、工程重开与听评 | Pending；dev.14用户已验收不转移为dev.15结论 |
+| FL Studio实机 | Pending |
+| 正式发布 | 未执行；无main合并、正式Tag或Release |
+
+本轮主代理决定音乐语义与旧契约取舍，并集中复核测试差异、实际日志和门禁；LUNA负责隔离复现、测试维护及重复执行。工程门禁已完成；整体RC为CONDITIONAL，待下面的真实宿主与人工验收。
 
 ## Standards
 
