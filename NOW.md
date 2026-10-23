@@ -2,6 +2,16 @@
 
 ## 本轮工作与下一步
 
+### G01 / G4 安装集成（2026-10-24，门禁未通过）
+
+本地开发构建 **0.11.0-dev.1 / Release x64**，冻结BuildCommit `fb68a6ec47f27868e6856e1ab3aefcba35b77127`（G3 `857d228` 后仅调整版本）；后续测试/文档提交不作为二进制BuildCommit。唯一开发Setup及身份见[BUILD_INFO](../HarmonyContinuation-g04-delivery-20261024/BUILD_INFO.json)，[人工验收清单与停止原因](docs/G01_G4_ACCEPTANCE.md)。包保留供诊断，暂不用于生产安装。
+
+- 构建与来源：SDK Validator本轮47/47通过；构建/CRT来源、暂存和Setup提取的16项插件清单一致，moduleinfo与实际类版本为0.11.0-dev.1，二进制含fb68a6e。Factory源码构建、正式Setup提取、开发Setup提取及生产已装V5的SHA-256一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`，正式包内DB直接比对缺口已关闭；V5/Schema2/658、Session5/Snapshot3不变。v2的658源/727归属嵌入新模块，原3条4归属保留。
+- 实际检查：隔离已安装DB上的WishCoreFocused本轮12646项通过，覆盖完整来源指纹、3条4归属、多选/严格/空池、完整音乐身份及Preview/MIDI/Snapshot往返；[日志](../HarmonyContinuation-g04-delivery-20261024/installed-db-wish.log)。原生A3/UI截图与交互复用G3证据，未重跑无关全量。开发暂存模块实际SDK加载及moduleinfo校验成功；安装后新模块功能冒烟因下述缺陷停止，不能将暂存模块检查称为实装验收。
+- 安装结果：独立TestRoot/HKCU AppId的新装、组件增删修复和卸载16项通过；正式0.10.0原始载荷安装、仅库升级保留旧插件已执行。post-install故障注入后，插件16文件回退为0.10.0、Factory/历史V4/个人哨兵保持，但安装进程返回0且DisplayVersion为0.11.0-dev.1。[失败日志](../HarmonyContinuation-g04-delivery-20261024/isolation-lifecycle/upgrade/transaction-rollback.log)显示新卸载注册写入后才抛出 `Cannot record component state`；完整事务恢复FAIL。按持久状态风险边界暂停，未继续完整升级或降级回退。后续受控卸载已清理本轮隔离注册/组件，保留历史和个人哨兵；真实user.db未访问或修改。
+- 保护与质量：生产插件实际为0.10.0-rc.1，前后SHA均 `B1BA61B9BB188438D5DD05523650CEE8F79C62A5EF9ABA4C753F90E9EF34DF85`；生产Factory未变。代表性结构复核未发现抽样缺陷；已知COMMON_MINOR_016依据有一处bII/降六级来源措辞待校订。25条仅未确认及Locrian/旋律小调空池为内容边界；用户听评仍待完成。
+- 门禁与下一步：**不具备RC候选技术条件**。先由决策端审查安装失败的返回码/注册与应用组件恢复契约，再修复并重跑对应隔离故障与升级/回退路径；随后完成安装后模块功能冒烟、标准目录/UAC、Cubase/FL Studio及人工听评。仅本地提交，未推送、未合并main、未建Tag/Release；既存协作文档改动保留。
+
 ### G01 / G3 和弦祈愿 UI（2026-10-23）
 
 本地分支 `development/g01-chord-wish-20261023`，G3接手 `58222d0`（包含G2核心及全库标注；`0f0ff63`为其祖先）。实现第六同级入口及A3详细/简略卡片，技术门禁通过后停在G3，等待决策端审查G4。开发构建版本为 `0.10.0-g03.dev.1`；精确源码提交与二进制BuildCommit分别在Git和产物内核对。

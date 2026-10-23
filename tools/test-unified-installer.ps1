@@ -1,60 +1,130 @@
-param([string]$PackageDirectory='build-installer/rc-0.9.0-rc.3-unified', [string]$TestRoot='build-installer/unified-smoke', [string]$BuildDirectory='build-v3-plugin', [string]$PreviousPackageDirectory='', [string]$PreviousVersion='')
+param(
+ [string]$PackageDirectory='build-installer/rc-0.9.0-rc.3-unified',
+ [string]$TestRoot='build-installer/unified-smoke',
+ [string]$BuildDirectory='build-v3-plugin',
+ [string]$PreviousPackageDirectory='',
+ [string]$PreviousVersion='',
+ [string]$Iscc='build-installer/tools/Inno/ISCC.exe')
 $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot
-$root=[IO.Path]::GetFullPath((Join-Path $repo $TestRoot))
-if (!$root.StartsWith($repo+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $root)) { throw 'A fresh workspace-owned isolated root is required.' }
+function ResolveRepoPath([string]$path) {
+ if ([IO.Path]::IsPathRooted($path)) { return [IO.Path]::GetFullPath($path) }
+ return [IO.Path]::GetFullPath((Join-Path $repo $path))
+}
+function IsWorkspaceChild([string]$path) {
+ $workspace=[IO.Path]::GetFullPath((Split-Path -Parent $repo)).TrimEnd([IO.Path]::DirectorySeparatorChar)
+ return $path.StartsWith($workspace+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)
+}
+$root=ResolveRepoPath $TestRoot
+if (!(IsWorkspaceChild $root) -or (Test-Path -LiteralPath $root)) { throw 'A fresh workspace-owned isolated root is required.' }
 $reg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-Application-IsolatedTest_is1'
 $oldReg='HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/HarmonyContinuation-FactoryLibrary-IsolatedTest_is1'
 if ((Test-Path $reg) -or (Test-Path $oldReg)) { throw 'An isolated registration already exists; do not overwrite it.' }
-New-Item -ItemType Directory -Path $root | Out-Null
-$header=Get-Content (Join-Path $repo "$BuildDirectory/generated/ProductVersionGenerated.h") -Raw
+$buildPath=ResolveRepoPath $BuildDirectory
+$packagePath=ResolveRepoPath $PackageDirectory
+$headerPath=Join-Path $buildPath 'generated/ProductVersionGenerated.h'
+if (!(Test-Path -LiteralPath $headerPath)) { throw "Missing build identity header: $headerPath" }
+$header=Get-Content -LiteralPath $headerPath -Raw
 if ($header -notmatch 'HC_PRODUCT_FACTORY_LIBRARY_VERSION\s+(\d+)') { throw 'Missing Factory version.' }
 $libraryVersion=$Matches[1]
-$stage=Join-Path $repo "$PackageDirectory/stage-$libraryVersion"
-$manager=Join-Path $stage 'library_manager.exe'
+$stage=Join-Path $packagePath "stage-$libraryVersion"
+$manager=Join-Path $buildPath 'Release/library_manager.exe'
+if (!(Test-Path -LiteralPath $manager)) { $manager=Join-Path $buildPath 'library_manager.exe' }
+if (!(Test-Path -LiteralPath $manager)) { throw "Missing library_manager.exe in build: $buildPath" }
+if (!(Test-Path -LiteralPath $stage)) { throw "Missing current package stage: $stage" }
 $info=& $manager inspect (Join-Path $stage 'factory.db')
-if ($LASTEXITCODE -ne 0 -or $info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
+if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw 'Missing Factory version from package stage.' }
+if ($Matches[1] -ne $libraryVersion) { throw 'Build and package Factory versions differ.' }
+$currentLibraryVersion=$Matches[1]
+if ($info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
 $entryCount=$Matches[1]
-$iscc=Join-Path $repo 'build-installer/tools/Inno/ISCC.exe'
-$version=(Select-String -Path (Join-Path $repo "$BuildDirectory/generated/ProductVersionGenerated.h") -Pattern '^#define HC_PRODUCT_VERSION "([^"]+)"').Matches.Groups[1].Value
-$factoryHash=(Get-FileHash (Join-Path $stage 'factory.db')).Hash
-$legacyHash=(Get-FileHash (Join-Path $repo "$BuildDirectory/factory-v2.db")).Hash
+$versionMatch=[regex]::Match($header,'HC_PRODUCT_VERSION\s+"([^"]+)"')
+if (!$versionMatch.Success) { throw 'Missing product version from build identity header.' }
+$version=$versionMatch.Groups[1].Value
+$isccPath=ResolveRepoPath $Iscc
+if (!(Test-Path -LiteralPath $isccPath -PathType Leaf)) { throw "Missing Inno Setup compiler: $isccPath" }
+$factoryHash=(Get-FileHash -LiteralPath (Join-Path $stage 'factory.db')).Hash
+$legacyDb=Join-Path $buildPath 'factory-v2.db'
+$legacyHash=if (Test-Path -LiteralPath $legacyDb) { (Get-FileHash -LiteralPath $legacyDb).Hash } else { '' }
+$previousStage=''
+$previousLibraryVersion=''
+$previousEntryCount=''
+$previousFactoryHash=''
+$previousLegacyHash=''
+if ($PreviousPackageDirectory) {
+ if (!$PreviousVersion) { throw 'PreviousVersion is required with PreviousPackageDirectory.' }
+ $previousPackagePath=ResolveRepoPath $PreviousPackageDirectory
+ if (!(Test-Path -LiteralPath $previousPackagePath -PathType Container)) { throw "Missing previous payload directory: $previousPackagePath" }
+ if ((Split-Path -Leaf $previousPackagePath) -like 'stage-*') {
+  $previousStage=$previousPackagePath
+ } else {
+  $previousStages=@(Get-ChildItem -LiteralPath $previousPackagePath -Directory -Filter 'stage-*')
+  if ($previousStages.Count -ne 1) { throw 'Previous package must contain exactly one extracted stage-* directory.' }
+  $previousStage=$previousStages[0].FullName
+ }
+ $previousModuleInfoPath=Join-Path $previousStage 'HarmonyContinuation.vst3/Contents/Resources/moduleinfo.json'
+ if (!(Test-Path -LiteralPath $previousModuleInfoPath)) { throw 'Previous stage is missing moduleinfo.json.' }
+ $previousInfo=Get-Content -LiteralPath $previousModuleInfoPath -Raw
+ if ($previousInfo -notmatch '"Version":\s*"([^"]+)"' -or $Matches[1] -ne $PreviousVersion) { throw 'Previous payload version mismatch.' }
+ $previousDatabase=Join-Path $previousStage 'factory.db'
+ $previousInspection=& $manager inspect $previousDatabase
+ if ($LASTEXITCODE -ne 0 -or $previousInspection -notmatch 'library_version=(\d+)') { throw 'Previous Factory inspection failed.' }
+ $previousLibraryVersion=$Matches[1]
+ if ($previousLibraryVersion -ne $currentLibraryVersion) { throw 'Previous and current payloads must use the same Factory content version.' }
+ if ($previousInspection -notmatch 'progressions=(\d+)') { throw 'Previous Factory entry count is missing.' }
+ $previousEntryCount=$Matches[1]
+ $previousFactoryHash=(Get-FileHash -LiteralPath $previousDatabase).Hash
+ if ($previousFactoryHash -ne $factoryHash) { throw 'Same-Factory upgrade fixture required.' }
+ $previousLegacyDb=Join-Path $previousStage 'official-factory/factory-v2.db'
+ if (Test-Path -LiteralPath $previousLegacyDb) { $previousLegacyHash=(Get-FileHash -LiteralPath $previousLegacyDb).Hash }
+}
+New-Item -ItemType Directory -Path $root | Out-Null
 $script:checks=0
 function Check([bool]$ok,[string]$message) { if (!$ok) { throw $message }; $script:checks++ }
 function Compile([string]$where,[bool]$legacy=$false,[bool]$library=$false,[bool]$previous=$false) {
- $output=Join-Path $where 'packages'; New-Item -ItemType Directory -Force -Path $output | Out-Null
+ $output=Join-Path $where $(if($previous){'packages-previous'}else{'packages'}); New-Item -ItemType Directory -Force -Path $output | Out-Null
  $source=Join-Path $repo 'packaging/UnifiedSetup.iss'; $payload=$stage;$compileVersion=$version
+ $compileLibraryVersion=$libraryVersion;$compileEntryCount=$entryCount;$compileFactoryHash=$factoryHash;$compileLegacyHash=$legacyHash
  if ($previous) {
-  if (!$PreviousPackageDirectory -or !$PreviousVersion) { throw 'Previous package and exact version are required.' }
-  $payload=Join-Path $repo "$PreviousPackageDirectory/stage-$libraryVersion"
-  $previousInfo=Get-Content (Join-Path $payload 'HarmonyContinuation.vst3/Contents/Resources/moduleinfo.json') -Raw
-  if ($previousInfo -notmatch '"Version":\s*"([^"]+)"' -or $Matches[1] -ne $PreviousVersion) { throw 'Previous payload version mismatch.' }
-  if ((Get-FileHash (Join-Path $payload 'factory.db')).Hash -ne $factoryHash) { throw 'Same-Factory upgrade fixture required.' }
+  $payload=$previousStage
   $compileVersion=$PreviousVersion
+  $compileLibraryVersion=$previousLibraryVersion;$compileEntryCount=$previousEntryCount;$compileFactoryHash=$previousFactoryHash
+  $compileLegacyHash=$previousLegacyHash
  }
  if ($legacy) {
-  $payload=Join-Path $repo 'build-installer/rc-0.9.0-rc.2/stage-3'
+  $payload=ResolveRepoPath 'build-installer/rc-0.9.0-rc.2/stage-3'
   $source=Join-Path $output 'Legacy.iss'
   # Only the isolated copy gets per-user uninstall records. Git history stays intact.
   $text=(Get-Content (Join-Path $repo 'packaging/HarmonyContinuation.iss') -Raw).Replace('CreateUninstallRegKey=no','CreateUninstallRegKey=yes')
   $text=$text.Replace('InfoBeforeFile=installer-info.txt',('InfoBeforeFile='+$repo+'\packaging\installer-info.txt')).Replace('MessagesFile: "ChineseSimplified.isl"',('MessagesFile: "'+$repo+'\packaging\ChineseSimplified.isl"'))
   [IO.File]::WriteAllText($source,$text,[Text.UTF8Encoding]::new($false))
  }
- $hcArgs=@('/Qp',"/DStageDir=$payload","/DOutputPath=$output","/DProductVersion=$compileVersion","/DLibraryVersion=$(if($legacy){3}else{$libraryVersion})","/DFactoryEntryCount=$entryCount","/DFactoryHash=$factoryHash","/DLegacyFactoryHash=$legacyHash","/DTestRoot=$where")
+ $hcArgs=@('/Qp',"/DStageDir=$payload","/DOutputPath=$output","/DProductVersion=$compileVersion","/DLibraryVersion=$(if($legacy){3}else{$compileLibraryVersion})","/DFactoryEntryCount=$compileEntryCount","/DFactoryHash=$compileFactoryHash","/DLegacyFactoryHash=$compileLegacyHash","/DTestRoot=$where")
  if ($library) { $hcArgs+='/DLibraryOnly' }
- & $iscc @hcArgs $source *> (Join-Path $output ('compile-'+$legacy+'-'+$library+'.log'))
+ & $isccPath @hcArgs $source *> (Join-Path $output ('compile-'+$legacy+'-'+$library+'-'+$previous+'.log'))
  if ($LASTEXITCODE -ne 0) { throw 'Isolated compiler failed; see compile log.' }
  if (!$legacy) { return Join-Path $output 'HarmonyContinuation-Setup-IsolatedTest.exe' }
  if ($library) { return Join-Path $output 'HarmonyContinuation-Library-3-Setup-IsolatedTest.exe' }
  return Join-Path $output "HarmonyContinuation-$version-Setup-IsolatedTest.exe"
 }
-function Run([string]$exe,[string]$log,[string[]]$extra=@(),[bool]$success=$true) {
+function Run([string]$exe,[string]$log,[string[]]$extra=@(),[object]$success=$true) {
  $hcArgs=@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LANG=english',('/LOG="'+$log+'"'))+$extra
  $process=Start-Process -FilePath $exe -ArgumentList $hcArgs -WindowStyle Hidden -Wait -PassThru
- Check (($process.ExitCode -eq 0) -eq $success) "Unexpected exit $($process.ExitCode): $log"
+ if ($null -ne $success) { Check (($process.ExitCode -eq 0) -eq [bool]$success) "Unexpected exit $($process.ExitCode): $log" }
+ return $process.ExitCode
 }
 function Paths([string]$where) {
- return @{app=(Join-Path $where 'HarmonyContinuation');plugin=(Join-Path $where 'VST3/HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3');db=(Join-Path $where "Data/Libraries/Factory/$libraryVersion/factory.db");personal=(Join-Path $where 'Data/User/user.db')}
+	$store=Join-Path $where 'Data/Libraries/Factory'
+	return @{app=(Join-Path $where 'HarmonyContinuation');bundle=(Join-Path $where 'VST3/HarmonyContinuation.vst3');plugin=(Join-Path $where 'VST3/HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3');store=$store;db=(Join-Path $store "$libraryVersion/factory.db");personal=(Join-Path $where 'Data/User/user.db')}
+}
+function FingerprintTree([string]$directory) {
+	if (!(Test-Path -LiteralPath $directory -PathType Container)) { return '<missing>' }
+	$prefix=[IO.Path]::GetFullPath($directory).TrimEnd([IO.Path]::DirectorySeparatorChar)+[IO.Path]::DirectorySeparatorChar
+	$parts=@(Get-ChildItem -LiteralPath $directory -File -Recurse | Sort-Object FullName | ForEach-Object {
+		$relative=$_.FullName.Substring($prefix.Length)
+		$relative+':'+(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+	})
+	return [string]::Join("`n",$parts)
 }
 $fresh=Join-Path $root 'fresh';$setup=Compile $fresh;$p=Paths $fresh
 New-Item -ItemType Directory -Force (Split-Path $p.personal) | Out-Null
@@ -88,22 +158,72 @@ if ($PreviousPackageDirectory) {
  [IO.File]::WriteAllText($p.personal,'Existing user collection unchanged')
  $userHash=(Get-FileHash $p.personal).Hash
  $history=Join-Path $migration 'Data/Libraries/Factory/4/factory.db'
- Copy-Item -LiteralPath (Join-Path $stage 'official-factory/factory-v4.db') -Destination $history
+	$previousHistory=Join-Path $previousStage 'official-factory/factory-v4.db'
+	if (!(Test-Path -LiteralPath $previousHistory)) { throw 'Formal previous payload is missing its V4 history fixture.' }
+	Copy-Item -LiteralPath $previousHistory -Destination $history
  $historyHash=(Get-FileHash $history).Hash
  Run $oldSetup (Join-Path $migration 'previous-install.log')
+	$beforeRegistrationVersion=(Get-ItemProperty -LiteralPath $reg -Name DisplayVersion).DisplayVersion
  $oldPluginHash=(Get-FileHash $p.plugin).Hash
+	$oldModuleInfo=Get-Content (Join-Path $p.bundle 'Contents/Resources/moduleinfo.json') -Raw
+	Check ($oldModuleInfo -match '"Version":\s*"0\.10\.0"') 'Formal previous install did not expose the 0.10.0 module version'
  $setup=Compile $migration
  Run $setup (Join-Path $migration 'library-only-update.log') @('/OPERATION=modify','/COMPONENTS=library')
  Check ((Get-FileHash $p.plugin).Hash -eq $oldPluginHash) 'Library-only upgrade changed the old plugin'
- $lock=[IO.File]::Open($p.plugin,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
- try { Run $setup (Join-Path $migration 'locked-update.log') @('/COMPONENTS=plugin') $false } finally { $lock.Dispose() }
+	$activeFile=Join-Path $p.store 'active.txt'
+	$beforeTree=FingerprintTree $p.bundle
+	$beforeDb=(Get-FileHash $p.db).Hash
+	$beforeHistory=(Get-FileHash $history).Hash
+	$beforeUser=(Get-FileHash $p.personal).Hash
+	$beforePointer=(Get-FileHash $activeFile).Hash
+	$stateFile=Join-Path $p.app 'components.ini'
+	$beforeState=(Get-FileHash $stateFile).Hash
+	$beforeManifest=(Get-FileHash (Join-Path $p.app 'plugin-files.txt')).Hash
+	# Force the post-install component-state write to fail after plugin files are copied.
+	# The conflict exists only in this isolated root and is restored immediately afterward.
+	$stateBackup=Join-Path $migration 'components-before-failure.ini'
+	Move-Item -LiteralPath $stateFile -Destination $stateBackup
+	New-Item -ItemType Directory -Path $stateFile | Out-Null
+	try { $rollbackExit=Run $setup (Join-Path $migration 'transaction-rollback.log') @('/COMPONENTS=plugin') $null } finally {
+		if (Test-Path -LiteralPath $stateFile -PathType Container) { [IO.Directory]::Delete($stateFile,$false) }
+		if (Test-Path -LiteralPath $stateBackup -PathType Leaf) { Move-Item -LiteralPath $stateBackup -Destination $stateFile }
+	}
+	$rollbackLog=Get-Content (Join-Path $migration 'transaction-rollback.log') -Raw
+	$afterRegistrationVersion=(Get-ItemProperty -LiteralPath $reg -Name DisplayVersion).DisplayVersion
+	$rollbackStatePreserved=(FingerprintTree $p.bundle) -ceq $beforeTree -and (Get-FileHash $p.db).Hash -eq $beforeDb -and (Get-FileHash $history).Hash -eq $beforeHistory -and (Get-FileHash $p.personal).Hash -eq $beforeUser -and (Get-FileHash $activeFile).Hash -eq $beforePointer -and (Get-FileHash $stateFile).Hash -eq $beforeState -and (Get-FileHash (Join-Path $p.app 'plugin-files.txt')).Hash -eq $beforeManifest
+	$rollbackFailureLogged=($rollbackLog -match 'CurStepChanged raised an exception' -and $rollbackLog -match 'Cannot record component state')
+	Check ($rollbackFailureLogged -and $rollbackStatePreserved -and $rollbackExit -ne 0 -and $afterRegistrationVersion -eq $beforeRegistrationVersion) ("Post-install transaction rollback mismatch: loggedExpectedFailure=$rollbackFailureLogged, fileAndDataStatePreserved=$rollbackStatePreserved, exitCode=$rollbackExit, DisplayVersion=$beforeRegistrationVersion->$afterRegistrationVersion; log=$(Join-Path $migration 'transaction-rollback.log')")
  Run $setup (Join-Path $migration 'plugin-update.log') @('/COMPONENTS=plugin')
- Check ((Get-FileHash $p.plugin).Hash -eq (Get-FileHash (Join-Path $stage 'HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3')).Hash) 'Plugin upgrade identity mismatch'
+	$expectedPlugin=Join-Path $stage 'HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3'
+	Check ((Get-FileHash $p.plugin).Hash -eq (Get-FileHash $expectedPlugin).Hash) 'Plugin upgrade identity mismatch'
  Check ((Get-FileHash $p.db).Hash -eq $factoryHash -and (Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Upgrade changed Factory history or user data'
- Run (Join-Path $p.app 'unins000.exe') (Join-Path $migration 'uninstall.log')
+	$downgradeTree=FingerprintTree $p.bundle
+	$downgradeDb=(Get-FileHash $p.db).Hash
+	$downgradeHistory=(Get-FileHash $history).Hash
+	$downgradeUser=(Get-FileHash $p.personal).Hash
+	$downgradePointer=(Get-FileHash $activeFile).Hash
+	$downgradeExit=Run $oldSetup (Join-Path $migration 'downgrade-attempt.log') @('/COMPONENTS=plugin') $null
+	$downgradeLog=Get-Content (Join-Path $migration 'downgrade-attempt.log') -Raw
+	$currentPluginHash=(Get-FileHash $p.plugin).Hash
+	$oldPayloadPlugin=Join-Path $previousStage 'HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3'
+	$oldPayloadPluginHash=(Get-FileHash $oldPayloadPlugin).Hash
+	if ($currentPluginHash -eq $oldPayloadPluginHash) {
+		$downgradeResult='direct downgrade accepted'
+	} else {
+		$explicitRefusal=($downgradeLog -match '(?i)Downgrade cancelled|A newer plugin is installed|newer plugin|较新主程序|取消降级')
+		Check ($explicitRefusal -and $currentPluginHash -eq (Get-FileHash $expectedPlugin).Hash -and (FingerprintTree $p.bundle) -ceq $downgradeTree -and (Get-FileHash $p.db).Hash -eq $downgradeDb -and (Get-FileHash $history).Hash -eq $downgradeHistory -and (Get-FileHash $p.personal).Hash -eq $downgradeUser -and (Get-FileHash $activeFile).Hash -eq $downgradePointer) 'Downgrade was neither applied nor explicitly rejected without changing data'
+		$downgradeResult='direct downgrade explicitly refused; uninstall/reinstall rollback verified'
+		Run (Join-Path $p.app 'unins000.exe') (Join-Path $migration 'uninstall-dev-before-rollback.log')
+		Check (!(Test-Path $reg) -and !(Test-Path $p.plugin) -and !(Test-Path $p.db)) 'Removing the isolated development install left managed components'
+		Check ((Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Removing the isolated development install damaged personal or historical data'
+		Run $oldSetup (Join-Path $migration 'rollback-formal-install.log')
+		Check ((Get-FileHash $p.plugin).Hash -eq $oldPayloadPluginHash -and (Get-FileHash $p.db).Hash -eq $previousFactoryHash -and (Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash -and (Test-Path $reg)) 'Uninstall/reinstall rollback did not restore formal plugin while preserving personal/history data'
+	}
+	Check ((Get-FileHash $p.plugin).Hash -eq $oldPayloadPluginHash -and (Get-FileHash $p.db).Hash -eq $previousFactoryHash -and (Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Rollback state does not match formal v0.10.0 and preserved data'
+	Run (Join-Path $p.app 'unins000.exe') (Join-Path $migration 'uninstall.log')
  Check (!(Test-Path $reg) -and !(Test-Path $p.plugin) -and !(Test-Path $p.db)) 'Upgraded uninstall left managed components'
  Check ((Get-FileHash $history).Hash -eq $historyHash -and (Get-FileHash $p.personal).Hash -eq $userHash) 'Upgraded uninstall damaged historical Factory or user data'
- "Unified isolated lifecycle $checks checks PASS; fresh/modify/repair/remove, $PreviousVersion to $version upgrade, lock rejection, uninstall, user and V4 history protection" | Tee-Object (Join-Path $root 'result.txt')
+	"Unified isolated lifecycle $checks checks PASS; fresh/modify/repair/remove, $PreviousVersion to $version upgrade, transaction rollback, $downgradeResult, uninstall, user and V4 history protection" | Tee-Object (Join-Path $root 'result.txt')
  return
 }
 $migration=Join-Path $root 'migration';$p=Paths $migration
