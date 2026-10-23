@@ -4,11 +4,12 @@
 
 ### G01 / G2 和弦祈愿核心（2026-10-23）
 
-分支 `development/g01-chord-wish-20261023`，接手HEAD `99310f1`，基于正式源码 `c8d8dc3`。G1由用户结项并批准G2；本轮仅完成独立多调式标注及双路径抽样核心。规格和编辑样例在[标注目录](data/mode-annotations/v1/README.md)，已批准决定见[D12](DECISIONS.md#d12-g01-多调式归属与独立抽样g2)。第六入口、插件UI、宿主接线与Setup未实施，G3/G4尚未验收。
+分支 `development/g01-chord-wish-20261023`，接手HEAD `99310f1`，基于正式源码 `c8d8dc3`。G1由用户结项并批准G2；本轮仅完成独立多调式标注及双路径抽样核心。规格和全库编辑标注在[标注目录](data/mode-annotations/v2/README.md)，已批准决定见[D12](DECISIONS.md#d12-g01-多调式归属与独立抽样g2)。第六入口、插件UI、宿主接线与Setup未实施，G3/G4尚未验收。
 
 - 实现：精确ID/源音乐身份绑定、多归属与编辑常用程度、明确的未标注/未审校/无法确认/失配状态；纯随机输入隔离、Unified原资格约束路径、12主音、多选并集/严格筛选、完整音乐身份去重、固定种子及连续无放回。输入路径保留全局shortlist预算并逐源资格判定，避免引擎原后缀聚合丢失不同来源前缀。相关原评分、Factory、Schema2、Session5、Snapshot3未改。
-- 数据：3条真实进行/4个逐条编辑审校归属；其余655条保持无标注，可进入无调式约束池。无约束实化去重得到7788条完整音乐；枚举支持不代表所有调式已有审校卡池。
-- 本轮实际验证：Release / HC_BUILD_PLUGIN=OFF，`WishCoreFocused`报告1001检查通过；`MidiExportTests`598、`PreviewTests`129、`ContinuationEngineTests`323/323通过。覆盖真实V5加载、源失配、多归属、12调、完整前缀身份、单轮抽样与完整/空续写Snapshot3及MIDI字节往返。[首轮日志](../HarmonyContinuation-g02-validation-20261023/tests.log)中Wish曾因合成功能投影缺失而失败；修正夹具后[Wish最终日志](../HarmonyContinuation-g02-validation-20261023/tests-wish-final.log)通过，其他三个目标未重复运行。默认Debug探测曾报C1902，改为Release探测后构建成功；未跳过编译器检测。
+- 数据（本次完善）：658条全部有来源绑定记录，共727个归属；618条全部解释已审校、15条兼有已审校/未确认解释、25条仅有未确认解释。633条至少有一个已审校解释；69条多归属。687个已审校归属覆盖7种调式，40个未确认解释不参与调式筛选；Locrian及两种旋律小调缺乏充分证据而保留空池。无约束实化去重仍为7788条完整音乐。评级与音乐证据见标注目录，用户实听待完成。
+- G2核心首次验证（本次标注完善前）：Release / HC_BUILD_PLUGIN=OFF，`WishCoreFocused`报告1001检查通过；`MidiExportTests`598、`PreviewTests`129、`ContinuationEngineTests`323/323通过。覆盖真实V5加载、源失配、多归属、12调、完整前缀身份、单轮抽样与完整/空续写Snapshot3及MIDI字节往返。[首轮日志](../HarmonyContinuation-g02-validation-20261023/tests.log)中Wish曾因合成功能投影缺失而失败；修正夹具后[Wish最终日志](../HarmonyContinuation-g02-validation-20261023/tests-wish-final.log)通过，其他三个目标未重复运行。默认Debug探测曾报C1902，改为Release探测后构建成功；未跳过编译器检测。
+- 本次标注完善实际验证：Release / HC_BUILD_PLUGIN=OFF，扩展现有 `WishCoreFocused`，12585项检查通过，涵盖全658条记录/源指纹、完整音符严格池、真实未确认条目的无约束可抽/调式排除，以及既有输入隔离、抽样、Preview/MIDI/Snapshot3往返通过；结果见[最终日志](../HarmonyContinuation-g02-validation-20261023/tests-annotations-v2-final.log)。只重跑这一相关目标，独立历史测试未重跑；实际安装库与构建库哈希再次一致。
 - 来源证据：[哈希核对](../HarmonyContinuation-g02-validation-20261023/source-hashes.log)显示本轮源码重建库与已安装V5逐字节SHA-256一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`；正式Setup本体与其既有哈希一致，包内DB尚未直接解包比对，继续保留此证据缺口。
 - 工程条件已满足进入G3；实际UI、原生宿主、用户实听及开发Setup仍待后续工作包。未推送、未合并main、未建Tag或Release；接手前既存协作文档改动保留。
 

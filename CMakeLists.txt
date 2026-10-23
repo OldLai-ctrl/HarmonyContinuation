@@ -479,7 +479,7 @@ if(BUILD_TESTING)
     target_link_libraries(WishTests PRIVATE harmony_wish harmony_snapshot)
     target_compile_definitions(WishTests PRIVATE
         HC_WISH_FACTORY_DB_PATH="${HC_FACTORY_DB}"
-        HC_WISH_ANNOTATION_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data/mode-annotations/v1/factory-v5.hca")
+        HC_WISH_ANNOTATION_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data/mode-annotations/v2/factory-v5.hca")
     add_dependencies(WishTests factory_database)
     if(MSVC)
         target_compile_options(WishTests PRIVATE /W4 /utf-8)
