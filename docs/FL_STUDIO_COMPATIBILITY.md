@@ -1,4 +1,10 @@
-# FL Studio 20+ compatibility — v0.9.0
+# FL Studio 兼容状态与历史
+
+**v0.10.0：用户已于 2026-10-23 确认 RC1 / `435ed85` 在 FL Studio 实机全部验收通过。** 正式版音乐与音频实现沿用该 RC1，仅调整版本元数据和文档，复用用户实机证据；正式包另做自动化、安装与加载验证。未提供具体宿主、系统版本或设备组合，不扩大兼容声明。详见 [正式发布说明](V0_10_RELEASE_NOTES.md)。
+
+## v0.9.0 历史记录
+
+以下 Pending、旧音频说明与测试数字仅描述 v0.9.0 当时状态，不能作为 v0.10.0 当前结论。
 
 **v0.9.0: Not Verified / Pending. FL Studio compatibility has not yet been verified with the v0.9.0 release.** No FL Studio acceptance is required in this release task. Historical automated evidence below is reused, not rerun for v0.9.0.
 

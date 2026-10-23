@@ -1,0 +1,42 @@
+Factory rows=657
+event positions=3469 terminal nonloop templates=529 loopable templates=128 with no tested natural continuation position=0
+Intents: COLOR=89 DEVELOP=91 LOOP=127 RESOLVE=350
+Modes: major=473 minor=184
+Path lengths: 3=7 4=161 5=217 6=194 7=69 8=9
+Score bands R01_R02_B08_B11: 40-49.99=4 50-59.99=21 60-69.99=32 70+=19 not_scored=3587
+Score bands ablation: 40-49.99=9 50-59.99=95 60-69.99=115 70+=199 <40=1 not_scored=7396
+Score bands factory_exact_prefix: 40-49.99=32432 50-59.99=57941 60-69.99=76241 70+=178588 <40=12644 not_scored=994609
+Score bands factory_middle_slice: 40-49.99=776 50-59.99=6208 60-69.99=4601 70+=12120 <40=15 not_scored=167280
+Score bands factory_skeleton_prefix: 40-49.99=1358 50-59.99=8903 60-69.99=6849 70+=18683 <40=20 not_scored=221706
+Score bands factory_transposed_G: 40-49.99=1513 50-59.99=10762 60-69.99=8504 70+=17277 <40=28 not_scored=219423
+Score bands independent: 40-49.99=147 50-59.99=1312 60-69.99=1709 70+=2166 <40=37 not_scored=102389
+Score bands style_intent_grid: 40-49.99=99 50-59.99=1063 60-69.99=1291 70+=1526 <40=5 not_scored=95664
+Exposure R01_R02_B08_B11 primary-visible appearances=28 unique primary IDs=23 zero-primary IDs=634 supporting-source attributions=9 Top10 share=0.53571429 Top50 share=1 Top100 share=1
+
+Exposure ablation primary-visible appearances=75 unique primary IDs=67 zero-primary IDs=590 supporting-source attributions=127 Top10 share=0.24 Top50 share=0.77333333 Top100 share=1
+
+Exposure factory_exact_prefix primary-visible appearances=24768 unique primary IDs=646 zero-primary IDs=11 supporting-source attributions=37878 Top10 share=0.14664083 Top50 share=0.41694929 Top100 share=0.59500161
+
+Exposure factory_middle_slice primary-visible appearances=2582 unique primary IDs=502 zero-primary IDs=155 supporting-source attributions=6767 Top10 share=0.11773819 Top50 share=0.36948102 Top100 share=0.55731991
+
+Exposure factory_skeleton_prefix primary-visible appearances=3485 unique primary IDs=625 zero-primary IDs=32 supporting-source attributions=12010 Top10 share=0.13687231 Top50 share=0.37618364 Top100 share=0.54117647
+
+Exposure factory_transposed_G primary-visible appearances=4334 unique primary IDs=629 zero-primary IDs=28 supporting-source attributions=10788 Top10 share=0.10013844 Top50 share=0.32810337 Top100 share=0.50853715
+
+Exposure independent primary-visible appearances=1071 unique primary IDs=127 zero-primary IDs=530 supporting-source attributions=1182 Top10 share=0.26143791 Top50 share=0.77310924 Top100 share=0.97478992
+
+Exposure style_intent_grid primary-visible appearances=836 unique primary IDs=50 zero-primary IDs=607 supporting-source attributions=1005 Top10 share=0.35526316 Top50 share=1 Top100 share=1
+Top-three within-intent path pairs R01_R02_B08_B11 queries=28 pairs=94 engine-prefix-similar=0 ratio=0 same-relative-full-path=0 ratio=0
+Top-three within-intent path pairs ablation queries=75 pairs=396 engine-prefix-similar=0 ratio=0 same-relative-full-path=0 ratio=0
+Top-three within-intent path pairs factory_exact_prefix queries=24768 pairs=224030 engine-prefix-similar=219 ratio=0.00097754765 same-relative-full-path=163 ratio=0.00072758113
+Top-three within-intent path pairs factory_middle_slice queries=2582 pairs=14790 engine-prefix-similar=128 ratio=0.0086544963 same-relative-full-path=114 ratio=0.0077079108
+Top-three within-intent path pairs factory_skeleton_prefix queries=3485 pairs=19702 engine-prefix-similar=37 ratio=0.0018779819 same-relative-full-path=79 ratio=0.0040097452
+Top-three within-intent path pairs factory_transposed_G queries=4334 pairs=30184 engine-prefix-similar=75 ratio=0.0024847601 same-relative-full-path=87 ratio=0.0028823218
+Top-three within-intent path pairs independent queries=1071 pairs=6036 engine-prefix-similar=0 ratio=0 same-relative-full-path=0 ratio=0
+Top-three within-intent path pairs style_intent_grid queries=836 pairs=4836 engine-prefix-similar=0 ratio=0 same-relative-full-path=0 ratio=0
+Input cases=38 fixed authored seed=none; style-intent grid=240; MIDI transform pairs=220 recognition failures=8 both-nonempty comparable=176 stable(overlap>=.8)=164 exact-set-stable=155 empty-both=31 empty-to-nonempty=2 nonempty-to-empty=3
+Transform failure harmony recognition failed: no recognizable chord progression=8
+Recommendation probes=5801 summed engine ms=51132.436 wall ms=58554.694
+Match gate=.60; score gate=60; per-group display cap=3; shortlist includes all 657 rows because 657 < 800. Phase3A exception OFF (default RecommendationWeights).
+Quality enums: 1=1477 2=875 3=310 4=354 5=365 6=22 7=39 8=27Audit allocation traffic new_bytes=17477624841 new_calls=116783146; cumulative allocations, not simultaneous memory.
+Peak working set bytes=21065728 (sampled from Windows process counters).

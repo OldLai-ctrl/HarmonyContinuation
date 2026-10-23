@@ -109,6 +109,16 @@ bool PLUGIN_API PluginView::open(void* parent) {
         actions.deleteUser=[pluginController](const std::string& id) { return pluginController->deleteUserProgression(id); };
         actions.audition=[pluginController](const harmony::ContinuationCandidate& candidate) {
             pluginController->audition(candidate); };
+        actions.stopAudition=[pluginController] { pluginController->stopPreview(); };
+        actions.pauseAudition=[pluginController] { pluginController->pausePreview(); };
+        actions.resumeAudition=[pluginController] { pluginController->resumePreview(); };
+        actions.previewBackend=[pluginController](bool host) { pluginController->setPreviewBackend(host); };
+        actions.seekAudition=[pluginController](const std::string& id,double positionQN) {
+            pluginController->seekPreview(id,positionQN); };
+        actions.previewSettings=[pluginController](bool custom,double bpm,bool suffix) {
+            pluginController->setPreviewSettings(custom?preview::PreviewTempoMode::Custom:preview::PreviewTempoMode::FollowHost,
+                bpm,suffix?preview::PreviewScope::Suffix:preview::PreviewScope::Full);
+        };
         actions.midiPayload=[pluginController](const harmony::ContinuationCandidate& c){return pluginController->midiPayload(c);};
         actions.enrichmentMidiPayload=[pluginController](const harmony::enrichment::EnrichmentCandidate& c){return pluginController->midiPayload(c);};
         actions.saveMidiPayload=[pluginController,parent](const harmony::midi::MidiClipPayload& p){return pluginController->saveMidiPayload(p,parent);};
@@ -258,16 +268,22 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
 #if defined(_WIN32)
         auto* platformFrame = frame ? frame->getPlatformFrame() : nullptr;
         auto window = platformFrame ? static_cast<HWND>(platformFrame->getPlatformRepresentation()) : nullptr;
-        if (!window || !IsWindowVisible(window) || IsIconic(window)) {
-            setIdleRate(500);
-            return result;
-        }
+        const bool visible=window&&IsWindowVisible(window)&&!IsIconic(window);
 #endif
-        setIdleRate(transportPlaying_ || (impl_ && impl_->controller && impl_->controller->previewActive()) ? 50 : 250);
+        const bool previewActive=impl_&&impl_->controller&&impl_->controller->previewActive();
+#if defined(_WIN32)
+        setIdleRate(transportPlaying_||previewActive?(visible?50:100):250);
+#else
+        setIdleRate(transportPlaying_||previewActive?50:250);
+#endif
         if (impl_ && impl_->controller) {
             impl_->controller->pollRecommendation();
             impl_->controller->pollTransport();
             impl_->controller->pollPreview();
+            if(impl_->main){const auto s=impl_->controller->previewStatus();
+                impl_->main->setAuditionState(s.bpmMode==preview::PreviewTempoMode::Custom,s.customBPM,
+                    s.scope==preview::PreviewScope::Suffix,s.hostValid,s.effectiveBPM);
+                impl_->main->setPreviewTransport(s.state,s.hostBackend,s.hostAvailable,s.pending);}
         }
         return result;
     }

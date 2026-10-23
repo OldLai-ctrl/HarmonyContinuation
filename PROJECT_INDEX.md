@@ -4,7 +4,15 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-当前正式源码位于 `main`，开发分支为 `v0.9/dev`，已集成 `library/v3` 的兼容桥与 Factory V3 内容，后者保留开发历史；新增数据位于 `data/factory-v3/`，历史 Library 2 数据保留。音乐算法和宿主适配保持来源版本。当前状态、证据与下一步只在 [NOW.md](NOW.md) 维护。版本、提交及实际构建以当前 checkout 和产物为准，不能凭目录名推断。
+v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
+
+当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
+
+Phase7入口为 [A3密度微调与审计](design/phase7/README.md) 和 [原型](design/phase7/index.html)。正式800×780界面已与统一引擎合入dev.12，dev.13增加同级升级入口与完整来源试听/MIDI，dev.14增加完整分页推荐列表、同序总览及Matcher轨迹对齐；Factory V5变体提案保留在 `data/factory-proposals/20261019-pop-variants/`，构建身份及验收以 NOW 为准。
+
+Phase6 接续入口为 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [中文验收](docs/PHASE6_CUBASE_ACCEPTANCE.md)；完整质量分析在交付包 `benchmark/RESULTS_ANALYSIS.md`，验证/交付路径见 MAP，最终门禁和 Setup SHA 以综合报告及包内证明为准。
+
+Phase5 / dev.6 的历史入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)。Phase5.1 历史收尾与验收见 [收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Cubase清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)；当时离线门禁 713/713、UserLibrary 定向测试 283 checks，三种既有包为该轮用户验收范围。详见各阶段报告。
 
 ## 按任务定位
 
@@ -13,6 +21,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | 接续进度、待验收、安排下一步 | [NOW.md](NOW.md) 的对应章节 | `当前任务`、`待验收`、`证据` |
 | RC 说明与六项真实 DAW 人工验收 | [版本记录](docs/V0_9_RELEASE_NOTES.md)、[人工清单](docs/RC_DAW_ACCEPTANCE.md) | `rc.1`、`Pending` |
 | 冻结 Factory V3 的内容覆盖 | [LIBRARY_V3_SUMMARY.md](LIBRARY_V3_SUMMARY.md) | `Total`、`Major`、`Missing Metadata` |
+| Factory V4 开发、dev.2 可靠性修复及人工验收 | [核心修复报告](docs/DEV2_CORE_RELIABILITY_FIX.md)、[产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)、[V4 人工清单](docs/V4_DAW_ACCEPTANCE.md) | `短前缀`、`MIDI 导入`、`可发现性` |
 | 设备路径、分支、产物及同步边界 | [MAP.md](MAP.md) | `本机`、`同步`、`构建` |
 | 构建、运行、局部测试、安装、交付 | [RUNBOOK.md](RUNBOOK.md) | `构建`、`验收`、`交付` |
 | 设计取舍或已有约束冲突 | [DECISIONS.md](DECISIONS.md) | 决策 ID、模块名 |
@@ -25,7 +34,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 | --- | --- | --- |
 | 宿主、窗口、生命周期与诊断 | `src/host/`、`src/plugin/`、`src/ui/EffectiveScale.h` | `docs/V0_9_HOST_ARCHITECTURE.md`、`docs/FL_STUDIO_COMPATIBILITY.md` |
 | MIDI 读取、识别、输出及拖放 | `src/midi/`、`src/io/` | `docs/V0_8_DEV2.md`、`docs/MIDI_EXPORT.md` |
-| 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md` |
+| 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md`、`docs/DEV3_CUBASE_RELIABILITY_FIX.md` |
 | 继续发展与升级进行色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
 | 卡片、Why? V2 与色彩控件 | `src/ui/ColorHint.h`、`src/ui/WhyExplanation.h`、`src/ui/MainView.cpp` | `docs/WHY_V2.md` |
 | 只读色彩分析 | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |

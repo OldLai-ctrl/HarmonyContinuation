@@ -1,8 +1,12 @@
 #include "TemplateJson.h"
 #include "ProgressionJson.h"
 #include "core/ContinuationEngine.h"
+#include "core/ChordPitchSet.h"
 #include "library/ProgressionLibrary.h"
 #include "plugin/RecommendationWorker.h"
+#include <algorithm>
+#include <array>
+#include <string>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -43,6 +47,15 @@ const ContinuationCandidate* findSuffix(const RecommendationSet& set, std::strin
             item.continuation.back().label == last) return &item;
     return nullptr;
 }
+const MatchResult* findMatch(const RecommendationSet& set, std::string_view id) {
+    const auto it=std::find_if(set.matches.begin(),set.matches.end(),[&](const auto& match){return match.templateId==id;});
+    return it==set.matches.end()?nullptr:&*it;
+}
+const ContinuationCandidate* findCandidate(const RecommendationSet& set, std::string_view id) {
+    for (const auto& group : set.groups) for (const auto& item : group)
+        if (item.primaryTemplate == std::string(id)) return &item;
+    return nullptr;
+}
 }
 int main() {
     const auto a = progression(R"([{"name":"C","start":4,"duration":4},{"name":"Am","start":8,"duration":2},{"name":"Dm","start":10}])");
@@ -54,6 +67,131 @@ int main() {
           "C OPEN duration");
     check(std::abs(path->continuation[0].durationQN - 2.) < 0.001, "A suffix duration");
     check(first.groups[0].size() == 1, "H resolve grouping");
+    // Changing perGroup changes only post-qualification retention.
+    constexpr std::array<std::string_view, 11> retentionTails{
+        "V I", "ii V I", "iii V I", "IV V I", "vi V I",
+        "I ii V I", "I iii V I", "I IV V I", "I vi V I",
+        "ii IV V I", "iii vi V I"
+    };
+    std::vector<ProgressionTemplate> retentionRoutes;
+    retentionRoutes.reserve(retentionTails.size());
+    for (std::size_t i = 0; i < retentionTails.size(); ++i) {
+        const auto id = "retention_" + std::to_string(i);
+        const auto json = std::string("[{\"id\":\"") + id +
+            "\",\"mode\":\"major\",\"sequence\":\"I vi ii " +
+            std::string(retentionTails[i]) +
+            "\",\"intent\":\"resolve\",\"cadence\":\"authentic\"}]";
+        auto route = templates(json);
+        retentionRoutes.push_back(std::move(route.front()));
+    }
+    RecommendationWeights finiteRetention;
+    finiteRetention.perGroup = 10;
+    auto unlimitedRetention = finiteRetention;
+    unlimitedRetention.perGroup = 0;
+    const auto finitePage = recommendContinuations(query(a), CandidateIndex(retentionRoutes), {}, finiteRetention);
+    const auto unlimitedPage = recommendContinuations(query(a), CandidateIndex(retentionRoutes), {}, unlimitedRetention);
+    check(unlimitedPage.groups[0].size() == retentionTails.size(),
+          "zero perGroup retains all eleven distinct base-qualified Resolve routes");
+    check(finitePage.groups[0].size() == 10 &&
+          finitePage.stats.scorePassed == unlimitedPage.stats.scorePassed &&
+          unlimitedPage.stats.scorePassed == retentionTails.size(),
+          "finite perGroup truncates only after identical qualification");
+    check(finitePage.stats.output == 10 && unlimitedPage.stats.output == retentionTails.size(),
+          "perGroup alone controls retained output count");
+    check(std::all_of(unlimitedPage.groups[0].begin(), unlimitedPage.groups[0].end(),
+          [](const auto& candidate) {
+              return candidate.hardConstraintsPassed && candidate.baseQualified &&
+                     std::isfinite(candidate.eligibilityScore);
+          }), "every retained fixture route satisfies hard and base qualification");
+    bool samePrefix = finitePage.groups[0].size() <= unlimitedPage.groups[0].size();
+    for (std::size_t i = 0; samePrefix && i < finitePage.groups[0].size(); ++i) {
+        const auto& finite = finitePage.groups[0][i];
+        const auto& unlimited = unlimitedPage.groups[0][i];
+        samePrefix = finite.id == unlimited.id &&
+            finite.primaryTemplate == unlimited.primaryTemplate &&
+            finite.hardConstraintsPassed == unlimited.hardConstraintsPassed &&
+            finite.baseQualified == unlimited.baseQualified &&
+            finite.exploratory == unlimited.exploratory &&
+            std::abs(finite.eligibilityScore - unlimited.eligibilityScore) < 0.0001f &&
+            std::abs(finite.rankingScore - unlimited.rankingScore) < 0.0001f;
+    }
+    check(samePrefix, "finite retention preserves qualification, scores, and ranking prefix");
+    const auto autoFirst=recommendContinuations(makeMatchQuery(a),CandidateIndex(basic));
+    const auto* autoPath=findSuffix(autoFirst,"G","C");
+    check(autoPath&&path&&std::abs(autoPath->eligibilityScore-path->eligibilityScore)<0.0001f&&
+          std::abs(autoPath->rankingScore-path->rankingScore)<0.0001f,
+          "normalized route has identical qualification and ranking in Auto and its forced key");
+    auto changedKeyPrior=query(a);
+    changedKeyPrior.interpretations.front().key.confidence=0.f;
+    const auto priorOnly=recommendContinuations(changedKeyPrior,CandidateIndex(basic));
+    const auto* priorPath=findSuffix(priorOnly,"G","C");
+    check(priorPath&&path&&std::abs(priorPath->eligibilityScore-path->eligibilityScore)<0.0001f&&
+          std::abs(priorPath->rankingScore-path->rankingScore)<0.0001f,
+          "normalized harmonic quality does not depend on the explanatory key confidence");
+    // The same musical relation must score and order identically in all twelve keys.
+    // Absolute output pitches remain distinct identities; only this comparison normalizes them.
+    constexpr const char* roots[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+    const auto transpose=[&](Progression input,int shift) {
+        for(auto& e:input) {
+            const auto n=normalizeChord(e);
+            const auto rootLength=1u+(e.name.size()>1&&(e.name[1]=='#'||e.name[1]=='b'));
+            e.name=std::string(roots[(int(*n.root)+shift)%12])+e.name.substr(rootLength);
+        }
+        return input;
+    };
+    const auto sameTransposed=[&](const RecommendationSet& reference,const RecommendationSet& shifted,int shift) {
+        for(std::size_t g=0;g<4;++g) {
+            check(reference.groups[g].size()==shifted.groups[g].size(),"transposition preserves candidate count");
+            for(std::size_t i=0;i<reference.groups[g].size();++i) {
+                const auto& x=reference.groups[g][i];const auto& y=shifted.groups[g][i];
+                check(x.primaryTemplate==y.primaryTemplate&&x.intent==y.intent&&x.key.mode==y.key.mode&&
+                    (int(x.key.tonic)+shift)%12==int(y.key.tonic)&&x.baseQualified==y.baseQualified&&
+                    x.exploratory==y.exploratory&&std::abs(x.eligibilityScore-y.eligibilityScore)<0.0001f&&
+                    std::abs(x.rankingScore-y.rankingScore)<0.0001f&&x.continuation.size()==y.continuation.size(),
+                    "transposition preserves normalized explanation, qualification, score and order");
+                for(std::size_t j=0;j<x.continuation.size();++j) {
+                    const auto cx=chordPitches(x.continuation[j].label),cy=chordPitches(y.continuation[j].label);
+                    check((cx.root+shift)%12==cy.root&&(cx.bass+shift)%12==cy.bass&&cx.intervals==cy.intervals&&
+                        x.continuation[j].durationQN==y.continuation[j].durationQN,
+                        "transposition preserves actual quality, bass and timing");
+                }
+            }
+        }
+    };
+    for(int shift=0;shift<12;++shift) {
+        const auto moved=transpose(a,shift);
+        sameTransposed(first,recommendContinuations(query(moved,{PitchClass(shift),Mode::Major}),CandidateIndex(basic)),shift);
+        sameTransposed(autoFirst,recommendContinuations(makeMatchQuery(moved),CandidateIndex(basic)),shift);
+    }
+    const auto longPrefix=progression(R"([{"name":"C","start":0},{"name":"G","start":4},{"name":"Am","start":8},{"name":"Em","start":12},{"name":"F","start":16}])");
+    const auto longQuery=makeMatchQuery(longPrefix);
+    for(int shift=0;shift<12;++shift) {
+        const auto moved=makeMatchQuery(transpose(longPrefix,shift));
+        check(longQuery.interpretations.size()==moved.interpretations.size(),"bounded key budget is transposition invariant");
+        for(std::size_t i=0;i<longQuery.interpretations.size();++i) {
+            const auto& x=longQuery.interpretations[i].key;const auto& y=moved.interpretations[i].key;
+            check((int(x.key.tonic)+shift)%12==int(y.key.tonic)&&x.key.mode==y.key.mode,
+                "bounded alternate-key ties use a normalized root order");
+        }
+    }
+    auto uneven=a;uneven[0].startQN=0.;uneven[1].startQN=1.;uneven[2].startQN=9.;
+    check(sortAndInferDurations(uneven),"uneven structural fixture");
+    const auto unevenResults=recommend(uneven,basic);const auto* unevenPath=findSuffix(unevenResults,"G","C");
+    check(unevenPath&&std::abs(path->eligibilityScore-unevenPath->eligibilityScore)<0.0001f&&
+        unevenResults.retrievalTimingMode==RetrievalTimingMode::Unified&&unevenResults.abstractChordCompatibility,
+        "unified structural qualification ignores rhythm while timing remains realized");
+    auto extensionTemplates=templates(R"([{"id":"extended","mode":"major","sequence":"Imaj7 vi7 ii7 V7 Imaj7","intent":"resolve"}])");
+    for(auto& e:extensionTemplates.front().full) {
+        const auto realized=realizeContinuation(e,{PitchClass::C,Mode::Major},4.);
+        e.intervalMask=chordPitches(realized.label).intervals;
+    }
+    prepareTemplate(extensionTemplates.front());
+    const auto extensionResults=recommend(a,extensionTemplates);
+    check(std::any_of(extensionResults.matches.begin(),extensionResults.matches.end(),[](const auto& m){
+        return std::any_of(m.alignmentTrace.begin(),m.alignmentTrace.end(),[](const auto& step){
+            return hasReason(step.reasons,MatchReason::AbstractExtensionCompatibility);
+        });
+    }),"unified retrieval retains guarded directional extension compatibility");
     check(makeMatchQuery(a).interpretations.size() >= 2, "P ambiguous key interpretations retained");
     check(!dev::parseTemplateJson(R"([{"id":"bad","mode":"major","sequence":"I V","styles":"unknown:1"}])"),
           "factory rejects unknown style");
@@ -75,14 +213,114 @@ int main() {
     const auto noEnd = recommend(ended, basic);
     check(noEnd.groups[0].empty(), "F no non-loop suffix");
     const auto loop = templates(R"([{"id":"loop","mode":"major","sequence":"I V vi IV","intent":"loop","cadence":"loop_closure","loopable":true}])");
+    const auto loopPrefix = progression(R"([{"name":"C","start":0,"duration":4},{"name":"G","start":4,"duration":4},{"name":"Am","start":8}])");
+    const auto fromPrefix = recommend(loopPrefix, loop);
+    const auto* prefixPath = findSuffix(fromPrefix, "F", "F");
+    check(prefixPath && prefixPath->continuation.size() == 1, "G1 partial loop prefix does not replay tonic");
+    const auto loopTonic = progression(R"([{"name":"Am","start":0}])");
+    const auto fromTonic = recommend(loopTonic, loop);
+    const auto* tonicPath = findSuffix(fromTonic, "F", "G");
+    check(tonicPath && tonicPath->continuation.size() == 3 && tonicPath->continuation[1].label == "C",
+          "G2 middle loop match wraps to the event before its start");
     const auto loopQuery = progression(R"([{"name":"Am","start":0,"duration":4},{"name":"F","start":4}])");
     check(findSuffix(recommend(loopQuery, loop), "C", "G") != nullptr, "G loop wrap");
     check(!recommend(loopQuery, loop).groups[2].empty(), "loop grouping");
+    const auto alteredLoop = templates(R"([{"id":"altered_loop","mode":"major","sequence":"I IV V ii","intent":"loop","cadence":"loop_closure","loopable":true}])");
+    const auto borrowedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Fm","start":4,"duration":4},{"name":"G","start":8}])");
+    const auto borrowedSet = recommend(borrowedInput, alteredLoop);
+    const auto* borrowedPath = findSuffix(borrowedSet, "Dm", "Dm");
+    check(borrowedPath && borrowedPath->intent == PhraseIntent::Loop &&
+          borrowedPath->cadence == CadenceType::LoopClosure,
+          "internal borrowed iv preserves unchanged loop boundaries");
+    const auto changedStart = progression(R"([{"name":"Cm","start":0,"duration":4},{"name":"F","start":4,"duration":4},{"name":"G","start":8}])");
+    const auto changedStartSet=recommend(changedStart,alteredLoop);
+    check(changedStartSet.groups[2].empty(),
+          "a changed cycle boundary does not inherit the loop claim");
+    const auto completeLoop = templates(R"([{"id":"complete_loop","mode":"major","sequence":"I vi IV V","intent":"loop","cadence":"loop_closure","loopable":true}])");
+    const auto completedInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4,"duration":4},{"name":"F","start":8,"duration":4},{"name":"G","start":12}])");
+    const auto nextRound = recommend(completedInput, completeLoop);
+    const auto* roundPath = findSuffix(nextRound, "C", "G");
+    check(roundPath && roundPath->continuation.size() == 4 && roundPath->continuation[0].label == "C" &&
+          roundPath->continuation[1].label == "Am" && roundPath->continuation[2].label == "F",
+          "G3 complete loop returns a full next round");
+
+    const auto diversityInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4}])");
+    const auto runDiversityPair = [&](std::string_view fixture, float penalty) {
+        auto pair = templates(fixture);
+        RecommendationWeights weights;
+        weights.diversityPenalty = penalty;
+        RecommendationRequest request; request.preferredIntent = PhraseIntent::Develop;
+        return recommendContinuations(query(diversityInput), CandidateIndex(std::move(pair)), request, weights);
+    };
+    const auto scoreFor = [&](const RecommendationSet& set, std::string_view id) {
+        const auto* match = findMatch(set, id);
+        check(match != nullptr, "diversity match exists");
+        return match ? match->candidateRankingScore : -1.f;
+    };
+    const auto retained = [&](const RecommendationSet& set, std::string_view id) {
+        const auto* match = findMatch(set, id);
+        return match && match->disposition == "TARGET_RETAINED";
+    };
+    const auto fourFive = R"([{"id":"prefix4","mode":"major","sequence":"I vi iii IV V I","intent":"develop"},{"id":"prefix5","mode":"major","sequence":"I vi iii IV I IV V","intent":"develop"}])";
+    const auto fourFiveDefault = runDiversityPair(fourFive, 13.f);
+    const auto fourFiveNoPenalty = runDiversityPair(fourFive, 0.f);
+    check(std::abs(scoreFor(fourFiveDefault, "prefix4")-scoreFor(fourFiveNoPenalty, "prefix4")) < 0.001f &&
+          std::abs(scoreFor(fourFiveDefault, "prefix5")-scoreFor(fourFiveNoPenalty, "prefix5")) < 0.001f,
+          "J1 shared two of four is not a majority of a five-event path");
+    check(retained(fourFiveDefault,"prefix4")&&retained(fourFiveDefault,"prefix5"),
+          "J1 both branching continuations remain candidates");
+    const auto twoFour = R"([{"id":"short2","mode":"major","sequence":"I vi iii IV","intent":"develop"},{"id":"long4","mode":"major","sequence":"I vi iii IV V I","intent":"develop"}])";
+    const auto twoFourDefault = runDiversityPair(twoFour, 13.f);
+    const auto twoFourNoPenalty = runDiversityPair(twoFour, 0.f);
+    check(std::abs(scoreFor(twoFourDefault, "short2")-scoreFor(twoFourNoPenalty, "short2")) < 0.001f &&
+          std::abs(scoreFor(twoFourDefault, "long4")-scoreFor(twoFourNoPenalty, "long4")) < 0.001f,
+          "J2 shared two of four does not suppress a short complete path");
+    check(retained(twoFourDefault,"short2")&&retained(twoFourDefault,"long4"),
+          "J2 both short and long continuations remain candidates");
+    const auto threeThree = R"([{"id":"branch_g","mode":"major","sequence":"I vi iii IV V","intent":"develop"},{"id":"branch_i","mode":"major","sequence":"I vi iii IV I","intent":"develop"}])";
+    const auto threeThreeDefault = runDiversityPair(threeThree, 13.f);
+    const auto threeThreeNoPenalty = runDiversityPair(threeThree, 0.f);
+    check(retained(threeThreeNoPenalty,"branch_g")&&retained(threeThreeNoPenalty,"branch_i"),
+          "J3 zero-penalty control retains both distinct endpoints");
+    const float branchGDelta=scoreFor(threeThreeNoPenalty,"branch_g")-scoreFor(threeThreeDefault,"branch_g");
+    const float branchIDelta=scoreFor(threeThreeNoPenalty,"branch_i")-scoreFor(threeThreeDefault,"branch_i");
+    check(std::abs(branchGDelta)<0.001f&&std::abs(branchIDelta)<0.001f,
+          "J3 distinct endpoints keep scores and qualification independent of diversity");
+    const auto tieInput = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4}])");
+    const auto tieRoutes = templates(R"([{"id":"a_short","mode":"major","sequence":"I vi ii V I","intent":"develop","priorWeight":0.8},{"id":"z_long","mode":"major","sequence":"I vi iii IV V I","intent":"develop","priorWeight":0.65}])");
+    const auto tied = recommend(tieInput, tieRoutes, {{}, PhraseIntent::Develop});
+    const auto* shortRoute = findCandidate(tied, "a_short");
+    const auto* longRoute = findCandidate(tied, "z_long");
+    const auto scoreBucket = [](float score) { return std::round(score * 1000.f); };
+    check(shortRoute && longRoute && shortRoute->continuation.size() == 3 && longRoute->continuation.size() == 4 &&
+          scoreBucket(shortRoute->rankingScore) == scoreBucket(longRoute->rankingScore),
+          "J4 prior offsets the continuation score difference into one rank bucket");
+    check(tied.groups[1].size() == 2 && tied.groups[1][0].primaryTemplate == "z_long",
+          "J4 near-tied longer complete suffix ranks before the shorter lexical ID");
     const auto developed = templates(R"([{"id":"develop","mode":"major","sequence":"I vi ii iii VI7 ii V I","intent":"develop","cadence":"authentic"}])");
     check(!recommend(a, developed).groups[1].empty(), "I develop grouping");
     const auto colored = templates(R"([{"id":"color","mode":"major","sequence":"I IV iv I","intent":"color","cadence":"plagal"}])");
     const auto colorQuery = progression(R"([{"name":"C","start":0,"duration":4},{"name":"F","start":4}])");
-    check(!recommend(colorQuery, colored).groups[3].empty(), "J borrowed iv color grouping");
+    const auto borrowedColor = recommend(colorQuery, colored);
+    const auto* borrowedColorRoute = findCandidate(borrowedColor, "color");
+    check(borrowedColorRoute && borrowedColorRoute->intent == PhraseIntent::Color &&
+          borrowedColorRoute->continuation.size() == 2 && borrowedColorRoute->continuation[0].label == "Fm" &&
+          borrowedColorRoute->continuation[1].label == "C" && !borrowedColor.groups[3].empty(),
+          "J borrowed Fm-C suffix remains Color");
+    const auto resolveAfterColor = templates(R"([{"id":"color_to_resolve","mode":"major","sequence":"I iv V I","intent":"color"}])");
+    const auto developAfterColor = templates(R"([{"id":"color_to_develop","mode":"major","sequence":"I iv V ii","intent":"color"}])");
+    const auto colorPrefix = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Fm","start":4,"duration":4},{"name":"G","start":8}])");
+    const auto resolveFromColor = recommend(colorPrefix, resolveAfterColor);
+    const auto* resolvedColorRoute = findCandidate(resolveFromColor, "color_to_resolve");
+    check(resolvedColorRoute && resolvedColorRoute->intent == PhraseIntent::Resolve &&
+          resolvedColorRoute->continuation.size() == 1 && resolvedColorRoute->continuation[0].label == "C" &&
+          resolveFromColor.groups[3].empty(),
+          "J1 evidence-free color suffix ending on tonic is Resolve");
+    const auto developFromColor = recommend(colorPrefix, developAfterColor);
+    const auto* developedColorRoute = findCandidate(developFromColor, "color_to_develop");
+    check(developedColorRoute && developedColorRoute->intent == PhraseIntent::Neutral && developedColorRoute->exploratory &&
+          developedColorRoute->continuation.size() == 1 && developedColorRoute->continuation[0].label == "Dm",
+          "J2 single plain non-tonic remains explicitly exploratory");
     check(realizeContinuation(dev::parseNotationEvent("V7/ii", Mode::Major), {PitchClass::C,Mode::Major}, 2).label == "A7",
           "secondary dominant realization");
     check(realizeContinuation(dev::parseNotationEvent("IV", Mode::Major), {PitchClass::Db,Mode::Major}, 2).label == "Gb",
@@ -92,20 +330,189 @@ int main() {
     auto dedup = templates(R"([{"id":"x","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"},{"id":"y","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"},{"id":"z","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"}])");
     const auto merged = recommend(a, dedup);
     check(merged.groups[0].size() == 1 && merged.groups[0][0].supportCount == 3, "K dedup support");
+    auto sameMusic=merged.groups[0][0];sameMusic.key={PitchClass::G,Mode::Major};
+    sameMusic.intent=PhraseIntent::Develop;sameMusic.cadence=CadenceType::None;
+    check(continuationMusicFingerprint(sameMusic)==continuationMusicFingerprint(merged.groups[0][0]),
+          "musical identity excludes explanatory key intent and cadence");
+    sameMusic.continuation[0].durationQN+=0.125;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "different MIDI timing remains distinct");
+    sameMusic=merged.groups[0][0];ChordEvent differentBass;differentBass.name="G/B";
+    sameMusic.continuation[0].harmonicData=differentBass;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "same chord text with different performed bass remains distinct");
+    auto reorderedDedup=dedup;
+    std::reverse(reorderedDedup.begin(),reorderedDedup.end());
+    const auto reorderedMerge=recommend(a,reorderedDedup);
+    const auto singleSourceMerge=recommend(a,{dedup.front()});
+    const auto* duplicateReference=merged.groups[0].empty()?nullptr:&merged.groups[0][0];
+    const auto* reorderedReference=reorderedMerge.groups[0].empty()?nullptr:&reorderedMerge.groups[0][0];
+    const auto* singleReference=singleSourceMerge.groups[0].empty()?nullptr:&singleSourceMerge.groups[0][0];
+    check(duplicateReference&&reorderedReference&&singleReference&&
+          merged.groups[0].size()==1&&reorderedMerge.groups[0].size()==1&&
+          duplicateReference->id==reorderedReference->id&&duplicateReference->id==singleReference->id&&
+          duplicateReference->baseQualified==reorderedReference->baseQualified&&
+          duplicateReference->baseQualified==singleReference->baseQualified&&
+          std::abs(duplicateReference->eligibilityScore-reorderedReference->eligibilityScore)<0.001f&&
+          std::abs(duplicateReference->eligibilityScore-singleReference->eligibilityScore)<0.001f&&
+          std::abs(duplicateReference->rankingScore-reorderedReference->rankingScore)<0.001f&&
+          std::abs(duplicateReference->rankingScore-singleReference->rankingScore)<0.001f,
+          "duplicating or reordering a source leaves music identity, eligibility, and score unchanged");
+    const auto assertUniqueMusic=[](const RecommendationSet& set) {
+        std::vector<std::string> ids;
+        for(const auto& group:set.groups)for(const auto& candidate:group) {
+            check(candidate.id.starts_with("music-v1:"),"candidate exposes canonical music identity");
+            check(std::find(ids.begin(),ids.end(),candidate.id)==ids.end(),
+                  "identical music occupies one recommendation position");
+            ids.push_back(candidate.id);
+        }
+    };
+    assertUniqueMusic(merged);
+    assertUniqueMusic(reorderedMerge);
+    auto constrainedMusic=merged.groups[0][0];
+    MelodyConstraint top;top.startQN=12.;top.pitch=74;top.pitchClass=2;top.role=ConstraintRole::TopVoice;
+    constrainedMusic.constraints.melody.push_back(top);
+    auto differentRealization=constrainedMusic;
+    differentRealization.constraints.melody[0].pitch=71;differentRealization.constraints.melody[0].pitchClass=11;
+    check(continuationMusicFingerprint(constrainedMusic)!=continuationMusicFingerprint(differentRealization),
+          "realization constraints distinguish otherwise identical chords");
+    auto translatedRealization=constrainedMusic;
+    translatedRealization.sourceAnchorQN+=8.;translatedRealization.constraints.melody[0].startQN+=8.;
+    check(continuationMusicFingerprint(constrainedMusic)==continuationMusicFingerprint(translatedRealization),
+          "realization identity normalizes the source time anchor");
+    auto timedVariants=basic;
+    auto timingVariant=timedVariants.front();timingVariant.id="timing-variant";
+    timingVariant.full.back().durationQN=*timingVariant.full.back().durationQN+0.01;
+    timedVariants.push_back(timingVariant);
+    const auto timedResults=recommend(a,timedVariants);
+    check(timedResults.groups[0].size()==2,
+          "sub-quarter-QN distinct generated routes survive aggregation before qualification");
+    sameMusic=merged.groups[0][0];
+    sameMusic.continuation[0].durationQN+=0.01;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "a 0.01 QN change remains a distinct music identity");
+    sameMusic=merged.groups[0][0];
+    check(sameMusic.suggestedCurrentChordDurationQN.has_value(),"OPEN hold identity fixture");
+    sameMusic.suggestedCurrentChordDurationQN=*sameMusic.suggestedCurrentChordDurationQN+0.01;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "different OPEN hold remains distinct at exact QN precision");
+    sameMusic=merged.groups[0][0];
+    ChordEvent exactMask;exactMask.root=PitchClass::G;exactMask.bass=PitchClass::G;
+    exactMask.quality=ChordQuality::Major;exactMask.name="G";exactMask.extensions.mask="0x91";
+    sameMusic.continuation[0].harmonicData=exactMask;
+    check(continuationMusicFingerprint(sameMusic)!=continuationMusicFingerprint(merged.groups[0][0]),
+          "exact pitch-mask provenance remains part of music identity");
+    auto exactMaskCandidate=merged.groups[0][0];
+    exactMaskCandidate.continuation[0].harmonicData=exactMask;
+    auto extendedMask=exactMask;extendedMask.extensions.mask="0x95";
+    auto extendedMaskCandidate=exactMaskCandidate;
+    extendedMaskCandidate.continuation[0].harmonicData=extendedMask;
+    check(continuationMusicFingerprint(extendedMaskCandidate)!=
+              continuationMusicFingerprint(exactMaskCandidate),
+          "extension pitch content remains part of music identity");
+    auto crossIntent=dedup;crossIntent.resize(2);crossIntent[1].intent=PhraseIntent::Develop;
+    crossIntent[1].cadence=CadenceType::None;
+    const auto crossMerged=recommend(a,crossIntent),singleSource=recommend(a,{crossIntent[0]});
+    std::size_t musicalCards{};for(const auto& group:crossMerged.groups)musicalCards+=group.size();
+    check(musicalCards==1&&crossMerged.groups[0][0].supportCount==2&&
+          std::abs(crossMerged.groups[0][0].rankingScore-singleSource.groups[0][0].rankingScore)<0.001f,
+          "cross-intent merge keeps winner score and unique provenance without double reward");
     auto styled = templates(R"([{"id":"pop","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic","styles":"pop:1"},{"id":"rock","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic","styles":"rock:1"}])");
+    const auto untagged = templates(R"([{"id":"untagged_exact","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","cadence":"authentic"}])");
+    const auto untaggedPop = recommend(a, untagged, {Style::Pop, {}});
+    const auto untaggedAuto = recommend(a, untagged);
+    const auto* untaggedPopMatch = findMatch(untaggedPop, "untagged_exact");
+    const auto* untaggedPopCandidate = findCandidate(untaggedPop, "untagged_exact");
+    const auto* untaggedAutoCandidate = findCandidate(untaggedAuto, "untagged_exact");
+    check(untaggedPopMatch && untaggedPopMatch->rawCost <= 0.00001f,
+          "M1 untagged exact route is identified by zero raw cost");
+    check(untaggedPopCandidate && untaggedAutoCandidate &&
+          std::abs(untaggedPopCandidate->subscores.style - 0.5f) < 0.001f &&
+          std::abs(untaggedAutoCandidate->subscores.style - 0.5f) < 0.001f,
+          "M1 untagged exact route stays neutral for Pop and Auto");
+    const auto nonExactInput = progression(R"([{"name":"C","start":4,"duration":4},{"name":"Am","start":8,"duration":2},{"name":"F","start":10}])");
+    RecommendationWeights nonExactWeights;
+    nonExactWeights.minimumMatch = 0.f;
+    nonExactWeights.minimumScore = 0.f;
+    const auto untaggedNonExact = recommendContinuations(query(nonExactInput), CandidateIndex(untagged),
+        {Style::Pop, {}}, nonExactWeights);
+    const auto* untaggedNonExactMatch = findMatch(untaggedNonExact, "untagged_exact");
+    const auto* untaggedNonExactCandidate = findCandidate(untaggedNonExact, "untagged_exact");
+    check(untaggedNonExactMatch && untaggedNonExactMatch->rawCost > 0.00001f &&
+          untaggedNonExactCandidate && std::abs(untaggedNonExactCandidate->subscores.style - 0.25f) < 0.001f,
+          "M2 untagged non-exact route retains the lower style fallback");
     auto styleScore = [&](std::optional<Style> style) {
         auto result = recommend(a, styled, {style, {}});
         check(!result.groups[0].empty(), "style candidate available");
         return result.groups[0][0].rankingScore;
     };
     check(styleScore(Style::Pop) > styleScore(std::nullopt), "M style boosts selected template");
+    const auto taggedPop = recommend(a, styled, {Style::Pop, {}});
+    const auto* taggedPopCandidate = findCandidate(taggedPop, "pop");
+    check(taggedPopCandidate && std::abs(taggedPopCandidate->subscores.style - 1.f) < 0.001f,
+          "M3 explicit Pop metadata keeps its full style weight");
     const auto rockPreferred = recommend(a, styled, {Style::Rock, {}});
     check(!rockPreferred.groups[0].empty() && rockPreferred.groups[0][0].primaryTemplate == "rock",
           "style picks best supporting source");
     check(std::abs(styleScore(std::nullopt) - styleScore(std::nullopt)) < 0.001f, "N auto style deterministic");
+    {
+        const auto oneStyled=templates(R"([{"id":"qualification_style","mode":"major","sequence":"I vi ii V I","rhythm":"4 2 2 2 4","intent":"resolve","styles":"pop:1"}])");
+        const auto baselineSet=recommend(a,oneStyled);
+        const auto* baselineCandidate=findCandidate(baselineSet,"qualification_style");
+        check(baselineCandidate!=nullptr,"neutral qualification fixture exists");
+        const auto sameQualification=[&](const RecommendationSet& varied,const char* name) {
+            const auto* candidate=findCandidate(varied,"qualification_style");
+            check(candidate&&baselineCandidate&&candidate->baseQualified==baselineCandidate->baseQualified&&
+                  std::abs(candidate->eligibilityScore-baselineCandidate->eligibilityScore)<0.001f,name);
+        };
+        sameQualification(recommend(a,oneStyled,{Style::Pop,{}}),
+                          "style preference cannot change base eligibility");
+        sameQualification(recommend(a,oneStyled,{{},PhraseIntent::Color}),
+                          "preferred intent cannot change base eligibility");
+        RecommendationRequest bold;bold.tendency=HarmonicTendency::Bold;
+        sameQualification(recommend(a,oneStyled,bold),
+                          "harmonic tendency cannot change base eligibility");
+        RecommendationWeights noDiversity;noDiversity.diversityPenalty=0.f;
+        sameQualification(recommendContinuations(query(a),CandidateIndex(oneStyled),{},noDiversity),
+                          "diversity setting cannot change base eligibility");
+    }
     auto intentSet = recommend(a, basic, {{}, PhraseIntent::Resolve});
     check(intentSet.groups[0][0].rankingScore > first.groups[0][0].rankingScore, "O intent boost");
     AnalysisContext forced; forced.forcedKey = KeySignature{PitchClass::A,Mode::Minor};
+    {
+        auto ambiguous=query(a);
+        auto preferred=ambiguous.interpretations.front();
+        auto alternate=preferred;
+        preferred.key.key.tonic=PitchClass::A;
+        preferred.key.confidence=0.99f;
+        alternate.key.key.tonic=PitchClass::C;
+        alternate.key.confidence=0.10f;
+        // Unified ignores explanatory confidence; a real alignment cost creates the competing order.
+        alternate.full.front().sourceUncertainty=0.10f;
+        ambiguous.interpretations={preferred,alternate};
+        RecommendationRequest hardRequest;
+        MelodyConstraint melody;melody.startQN=12.;melody.durationQN=2.;melody.pitchClass=2;
+        melody.strictness=ConstraintStrictness::Hard;
+        hardRequest.constraints.melody.push_back(melody);
+        RecommendationWeights permissive;permissive.minimumScore=0.f;
+        const auto fallback=recommendContinuations(ambiguous,CandidateIndex({basic.front()}),hardRequest,permissive);
+        const auto rejected=std::find_if(fallback.matches.begin(),fallback.matches.end(),[](const auto& match) {
+            return match.key.tonic==PitchClass::A;
+        });
+        const auto retained=std::find_if(fallback.matches.begin(),fallback.matches.end(),[](const auto& match) {
+            return match.key.tonic==PitchClass::C;
+        });
+        const ContinuationCandidate* surviving{};
+        for(const auto& group:fallback.groups)for(const auto& candidate:group)
+            if(candidate.key.tonic==PitchClass::C)surviving=&candidate;
+        check(rejected!=fallback.matches.end()&&retained!=fallback.matches.end()&&
+              rejected==fallback.matches.begin()&&rejected->disposition=="melody_constraint"&&
+              rejected->similarity>retained->similarity,
+              "highest-ranked key explanation is rejected by its actual hard melody constraint");
+        check(surviving&&surviving->hardConstraintsPassed&&surviving->baseQualified&&
+              surviving->key.tonic==PitchClass::C,
+              "valid secondary key explanation survives hard-constraint evaluation");
+    }
     const auto minorQuery = makeMatchQuery(a, forced);
     check(minorQuery.interpretations.size() == 1 && minorQuery.interpretations.front().key.key.mode == Mode::Minor,
           "Q forced key");
@@ -114,26 +521,37 @@ int main() {
     std::filesystem::create_directories(temp);
     const auto factoryPath = temp / "factory.db", userPath = temp / "user.db";
     std::string error;
-    check(library::compileFactory(factoryPath, basic, error), "factory compile");
+    const bool compiled=library::compileFactory(factoryPath, basic, error);
+    if(!compiled)std::cerr<<"factory compile: "<<error<<'\n';
+    check(compiled, "factory compile");
     check(library::loadFactory(factoryPath).templates.size() == 1, "factory read");
     const auto shipped = library::loadFactory(HC_FACTORY_DB_PATH);
     check(shipped && shipped.templates.size() == 161, "factory seed count and SQLite roundtrip");
     const auto wrong = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Am","start":4,"duration":2},{"name":"F#","start":6,"duration":1},{"name":"Dm","start":7}])");
-    const auto goodFactory = recommend(inserted, shipped.templates);
-    const auto badFactory = recommend(wrong, shipped.templates);
-    check(!goodFactory.groups[0].empty() && !badFactory.groups[0].empty() &&
-          goodFactory.groups[0][0].rankingScore > badFactory.groups[0][0].rankingScore + 5.f,
-          "unexplained input does not rank like resolved secondary chord");
+    const auto goodInsertion = recommend(inserted, basic);
+    const auto badInsertion = recommend(wrong, basic);
+    const auto* goodRoute=findSuffix(goodInsertion,"G","C");
+    const auto* badRoute=findSuffix(badInsertion,"G","C");
+    const auto explained=[](const RecommendationSet& result) {
+        return std::any_of(result.matches.begin(),result.matches.end(),[](const auto& m){
+            return std::any_of(m.alignmentTrace.begin(),m.alignmentTrace.end(),[](const auto& step){
+                return step.operation==AlignmentOp::QueryInsertion&&hasReason(step.reasons,MatchReason::ResolvesToMatchedTarget);
+            });
+        });
+    };
+    check(goodRoute&&badRoute&&explained(goodInsertion)&&!explained(badInsertion)&&
+          goodRoute->rankingScore>badRoute->rankingScore,
+          "resolved secondary insertion outranks an unexplained insertion on the same harmonic route");
     auto custom = basic.front(); custom.id = "user1"; custom.sourceType = "user";
-    library::UserLibrary user(userPath);
-    check(user.addProgression(custom, error), "R user save");
-    check(!library::loadFactory(userPath), "factory/user database type isolation");
-    check(user.loadAll().templates.size() == 1, "R user reload");
-    check(library::compileFactory(factoryPath, circle, error), "S factory rebuild");
-    check(user.loadAll().templates.size() == 1, "S user isolated");
-    custom.name = "revised";
-    check(user.updateProgression(custom, error) && user.loadAll().templates.front().name == "revised", "user update");
     {
+        library::UserLibrary user(userPath);
+        check(user.addProgression(custom, error), "R user save");
+        check(!library::loadFactory(userPath), "factory/user database type isolation");
+        check(user.loadAll().templates.size() == 1, "R user reload");
+        check(library::compileFactory(factoryPath, circle, error), "S factory rebuild");
+        check(user.loadAll().templates.size() == 1, "S user isolated");
+        custom.name = "revised";
+        check(user.updateProgression(custom, error) && user.loadAll().templates.front().name == "revised", "user update");
         plugin::RecommendationWorker worker(factoryPath, userPath);
         AnalysisContext ctx; ctx.forcedKey = KeySignature{PitchClass::C, Mode::Major};
         worker.submit(ended, ctx);
@@ -144,9 +562,12 @@ int main() {
             latest = worker.takeLatest();
         }
         check(latest && latest->generation == latestGeneration, "T stale worker result discarded");
+        check(user.removeProgression(custom.id, error) && user.loadAll().templates.empty(), "user delete");
     }
-    check(user.removeProgression(custom.id, error) && user.loadAll().templates.empty(), "user delete");
-    std::filesystem::remove(factoryPath); std::filesystem::remove(userPath);
-    std::filesystem::remove(temp);
+    for(const auto& path:{factoryPath,userPath,temp}) {
+        std::error_code cleanupError;
+        for(int attempt=0;attempt<20;++attempt){cleanupError.clear();std::filesystem::remove(path,cleanupError);if(!cleanupError)break;std::this_thread::sleep_for(std::chrono::milliseconds(25));}
+        if(cleanupError)throw std::filesystem::filesystem_error("test cleanup failed",path,cleanupError);
+    }
     std::cout << checks << '/' << checks << " PASS\n";
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "core/CurrentChordLocator.h"
 #include "core/ContinuationEngine.h"
+#include "enrichment/EnrichmentProvenance.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "localization/Localization.h"
 #include "session/PluginSessionState.h"
@@ -12,8 +13,12 @@
 #include "ui/EffectiveScale.h"
 #include "ui/ColorHint.h"
 #include "ui/WhyExplanation.h"
+#include "ui/RecommendationBrowse.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
+#include "preview/PreviewSequence.h"
+#include "preview/PreviewTransport.h"
+#include "vstgui/lib/ccolor.h"
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/dragging.h"
 #include <deque>
@@ -33,9 +38,14 @@ public:
         double contentScroll{},timelineScroll{},inspectorScroll{};
         std::vector<std::string> pinnedEnrichmentIds;
         bool showColorHints{true};
+        bool detailedCards{};
+        std::array<std::size_t,5> browsePages{};
+        std::array<double,5> browseScroll{};
+        std::array<std::string,5> browseSelected{};
+        std::size_t browseCategory{};
         color::Preference colorPreference{color::Preference::Off};
     };
-    void prepareForDetach() { actions_={};midiPending_.reset();midiClick_={}; }
+    void prepareForDetach() { seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;actions_={};midiPending_.reset();midiClick_={}; }
     EditorUiState captureEditorUiState() const;
     void restoreEditorUiState(const EditorUiState&);
     struct Actions {
@@ -47,6 +57,11 @@ public:
         std::function<std::string(const ProgressionTemplate&)> updateUser;
         std::function<std::string(const std::string&)> deleteUser;
         std::function<void(const ContinuationCandidate&)> audition;
+        std::function<void()> stopAudition;
+        std::function<void()> pauseAudition,resumeAudition;
+        std::function<void(bool)> previewBackend;
+        std::function<void(const std::string&,double)> seekAudition;
+        std::function<void(bool,double,bool)> previewSettings; // custom tempo, BPM, suffix only
         std::function<std::string(const ContinuationCandidate&)> exportMidi;
         std::function<std::string(const ContinuationCandidate&)> saveSnapshot;
         std::function<std::string(const ProgressionTemplate&)> exportLibraryMidi;
@@ -82,14 +97,16 @@ public:
     void setRecommendations(const RecommendationSet&);
     void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
+    void setPreviewTransport(preview::PlaybackState,bool hostBackend,bool hostAvailable,bool pending=false);
     void setSnapshotMode(bool enabled);
+    preview::SourceRouteResult continuationRoute(const ContinuationCandidate&) const;
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
     void setLibrary(std::vector<ProgressionTemplate> factory, std::vector<ProgressionTemplate> user,
                     std::string error = {});
     void setWorkerStatus(std::uint64_t generation, double ms, bool busy, std::size_t factoryCount,
-                         std::size_t userCount);
+                         std::size_t userCount, bool recommendationResultReady = false);
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
     VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
@@ -100,6 +117,11 @@ public:
     void setSimulatedContentScale(double scale);
     void setUserZoom(std::uint32_t percent);
     bool runHostInteractionSmoke();
+    bool runStructureSmoke();
+    bool runCompactSmoke(VSTGUI::CDrawContext*);
+    bool runBrowseSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
+    void setAuditionState(bool custom,double bpm,bool suffix,bool hostValid,double effectiveBpm);
+    std::string recommendationUiDiagnostics();
     bool runZoomSmoke();
     bool runMidiWorkflowSmoke();
     bool runCandidateScrollSmoke();
@@ -110,6 +132,70 @@ public:
     bool runEnrichmentHintSmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,ColorTone)>&);
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
+    enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
+        OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
+        Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Backend, TempoMode, Tempo, Scope };
+    struct CompactHit {
+        VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
+        std::optional<VSTGUI::CRect> clip;
+        bool contains(VSTGUI::CPoint p) const {
+            if(clip&&!clip->pointInside(p))return false;
+            if(!rect.pointInside(p))return false;
+            if(action!=CompactAction::Select)return true;
+            const auto dx=p.x-(rect.left+rect.right)/2,dy=p.y-(rect.top+rect.bottom)/2;
+            return dx*dx+dy*dy<=rect.getWidth()*rect.getWidth()/4;
+        }
+    };
+    std::vector<CompactHit> compactHits_;
+    bool compactInCards_{};
+    std::string compactSelected_;
+    std::size_t compactGroup_{};
+    std::array<std::vector<BrowseEntry>,5> browseRows_;
+    std::array<std::size_t,5> browsePages_{};
+    std::array<double,5> browseScroll_{};
+    std::array<std::string,5> browseSelected_{};
+    bool browseDirty_{true},overviewOpen_{};
+    double overviewScroll_{},overviewScrollMax_{};
+    UiRect overviewRect_,overviewBody_;
+    std::size_t browseCategory() const {return state_.productMode==session::ProductMode::Enrich?4:compactGroup_;}
+    void refreshBrowse();
+    const std::vector<BrowseEntry>& browseRows();
+    void changeBrowseCategory(std::size_t);
+    void focusBrowseEntry(std::size_t);
+    void drawBrowseControls(VSTGUI::CDrawContext*,const CompactLayoutResult&);
+    void drawRecommendationOverview(VSTGUI::CDrawContext*);
+    std::string recommendationListText();
+    std::string browseName(const BrowseEntry&) const;
+    std::string browsePath(const BrowseEntry&) const;
+    void drawRecommendationAlignment(VSTGUI::CDrawContext*,const ContinuationCandidate&,UiRect);
+    bool detailedCards_{}, auditionCustom_{}, auditionSuffix_{}, auditionHostValid_{};
+    double auditionBpm_{120}, auditionEffectiveBpm_{120}, compactScroll_{}, compactScrollMax_{};
+    VSTGUI::CRect compactHover_{}, compactPressed_{};
+    UiRect compactDetailRect_;
+    std::unordered_map<std::string,double> compactRibbonScroll_;
+    struct RibbonHit { VSTGUI::CRect rect; std::string id; double maximum{}; };
+    std::vector<RibbonHit> compactRibbons_;
+    void drawCompact(VSTGUI::CDrawContext*);
+    void drawCompactEnrichments(VSTGUI::CDrawContext*,const CompactLayoutResult&);
+    void drawCompactTransport(VSTGUI::CDrawContext*);
+    bool onCompactMouseDown(VSTGUI::CPoint&);
+    void compactButton(VSTGUI::CDrawContext*,UiRect,const std::string&,CompactAction,
+        std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
+    void drawCompactRibbon(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,UiRect);
+    void drawRelativeColorCurve(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,std::optional<KeySignature>,UiRect);
+    static VSTGUI::CColor enrichmentProvenanceColor(enrichment::EnrichmentProvenanceKind,bool accent=false) noexcept;
+    static double relativeColorTimelineX(double left,double width,double qn,double totalQN) noexcept;
+    struct SeekHit { VSTGUI::CRect rect;std::string id;double originX{},width{},totalQN{},minimumQN{};VSTGUI::CRect cursorRect; };
+    struct SeekGesture { SeekHit hit;std::uint64_t generation{};double targetQN{}; };
+    std::vector<SeekHit> seekHits_;
+    std::optional<SeekGesture> seekGesture_;
+    std::string previewSeekHoverId_;
+    bool previewSeekCursorHover_{};
+    bool beginPreviewSeek(VSTGUI::CPoint);
+    void movePreviewSeek(VSTGUI::CPoint);
+    double previewDisplayQN(const std::string&) const;
+    preview::PlaybackState auditionState_{preview::PlaybackState::Stopped};
+    bool auditionHostBackend_{},auditionHostAvailable_{},auditionPending_{};
     Actions actions_;
     session::PluginSessionState state_;
     session::RecommendationVisibilityPolicy visibility_;
@@ -146,7 +232,7 @@ private:
     std::optional<VSTGUI::CCoord> playheadX_;
     std::string previewCandidateId_;
     double previewQN_{}, previewTotalQN_{};
-    bool playing_{}, workerBusy_{}, sessionDirty_{};
+    bool playing_{}, workerBusy_{}, recommendationResultReady_{}, sessionDirty_{}, snapshotMode_{};
     std::uint64_t generation_{};
     double computationMs_{};
     std::size_t factoryCount_{}, userCount_{};
@@ -169,7 +255,7 @@ private:
     std::array<double,3> enrichmentScroll_{};
     double contentScale_{1}, contentScroll_{}, timelineScroll_{}, timelineContentWidth_{}, inspectorScroll_{}, inspectorScrollMax_{};
     std::uint64_t paintGeneration_{};
-    enum class Form { None, Save, Rename, Search, Melody } form_{Form::None};
+    enum class Form { None, Save, Rename, Search, Melody, Tempo } form_{Form::None};
     VSTGUI::CTextEdit* nameEdit_{};
     VSTGUI::CTextEdit* tagsEdit_{};
     VSTGUI::CTextEdit* noteEdit_{};

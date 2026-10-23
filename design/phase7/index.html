@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HarmonyContinuation · Phase 7 Design Review</title><link rel="stylesheet" href="prototype.css"></head>
+<body>
+<div class="reviewbar"><span><b>A3 · 密度微调</b></span><div><label>样例 <select id="example"><option value="B08">B08 · 长短时值</option><option value="R02">R02 · 中段匹配</option></select></label><button id="cardDensity">对比 A2 详细卡片</button><button id="scheme">切换到 B · Spacious</button><button id="stateGuide">控件规范</button><a href="README.md">设计说明 ↗</a></div></div>
+<div id="app" class="compact">
+ <header class="appheader"><div class="brand"><span class="brandmark">h.</span><div><b>HarmonyContinuation</b><small>从这里，继续音乐。</small></div></div><div class="headerActions"><label>算法 <select id="algorithm"><option>Legacy</option><option>HarmonyFirst</option><option>Abstract</option></select></label><button data-panel="library">曲库</button><button data-panel="settings">设置</button></div></header>
+ <main id="workspace">
+  <section class="inputPanel"><div class="sectionline"><span class="eyebrow">01 / 当前输入</span><div class="inline"><span class="status" id="analysisStatus">✓ 分析完成</span><button id="import">导入 MIDI</button><button data-panel="input">输入详情</button></div></div>
+   <div class="inputTitle"><h1>C <i>→</i> Cmaj7/B <i>→</i> C7/B♭ <i>→</i> F/A</h1><span class="inputMeta">C 大调 <span>·</span> 4/4 <span>·</span> 4 小节</span></div>
+   <div class="timeline" aria-label="已有进行时间轴，每格4QN"><div><small>1</small><b>C</b></div><div><small>2</small><b>Cmaj7/B</b></div><div><small>3</small><b>C7/B♭</b></div><div><small>4</small><b>F/A</b></div></div>
+   <div class="inputFoot"><span>B08 · 半音下行低音</span><span>16 QN <span class="muted">/ 完整输入已保留</span></span></div>
+  </section>
+  <section class="recommendations"><div class="recHeading"><div><span class="eyebrow">02 / 找到下一句</span><h2>推荐续写</h2></div><div class="inline"><label class="quietLabel">进行视图 <select id="matchMode"><option>FULL</option><option>SKELETON</option></select></label><button data-panel="color">色彩偏好</button><button data-panel="enrichment">升级进行</button></div></div>
+   <div class="intentline"><div class="segments" aria-label="推荐意图"><button data-intent="RESOLVE" class="selected">收束 <small>Resolve</small></button><button data-intent="DEVELOP">发展 <small>Develop</small></button><button data-intent="LOOP">循环 <small>Loop</small></button><button data-intent="COLOR">色彩 <small>Color</small></button></div><span id="resultLabel">TOP 3 · Factory V4</span></div>
+   <div id="cards"></div>
+   <div class="moreline"><span id="resultNote">块宽 ∝ QN 时值 · 灰色为输入，蓝色为续写 · 竖线标出续写起点</span><button id="more">更多推荐 ↓</button></div>
+  </section>
+  <div id="panel" hidden></div>
+  <section id="dropDemo" hidden><strong>将卡片的 MIDI 手柄拖到这里</strong><span>原型内部接收区 · 正式版使用系统文件拖放</span><div id="dropResult"></div></section>
+ </main>
+ <footer class="transport"><div class="transportTop"><div class="transportButtons"><button class="play primary" id="play" aria-label="播放选中推荐">▶</button><button class="stop" id="stop" aria-label="停止试听">■</button></div><div class="nowPlaying"><small id="playingState">准备试听</small><strong id="playingTitle">收束 01 · Fm/A♭ → C/G → G7 → C</strong><div class="progress"><div id="playProgress"></div></div></div><div class="tempo"><label>试听速度 <select id="tempoMode"><option value="custom">自定义</option><option value="host">跟随宿主</option></select></label><label class="bpmField"><input id="bpm" type="number" value="120" min="30" max="300" aria-label="试听BPM"><span>BPM</span></label></div></div>
+  <div class="transportBottom"><div class="segments scope"><button data-scope="full" class="selected">原进行 + 续写</button><button data-scope="suffix">仅续写</button></div><span id="tempoStatus">仅影响试听 · MIDI 时值保持不变</span><span class="prototypeAudio">浏览器示意音色</span></div>
+ </footer>
+</div>
+<div id="toast" role="status"></div>
+<dialog id="guide"><div class="dialogHeader"><h2>可见边界，就是操作边界。</h2><button id="closeGuide">关闭</button></div><p>控件状态 · A / B 共享行为</p><div class="stateSamples"><button>默认</button><button class="hovered">悬停</button><button class="selected">✓ 已选中</button><button class="pressed">按下</button><button disabled>不可用</button><button disabled>◌ 正在计算</button><button class="focusSample">键盘焦点</button></div><p>主操作 ≥ 44px；紧凑次级操作 ≥ 36px；间隔 ≥ 8px。文字、图形、边界共同表达状态。</p><p>卡片选择、播放、MIDI 手柄、详情使用独立命中矩形。拖动 6px 后启动拖放，松开不会触发试听或卡片选择。</p><p>停止采用回到起点；本阶段不承诺暂停。切换算法清空旧卡片，载入完成后恢复操作。</p><button id="showDrag">查看拖动演示</button><button id="loadingDemo">查看加载状态</button></dialog>
+<script src="data.js"></script><script src="prototype.js"></script>
+</body></html>

@@ -26,7 +26,8 @@ void validId(std::string_view id) {
 void validRating(const Rating& rating) {
     validId(rating.benchmarkId);
     if(rating.candidateFingerprint.empty()||rating.candidateFingerprint.size()>16384||
-       rating.candidateFingerprint!=session::continuationFingerprint(rating.recommendation.candidate))
+       (!session::continuationReferenceMatches(rating.recommendation.candidate,rating.candidateFingerprint)&&
+        session::legacyContinuationFingerprint(rating.recommendation.candidate)!=rating.candidateFingerprint))
         throw std::runtime_error("rating fingerprint does not match snapshot candidate");
     for(const auto score:{rating.naturalness,rating.intentFit,rating.rhythmFit,rating.distinctiveness,rating.usability})
         if(score<1||score>5)throw std::runtime_error("rating score outside 1-5");

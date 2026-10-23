@@ -9,39 +9,47 @@ bool isDegree(const ScaleDegree& value, int degree, int alteration = 0) noexcept
 bool sameDegree(const ScaleDegree& left, const ScaleDegree& right) noexcept {
     return left.degree == right.degree && left.alteration == right.alteration;
 }
-bool hasColorEvidence(const ConcreteChordEvent& chord) noexcept {
-    return chord.degree.alteration != 0 ||
-        hasRole(chord.roles, Role::Borrowed) ||
-        hasRole(chord.roles, Role::SecondaryDominant) ||
-        hasRole(chord.roles, Role::SecondaryLeadingTone) ||
-        chord.quality == ChordQuality::Diminished7 ||
-        chord.quality == ChordQuality::HalfDiminished7;
+bool hasExtensionColor(const ConcreteChordEvent& chord) {
+    if (chord.harmonicData && chordPitches(*chord.harmonicData).colorMask) return true;
+    switch (chord.quality) {
+    case ChordQuality::Major7: case ChordQuality::Minor7: case ChordQuality::Dominant7:
+    case ChordQuality::Sus2: case ChordQuality::Sus4: return true;
+    default: return false;
+    }
 }
 } // namespace
 
 IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate& candidate,
-    std::optional<ScaleDegree> phraseStart, std::optional<ScaleDegree> current) noexcept {
+    std::optional<ScaleDegree> phraseStart, std::optional<ScaleDegree> current) {
+    (void)phraseStart; // Exact phrase return is established from realized music, not degrees alone.
+    if (!candidate.evidence.empty()) return candidate.completion;
     const auto& path = candidate.continuation;
     if (path.empty()) return {0.f, CompletionReason::NoEvidence};
     const auto& first = path.front();
     const auto& last = path.back();
     switch (candidate.intent) {
     case PhraseIntent::Resolve: {
-        if (!isDegree(last.degree, 1)) return {0.32f, CompletionReason::NoEvidence};
-        const bool dominantBefore = path.size() > 1 ? isDegree(path[path.size()-2].degree, 5) :
-            current && isDegree(*current, 5);
-        if (dominantBefore || candidate.cadence == CadenceType::Authentic ||
-            candidate.cadence == CadenceType::PerfectAuthentic)
+        const bool tonicQuality = candidate.key.mode==Mode::Major
+            ? last.quality==ChordQuality::Major || last.quality==ChordQuality::Major7
+            : last.quality==ChordQuality::Minor || last.quality==ChordQuality::Minor7;
+        if (!isDegree(last.degree, 1) || !tonicQuality) return {0.32f, CompletionReason::NoEvidence};
+        const auto previous = path.size()>1?std::optional(path[path.size()-2].degree):current;
+        if (!previous || previous->alteration!=0 ||
+            (previous->degree!=4 && previous->degree!=5 && previous->degree!=7))
+            return {0.32f, CompletionReason::NoEvidence};
+        const bool dominantBefore = isDegree(*previous,5);
+        if (dominantBefore)
             return {0.96f, CompletionReason::DominantTonic};
         return {0.84f, CompletionReason::StableTonic};
     }
     case PhraseIntent::Loop:
-        if (phraseStart && sameDegree(last.degree, *phraseStart))
+        if (candidate.actualPhraseReturn)
             return {0.95f, CompletionReason::PhraseReturn};
-        if (candidate.cadence == CadenceType::LoopClosure)
+        if (candidate.preservedLoop)
             return {0.86f, CompletionReason::LoopClosure};
         return {0.40f, CompletionReason::NoEvidence};
     case PhraseIntent::Develop: {
+        if (!candidate.pathContextReliable) return {0.38f, CompletionReason::NoEvidence};
         const bool pivot = std::any_of(path.begin(), path.end(), [](const auto& chord) {
             return hasRole(chord.roles, Role::SecondaryDominant) ||
                 hasRole(chord.roles, Role::SecondaryLeadingTone) ||
@@ -55,8 +63,20 @@ IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate& can
         return {0.38f, CompletionReason::ShortDevelopment};
     }
     case PhraseIntent::Color:
-        if (std::any_of(path.begin(), path.end(), hasColorEvidence))
+        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+                return hasRole(chord.roles, Role::Borrowed); }))
+            return {0.90f, CompletionReason::BorrowedColor};
+        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+                return hasRole(chord.roles, Role::SecondaryDominant) ||
+                    hasRole(chord.roles, Role::SecondaryLeadingTone); }))
+            return {0.90f, CompletionReason::SecondaryColor};
+        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+                return chord.degree.alteration != 0 || chord.quality == ChordQuality::Diminished ||
+                    chord.quality == ChordQuality::Diminished7 ||
+                    chord.quality == ChordQuality::HalfDiminished7 || chord.quality == ChordQuality::Augmented; }))
             return {0.90f, CompletionReason::AudibleColor};
+        if (std::any_of(path.begin(), path.end(), hasExtensionColor))
+            return {0.90f, CompletionReason::ExtendedColor};
         return {0.34f, CompletionReason::NoEvidence};
     default:
         return {0.5f, CompletionReason::NoEvidence};
@@ -73,6 +93,9 @@ const char* completionReasonKey(CompletionReason reason) noexcept {
     case CompletionReason::FunctionalPivot: return "completion.functionalPivot";
     case CompletionReason::ShortDevelopment: return "completion.shortDevelopment";
     case CompletionReason::AudibleColor: return "completion.audibleColor";
+    case CompletionReason::BorrowedColor: return "completion.borrowedColor";
+    case CompletionReason::SecondaryColor: return "completion.secondaryColor";
+    case CompletionReason::ExtendedColor: return "completion.extendedColor";
     default: return "completion.noEvidence";
     }
 }

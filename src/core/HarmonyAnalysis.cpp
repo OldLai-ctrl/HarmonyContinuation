@@ -1,4 +1,5 @@
 #include "HarmonyAnalysis.h"
+#include "ChordPitchSet.h"
 
 #include <algorithm>
 #include <array>
@@ -80,7 +81,11 @@ std::optional<ScaleDegree> secondaryTarget(const std::vector<NormalizedChord>& c
     if (i + 1 >= chords.size() || !chords[i].root || !chords[i + 1].root) return std::nullopt;
     const auto target = degreeOf(*chords[i + 1].root, key);
     if (!target || target->alteration != 0 || target->degree == 1) return std::nullopt;
-    if (!diatonicQuality(chords[i + 1].quality, key, target->degree)) return std::nullopt;
+    const bool observedDominantChain = !leadingTone &&
+        chords[i].quality == ChordQuality::Dominant7 &&
+        chords[i + 1].quality == ChordQuality::Dominant7;
+    if (!diatonicQuality(chords[i + 1].quality, key, target->degree) && !observedDominantChain)
+        return std::nullopt;
     const auto interval = mod12(number(*chords[i].root) - number(*chords[i + 1].root));
     const auto sourceDegree = degreeOf(*chords[i].root, key);
     if (sourceDegree && sourceDegree->alteration == 0 &&
@@ -150,9 +155,12 @@ std::vector<KeyCandidate> candidateKeys(const Progression& events,
                                         const HarmonyAnalysisWeights& weights, float median) {
     std::vector<KeyCandidate> result;
     result.reserve(24);
-    for (int root = 0; root < 12; ++root)
+    // Keep tied hypotheses in the same relative order after transposition.
+    // The finite budget and every musical key score remain unchanged.
+    const int anchor = !chords.empty() && chords.front().root ? number(*chords.front().root) : 0;
+    for (int offset = 0; offset < 12; ++offset)
         for (Mode mode : {Mode::Major, Mode::Minor}) {
-            const KeySignature key{static_cast<PitchClass>(root), mode};
+            const KeySignature key{static_cast<PitchClass>(mod12(anchor + offset)), mode};
             result.push_back({key, scoreKey(events, chords, key, weights, median), 0});
         }
     std::stable_sort(result.begin(), result.end(), [](const auto& a, const auto& b) {
@@ -187,12 +195,13 @@ HarmonicFunction baseFunction(const HarmonicEvent& event, KeySignature key) {
 
 float structuralWeight(const ChordEvent& source, const HarmonicEvent& event,
                        std::size_t index, std::size_t count, float median,
-                       const AnalysisContext& context) {
+                       const AnalysisContext& context, bool includeDuration = true,
+                       bool includeBarPosition = true, bool includeShortRolePenalty = true) {
     const auto& w = context.weights;
     float weight = w.structuralBase;
     const bool shortChord = source.durationQN && *source.durationQN > 0 &&
                             *source.durationQN < median * w.shortDurationRatio;
-    if (source.durationQN && *source.durationQN > 0 && std::isfinite(*source.durationQN))
+    if (includeDuration && source.durationQN && *source.durationQN > 0 && std::isfinite(*source.durationQN))
         weight += std::clamp(std::log2(static_cast<float>(*source.durationQN) / median), -1.0f, 1.0f) * w.relativeDurationEffect;
     if (event.function == HarmonicFunction::Tonic) weight += w.structuralTonicEffect;
     else if (event.function != HarmonicFunction::Unknown) weight += w.structuralFunctionEffect;
@@ -200,10 +209,10 @@ float structuralWeight(const ChordEvent& source, const HarmonicEvent& event,
     if (index == 0 || index + 1 == count) weight += w.structuralEndpointEffect;
     if (hasRole(event.roles, Role::Cadential)) weight += w.structuralCadenceEffect;
     if (hasRole(event.roles, Role::Borrowed)) weight += w.structuralBorrowedEffect;
-    if (shortChord && hasRole(event.roles, Role::SecondaryDominant)) weight -= w.shortSecondaryDominantPenalty;
-    if (shortChord && hasRole(event.roles, Role::SecondaryLeadingTone)) weight -= w.shortSecondaryLeadingPenalty;
-    if (shortChord && hasRole(event.roles, Role::Approach)) weight -= w.shortApproachPenalty;
-    if (context.timeSigNumerator && context.timeSigDenominator &&
+    if (includeShortRolePenalty && shortChord && hasRole(event.roles, Role::SecondaryDominant)) weight -= w.shortSecondaryDominantPenalty;
+    if (includeShortRolePenalty && shortChord && hasRole(event.roles, Role::SecondaryLeadingTone)) weight -= w.shortSecondaryLeadingPenalty;
+    if (includeShortRolePenalty && shortChord && hasRole(event.roles, Role::Approach)) weight -= w.shortApproachPenalty;
+    if (includeBarPosition && context.timeSigNumerator && context.timeSigDenominator &&
         *context.timeSigNumerator > 0 && *context.timeSigDenominator > 0) {
         const double barQN = *context.timeSigNumerator * 4.0 / *context.timeSigDenominator;
         if (barQN > 0 && std::remainder(source.startQN, barQN) == 0) weight += w.barStartEffect;
@@ -303,6 +312,21 @@ HarmonicAnalysisResult analyzeHarmony(const Progression& events, const AnalysisC
     for (std::size_t i = 0; i < result.full.size(); ++i) {
         auto& event = result.full[i];
         event.structuralWeight = structuralWeight(events[i], event, i, events.size(), median, context);
+        switch (context.retrievalTimingMode) {
+            case RetrievalTimingMode::Legacy:
+            case RetrievalTimingMode::ContinuousStructure:
+                event.retrievalStructuralWeight = event.structuralWeight;
+                break;
+            case RetrievalTimingMode::BarPositionIndependent:
+                event.retrievalStructuralWeight = structuralWeight(
+                    events[i], event, i, events.size(), median, context, true, false, true);
+                break;
+            case RetrievalTimingMode::HarmonyFirst:
+            case RetrievalTimingMode::Unified:
+                event.retrievalStructuralWeight = structuralWeight(
+                    events[i], event, i, events.size(), median, context, false, false, false);
+                break;
+        }
         event.analysisConfidence = event.chord.confidence;
         if (event.function == HarmonicFunction::Unknown) event.analysisConfidence *= 0.48f;
         if (!event.chord.diagnostics.empty()) {
@@ -311,8 +335,21 @@ HarmonicAnalysisResult analyzeHarmony(const Progression& events, const AnalysisC
         confidenceSum += event.analysisConfidence;
         // Preserve endpoints and cadence-bearing functional links. A short
         // chromatic approach can disappear without erasing its target.
-        if (i == 0 || i + 1 == events.size() || hasRole(event.roles, Role::Cadential) ||
-            event.structuralWeight >= context.skeletonThreshold) {
+        const auto tones = chordPitches(events[i]);
+        // Preserve the actual defining node, not every chord in a phrase that
+        // happens to contain one explicit pitch list (as all Cubase drops do).
+        const bool definingRealization = tones.bass != tones.root || tones.colorMask != 0;
+        RoleFlags retrievalRoles = event.roles & ~(flag(Role::Structural) | flag(Role::Embellishing));
+        if (context.retrievalTimingMode == RetrievalTimingMode::HarmonyFirst || context.retrievalTimingMode == RetrievalTimingMode::Unified)
+            retrievalRoles &= ~flag(Role::Approach);
+        const bool retrievalStructural = i == 0 || i + 1 == events.size() || definingRealization ||
+            hasRole(event.roles, Role::Cadential) || event.retrievalStructuralWeight >= context.skeletonThreshold;
+        if (context.retrievalTimingMode != RetrievalTimingMode::ContinuousStructure) {
+            if (retrievalStructural) retrievalRoles |= flag(Role::Structural);
+            else retrievalRoles |= flag(Role::Embellishing);
+        }
+        event.retrievalRoles = retrievalRoles;
+        if (context.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure || retrievalStructural) {
             event.roles |= flag(Role::Structural);
             result.skeletonIndices.push_back(i);
         } else event.roles |= flag(Role::Embellishing);

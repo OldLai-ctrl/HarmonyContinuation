@@ -27,11 +27,12 @@
 namespace harmony::ui {
 using namespace VSTGUI;
 namespace {
-const CColor background{16,24,39,255}, panel{24,37,55,255}, pale{232,241,250,255};
-const CColor muted{148,173,200,255}, accent{255,218,120,255};
+const CColor background{27,29,33,255}, panel{36,39,45,255}, pale{242,243,245,255};
+const CColor muted{175,181,191,255}, accent{166,186,255,255};
 void box(CDrawContext* dc, CRect r, CColor c) { dc->setFillColor(c); dc->drawRect(r,kDrawFilled); }
+void controlOutline(CDrawContext* dc,CRect r){box(dc,r,CColor(43,46,53,255));dc->setFrameColor(CColor(74,80,91,255));dc->setLineWidth(1);dc->drawRect(r,kDrawStroked);}
 void line(CDrawContext* dc, std::string text, CRect r, CColor color=pale, CHoriTxtAlign align=kLeftText) {
-    dc->setFont(kNormalFont); dc->setFontColor(color); dc->drawString(text.c_str(),r,align);
+    static const auto font=owned(new CFontDesc("Microsoft YaHei UI",12)); dc->setFont(font); dc->setFontColor(color);ConcatClip clip(*dc,r);dc->drawString(text.c_str(),r,align);
 }
 std::string fixed(double value, int precision=1) { std::ostringstream out; out<<std::fixed<<std::setprecision(precision)<<value; return out.str(); }
 std::string bassLine(const std::vector<int>& bass) {
@@ -106,7 +107,7 @@ void MainView::resizeLayout(int width,int height) {
     rebuildTimeline();
     playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt;
     if(nameEdit_) {
-        const double w=std::min(590.,layout_.viewport.width()-48),h=360;
+        const double w=std::min(590.,layout_.viewport.width()-48),h=form_==Form::Tempo?180:360;
         const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
         nameEdit_->setViewSize(editRect(CRect(x+140,y+53,x+w-22,y+91)),true);
         if(tagsEdit_)tagsEdit_->setViewSize(editRect(CRect(x+140,y+201,x+w-22,y+239)),true);
@@ -179,6 +180,9 @@ bool MainView::runCandidateScrollSmoke() {
                 recommendations_.groups[group].push_back(c);}
         }
         actions_={};std::string heard,exported,snapshot;
+        // This harness replaces candidate vectors directly. Invalidate the same
+        // caches as the production setters before testing a different row count.
+        colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;colorPaths_.clear();
         actions_.audition=[&](const ContinuationCandidate& c){heard=session::continuationFingerprint(c);};
         actions_.auditionEnrichment=[&](const enrichment::EnrichmentCandidate& c){heard=c.fingerprint;};
         actions_.exportMidi=[](const ContinuationCandidate&){return std::string{};};
@@ -233,6 +237,7 @@ bool MainView::runCandidateScrollSmoke() {
         contentScroll_=0;onMouseWheelEvent(outside);okay=okay&&outside.consumed&&contentScroll_==std::min(48.,layout_.laneScrollMax);
     }
     state_=savedState;actions_=savedActions;visibility_=savedPolicy;recommendations_=savedRecommendations;enrichments_=savedEnrichments;
+    colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;colorPaths_.clear();
     continuationScroll_=savedContinueScroll;enrichmentScroll_=savedEnrichScroll;contentScroll_=savedContentScroll;
     selectedCandidate_.reset();selectedEnrichment_.reset();midiPending_.reset();midiClick_={};refreshLayout();invalid();
     return okay;
@@ -315,6 +320,18 @@ void MainView::refreshLayout() {
             state_.tab==session::Tab::Library&&selectedLibrary_.has_value(),
         state_.productMode==session::ProductMode::Enrich?!pinnedEnrichmentIds_.empty():!state_.pinnedCandidateIds.empty(),userZoom()});
     contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);
+    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Continue){
+        const auto compact=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+        layout_.content=compact.cardsViewport;layout_.timeline={compact.input.left,compact.input.top,compact.input.right,compact.input.bottom};
+        layout_.inspector=compactDetailRect_;layout_.inspectorMode=selectedCandidate_||selectedChord_?InspectorMode::Overlay:InspectorMode::None;
+    }
+    if(state_.tab!=session::Tab::Recommend||state_.productMode!=session::ProductMode::Continue){
+        const auto compact=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+        layout_.content.bottom=std::max(layout_.content.top+1,compact.footer.top-8);layout_.library=layout_.content;
+        layout_.libraryRows=std::max(1,static_cast<int>((layout_.content.height()-130)/36));
+        if(layout_.inspectorMode!=InspectorMode::None)layout_.inspector.bottom=std::min(layout_.inspector.bottom,compact.footer.top-8);
+    }
+    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich){const auto compact=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());layout_.content=compact.cardsViewport;layout_.timeline=compact.input;layout_.laneColumns=1;layout_.laneHeight=192;for(std::size_t i=0;i<3;++i)layout_.lanes[i]={compact.cardsViewport.left,compact.cardsViewport.top+i*202,compact.cardsViewport.right,compact.cardsViewport.top+i*202+192};layout_.laneScrollMax=std::max(0.,3*202.-compact.cardsViewport.height());contentScroll_=std::clamp(contentScroll_,0.,layout_.laneScrollMax);if(layout_.inspectorMode!=InspectorMode::None){layout_.inspector={compact.cardsViewport.left+8,compact.input.bottom+8,compact.cardsViewport.right-8,compact.footer.top-8};}}
     if (priorWidth!=layout_.timeline.width()) rebuildTimeline();
 }
 OverlayKind MainView::activeOverlayKind() const noexcept {
@@ -351,6 +368,10 @@ bool MainView::runHostInteractionSmoke(){
     state_=state;restoreEditorUiState(saved);refreshLayout();return okay;
 }
 void MainView::onKeyboardEvent(KeyboardEvent& event) {
+    if(overviewOpen_){
+        if(event.type==EventType::KeyDown&&event.virt==VirtualKey::Escape){overviewOpen_=false;invalid();}
+        event.consumed=true;return;
+    }
     if (event.type==EventType::KeyDown && event.virt==VirtualKey::Escape &&
         dismissOnEscape(activeOverlayKind())) {
         dismissTransientOverlay();
@@ -362,9 +383,21 @@ void MainView::onKeyboardEvent(KeyboardEvent& event) {
 void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
     auto point=event.mousePosition;point.x/=userZoom();point.y/=userZoom();
     const auto delta=event.deltaY*48.0;
+    if(overviewOpen_){overviewScroll_=std::clamp(overviewScroll_-delta,0.,overviewScrollMax_);invalid();event.consumed=true;return;}
+    if(state_.tab==session::Tab::Recommend&&form_==Form::None)for(const auto& band:compactRibbons_)if(band.maximum>0&&band.rect.pointInside(point)){compactRibbonScroll_[band.id]=std::clamp(compactRibbonScroll_[band.id]-delta,0.,band.maximum);invalid();event.consumed=true;return;}
+    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Continue&&form_==Form::None){
+        if(compactDetailRect_.contains(point.x,point.y)&&layout_.content.contains(point.x,point.y)){inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);invalid();event.consumed=true;return;}
+        if(layout_.content.contains(point.x,point.y)){compactScroll_=std::clamp(compactScroll_-delta,0.,compactScrollMax_);invalid();event.consumed=true;return;}
+    }
     if(layout_.inspectorMode!=InspectorMode::None&&layout_.inspector.contains(point.x,point.y)) {
         inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);
         invalid();event.consumed=true;return;
+    }
+    if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&form_==Form::None){
+        const auto compact=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+        if(compact.cardsViewport.contains(point.x,point.y)){
+            compactScroll_=std::clamp(compactScroll_-delta,0.,compactScrollMax_);invalid();event.consumed=true;return;
+        }
     }
     try {
     if(state_.tab==session::Tab::Recommend&&activeOverlayKind()!=OverlayKind::Modal&&
@@ -437,10 +470,17 @@ MainView::EditorUiState MainView::captureEditorUiState() const {
     if(const auto* c=selectedEnrichment()){out.enrichmentId=c->id;out.enrichmentFingerprint=c->fingerprint;}
     out.chord=selectedChord_;out.continuationScroll=continuationScroll_;out.enrichmentScroll=enrichmentScroll_;
     out.contentScroll=contentScroll_;out.timelineScroll=timelineScroll_;out.inspectorScroll=inspectorScroll_;
-    out.pinnedEnrichmentIds=pinnedEnrichmentIds_;out.showColorHints=showColorHints_;out.colorPreference=colorPreference_;return out;
+    out.browsePages=browsePages_;out.browseScroll=browseScroll_;out.browseScroll[browseCategory()]=compactScroll_;
+    out.browseSelected=browseSelected_;out.browseSelected[browseCategory()]=compactSelected_;out.browseCategory=browseCategory();
+    out.detailedCards=detailedCards_;out.pinnedEnrichmentIds=pinnedEnrichmentIds_;out.showColorHints=showColorHints_;out.colorPreference=colorPreference_;return out;
 }
 void MainView::restoreEditorUiState(const EditorUiState& s){
-    showColorHints_=s.showColorHints;setColorPreference(s.colorPreference);
+    browsePages_=s.browsePages;browseScroll_=s.browseScroll;browseSelected_=s.browseSelected;
+    if(s.browseCategory<4)compactGroup_=s.browseCategory;
+    compactSelected_=browseSelected_[browseCategory()];
+    compactScroll_=std::isfinite(browseScroll_[browseCategory()])?std::max(0.,browseScroll_[browseCategory()]):0.;
+    overviewOpen_=false;browseDirty_=true;
+    detailedCards_=s.detailedCards;showColorHints_=s.showColorHints;setColorPreference(s.colorPreference);
     if(s.chord&&*s.chord<state_.imported.events.size())selectedChord_=s.chord;
     for(std::size_t g=0;g<recommendations_.groups.size();++g)for(std::size_t i=0;i<recommendations_.groups[g].size();++i){
         const auto& c=recommendations_.groups[g][i];if(c.id==s.continuationId&&session::continuationFingerprint(c)==s.continuationFingerprint)selectedCandidate_={{g,i}};
@@ -459,13 +499,18 @@ void MainView::restoreEditorUiState(const EditorUiState& s){
 }
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
 void MainView::setSessionState(const session::PluginSessionState& s) {
+    seekGesture_.reset();
+    previewSeekHoverId_.clear();previewSeekCursorHover_=false;
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
     const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
-    if(state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints)enrichmentColorRankDirty_=true;
+    if(state_.productMode!=s.productMode||state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints){enrichmentColorRankDirty_=true;browseDirty_=true;}
     state_=s;
-    if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;}
+    switch(s.intent.value_or(PhraseIntent::Neutral)){case PhraseIntent::Resolve:compactGroup_=0;break;case PhraseIntent::Develop:compactGroup_=1;break;
+        case PhraseIntent::Loop:compactGroup_=2;break;case PhraseIntent::Color:compactGroup_=3;break;default:break;}
+    if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;}
     if(zoomChanged)resizeLayout(static_cast<int>(getViewSize().getWidth()),static_cast<int>(getViewSize().getHeight()));
     if (timelineChanged) {
+        recommendationResultReady_=false;compactSelected_.clear();browsePages_.fill(0);browseScroll_.fill(0);browseSelected_.fill({});overviewOpen_=false;compactRibbonScroll_.clear();compactScroll_=0;midiPending_.reset();midiClick_={};
         pinnedSnapshots_.clear(); pinnedEnrichmentIds_.clear(); selectedChord_.reset();
         selectedCandidate_.reset(); selectedEnrichment_.reset(); rebuildTimeline();
         if (!state_.imported.events.empty()) sessionDirty_=true;
@@ -479,18 +524,43 @@ void MainView::setHostText(std::string s, std::string snapshot) {
 }
 void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     if (state_.imported.revision==s.revision && state_.imported.events.size()==s.events.size()) return;
+    seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;
+    recommendationResultReady_=false;compactSelected_.clear();browsePages_.fill(0);browseScroll_.fill(0);browseSelected_.fill({});overviewOpen_=false;compactRibbonScroll_.clear();compactScroll_=0;midiPending_.reset();midiClick_={};
     state_.imported=s; selectedChord_.reset(); selectedCandidate_.reset();
-    colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
+    colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;
     selectedEnrichment_.reset(); pinnedEnrichmentIds_.clear(); rebuildTimeline();
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
-void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true; invalid(); }
+void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true; invalid(); }
+bool MainView::runStructureSmoke() {
+    session::PluginSessionState input;Progression phrase;
+    const char* names[]{"C","F","F#dim7","G","C"};const double durations[]{4,3.75,.25,4,4};double at{};
+    for(int i=0;i<5;++i){ChordEvent e;e.name=names[i];e.startQN=at;e.durationQN=durations[i];e.openEnded=false;at+=durations[i];phrase.push_back(e);}
+    input.forcedKey=KeySignature{PitchClass::C,Mode::Major};
+    if(!input.imported.replace(phrase,TimelineCoordinateMode::RelativeToSelection))return false;
+    setSessionState(input);setAnalysis(analyzeHarmony(phrase,input.analysisContext()));refreshLayout();
+    if(analysis_.skeletonIndices.size()>=phrase.size()||std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),2)!=analysis_.skeletonIndices.end())return false;
+    RecommendationSet rec;ContinuationCandidate c;c.id="structure-view";c.intent=PhraseIntent::Resolve;c.rankingScore=90;
+    c.continuation.push_back({"C",4,{1,0},ChordQuality::Major,{}});rec.groups[0].push_back(c);setRecommendations(rec);
+    const auto diagnostics=recommendationUiDiagnostics();
+    if(diagnostics.find("id=structure-view")==std::string::npos||diagnostics.find("Complete recommendations (1)")==std::string::npos&&diagnostics.find("完整推荐清单 (1)")==std::string::npos)return false;
+    const auto before=session::continuationFingerprint(recommendations_.groups[0][0]);
+    CPoint skeleton{160.,layout_.timeline.bottom+12};onMouseDownResponsive(skeleton);
+    if(!state_.skeletonView||session::recomputeScope(input,state_)!=session::RecomputeScope::None)return false;
+    timelineScroll_=std::max(0.,timelineBlocks_[2].x-layout_.timeline.width()*.45);
+    const auto hidden=chordTileRect(2);CPoint invisible{(hidden.left+hidden.right)/2,(hidden.top+hidden.bottom)/2};onMouseDownResponsive(invisible);
+    if(selectedChord_)return false;
+    CPoint full{50.,layout_.timeline.bottom+12};onMouseDownResponsive(full);
+    if(state_.skeletonView||before!=session::continuationFingerprint(recommendations_.groups[0][0]))return false;
+    phrase.clear();at=0;for(const auto* label:{"C","Cmaj7/B","C7/Bb","F/A","Fm/Ab"}){ChordEvent e;e.name=label;e.startQN=at;e.durationQN=2;e.openEnded=false;at+=2;phrase.push_back(e);}
+    return analyzeHarmony(phrase,input.analysisContext()).skeletonIndices.size()==phrase.size();
+}
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
 void MainView::setRecommendations(const RecommendationSet& r) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
-    recommendations_=r;
-    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
+    seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;recommendations_=r;compactRibbonScroll_.clear();if(!findCandidate(compactSelected_))compactSelected_.clear();
+    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;
     continuationScroll_.fill(0.);
     if (!oldSelected.empty() && (!selectedCandidate() || selectedCandidate()->id!=oldSelected ||
         session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
@@ -511,19 +581,21 @@ void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
     enrichmentScroll_.fill(0.);
     const auto oldSelected=selectedEnrichment()?selectedEnrichment()->id:std::string{};
     const auto oldFingerprint=selectedEnrichment()?selectedEnrichment()->fingerprint:std::string{};
-    enrichments_=value;
-    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;
+    seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;enrichments_=value;
+    colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;
     if (!oldSelected.empty() && (!selectedEnrichment() || selectedEnrichment()->id!=oldSelected || selectedEnrichment()->fingerprint!=oldFingerprint))
         selectedEnrichment_.reset();
     std::erase_if(pinnedEnrichmentIds_,[&](const std::string& id) { return !findEnrichment(id); });
     refreshLayout(); invalid();
 }
 void MainView::setPreviewPosition(std::string id,double qn,double totalQN) {
-    previewCandidateId_=std::move(id); previewQN_=qn; previewTotalQN_=totalQN; invalid();
+    if(id!=previewCandidateId_||id.empty()){previewSeekHoverId_.clear();previewSeekCursorHover_=false;}
+    const auto previous=previewCandidateId_;previewCandidateId_=std::move(id); previewQN_=qn; previewTotalQN_=totalQN;
+    (void)previous;invalid();
 }
 void MainView::setColorPreference(color::Preference value) {
     if(colorPreference_==value)return;
-    colorPreference_=value;colorRankDirty_=true;enrichmentColorRankDirty_=true;continuationScroll_.fill(0.);enrichmentScroll_.fill(0.);invalid();
+    colorPreference_=value;colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;continuationScroll_.fill(0.);enrichmentScroll_.fill(0.);invalid();
 }
 void MainView::refreshColorRanking() {
     if(!colorRankDirty_)return;
@@ -536,6 +608,9 @@ void MainView::refreshColorRanking() {
             recommendations_.groups[group],paths,colorPreference_);
     }
     colorRankDirty_=false;
+}
+std::string MainView::recommendationUiDiagnostics() {
+    return "\nACTUAL_UI colorPreference="+std::to_string(int(colorPreference_))+"\n"+recommendationListText();
 }
 session::RecommendationPresentation MainView::continuationPresentation() {
     auto result=session::presentationIndices(recommendations_,visibility_);
@@ -854,8 +929,24 @@ bool MainView::runColorHintSmoke(CDrawContext* dc) {
     return !showColorHints_&&selectedCandidate()!=nullptr;
 }
 void MainView::setSnapshotMode(bool enabled) {
-    visibility_.absoluteMinimumScore=enabled?0.f:60.f;
+    snapshotMode_=enabled;browseDirty_=true;
+    visibility_.includeExploratory=enabled;
     invalid();
+}
+preview::SourceRouteResult MainView::continuationRoute(const ContinuationCandidate& candidate) const {
+    if(snapshotMode_) {
+        preview::SourceRouteResult result;result.imported=state_.imported;result.candidate=candidate;
+        result.meterNumerator=state_.meterNumerator.value_or(4);
+        result.meterDenominator=state_.meterDenominator.value_or(4);
+        return result;
+    }
+    for(const auto* catalog:{&factory_,&user_}) {
+        const auto item=std::find_if(catalog->begin(),catalog->end(),[&](const auto& value){return value.id==candidate.primaryTemplate;});
+        if(item!=catalog->end())return preview::sourceRoute(state_.imported,candidate,*item);
+    }
+    preview::SourceRouteResult result;result.candidate=candidate;
+    result.error="source template is unavailable";
+    return result;
 }
 void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttempt) {
     rawText_=raw.substr(0,12000); parseText_=parsed.substr(0,8000);
@@ -869,8 +960,10 @@ void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttemp
 void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<ProgressionTemplate> u,std::string e) {
     factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e); invalid();
 }
-void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc) {
-    generation_=g; computationMs_=ms; workerBusy_=busy;
+void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc,bool resultReady) {
+    if(g!=generation_||busy||!resultReady){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;}
+    generation_=g; computationMs_=ms; workerBusy_=busy; recommendationResultReady_=resultReady;
+    if(busy||!resultReady){midiPending_.reset();midiClick_={};compactHits_.clear();overviewOpen_=false;}
     if (!busy && std::all_of(recommendations_.groups.begin(),recommendations_.groups.end(),
             [](const auto& group){return group.empty();}) && !state_.pinnedCandidateIds.empty()) {
         state_.resolvePins(recommendations_);
@@ -878,7 +971,7 @@ void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t f
         if (actions_.stateChanged) actions_.stateChanged(state_);
     }
     if (fc) factoryCount_=fc; if (uc || !userCount_) userCount_=uc;
-    invalidRect(editRect(CRect(255,layout_.phrase.top-31,layout_.viewport.right-160,layout_.phrase.top)));
+    invalid();
 }
 void MainView::rebuildTimeline() {
     auto timeline=layoutScrollableTimeline(state_.imported.events,layout_.timeline.width());
@@ -924,7 +1017,9 @@ void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
         const auto tile=chordTileRect(block.eventIndex);
         if (!(tile.right>update.left && tile.left<update.right && tile.bottom>update.top && tile.top<update.bottom)) continue;
         const bool active=currentLocation_.activeIndex==block.eventIndex;
-        box(dc,tile,colors[block.eventIndex%4]);
+        const bool weakened=!analysis_.full.empty() &&
+            std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),block.eventIndex)==analysis_.skeletonIndices.end();
+        box(dc,tile,weakened?CColor(49,57,67,255):colors[block.eventIndex%4]);
         dc->setFrameColor(active?accent:CColor(135,172,215,255)); dc->setLineWidth(active?2.4:1.0);
         if (block.openRightEdge) { const CCoord dash[]{4.,3.}; dc->setLineStyle(CLineStyle(CLineStyle::kLineCapButt,CLineStyle::kLineJoinMiter,0,2,dash)); }
         else dc->setLineStyle(CLineStyle{});
@@ -957,6 +1052,8 @@ void MainView::drawTimeline(CDrawContext* dc,const CRect& update) {
 void MainView::drawTop(CDrawContext* dc,const CRect& bounds) {
     (void)bounds;
     box(dc,viewRect(layout_.topBar),CColor(25,40,58,255));
+    for(const auto& control:layout_.topControls)controlOutline(dc,viewRect(control));
+    for(const auto& control:layout_.constraintControls)controlOutline(dc,viewRect(control));
     const std::array<std::string,6> labels{
         t("label.key")+": "+(state_.forcedKey?formatKey(*state_.forcedKey)+" "+t("label.forced"):
             analysis_.selectedKey?t("label.auto")+" · "+formatKey(analysis_.selectedKey->key):t("label.auto")),
@@ -993,17 +1090,19 @@ void MainView::drawPhrase(CDrawContext* dc,const CRect& bounds) {
     (void)bounds;
     drawTimeline(dc,viewRect(layout_.timeline));
     const auto y=layout_.timeline.bottom+5;
-    line(dc,t("phrase.title")+" · "+std::to_string(state_.imported.events.size())+" "+t("phrase.count"),
-        CRect(24,y,layout_.timeline.right-220,y+24),pale);
-    if (timelineContentWidth_>layout_.timeline.width()+1)
-        line(dc,t("phrase.scroll"),CRect(layout_.timeline.right-215,y,layout_.timeline.right,y+24),muted,kRightText);
+    line(dc,"FULL · "+std::to_string(state_.imported.events.size()),CRect(24,y,132,y+24),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON · "+std::to_string(analysis_.skeletonIndices.size())+"/"+
+        std::to_string(state_.imported.events.size()),CRect(138,y,310,y+24),state_.skeletonView?accent:muted);
+    line(dc,t(analysis_.skeletonIndices.size()==state_.imported.events.size()?"structure.all":"structure.view"),
+        CRect(318,y,layout_.timeline.right-12,y+24),muted);
     if (state_.imported.events.empty()) return;
     if (selectedChord_ && *selectedChord_<analysis_.full.size()) {
         const auto& event=state_.imported.events[*selectedChord_];
         const auto duration=event.durationQN?fixed(*event.durationQN)+" QN":"OPEN";
         line(dc,event.name+" · "+duration+" · "+t("phrase.starts")+" "+fixed(event.startQN)+" QN",
              CRect(23,y+28,layout_.viewport.right-23,y+55),pale);
-    } else line(dc,t("phrase.select")+" · "+t("midi.help"),CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
+    } else line(dc,t("phrase.select")+" · "+t(timelineContentWidth_>layout_.timeline.width()+1?"phrase.scroll":"midi.help"),
+        CRect(23,y+28,layout_.viewport.right-23,y+55),muted);
 }
 void MainView::drawMiniTimeline(CDrawContext* dc,const ContinuationCandidate& c,CRect area) {
     const auto& events=state_.imported.events;
@@ -1049,7 +1148,7 @@ void MainView::drawRecommendations(CDrawContext* dc,const CRect& bounds) {
         if(lane.bottom<layout_.content.top||lane.top>layout_.content.bottom)continue;
         box(dc,viewRect(lane),panel);
         line(dc,t(titles[group]),CRect(lane.left+8,lane.top+3,lane.left+160,lane.top+27),accent);
-        if (recommendations_.groups[group].size()>2)
+        if (recommendations_.groups[group].size()>2 || std::any_of(recommendations_.groups[group].begin(),recommendations_.groups[group].end(),[](const auto& c){return c.exploratory;}))
             line(dc,t("candidate.more"),CRect(lane.right-112,lane.top+3,lane.right-8,lane.top+27),muted,kRightText);
         const auto& visible=presentation[group];
         if (visible.empty()) {
@@ -1114,7 +1213,8 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
         const auto& candidates=enrichments_.groups[group];
         if(candidates.size()>2)line(dc,t("candidate.more"),CRect(lane.right-120,lane.top+3,lane.right-8,lane.top+27),accent,kRightText);
         if (candidates.empty()) {
-            line(dc,workerBusy_?t("status.analyzing"):t("status.noEnrichment"),
+            line(dc,workerBusy_?t("status.analyzing"):t(enrichments_.diagnostics.hardFiltered?"enrich.constraints":
+                enrichments_.diagnostics.protectedChords?"enrich.protected":"status.noEnrichment"),
                  CRect(lane.left+8,lane.top+36,lane.right-8,lane.top+64),muted);
             continue;
         }
@@ -1174,9 +1274,9 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
     drawCompare(dc,getViewSize());
 }
 const ContinuationCandidate* MainView::findCandidate(const std::string& id) const {
-    for (const auto& candidate:pinnedSnapshots_) if (candidate.id==id) return &candidate;
     for (const auto& group:recommendations_.groups) for (const auto& candidate:group)
         if (candidate.id==id) return &candidate;
+    for (const auto& candidate:pinnedSnapshots_) if (candidate.id==id) return &candidate;
     return nullptr;
 }
 const ContinuationCandidate* MainView::selectedCandidate() const {
@@ -1288,6 +1388,8 @@ void MainView::drawRect(CDrawContext* dc,const CRect& update) {
     refreshLayout();
     CDrawContext::Transform zoomTransform(*dc,CGraphicsTransform().scale(userZoom(),userZoom()));
     ++paintGeneration_;
+    compactHits_.clear();compactRibbons_.clear();seekHits_.clear();compactInCards_=false;
+    if(state_.tab==session::Tab::Recommend){drawCompact(dc);return;}
     const auto bounds=viewRect(layout_.viewport);
     if (userZoom()==1&&state_.tab==session::Tab::Recommend&&update.top>=layout_.timeline.top && update.bottom<=layout_.timeline.bottom) { drawTimeline(dc,update); return; }
     box(dc,bounds,background);
@@ -1300,7 +1402,7 @@ void MainView::drawRect(CDrawContext* dc,const CRect& update) {
         case session::Tab::Library: drawResponsiveLibrary(dc); break;
         default: drawResponsiveDiagnostics(dc); break;
     }
-    drawResponsiveInspector(dc); drawResponsiveForm(dc);
+    drawResponsiveInspector(dc);drawCompactTransport(dc);drawResponsiveForm(dc);
     if(state_.debugExpanded) {
         const auto x=bounds.right-310,y=layout_.phrase.bottom-47;
         box(dc,CRect(x,y,bounds.right-18,y+43),CColor(34,49,68,255));
@@ -1334,12 +1436,12 @@ int MainView::popup(const std::vector<std::string>& items,CPoint point) {
 }
 void MainView::beginForm(Form kind,std::string initial) {
     if (!getFrame()) return; endForm(); form_=kind;
-    const double w=std::min(590.,layout_.viewport.width()-48),h=360;
+    const double w=std::min(590.,layout_.viewport.width()-48),h=form_==Form::Tempo?180:360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
     nameEdit_=new CTextEdit(editRect(CRect(x+140,y+53,x+w-22,y+91)),nullptr,0,initial.c_str());
     nameEdit_->setBackColor(CColor(242,247,252,255)); nameEdit_->setFontColor(CColor(20,30,45,255));
     getFrame()->addView(nameEdit_);
-    if (kind!=Form::Search) {
+    if (kind!=Form::Search&&kind!=Form::Tempo) {
         tagsEdit_=new CTextEdit(editRect(CRect(x+140,y+201,x+w-22,y+239)),nullptr,0,"");
         tagsEdit_->setBackColor(CColor(242,247,252,255)); tagsEdit_->setFontColor(CColor(20,30,45,255));
         getFrame()->addView(tagsEdit_);
@@ -1363,6 +1465,7 @@ void MainView::endForm() {
 void MainView::submitForm() {
     if (!nameEdit_) return;
     const auto text=nameEdit_->getText().getString();
+    if(form_==Form::Tempo){std::istringstream input(text);input.imbue(std::locale::classic());double bpm{};input>>bpm;input>>std::ws;if(input.fail()&&!input.eof()||!input.eof()||!std::isfinite(bpm)||bpm<20||bpm>400){actionStatus_=state_.locale==session::Locale::ZhCN?"请输入20–400之间的BPM":"Enter BPM between 20 and 400";invalid();return;}auditionCustom_=true;auditionBpm_=bpm;if(actions_.previewSettings)actions_.previewSettings(true,bpm,auditionSuffix_);endForm();return;}
     if (form_==Form::Search) { librarySearch_=text; libraryPage_=0; endForm(); return; }
     if(form_==Form::Melody) {
         const auto parsed=parseMelodyNote(text);
@@ -1404,6 +1507,9 @@ void MainView::submitForm() {
 CMouseEventResult MainView::onMouseDown(CPoint& where,const CButtonState&) {
     midiPending_.reset();midiClick_={};
     CPoint logical{where.x/userZoom(),where.y/userZoom()};
+    if(!seekGesture_){previewSeekHoverId_.clear();previewSeekCursorHover_=false;}
+    try{if(beginPreviewSeek(logical))return kMouseEventHandled;if(onCompactMouseDown(logical))return kMouseEventHandled;}
+    catch(...){actionStatus_="Action failed";invalid();return kMouseEventHandled;}
     return onMouseDownResponsive(logical);
 }
 bool MainView::armMidi(const ContinuationCandidate& candidate,CPoint where) {
@@ -1424,7 +1530,17 @@ bool MainView::armMidi(const enrichment::EnrichmentCandidate& candidate,CPoint w
 }
 CMouseEventResult MainView::onMouseMoved(CPoint& where,const CButtonState& buttons) {
     try {
-    if(!midiPending_)return kMouseEventNotHandled;
+    if(seekGesture_){if(!buttons.isLeftButton()){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;invalid();return kMouseEventHandled;}
+        previewSeekHoverId_=seekGesture_->hit.id;previewSeekCursorHover_=true;movePreviewSeek({where.x/userZoom(),where.y/userZoom()});return kMouseEventHandled;}
+    if(!midiPending_){
+        CPoint logical{where.x/userZoom(),where.y/userZoom()};CRect next;for(const auto& hit:compactHits_)if(hit.enabled&&hit.contains(logical)){next=hit.rect;break;}
+        std::string nextSeekId;bool nextCursorHover=false;
+        for(const auto& hit:seekHits_)if(hit.cursorRect.getWidth()>0&&hit.cursorRect.pointInside(logical)){nextSeekId=hit.id;nextCursorHover=true;break;}
+        if(nextSeekId.empty())for(const auto& hit:seekHits_)if(hit.rect.pointInside(logical)){nextSeekId=hit.id;break;}
+        if(next!=compactHover_||nextSeekId!=previewSeekHoverId_||nextCursorHover!=previewSeekCursorHover_){
+            compactHover_=next;previewSeekHoverId_=std::move(nextSeekId);previewSeekCursorHover_=nextCursorHover;invalid();}
+        return kMouseEventNotHandled;
+    }
     if(!buttons.isLeftButton()){midiPending_.reset();midiClick_={};return kMouseEventHandled;}
     if(!shouldStartDrag(CPoint(midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()),where))return kMouseEventHandled;
     auto payload=std::move(*midiPending_);midiPending_.reset();midiClick_={};
@@ -1441,6 +1557,16 @@ CMouseEventResult MainView::onMouseMoved(CPoint& where,const CButtonState& butto
     } catch(...){midiPending_.reset();midiClick_={};actionStatus_=t("midi.dragFailed");invalid();return kMouseEventHandled;}
 }
 CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
+    compactPressed_={};invalid();
+    if(seekGesture_){
+        try {
+            movePreviewSeek({where.x/userZoom(),where.y/userZoom()});const auto gesture=*seekGesture_;seekGesture_.reset();
+            previewSeekHoverId_.clear();previewSeekCursorHover_=false;
+            if(gesture.generation==generation_&&!workerBusy_&&recommendationResultReady_&&actions_.seekAudition)
+                actions_.seekAudition(gesture.hit.id,gesture.targetQN);
+        }catch(...){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;actionStatus_="Preview seek failed";invalid();}
+        return kMouseEventHandled;
+    }
     try {auto click=std::move(midiClick_);midiClick_={};midiPending_.reset();
         if(click&&!shouldStartDrag(CPoint{midiMouseDown_.x*userZoom(),midiMouseDown_.y*userZoom()},where))click();
     } catch(...){actionStatus_=t("midi.saveFailed");invalid();}return kMouseEventHandled;
@@ -1448,8 +1574,12 @@ CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
 CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
     try {
         refreshLayout();
+        if(form_==Form::None&&state_.tab==session::Tab::Recommend&&
+           where.y>=layout_.timeline.bottom+5&&where.y<layout_.timeline.bottom+29&&where.x>=24&&where.x<310) {
+            state_.skeletonView=where.x>=138;notifyState();return kMouseEventHandled;
+        }
         if(form_!=Form::None) {
-            const double w=std::min(590.,layout_.viewport.width()-48),h=360;
+            const double w=std::min(590.,layout_.viewport.width()-48),h=form_==Form::Tempo?180:360;
             const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
             if(where.y>=y+h-45&&where.y<=y+h) {
                 if(where.x>=x+140&&where.x<x+290)endForm();
@@ -1460,11 +1590,11 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             } else if(form_==Form::Melody&&where.y>=y+144&&where.y<y+180) {
                 const auto choice=popup({t("melody.soft"),t("melody.hard")},where);
                 if(choice>=0)formMelody_.strictness=static_cast<ConstraintStrictness>(choice);invalid();
-            } else if(form_!=Form::Search&&where.y>=y+110&&where.y<y+144) {
+            } else if(form_!=Form::Search&&form_!=Form::Tempo&&where.y>=y+110&&where.y<y+144) {
                 const auto choice=popup({t("label.auto"),"Pop","Rock","R&B","Jazz","City Pop / J-pop",t("tag.functional")},where);
                 constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};
                 if(choice>=0)formMetadata_.style=choice==0?std::nullopt:std::optional<Style>(styles[choice-1]);invalid();
-            } else if(form_!=Form::Search&&where.y>=y+144&&where.y<y+180) {
+            } else if(form_!=Form::Search&&form_!=Form::Tempo&&where.y>=y+144&&where.y<y+180) {
                 const auto choice=popup({t("group.develop"),t("group.resolve"),t("group.loop"),t("group.color")},where);
                 if(choice>=0)formMetadata_.intent=static_cast<PhraseIntent>(choice+1);invalid();
             }
@@ -1531,12 +1661,16 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                 else if(choice==2) state_.locale=state_.locale==session::Locale::ZhCN?
                     session::Locale::EnUS:session::Locale::ZhCN;
                 else if(choice==3) {
-                    popup({"HarmonyContinuation "+std::string(product::version),
+                    std::vector<std::string> about{
+                        "HarmonyContinuation "+std::string(product::version),
                         t("about.build")+": "+std::string(product::buildType),
                         t("about.commit")+": "+std::string(product::commit),
                         t("about.factory")+": "+std::to_string(state_.factoryLibraryVersion),
                         t("about.db")+": "+std::to_string(product::databaseSchemaVersion),
-                        t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion)},where);
+                        t("about.session")+": "+std::to_string(session::PluginSessionState::currentSchemaVersion),
+                        "Recommendation engine: Unified"};
+                    about.push_back(recommendationResultReady_?"Actual recommendations: ready":"Actual recommendations: PENDING");
+                    popup(about,where);
                 }
                 else if(choice==4) {
                     const auto zoom=popup({"100%","125%","150%"},where);
@@ -1565,6 +1699,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
         }
         if(state_.tab==session::Tab::Recommend&&layout_.timeline.contains(where.x,where.y)) {
             for(const auto& b:timelineBlocks_) {
+                if(state_.skeletonView&&!analysis_.full.empty()&&
+                   std::find(analysis_.skeletonIndices.begin(),analysis_.skeletonIndices.end(),b.eventIndex)==analysis_.skeletonIndices.end())continue;
                 const auto r=chordTileRect(b.eventIndex);
                 if(where.x>=r.left&&where.x<r.right){selectedChord_=b.eventIndex;selectedCandidate_.reset();
                     selectedEnrichment_.reset();selectedLibrary_.reset();inspectorScroll_=0;refreshLayout();
@@ -1787,7 +1923,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
             if(!lane.contains(where.x,where.y))continue;
             const auto group=groupForVisual(visual,state_.intent);
             if(where.y<lane.top+27) {
-                if(where.x>=lane.right-120&&recommendations_.groups[group].size()>2) {
+                if(where.x>=lane.right-120&&(recommendations_.groups[group].size()>2 ||
+                    std::any_of(recommendations_.groups[group].begin(),recommendations_.groups[group].end(),[](const auto& c){return c.exploratory;}))) {
                     refreshColorRanking();
                     std::vector<ContinuationCandidate> listed;
                     for(const auto index:colorRanks_[group].order)listed.push_back(recommendations_.groups[group][index]);
@@ -1795,7 +1932,8 @@ CMouseEventResult MainView::onMouseDownResponsive(CPoint& where) {
                     std::vector<std::string> options;
                     for(const auto& c:listed) {
                         std::string path;for(const auto& e:c.continuation){if(!path.empty())path+=" → ";path+=e.label;}
-                        options.push_back(std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
+                        options.push_back((c.exploratory?(state_.locale==session::Locale::ZhCN?std::string("探索 · "):std::string("Explore · ")):std::string{})+
+                            std::to_string(static_cast<int>(std::round(c.rankingScore)))+" · "+path);
                     }
                     const auto selected=popup(options,where);
                     if(selected>=0&&static_cast<std::size_t>(selected)<listed.size()&&revision==state_.imported.revision) {
@@ -1882,13 +2020,32 @@ void MainView::drawResponsiveDiagnostics(CDrawContext* dc) {
     box(dc,viewRect(area),panel);
     line(dc,t("diagnostics.title")+"    ["+t("diagnostics.refresh")+"]    ["+t("diagnostics.clipboard")+"]",
         CRect(area.left+10,area.top+7,area.right-10,area.top+34),accent);
-    line(dc,"FULL",CRect(area.left+12,area.top+39,area.left+120,area.top+66),state_.skeletonView?muted:accent);
-    line(dc,"SKELETON",CRect(area.left+125,area.top+39,area.left+280,area.top+66),state_.skeletonView?accent:muted);
+    line(dc,"FULL · "+std::to_string(analysis_.full.size()),CRect(area.left+12,area.top+39,area.left+120,area.top+66),state_.skeletonView?muted:accent);
+    line(dc,"SKELETON · "+std::to_string(analysis_.skeletonIndices.size())+"/"+std::to_string(analysis_.full.size()),CRect(area.left+125,area.top+39,area.left+310,area.top+66),state_.skeletonView?accent:muted);
     line(dc,matchStatus_,CRect(area.left+10,area.top+72,area.right-10,area.top+98),pale);
     line(dc,t("diagnostics.generation")+" "+std::to_string(generation_)+"    "+t("diagnostics.worker")+" "+
         (workerBusy_?t("diagnostics.busy"):t("diagnostics.idle"))+"    "+t("diagnostics.last")+" "+
         fixed(computationMs_,2)+" ms",CRect(area.left+10,area.top+102,area.right-10,area.top+128),muted);
     double y=area.top+137;
+    line(dc,t("structure.view"),CRect(area.left+10,y,area.right-10,y+26),muted);y+=30;
+    line(dc,recommendationResultReady_?(state_.locale==session::Locale::ZhCN?"统一推荐引擎 · 结果就绪":"Unified engine · ready"):(state_.locale==session::Locale::ZhCN?"统一推荐引擎 · 待分析":"Unified engine · pending"),CRect(area.left+10,y,area.right-10,y+26),accent);y+=30;
+    if(state_.debugExpanded) {
+        const auto& s=recommendations_.stats;
+        const auto shown=continuationPresentation();std::size_t visible{};for(const auto& g:shown)visible+=g.size();
+        const std::string counts="Imported/analysis/keys "+std::to_string(s.imported)+"/"+std::to_string(s.analyzed)+"/"+std::to_string(s.keys)+
+            " Factory/User "+std::to_string(factoryCount_)+"/"+std::to_string(userCount_)+"\nShortlist/aligned/sim/tail/tones/path "+
+            std::to_string(s.shortlistSize)+"/"+std::to_string(s.aligned)+"/"+std::to_string(s.similarityPassed)+"/"+std::to_string(s.tailPassed)+"/"+
+            std::to_string(s.realizationPassed)+"/"+std::to_string(s.pathPassed)+"\nDedupe/score/worker/UI "+std::to_string(s.distinct)+"/"+
+            std::to_string(s.scorePassed)+"/"+std::to_string(s.output)+"/"+std::to_string(visible);
+        std::istringstream diagnostics(counts);std::string row;while(std::getline(diagnostics,row)) {line(dc,row,CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;}
+        const auto& e=enrichments_.diagnostics;
+        line(dc,"Protected/polish/inversion/rich/advanced "+std::to_string(e.protectedChords)+"/"+std::to_string(e.polish)+"/"+
+            std::to_string(e.inversion)+"/"+std::to_string(e.rich)+"/"+std::to_string(e.advanced),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+        line(dc,"Insertion attempts/blocked/dedupe/constraints "+std::to_string(e.insertionAttempts)+"/"+std::to_string(e.insertionFailed)+"/"+
+            std::to_string(e.duplicates)+"/"+std::to_string(e.hardFiltered),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+        line(dc,"Blocked bass connection/color connection/rhythm "+std::to_string(e.bassConnectionBlocked)+"/"+
+            std::to_string(e.colorConnectionBlocked)+"/"+std::to_string(e.rhythmBlocked),CRect(area.left+10,y,area.right-10,y+24),muted);y+=25;
+    }
     if(selectedChord_&&*selectedChord_<analysis_.full.size()){
         const auto& chord=analysis_.full[*selectedChord_];
         line(dc,t("inspector.chord")+" "+state_.imported.events[*selectedChord_].name+" · "+formatDegree(chord)+" · "+
@@ -1908,7 +2065,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
     if(layout_.inspectorMode==InspectorMode::None)return;
     const auto area=layout_.inspector;
     box(dc,viewRect(area),CColor(18,30,47,255));
-    line(dc,"×   "+t("inspector.title"),CRect(area.left+12,area.top+8,area.right-12,area.top+34),accent);
+    controlOutline(dc,CRect(area.left+8,area.top+4,area.left+44,area.top+36));line(dc,"×",CRect(area.left+8,area.top+4,area.left+44,area.top+36),accent,kCenterText);line(dc,t("inspector.title"),CRect(area.left+52,area.top+8,area.right-12,area.top+34),accent);
     double y=area.top+40-inspectorScroll_;
     {
     ConcatClip clip(*dc,CRect(area.left,area.top+38,area.right,area.bottom-45));
@@ -1976,7 +2133,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             promoted=static_cast<std::size_t>(std::find(rank.order.begin(),rank.order.end(),index)-rank.order.begin())<index;
         }
         std::vector<std::string> path;for(const auto& chord:candidate.progression)path.push_back(chord.name);
-        addPath(t("mode.enrich"),path);
+        add(state_.locale==session::Locale::ZhCN?"色彩曲线见主卡片详细模式":"Color curve is in the detailed result card",muted);
         const auto explanation=explainWhy(functionalWhy(candidate,state_.locale),hint,state_.locale,colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
         if(state_.debugExpanded) {
@@ -2010,7 +2167,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 add(t("technique."+std::string(enrichment::techniqueName(operation.technique)))+" · "+
                     t("reason."+std::string(enrichment::techniqueName(operation.technique))),muted);
             }
-            if(showColorHints_)colorDetails(candidateColor(candidate),true);
+
         }
     } else if(state_.tab==session::Tab::Recommend&&selectedCandidate()) {
         const auto& c=*selectedCandidate();
@@ -2028,8 +2185,21 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             promoted=static_cast<std::size_t>(std::find(rank.order.begin(),rank.order.end(),index)-rank.order.begin())<index;
         }
         std::vector<std::string> path;for(const auto& chord:c.continuation)path.push_back(chord.label);
-        addPath(t("mode.continue"),path);
-        const auto explanation=explainWhy(functionalWhy(completion,state_.locale),hint,state_.locale,colorPreference_,reason,promoted);
+        add(state_.locale==session::Locale::ZhCN?"色彩曲线见主卡片详细模式":"Color curve is in the detailed result card",muted);
+        paragraph(state_.forcedKey?t("key.searchFixed")+" "+formatKey(*state_.forcedKey):t("key.searchAuto"));
+        add(t("key.match")+" "+formatKey(c.key),muted);
+        std::vector<std::string> otherKeys;
+        for(const auto& source:c.evidence) {
+            const auto key=formatKey(source.key);
+            if(key!=formatKey(c.key)&&std::find(otherKeys.begin(),otherKeys.end(),key)==otherKeys.end())otherKeys.push_back(key);
+        }
+        if(!otherKeys.empty())addPath(t("key.alternatives"),otherKeys);
+        auto functional=c.exploratory?
+            (state_.locale==session::Locale::ZhCN?std::string("探索性续写：通过基础匹配门槛，实际音乐意图证据不足。"):
+                std::string("Exploratory continuation: passes basic matching; musical intent evidence is insufficient.")):
+            functionalWhy(completion,state_.locale);
+        if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
+        const auto explanation=explainWhy(functional,hint,state_.locale,colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
         if(state_.debugExpanded) {
             add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);
@@ -2052,7 +2222,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 skeletonNames.push_back(formatDegree(analysis_.full[index]));
             for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
             addPath(t("inspector.user"),userNames);addPath("SKELETON",skeletonNames);
-            const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return m.templateId==c.primaryTemplate;});
+            const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
             if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
 
             add(t("inspector.source")+"  "+c.primaryTemplate,muted);
@@ -2063,17 +2233,19 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             add(t("label.intent")+"  "+fixed(c.subscores.intent,2)+"   "+t("inspector.prior")+"  "+fixed(c.subscores.prior,2),muted);
             add(t("inspector.support")+"  "+std::to_string(c.supportCount),muted);
             add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):t("inspector.fallback"))+" QN",muted);
-            drawMiniTimeline(dc,c,CRect(area.left+14,y+2,area.right-14,y+27));y+=38;
+
             if(match!=matches_.end())add("SKELETON "+fixed(match->subScores.skeletonHarmony,2)+
                 "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
             std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
             add(t("inspector.sources")+"  "+sources,muted);
+            for(const auto& source:c.evidence)
+                add(source.templateId+" · "+formatKey(source.key),muted);
             if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
                 const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
                 const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");
                 add(user+"  ↔  "+templ,muted);
             }
-            if(showColorHints_)colorDetails(candidateColor(c),false);
+
         }
     } else if(state_.tab==session::Tab::Library&&selectedLibrary_) {
         const auto [factory,index]=*selectedLibrary_;
@@ -2118,7 +2290,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         const double cell=(area.width()-28)/count;
         const std::array<std::string,4> titles{t("candidate.play"),t("midi.button"),t("candidate.snapshot"),
             state_.productMode==session::ProductMode::Continue?t("form.save"):t("candidate.why")};
-        for(std::size_t i=0;i<count;++i)line(dc,titles[i],CRect(area.left+14+i*cell,area.bottom-39,area.left+14+(i+1)*cell,area.bottom-8),accent,kCenterText);
+        for(std::size_t i=0;i<count;++i){const CRect control(area.left+14+i*cell,area.bottom-39,area.left+14+(i+1)*cell,area.bottom-8);controlOutline(dc,control);line(dc,titles[i],control,accent,kCenterText);}
     } else if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Enrich&&
        selectedEnrichment()&&actions_.saveEnrichmentSnapshot)
         line(dc,t("candidate.snapshot"),CRect(area.left+14,area.bottom-39,area.right-14,area.bottom-8),accent,kRightText);
@@ -2135,18 +2307,18 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
 
 void MainView::drawResponsiveForm(CDrawContext* dc) {
     if(form_==Form::None)return;
-    const double w=std::min(590.,layout_.viewport.width()-48),h=360;
+    const double w=std::min(590.,layout_.viewport.width()-48),h=form_==Form::Tempo?180:360;
     const double x=(layout_.viewport.width()-w)/2,y=(layout_.viewport.height()-h)/2;
     box(dc,CRect(x,y,x+w,y+h),CColor(23,39,59,255));
-    line(dc,form_==Form::Melody?t("melody.label"):form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
+    line(dc,form_==Form::Tempo?(state_.locale==session::Locale::ZhCN?"自定义试听速度 · 20–400 BPM":"Custom audition tempo · 20–400 BPM"):form_==Form::Melody?t("melody.label"):form_==Form::Save?t("form.save"):form_==Form::Rename?t("form.edit"):t("form.search"),
         CRect(x+22,y+12,x+w-22,y+43),accent);
-    line(dc,form_==Form::Melody?t("melody.note"):form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
+    line(dc,form_==Form::Tempo?"BPM":form_==Form::Melody?t("melody.note"):form_==Form::Search?t("library.nameTag"):t("form.name"),CRect(x+22,y+53,x+140,y+84),muted);
     if(form_==Form::Melody) {
         line(dc,t("melody.role")+": "+t(formMelody_.role==ConstraintRole::TopVoice?"melody.top":"melody.present"),CRect(x+22,y+115,x+w-22,y+142),pale);
         line(dc,t("melody.strictness")+": "+t(formMelody_.strictness==ConstraintStrictness::Hard?"melody.hard":"melody.soft"),CRect(x+22,y+146,x+w-22,y+174),pale);
         line(dc,t("melody.start"),CRect(x+22,y+183,x+w-22,y+210),muted);
         line(dc,t("melody.duration"),CRect(x+22,y+244,x+w-22,y+269),muted);
-    } else if(form_!=Form::Search) {
+    } else if(form_!=Form::Search&&form_!=Form::Tempo) {
         line(dc,t("label.style")+": "+(formMetadata_.style?styleName(*formMetadata_.style):t("label.auto")),CRect(x+22,y+115,x+w-22,y+142),pale);
         line(dc,t("label.intent")+": "+tIntent(formMetadata_.intent),CRect(x+22,y+146,x+w-22,y+174),pale);
         line(dc,t("form.tags"),CRect(x+22,y+183,x+w-22,y+210),muted);

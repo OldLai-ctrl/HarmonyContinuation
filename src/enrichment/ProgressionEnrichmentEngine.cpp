@@ -39,6 +39,31 @@ ChordEvent replacement(const ChordEvent& old, int pitch, ChordQuality quality) {
     next.name = name(pitch, quality);
     return next;
 }
+bool exactRealization(const ChordEvent& event) {
+    const auto tones=chordPitches(event);
+    return event.extensions.mask.has_value()||event.extensions.pitches.has_value()||
+        event.name.find('/')!=std::string::npos||
+        (event.bass.has_value()&&tones.bass!=tones.root)||
+        (event.bassNoteValue.has_value()&&tones.bass!=tones.root);
+}
+bool definedBass(const ChordEvent& event) {
+    return chordPitches(event).bass!=chordPitches(event).root ||
+        event.bass.has_value() || event.bassNoteValue.has_value();
+}
+bool addColor(ChordEvent& event, ChordQuality quality, bool ninth=false) {
+    const auto before=chordPitches(event);
+    if(before.root<0)return false;
+    auto next=replacement(event,before.root,quality);
+    if(ninth)next.name=std::string(spellings[before.root])+
+        (quality==ChordQuality::Major7?"maj9":quality==ChordQuality::Minor7?"m9":"9");
+    const auto after=chordPitches(next);
+    // Color upgrades may add notes; they may never remove defining source tones.
+    if((after.intervals&before.intervals)!=before.intervals || after.intervals==before.intervals)return false;
+    next.bass=static_cast<PitchClass>(before.bass);
+    if(before.bass!=before.root)next.name+="/"+std::string(spellings[before.bass]);
+    if(before.exactIntervals){std::ostringstream mask;mask<<"0x"<<std::hex<<after.intervals;next.extensions.mask=mask.str();}
+    event=std::move(next);return true;
+}
 void record(EnrichmentCandidate& candidate, OperationType type, TechniqueID technique,
             std::size_t index, std::string before, std::string after, std::string reason) {
     candidate.operations.push_back({type, technique, index, std::move(before), std::move(after), std::move(reason)});
@@ -47,14 +72,22 @@ void record(EnrichmentCandidate& candidate, OperationType type, TechniqueID tech
 }
 bool insertBefore(EnrichmentCandidate& candidate, std::size_t target, int pitch,
                   ChordQuality quality, TechniqueID technique, std::string reason,
-                  const EnrichmentConfig& config) {
+                  const EnrichmentConfig& config, EnrichmentResult::Diagnostics* diagnostics=nullptr) {
     if (target == 0 || target >= candidate.progression.size()) return false;
     auto& previous = candidate.progression[target - 1];
     auto& next = candidate.progression[target];
+    const auto left=chordPitches(previous),right=chordPitches(next);
+    // Keep an explicit bass line and semitone out-and-back color connection
+    // adjacent. Ordinary exact pitch lists do not prohibit insertion elsewhere.
+    if(left.bass!=left.root || right.bass!=right.root){if(diagnostics)++diagnostics->bassConnectionBlocked;return false;}
+    if(left.colorMask&&left.intervals==right.intervals&&
+       (pc(right.root-left.root)==1||pc(right.root-left.root)==11)) {
+        if(diagnostics)++diagnostics->colorConnectionBlocked;return false;
+    }
     const double available = next.startQN - previous.startQN;
-    if (!std::isfinite(available) || available < config.minimumSplitQN * 2) return false;
+    if (!std::isfinite(available) || available < config.minimumSplitQN * 2) {if(diagnostics)++diagnostics->rhythmBlocked;return false;}
     const double split = available / 2;
-    if (previous.durationQN && !previous.openEnded && *previous.durationQN + 1e-7 < available) return false;
+    if (previous.durationQN && !previous.openEnded && *previous.durationQN + 1e-7 < available) {if(diagnostics)++diagnostics->rhythmBlocked;return false;}
     const auto before = previous.name + " → " + next.name;
     ChordEvent inserted = replacement(previous, pitch, quality);
     inserted.startQN = previous.startQN + split;
@@ -85,7 +118,7 @@ bool polish(EnrichmentCandidate& candidate, const HarmonicAnalysisResult& analys
         }
         if (newQuality == ChordQuality::Unknown) continue;
         const auto before = event.name;
-        event = replacement(event, static_cast<int>(*normalized.root), newQuality);
+        if(!addColor(event,newQuality))continue;
         record(candidate, OperationType::UpgradeQuality, TechniqueID::SeventhColor, i,
                before, event.name, "增加七和弦色彩，保留原和弦根音和时间位置");
         return true;
@@ -99,9 +132,7 @@ bool polish(EnrichmentCandidate& candidate, const HarmonicAnalysisResult& analys
             quality != ChordQuality::Dominant7) continue;
         if (style == Style::Rock) continue;
         const auto before = event.name;
-        event = replacement(event, static_cast<int>(*normalized.root), quality);
-        event.name = std::string(spellings[static_cast<int>(*normalized.root)]) +
-            (quality == ChordQuality::Major7 ? "maj9" : quality == ChordQuality::Minor7 ? "m9" : "9");
+        if(!addColor(event,quality,true))continue;
         record(candidate, OperationType::UpgradeQuality, TechniqueID::NinthColor, i,
                before, event.name, "在已有七和弦上加入九度色彩");
         return true;
@@ -114,6 +145,7 @@ bool improveInversion(EnrichmentCandidate& candidate,const EnrichmentConfig& con
     std::optional<std::size_t> bestIndex;
     float bestGain{};
     for (std::size_t i = 1; i + 1 < candidate.progression.size(); ++i) {
+        if(definedBass(candidate.progression[i]) || chordPitches(candidate.progression[i]).colorMask)continue;
         const auto mid = root(candidate.progression[i]);
         if (!mid) continue;
         const auto q = normalizeChord(candidate.progression[i]).quality;
@@ -276,6 +308,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         config.maxSubstitutions=profile.substitutions;config.minimumSkeletonPreservation=profile.skeletonMinimum;
     }
     EnrichmentResult result;
+    result.diagnostics.protectedChords=std::count_if(source.begin(),source.end(),exactRealization);
     if(!validConstraints(config.constraints)){result.error="invalid melody constraints";return result;}
     if (source.empty() || source.size() > 64) { result.error = "invalid progression length"; return result; }
     for (std::size_t i = 0; i < source.size(); ++i) {
@@ -293,32 +326,41 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     polishCandidate.group = Group::Polish;
     polishCandidate.complexity = ComplexityLevel::Basic;
     polishCandidate.progression = source;
-    if (!polish(polishCandidate, analysis, style, config) && !improveInversion(polishCandidate,config))
-        return result;
-    if(static_cast<int>(polishCandidate.operations.size())>config.maxOperations[0])return result;
-    finalize(polishCandidate, source, analysis, style);
-    result.groups[0].push_back(polishCandidate);
+    const bool polished=config.maxOperations[0]>0 &&
+        (polish(polishCandidate, analysis, style, config) || improveInversion(polishCandidate,config));
+    if(polished && static_cast<int>(polishCandidate.operations.size())<=config.maxOperations[0]) {
+        finalize(polishCandidate, source, analysis, style);
+        result.groups[0].push_back(polishCandidate);
+        ++result.diagnostics.polish;
+    } else {polishCandidate.progression=source;polishCandidate.operations.clear();polishCandidate.techniques.clear();}
 
-    std::unordered_set<std::string> fingerprints{polishCandidate.fingerprint};
+    std::unordered_set<std::string> fingerprints{fingerprint(source)};
+    if(polished)fingerprints.insert(polishCandidate.fingerprint);
+    const auto acceptFingerprint=[&](const std::string& value) {
+        if(fingerprints.insert(value).second)return true;
+        ++result.diagnostics.duplicates;return false;
+    };
     EnrichmentCandidate inversion;
     inversion.group=Group::Polish;
     inversion.complexity=ComplexityLevel::Basic;
     inversion.progression=source;
     if (config.maxOperations[0]>0 && improveInversion(inversion,config)) {
+        ++result.diagnostics.inversion;
         finalize(inversion,source,analysis,style);
-        if (fingerprints.insert(inversion.fingerprint).second)
+        if (acceptFingerprint(inversion.fingerprint))
             result.groups[0].push_back(std::move(inversion));
     }
     for (const auto& option : available) {
         if(config.maxInsertions[1]<1)break;
         EnrichmentCandidate rich = polishCandidate;
+        ++result.diagnostics.insertionAttempts;
         rich.group = Group::Rich;
         rich.complexity = ComplexityLevel::Rich;
         if (static_cast<int>(rich.operations.size()) >= config.maxOperations[1] ||
             !insertBefore(rich, option.target, option.pitch, option.quality, option.technique,
-                          option.reason, config)) continue;
+                          option.reason, config,&result.diagnostics)) {++result.diagnostics.insertionFailed;continue;}
         finalize(rich, source, analysis, style);
-        if (fingerprints.insert(rich.fingerprint).second)
+        if (acceptFingerprint(rich.fingerprint))
             result.groups[1].push_back(std::move(rich));
         if (result.groups[1].size() == 3) break;
     }
@@ -333,8 +375,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
             if (!normalized.root || (normalized.quality != ChordQuality::Major &&
                                      normalized.quality != ChordQuality::Minor)) continue;
             const auto before = event.name;
-            event = replacement(event, static_cast<int>(*normalized.root),
-                                normalized.quality == ChordQuality::Minor ? ChordQuality::Minor7 : ChordQuality::Major7);
+            if(!addColor(event,normalized.quality == ChordQuality::Minor ? ChordQuality::Minor7 : ChordQuality::Major7))continue;
             record(rich, OperationType::UpgradeQuality, TechniqueID::SeventhColor, i,
                    before, event.name, "为另一处和弦增加七和弦色彩");
             break;
@@ -342,7 +383,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
         if (rich.operations.size() > polishCandidate.operations.size() &&
             static_cast<int>(rich.operations.size())<=config.maxOperations[1]) {
             finalize(rich, source, analysis, style);
-            if (fingerprints.insert(rich.fingerprint).second)
+            if (acceptFingerprint(rich.fingerprint))
                 result.groups[1].push_back(std::move(rich));
         }
     }
@@ -356,6 +397,7 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
     if (key && key->mode == Mode::Major && config.maxSubstitutions[2]>0 &&
         static_cast<int>(advanced.operations.size()) < config.maxOperations[2]) {
         for (std::size_t i = 0; i + 1 < advanced.progression.size(); ++i) {
+            if(exactRealization(advanced.progression[i]))continue;
             const auto current = root(advanced.progression[i]);
             const auto next = root(advanced.progression[i + 1]);
             if (!current || !next || pc(*current - static_cast<int>(key->tonic)) != 5 ||
@@ -390,13 +432,13 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
                 [&](const ChordEvent& event) { return event.startQN == source[it->target].startQN && root(event) == targetRoot; });
             if (target != advanced.progression.end() &&
                 insertBefore(advanced, static_cast<std::size_t>(target - advanced.progression.begin()),
-                             it->pitch, it->quality, it->technique, it->reason, config)) break;
+                             it->pitch, it->quality, it->technique, it->reason, config,&result.diagnostics)) break;
         }
     }
     if (advanced.operations.size() > baseOperationCount) {
         finalize(advanced, source, analysis, style);
         if (advanced.skeletonPreservation >= config.minimumSkeletonPreservation &&
-            fingerprints.insert(advanced.fingerprint).second)
+            acceptFingerprint(advanced.fingerprint))
             result.groups[2].push_back(std::move(advanced));
     }
     // Score the completed set of paths. Scoring Rich earlier would also change
@@ -430,11 +472,14 @@ EnrichmentResult enrichProgression(const Progression& source, const HarmonicAnal
                 candidate.score=std::clamp(candidate.score+profile.chromaticBias*static_cast<float>(chromatic),0.f,100.f);
             }
         }
+        const auto beforeFilter=group.size();
         std::erase_if(group,[&](const auto& c) { return !c.melodyCompatibility.hardSatisfied||
             (config.tendency!=HarmonicTendency::Balanced&&c.skeletonPreservation<config.minimumSkeletonPreservation); });
+        result.diagnostics.hardFiltered+=beforeFilter-group.size();
         if(!config.constraints.melody.empty()||config.tendency!=HarmonicTendency::Balanced)
             std::stable_sort(group.begin(),group.end(),[](const auto& a,const auto& b){return a.score>b.score;});
     }
+    result.diagnostics.rich=result.groups[1].size();result.diagnostics.advanced=result.groups[2].size();
     return result;
 }
 } // namespace harmony::enrichment

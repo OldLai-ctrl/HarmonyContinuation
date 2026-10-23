@@ -1,6 +1,7 @@
 #include "demo/DemoScenario.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiWorkflow.h"
 #include "preview/PreviewSynth.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "session/ProductServices.h"
@@ -65,6 +66,54 @@ bool contains(const std::vector<int>& values,int pc){return std::find(values.beg
 }
 int main() {
     try {
+        {
+            ProgressionTemplate source;source.id="raw-source";source.rawChordKey=KeySignature{PitchClass::C,Mode::Major};
+            source.meterNumerator=7;source.meterDenominator=8;
+            source.rawChords={chord("Cmaj7/E",8,1.5),chord("Dm9/F",9.5,2.25),chord("G7/B",11.75,3.25)};
+            for(std::size_t i=0;i<source.rawChords.size();++i) {
+                MatchEvent e;e.degree=ScaleDegree{std::array<int,3>{1,2,5}[i],0};
+                e.durationQN=source.rawChords[i].durationQN;source.full.push_back(e);
+            }
+            ImportedProgressionSession query;
+            check(query.replace({chord("D",32,4),chord("Em",36,{})},TimelineCoordinateMode::AbsoluteProjectQN),"abstract source query");
+            ContinuationCandidate selected;selected.id="raw-candidate";selected.primaryTemplate=source.id;
+            selected.key={PitchClass::D,Mode::Major};selected.matchStart=0;selected.matchEnd=1;selected.continuationStart=2;
+            selected.rhythmScale=3;selected.suggestedCurrentChordDurationQN=4;selected.continuation={{"A7",9.75}};
+            const auto route=preview::sourceRoute(query,selected,source);
+            check(route&&route.meterNumerator==7&&route.meterDenominator==8,"source meter projection");
+            const auto actual=preview::buildSequence(route.imported,&route.candidate,120);
+            check(actual&&actual.sequence.events.size()==3&&actual.sequence.totalQN==7&&actual.sequence.recommendationBoundary==2,
+                "source unequal durations ignore input rhythm scale");
+            const auto& first=actual.sequence.events.front().chord;
+            const auto& second=actual.sequence.events[1].chord;
+            check(first.root==2&&first.bass==6&&first.quality==ChordQuality::Major7&&(first.intervals&(1u<<11)),
+                "raw source transposition preserves bass and major seventh");
+            check(second.root==4&&second.bass==7&&((second.intervals|second.colorMask)&(1u<<2)),
+                "raw source transposition preserves ninth and inversion");
+            check(query.events.front().name=="D"&&query.events.front().startQN==32&&selected.rhythmScale==3,
+                "source projection leaves query and ranked candidate unchanged");
+            const auto frozen=snapshot::deserialize(snapshot::serialize(snapshot::capture(route.imported,route.candidate,{},120,7,8)));
+            check(static_cast<bool>(frozen),"source snapshot keeps existing schema");
+            for(const auto mode:{midi::ArrangementMode::BlockChords,midi::ArrangementMode::VoiceLed})
+                for(const auto scope:{midi::ExportScope::FullPhrase,midi::ExportScope::CurrentOnly,midi::ExportScope::ContinuationOnly}) {
+                    midi::CandidateExportContext context{route.imported,120,{7,8}};context.mode=mode;context.scope=scope;
+                    const auto before=midi::candidatePayload(context,route.candidate);
+                    context.imported=frozen.value.imported;
+                    const auto after=midi::candidatePayload(context,frozen.value.candidate);
+                    check(before&&after&&before.payload.smfBytes==after.payload.smfBytes,"source snapshot freezes every MIDI mode and scope");
+                }
+            const auto historical=snapshot::deserialize(snapshot::serialize(snapshot::capture(query,selected,{},120,4,4)));
+            check(historical&&historical.value.imported.events.size()==2&&historical.value.imported.events.front().name=="D"&&
+                historical.value.candidate.continuation.front().durationQN==9.75,"historical snapshots keep their embedded input and suffix");
+            source.id="another-source";
+            check(!preview::sourceRoute(query,selected,source),"stale source representative rejected");
+            source.id=selected.primaryTemplate;
+            // D's perfect fifth is a hard chord tone; it conflicts with this authored C# major replacement.
+            source.rawChords.front()=chord("B",8,1.5);
+            selected.constraints.melody={{32,4,{},9,ConstraintRole::Present,ConstraintStrictness::Hard}};
+            check(preview::buildSequence(query,&selected,120)&&!preview::sourceRoute(query,selected,source),
+                "source projection cannot discard an incompatible hard melody constraint");
+        }
         ImportedProgressionSession input;
         check(input.replace({chord("C",32,4),chord("Am",36,2),chord("Dm",38,{})},TimelineCoordinateMode::AbsoluteProjectQN),"input");
         ContinuationCandidate candidate;candidate.id="test";candidate.primaryTemplate="source";
@@ -150,6 +199,38 @@ int main() {
         MatchResult match;match.templateId="source";match.templateName="Source";match.similarity=0.9f;
         match.templateLabels={"C","Am"};match.alignmentTrace.push_back({0,0,AlignmentOp::Match});
         const auto snap=snapshot::capture(input,candidate,{match},120,4,4,candidate.key,Style::Pop,PhraseIntent::Resolve);
+        auto representativeCandidate=candidate;
+        representativeCandidate.key={PitchClass::G,Mode::Major};
+        representativeCandidate.matchStart=7;representativeCandidate.matchEnd=8;
+        representativeCandidate.continuationStart=9;
+        MatchResult otherKey=match;otherKey.key={PitchClass::C,Mode::Major};
+        otherKey.templateMatchStart=7;otherKey.templateMatchEnd=8;otherKey.continuationStartIndex=9;
+        MatchResult wrongWindow=match;wrongWindow.key={PitchClass::G,Mode::Major};
+        wrongWindow.templateMatchStart=70;wrongWindow.templateMatchEnd=80;wrongWindow.continuationStartIndex=90;
+        MatchResult actualRepresentative=match;actualRepresentative.key={PitchClass::G,Mode::Major};
+        actualRepresentative.templateMatchStart=7;actualRepresentative.templateMatchEnd=8;
+        actualRepresentative.continuationStartIndex=9;
+        const auto representativeSnapshot=snapshot::capture(input,representativeCandidate,
+            {otherKey,wrongWindow,actualRepresentative},120,4,4,representativeCandidate.key,
+            Style::Pop,PhraseIntent::Resolve);
+        check(representativeSnapshot.match&&representativeSnapshot.match->key.tonic==PitchClass::G&&
+              representativeSnapshot.match->templateMatchStart==7&&
+              representativeSnapshot.match->continuationStartIndex==9,
+              "snapshot records the candidate's actual key and match-window representative");
+        auto realized=candidate;realized.sourceAnchorQN=32.;
+        MelodyConstraint top;top.startQN=40.5;top.durationQN=0.5;top.pitch=67;top.pitchClass=7;top.role=ConstraintRole::TopVoice;
+        realized.constraints.melody.push_back(top);
+        const auto realizedSnapshot=snapshot::deserialize(snapshot::serialize(snapshot::capture(input,realized,{},120,4,4)));
+        check(realizedSnapshot&&continuationMusicFingerprint(realized)==continuationMusicFingerprint(realizedSnapshot.value.candidate),
+              "snapshot normalizes realization timing without changing exact music identity");
+        for(auto mode:{midi::ArrangementMode::BlockChords,midi::ArrangementMode::VoiceLed}) {
+            midi::CandidateExportContext originalContext;originalContext.imported=input;originalContext.mode=mode;
+            auto restoredContext=originalContext;restoredContext.imported=realizedSnapshot.value.imported;
+            const auto original=midi::candidatePayload(originalContext,realized);
+            const auto restored=midi::candidatePayload(restoredContext,realizedSnapshot.value.candidate);
+            check(original&&restored&&original.payload.smfBytes==restored.payload.smfBytes,
+                  "snapshot preserves split events and explicit top voice in every realization mode");
+        }
         const auto json=snapshot::serialize(snap);const auto decoded=snapshot::deserialize(json);
         for(const auto width:{900.,1100.,1800.}) {
             const auto ignoredLayout=ui::computeLayout({width,900,2,session::Tab::Recommend,true,true});

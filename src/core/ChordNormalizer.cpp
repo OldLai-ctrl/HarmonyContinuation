@@ -5,6 +5,7 @@
 #include <charconv>
 #include <cctype>
 #include <string_view>
+#include <utility>
 
 namespace harmony {
 namespace {
@@ -29,6 +30,9 @@ std::optional<PitchClass> spelledRoot(std::string_view name, std::string& spelli
 }
 
 ChordQuality namedQuality(std::string_view name, std::size_t rootLength) {
+    const auto slash=name.find('/');
+    if (slash!=std::string_view::npos && slash+1<name.size() &&
+        std::isalpha(static_cast<unsigned char>(name[slash+1]))) name=name.substr(0,slash);
     name.remove_prefix(std::min(rootLength, name.size()));
     std::string lower;
     lower.reserve(name.size());
@@ -50,9 +54,13 @@ ChordQuality namedQuality(std::string_view name, std::size_t rootLength) {
 }
 
 std::uint16_t namedColor(std::string_view name, std::size_t rootLength) {
+    const auto slash=name.find('/');
+    if (slash!=std::string_view::npos && slash+1<name.size() &&
+        std::isalpha(static_cast<unsigned char>(name[slash+1]))) name=name.substr(0,slash);
     name.remove_prefix(std::min(rootLength, name.size()));
     std::string lower;
     for (char c : name) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+    if (lower.find("6/9") != std::string::npos) return bit(9)|bit(2);
     if (lower.find("b9") != std::string::npos) return bit(1);
     if (lower.find("#9") != std::string::npos) return bit(3);
     if (lower.find("13") != std::string::npos || lower == "6") return bit(9);
@@ -89,6 +97,10 @@ std::optional<std::uint16_t> pitchIntervals(std::string_view text, int root) {
 }
 
 ChordQuality classify(std::uint16_t mask) {
+    // A fifth is optional in a seventh voicing; third + seventh identify its nature.
+    if ((mask & (bit(0)|bit(4)|bit(11))) == (bit(0)|bit(4)|bit(11))) return ChordQuality::Major7;
+    if ((mask & (bit(0)|bit(4)|bit(10))) == (bit(0)|bit(4)|bit(10))) return ChordQuality::Dominant7;
+    if (!(mask & bit(6)) && (mask & (bit(0)|bit(3)|bit(10))) == (bit(0)|bit(3)|bit(10))) return ChordQuality::Minor7;
     const auto contains = [mask](int a, int b, int c) {
         return (mask & (bit(a) | bit(b) | bit(c))) == (bit(a) | bit(b) | bit(c));
     };
@@ -137,7 +149,13 @@ NormalizedChord normalizeChord(const ChordEvent& event) {
     else result.root = fromName;
     if (event.bass) result.bass = event.bass;
     else if (event.bassNoteValue) result.bass = static_cast<PitchClass>(pc(*event.bassNoteValue));
-    else result.bass = result.root;
+    else {
+        result.bass=result.root;
+        if(const auto slash=event.name.find('/');slash!=std::string::npos) {
+            std::string bassSpelling;
+            if(const auto parsed=spelledRoot(std::string_view(event.name).substr(slash+1),bassSpelling))result.bass=parsed;
+        }
+    }
     if (result.root && fromName && *result.root != *fromName)
         result.diagnostics.push_back("name and structured root disagree");
     if (!result.root) {
@@ -145,6 +163,8 @@ NormalizedChord normalizeChord(const ChordEvent& event) {
         return result;
     }
     const auto expected = namedQuality(event.name, spelling.size());
+    if((event.source==ChordSource::CubaseDrop || event.source==ChordSource::Clipboard) &&
+        event.rawName && fromName && expected!=ChordQuality::Unknown)result.root=fromName;
     std::optional<std::uint16_t> rawIntervalMask;
     if (event.extensions.mask) {
         rawIntervalMask = rawMask(*event.extensions.mask);
@@ -183,6 +203,49 @@ NormalizedChord normalizeChord(const ChordEvent& event) {
         result.diagnostics.push_back("input quality and interval structure disagree");
     if (!intervals) result.intervalMask = essential(result.quality) | namedColor(event.name, spelling.size());
     result.colorMask = result.intervalMask & ~essential(result.quality);
+    result.matchingIntervalMask=result.intervalMask;
+    result.performedBass=event.bassNoteValue ? std::optional(static_cast<PitchClass>(pc(*event.bassNoteValue))) : event.bass;
+    result.rootSource=event.keyNoteValue||event.root?FieldConfidence::Performed:FieldConfidence::Symbolic;
+    result.bassSource=event.bassNoteValue?FieldConfidence::Performed:FieldConfidence::Unknown;
+    result.qualitySource=intervals?FieldConfidence::Performed:FieldConfidence::Symbolic;
+    // Cubase chord-track names describe intent; pitches/bassNote describe voicing.
+    // This rule requires both the host-source marker and a preserved original name.
+    result.symbolicHarmony=(event.source==ChordSource::CubaseDrop || event.source==ChordSource::Clipboard) &&
+        event.rawName && fromName && expected!=ChordQuality::Unknown;
+    if(result.symbolicHarmony) {
+        result.fieldConflict=(event.keyNoteValue && pc(*event.keyNoteValue)!=int(*fromName)) ||
+            (result.quality!=ChordQuality::Unknown && result.quality!=expected);
+        result.root=fromName;
+        result.quality=expected;
+        result.rootSource=FieldConfidence::Symbolic;
+        result.qualitySource=FieldConfidence::Symbolic;
+        result.matchingIntervalMask=essential(expected)|namedColor(event.name,spelling.size());
+        const auto symbolicName=event.name.substr(0,event.name.find('/'));
+        for(const auto& alteration: {std::pair{"b5",6},std::pair{"#5",8}})
+            if(symbolicName.find(alteration.first)!=std::string::npos)
+                result.matchingIntervalMask=static_cast<std::uint16_t>((result.matchingIntervalMask&~bit(7))|bit(alteration.second));
+        // Missing tones are not contradictions; present opposing thirds/sevenths are.
+        for(const auto pair:{(1u<<3)|(1u<<4),(1u<<10)|(1u<<11)})
+            if((result.intervalMask&pair)&&(result.matchingIntervalMask&pair)&&
+                !(result.intervalMask&result.matchingIntervalMask&pair)) {
+                result.fieldConflict=true;result.compatibilityUncertainty+=0.18f;
+            }
+        if(result.fieldConflict)result.compatibilityUncertainty+=0.04f;
+        // A numeric slash in 6/9 is an extension, never a slash bass.
+        result.bass=result.root;
+        if(const auto slash=event.name.find('/');slash!=std::string::npos) {
+            std::string bassSpelling;
+            if(const auto b=spelledRoot(std::string_view(event.name).substr(slash+1),bassSpelling)) {
+                result.bass=b;result.explicitBass=true;result.bassSource=FieldConfidence::Explicit;
+                if(result.performedBass && result.performedBass!=b) {
+                    result.fieldConflict=true;
+                    result.diagnostics.push_back("explicit slash bass retained; performed bass differs");
+                }
+            }
+        }
+        if(result.fieldConflict)result.diagnostics.push_back("host fields conflict; symbolic identity retained with uncertainty");
+    } else result.explicitBass=event.bass.has_value() || event.bassNoteValue.has_value() ||
+        (event.name.find('/')!=std::string::npos && result.bass!=result.root);
     result.inversion = result.bass && *result.bass != *result.root;
     result.confidence = intervals ? 0.96f : (event.quality != ChordQuality::Unknown ? 0.88f : 0.66f);
     result.confidence = std::max(0.15f, result.confidence - 0.20f * static_cast<float>(result.diagnostics.size()));

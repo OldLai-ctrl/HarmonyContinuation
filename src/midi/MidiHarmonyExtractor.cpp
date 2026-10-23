@@ -4,13 +4,14 @@
 #include <bit>
 #include <cmath>
 #include <map>
+#include <sstream>
 
 namespace harmony::midi {
 namespace {
 constexpr const char* roots[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
 struct Shape {std::string suffix;ChordPitchSet pitches;};
 const std::vector<Shape>& shapes() {
-    static const auto all=[] {std::vector<Shape> out;for(const char* suffix:{"","m","dim","aug","6","m6","7","maj7","m7","dim7","m7b5","sus2","sus4","9","maj9","m9"}) {
+    static const auto all=[] {std::vector<Shape> out;for(const char* suffix:{"","m","dim","aug","6","m6","7","maj7","m7","dim7","m7b5","sus2","sus4","9","maj9","m9","13"}) {
         auto p=chordPitches(std::string("C")+suffix);if(p.quality!=ChordQuality::Unknown)out.push_back({suffix,p});}return out;}();return all;
 }
 struct Fit {int root{};const Shape* shape{};double confidence{},score{-1e9};};
@@ -92,18 +93,25 @@ ExtractionResult extractHarmony(const MidiFile& file,MidiHarmonyExtractionConfig
         // A short extra pitch should not replace an already-supported chord.
         if(duration<config.minimumPersistenceQN&&previousFit&&previousEnd>=start-1e-8) {
             std::uint16_t previousMask{};for(int p=0;p<12;++p)if(previousFit->shape->pitches.intervals&(1<<p))previousMask|=1<<((p+previousFit->root)%12);
-            if((mask&previousMask)==previousMask)match=*previousFit;
+            if((mask&previousMask)==previousMask){match=*previousFit;mask=previousMask;}
         }
         if(!match.shape){warning("unrecognized harmonic slice");continue;}
         std::string label=roots[match.root]+match.shape->suffix;
         const int bass=harmonic->begin()->first%12;if(bass!=match.root)label+="/"+std::string(roots[bass]);
         if(match.confidence<.85)warning("uncertain chord fit");
         result.slices.push_back({start,duration,match.confidence,label});
-        if(!result.chords.empty()&&result.chords.back().name==label&&std::abs(previousEnd-start)<1e-8)result.chords.back().durationQN=end-result.chords.back().startQN;
+        const auto relativeMask=static_cast<std::uint16_t>(((mask>>match.root)|(mask<<(12-match.root)))&0xfff);
+        if(!result.chords.empty()&&result.chords.back().name==label&&
+           chordPitches(result.chords.back()).intervals==relativeMask&&std::abs(previousEnd-start)<1e-8)result.chords.back().durationQN=end-result.chords.back().startQN;
         else {
             if(result.chords.size()>=64){result.error="more than 64 extracted chords";result.chords.clear();return result;}
             ChordEvent chord;chord.name=label;chord.root=static_cast<PitchClass>(match.root);chord.bass=static_cast<PitchClass>(bass);
             chord.quality=match.shape->pitches.quality;chord.startQN=start;chord.durationQN=duration;chord.openEnded=false;
+            // Preserve the performed pitch set, including omitted fifths and
+            // recognized extensions, rather than silently synthesizing tones.
+            const auto relative=static_cast<unsigned>(((mask>>match.root)|(mask<<(12-match.root)))&0xfff);
+            std::ostringstream encoded;encoded<<"0x"<<std::hex<<relative;
+            chord.extensions.mask=encoded.str();
             result.chords.push_back(std::move(chord));
         }
         previousFit=match;previousEnd=end;

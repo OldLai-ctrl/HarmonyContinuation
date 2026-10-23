@@ -1,4 +1,5 @@
 #include "ProgressionMatcher.h"
+#include "ChordPitchSet.h"
 
 #include <algorithm>
 #include <cmath>
@@ -40,6 +41,56 @@ bool extensionVariant(ChordQuality a, ChordQuality b) {
            (a == Q::Major && b == Q::Dominant7) || (b == Q::Major && a == Q::Dominant7) ||
            (a == Q::Diminished && b == Q::Diminished7) || (b == Q::Diminished && a == Q::Diminished7);
 }
+std::uint16_t pitchSet(const MatchEvent& event) {
+    return static_cast<std::uint16_t>(event.intervalMask | event.colorMask);
+}
+bool supportedAbstractQuality(ChordQuality quality) {
+    using Q = ChordQuality;
+    return quality == Q::Major || quality == Q::Minor || quality == Q::Major7 ||
+           quality == Q::Minor7 || quality == Q::Dominant7;
+}
+int qualityThird(ChordQuality quality) {
+    using Q = ChordQuality;
+    switch (quality) {
+        case Q::Major: case Q::Major7: case Q::Dominant7: return 4;
+        case Q::Minor: case Q::Minor7: return 3;
+        default: return -1;
+    }
+}
+bool hasAlteredFifthWithoutPerfectFifth(std::uint16_t mask) {
+    constexpr auto perfectFifth = std::uint16_t{1u << 7};
+    constexpr auto alteredFifths = std::uint16_t{(1u << 6) | (1u << 8)};
+    return (mask & alteredFifths) != 0 && (mask & perfectFifth) == 0;
+}
+bool abstractExtensionCompatible(const MatchEvent& query, const MatchEvent& templ, Mode mode) {
+    const auto queryMask = pitchSet(query);
+    const auto templateMask = pitchSet(templ);
+    if (!queryMask || !templateMask || queryMask == templateMask) return false;
+    if (!query.degree || !templ.degree) return false;
+    const auto queryRoot = relativeSemitone(*query.degree, mode);
+    const auto templateRoot = relativeSemitone(*templ.degree, mode);
+    if (queryRoot < 0 || templateRoot < 0 || queryRoot != templateRoot) return false;
+    if (!supportedAbstractQuality(query.quality) || !supportedAbstractQuality(templ.quality)) return false;
+    const auto queryThird = qualityThird(query.quality);
+    const auto templateThird = qualityThird(templ.quality);
+    constexpr auto thirdMask = std::uint16_t{(1u << 3) | (1u << 4)};
+    const auto queryThirds = static_cast<std::uint16_t>(queryMask & thirdMask);
+    const auto templateThirds = static_cast<std::uint16_t>(templateMask & thirdMask);
+    if (queryThird < 0 || templateThird < 0 || queryThird != templateThird ||
+        queryThirds != (1u << queryThird) || templateThirds != (1u << templateThird)) return false;
+    if (hasAlteredFifthWithoutPerfectFifth(queryMask) ||
+        hasAlteredFifthWithoutPerfectFifth(templateMask)) return false;
+    if ((queryMask & templateMask) != queryMask) return false;
+    if (query.bassInterval && templ.bassInterval && *query.bassInterval != *templ.bassInterval) return false;
+    if (templ.quality == ChordQuality::Dominant7 && query.quality == ChordQuality::Major &&
+        !(isDominant(query.function) && isDominant(templ.function))) return false;
+    if ((queryMask & ((1u << 10) | (1u << 11))) != 0) {
+        const auto querySevenths = static_cast<std::uint16_t>(queryMask & ((1u << 10) | (1u << 11)));
+        const auto templateSevenths = static_cast<std::uint16_t>(templateMask & ((1u << 10) | (1u << 11)));
+        if (querySevenths != templateSevenths) return false;
+    }
+    return true;
+}
 float median(std::vector<double> values) {
     values.erase(std::remove_if(values.begin(), values.end(), [](double v) { return !std::isfinite(v) || v <= 0; }), values.end());
     if (values.empty()) return 1.f;
@@ -77,14 +128,19 @@ std::vector<MatchEvent> skeleton(const std::vector<MatchEvent>& full, const std:
     }
     return result;
 }
-float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reasons, bool insertion) {
-    const bool light = hasRole(e.roles, Role::Passing) || hasRole(e.roles, Role::Embellishing) ||
+float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reasons, bool insertion,
+              bool continuousStructure = false) {
+    const bool light = hasRole(e.roles, Role::Passing) ||
+                       (!continuousStructure && hasRole(e.roles, Role::Embellishing)) ||
                        hasRole(e.roles, Role::Approach);
     reasons |= flag(insertion ? (light ? MatchReason::EmbellishingInsertion : MatchReason::StructuralInsertion)
                               : (light ? MatchReason::EmbellishingDeletion : MatchReason::StructuralDeletion));
     float factor = 1.f;
-    if (hasRole(e.roles, Role::Passing) || hasRole(e.roles, Role::Embellishing)) factor *= w.passingGapFactor;
+    if (hasRole(e.roles, Role::Passing) ||
+        (!continuousStructure && hasRole(e.roles, Role::Embellishing))) factor *= w.passingGapFactor;
     else if (hasRole(e.roles, Role::Approach)) factor *= w.approachGapFactor;
+    else if (continuousStructure)
+        factor *= w.passingGapFactor + (1.f - w.passingGapFactor) * std::clamp(e.structuralWeight, 0.f, 1.f);
     else if (hasRole(e.roles, Role::SecondaryDominant) || hasRole(e.roles, Role::SecondaryLeadingTone))
         factor *= w.secondaryGapFactor;
     if (e.function == HarmonicFunction::TonicProlongation) factor *= w.tonicProlongationGapFactor;
@@ -99,9 +155,14 @@ float gapCost(const MatchEvent& e, const MatchWeights& w, MatchReasonFlags& reas
     return (w.gapBase + w.structuralImportanceWeight * std::clamp(e.structuralWeight, 0.f, 1.f)) * factor;
 }
 
-float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tRhythm,
+float pairCost(const MatchEvent& q, const MatchEvent& t,
                const MatchWeights& w, MatchReasonFlags& reasons, bool queryFinal, Mode mode) {
     float cost{};
+    // A stopped dominant has not revealed its destination. Do not treat the
+    // missing future target as evidence against an otherwise identical chord.
+    const bool unresolvedDominant = queryFinal && !q.target && t.target &&
+        sameDegree(q.degree,t.degree) && q.quality==ChordQuality::Dominant7 &&
+        t.quality==ChordQuality::Dominant7 && hasRole(t.roles,Role::SecondaryDominant);
     if (sameDegree(q.degree, t.degree)) reasons |= flag(MatchReason::SameDegree);
     else if (q.degree && t.degree && relativeSemitone(*q.degree, mode) == relativeSemitone(*t.degree, mode)) {
         reasons |= flag(MatchReason::EnharmonicDegree);
@@ -120,7 +181,7 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
         cost += extensionVariant(q.quality, t.quality) ? w.qualityExtensionDifference : w.qualityDifference;
     }
     if (q.function == t.function && q.function != HarmonicFunction::Unknown) reasons |= flag(MatchReason::SameFunction);
-    else if (q.function != t.function) {
+    else if (q.function != t.function && !unresolvedDominant) {
         cost += (isPredominant(q.function) && isPredominant(t.function)) ||
                 (isDominant(q.function) && isDominant(t.function)) ||
                 (isTonic(q.function) && isTonic(t.function)) ? w.functionDifference * 0.32f : w.functionDifference;
@@ -129,6 +190,7 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
                                 flag(Role::Borrowed) | flag(Role::Cadential) | flag(Role::Passing);
     auto qRoles = q.roles & important;
     auto tRoles = t.roles & important;
+    if(unresolvedDominant)tRoles&=~flag(Role::SecondaryDominant);
     // A phrase stopped on V has not yet shown whether it will resolve to I.
     if (queryFinal && sameDegree(q.degree, t.degree) && q.function == t.function) {
         qRoles &= ~flag(Role::Cadential);
@@ -140,19 +202,23 @@ float pairCost(const MatchEvent& q, const MatchEvent& t, float qRhythm, float tR
         reasons |= flag(MatchReason::BorrowedVariant);
         cost *= w.borrowedVariantFactor;
     }
-    if (q.target || t.target) {
+    if ((q.target || t.target) && !unresolvedDominant) {
         if (sameDegree(q.target, t.target)) reasons |= flag(MatchReason::SecondaryTargetMatch);
         else { reasons |= flag(MatchReason::SecondaryTargetMismatch); cost += w.secondaryTargetDifference; }
     }
     // A single implausible chord is still one substitution, rather than an
     // artificially cheap delete-plus-insert detour through the same position.
     cost = std::min(cost, w.substitutionMaxCost);
-    // OPEN query durations never add a rhythmic penalty; their harmonic data remains.
-    if (qRhythm > 0.f && tRhythm > 0.f) {
-        const auto deviation = std::min(2.f, std::abs(std::log2(qRhythm / tRhythm)));
-        if (deviation > 0.25f) reasons |= flag(MatchReason::RhythmMismatch);
-        cost += w.rhythmWeight * deviation;
+    // Unspecified legacy template realizations keep their original scoring.
+    if (t.bassInterval && q.bassInterval && *t.bassInterval != *q.bassInterval)
+        cost += w.explicitBassDifference;
+    if (t.intervalMask && q.intervalMask && pitchSet(t) != pitchSet(q)) {
+        if (w.abstractChordCompatibility && abstractExtensionCompatible(q, t, mode)) {
+            cost += w.qualityExtensionDifference;
+            reasons |= flag(MatchReason::AbstractExtensionCompatibility);
+        } else cost += w.explicitPitchSetDifference;
     }
+    cost += q.sourceUncertainty;
     return cost;
 }
 
@@ -170,28 +236,28 @@ struct LayerResult {
 struct Cell { float cost{std::numeric_limits<float>::infinity()}; std::uint8_t predecessor{}; std::size_t pairs{}; };
 
 LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent>& t,
-                  const MatchWeights& w, Mode mode) {
+                   const MatchWeights& w, Mode mode, bool continuousStructure = false) {
     LayerResult out;
     if (q.empty() || t.empty()) return out;
     const auto n = q.size(), m = t.size();
-    const auto qr = normalizedDurations(q), tr = normalizedDurations(t);
+    // Select the path by harmony; timing is measured on that path for ranking only.
     std::vector<Cell> dp((n + 1) * (m + 1));
     const auto at = [m, &dp](std::size_t i, std::size_t j) -> Cell& { return dp[i * (m + 1) + j]; };
     for (std::size_t j = 0; j <= m; ++j)
         at(0, j) = {w.templatePrefixSkipCost * static_cast<float>(j), 0, 0}; // very low-cost template prefix
     for (std::size_t i = 1; i <= n; ++i) {
         MatchReasonFlags reasons{};
-        auto gap = gapCost(q[i - 1], w, reasons, true);
+        auto gap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) gap *= w.queryTailStructuralFactor;
         at(i, 0) = {at(i - 1, 0).cost + gap, 2, 0};
     }
     for (std::size_t i = 1; i <= n; ++i) for (std::size_t j = 1; j <= m; ++j) {
         MatchReasonFlags reasons{};
-        const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], qr[i - 1], tr[j - 1], w, reasons, i == n, mode);
-        auto insertGap = gapCost(q[i - 1], w, reasons, true);
+        const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], w, reasons, i == n, mode);
+        auto insertGap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) insertGap *= w.queryTailStructuralFactor;
         const auto insert = at(i - 1, j).cost + insertGap;
-        const auto erase = at(i, j - 1).cost + gapCost(t[j - 1], w, reasons, false);
+        const auto erase = at(i, j - 1).cost + gapCost(t[j - 1], w, reasons, false, continuousStructure);
         if (pair <= insert + epsilon && pair <= erase + epsilon)
             at(i, j) = {pair, 1, at(i - 1, j - 1).pairs + 1};
         else if (insert <= erase + epsilon)
@@ -227,7 +293,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::pair{i, j});
             step.queryIndex = q[i].sourceIndex;
             step.templateIndex = t[j].sourceIndex;
-            step.cost = pairCost(q[i], t[j], qr[i], tr[j], w, step.reasons, i + 1 == n, mode);
+            step.cost = pairCost(q[i], t[j], w, step.reasons, i + 1 == n, mode);
             step.operation = step.cost <= epsilon ? AlignmentOp::Match : AlignmentOp::Substitute;
             ++out.pairCount;
             functionSum += q[i].function == t[j].function ? 1.f : 0.f;
@@ -237,7 +303,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::nullopt);
             step.queryIndex = q[i].sourceIndex;
             step.operation = AlignmentOp::QueryInsertion;
-            step.cost = gapCost(q[i], w, step.reasons, true);
+            step.cost = gapCost(q[i], w, step.reasons, true, continuousStructure);
             if (i + 1 == n && !hasReason(step.reasons, MatchReason::EmbellishingInsertion))
                 step.cost *= w.queryTailStructuralFactor;
         } else {
@@ -245,7 +311,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             pairPositions.emplace_back(std::nullopt);
             step.templateIndex = t[j].sourceIndex;
             step.operation = AlignmentOp::TemplateDeletion;
-            step.cost = gapCost(t[j], w, step.reasons, false);
+            step.cost = gapCost(t[j], w, step.reasons, false, continuousStructure);
         }
         out.trace.push_back(step);
     }
@@ -284,19 +350,9 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     for (std::size_t k = 0; k < out.trace.size(); ++k) if (pairPositions[k]) {
         const auto [qi, ti] = *pairPositions[k];
         if (!q[qi].durationQN || !t[ti].durationQN || *q[qi].durationQN <= 0 || *t[ti].durationQN <= 0) continue;
-        const auto oldDeviation = qr[qi] > 0.f && tr[ti] > 0.f
-            ? std::min(2.f, std::abs(std::log2(qr[qi] / tr[ti]))) : 0.f;
         const auto newDeviation = std::min(2.f, static_cast<float>(
             std::abs(std::log2(*q[qi].durationQN * tempoScale / *t[ti].durationQN))));
-        const auto correction = w.rhythmWeight * (newDeviation - oldDeviation);
-        out.cost += correction;
-        out.trace[k].cost += correction;
-        out.trace[k].reasons &= ~flag(MatchReason::RhythmMismatch);
         if (newDeviation > 0.25f) out.trace[k].reasons |= flag(MatchReason::RhythmMismatch);
-        if (out.trace[k].cost <= epsilon) {
-            out.trace[k].cost = 0.f;
-            out.trace[k].operation = AlignmentOp::Match;
-        }
         rhythmSum += std::max(0.f, 1.f - newDeviation / 2.f);
         ++rhythmCount;
     }
@@ -328,13 +384,17 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
     query.forcedKey = context.forcedKey.has_value();
     query.timeSigNumerator = context.timeSigNumerator;
     query.timeSigDenominator = context.timeSigDenominator;
+    query.retrievalTimingMode = context.retrievalTimingMode;
     if (source.empty()) return query;
     const auto initial = analyzeHarmony(source, context);
     std::vector<KeyCandidate> keys;
     if (context.forcedKey && initial.selectedKey) keys.push_back(*initial.selectedKey);
     else for (const auto& key : initial.keyCandidates) {
-        if (keys.size() >= w.maxKeyCandidates) break;
-        if (key.confidence >= w.minKeyConfidence || keys.empty()) keys.push_back(key);
+        // A two-chord chromatic prefix does not establish a global key. Keep
+        // all bounded hypotheses until the template supplies the missing context.
+        const auto limit = source.size() <= 4 ? std::max(w.shortPrefixKeyCandidates, w.maxKeyCandidates) : w.maxKeyCandidates;
+        if (keys.size() >= limit) break;
+        if (source.size() <= 4 || key.confidence >= w.minKeyConfidence || keys.empty()) keys.push_back(key);
     }
     for (const auto& key : keys) {
         auto selectedContext = context;
@@ -345,8 +405,17 @@ MatchQuery makeMatchQuery(const Progression& source, const AnalysisContext& cont
         interpretation.skeletonIndices = analysis.skeletonIndices;
         for (std::size_t i = 0; i < analysis.full.size(); ++i) {
             const auto& e = analysis.full[i];
-            interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.roles,
-                                           e.structuralWeight, source[i].durationQN, i});
+            interpretation.full.push_back({e.degree, e.target, e.chord.quality, e.function, e.retrievalRoles,
+                                           e.retrievalStructuralWeight, source[i].durationQN, i});
+            const auto tones = chordPitches(source[i]);
+            auto& projected = interpretation.full.back();
+            const auto& normalized=e.chord;
+            projected.intervalMask = normalized.symbolicHarmony?normalized.matchingIntervalMask:tones.intervals;
+            projected.colorMask = normalized.symbolicHarmony?0:tones.colorMask;
+            if(normalized.explicitBass && normalized.bass && normalized.root)
+                projected.bassInterval=(int(*normalized.bass)-int(*normalized.root)+12)%12;
+            if(normalized.symbolicHarmony && normalized.fieldConflict)
+                projected.sourceUncertainty=std::max(0.04f,normalized.compatibilityUncertainty);
         }
         interpretation.fingerprint = makeFingerprint(key.key.mode, interpretation.full,
                                                      interpretation.skeletonIndices, CadenceType::None);
@@ -414,7 +483,8 @@ std::vector<std::size_t> CandidateIndex::shortlist(const MatchQuery& query, cons
 }
 
 std::vector<MatchResult> matchProgression(const MatchQuery& query, const CandidateIndex& index,
-                                          const MatchWeights& w, std::size_t topN, MatchRunStats* stats) {
+                                          const MatchWeights& w, std::size_t topN, MatchRunStats* stats,
+                                          bool retainKeyInterpretations) {
     using Clock = std::chrono::steady_clock;
     const auto started = Clock::now();
     const auto candidates = index.shortlist(query, w);
@@ -428,9 +498,15 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
         const auto ts = skeleton(t.full, t.skeletonIndices);
         for (const auto& q : query.interpretations) {
             if (q.key.key.mode != t.mode || q.full.empty()) continue;
-            const auto qs = skeleton(q.full, q.skeletonIndices);
-            const auto full = align(q.full, t.full, w, t.mode);
-            const auto structural = align(qs, ts, w, t.mode);
+            // V4 phrases may deliberately retain every defining connector.
+            // Compare the supplied FULL path in that case: generic input
+            // simplification must not erase the evidence this template requires.
+            const auto qs = query.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure
+                ? q.full : (t.version >= 4 && t.skeletonIndices.size() == t.full.size()
+                    ? q.full : skeleton(q.full, q.skeletonIndices));
+            const bool continuousStructure = query.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure;
+            const auto full = align(q.full, t.full, w, t.mode, continuousStructure);
+            const auto structural = align(qs, ts, w, t.mode, continuousStructure);
             if (!full.pairCount || !structural.pairCount) continue;
             MatchResult r;
             r.templateId = t.id;
@@ -455,16 +531,23 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
             r.continuationLength = t.full.size() - r.continuationStartIndex;
             r.alignmentTrace = full.trace;
             for (const auto& event : t.full) r.templateLabels.push_back(formatMatchEvent(event));
-            if (!best || r.similarity > best->similarity) best = std::move(r);
+            if (retainKeyInterpretations) results.push_back(std::move(r));
+            else if (!best || r.similarity > best->similarity) best = std::move(r);
         }
         if (best) results.push_back(std::move(*best));
     }
     std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
-        return a.similarity == b.similarity ? a.templateId < b.templateId : a.similarity > b.similarity;
+        if (a.similarity != b.similarity) return a.similarity > b.similarity;
+        return std::tuple(a.templateId,a.key.tonic,a.key.mode) < std::tuple(b.templateId,b.key.tonic,b.key.mode);
     });
-    if (results.size() > topN) results.resize(topN);
+    const auto limit = retainKeyInterpretations ? topN * query.interpretations.size() : topN;
+    if (results.size() > limit) results.resize(limit);
     const auto finished = Clock::now();
     if (stats) {
+        stats->imported=query.source.size();
+        stats->analyzed=query.interpretations.empty()?0:query.interpretations.front().full.size();
+        stats->keys=query.interpretations.size();
+        stats->aligned=results.size();
         stats->prefilterMs = std::chrono::duration<double, std::milli>(pref - started).count();
         stats->alignmentMs = std::chrono::duration<double, std::milli>(finished - pref).count();
         stats->totalMs = std::chrono::duration<double, std::milli>(finished - started).count();
@@ -492,7 +575,8 @@ std::string reasonNames(MatchReasonFlags flags) {
         {MatchReason::EmbellishingDeletion,"EmbellishingDeletion"}, {MatchReason::StructuralDeletion,"StructuralDeletion"},
         {MatchReason::RhythmMismatch,"RhythmMismatch"}, {MatchReason::CadentialImportance,"CadentialImportance"},
         {MatchReason::LowStructuralPenalty,"LowStructuralPenalty"}, {MatchReason::ResolvesToMatchedTarget,"ResolvesToMatchedTarget"},
-        {MatchReason::EnharmonicDegree,"EnharmonicDegree"}
+        {MatchReason::EnharmonicDegree,"EnharmonicDegree"},
+        {MatchReason::AbstractExtensionCompatibility,"AbstractExtensionCompatibility"}
     };
     std::string out;
     for (const auto& [bit, name] : names) if (hasReason(flags, bit)) {
@@ -527,7 +611,7 @@ std::string formatMatchEvent(const MatchEvent& e) {
     }
     if (e.quality == ChordQuality::Dominant7 || e.quality == ChordQuality::Minor7 || e.quality == ChordQuality::Diminished7) text += '7';
     else if (e.quality == ChordQuality::Major7) text += "maj7";
-    if (e.target && e.target->degree >= 1 && e.target->degree <= 7) {
+    if (localFunctionSymbol && e.target->degree >= 1 && e.target->degree <= 7) {
         text += '/';
         if (e.target->alteration < 0) text += 'b';
         else if (e.target->alteration > 0) text += '#';

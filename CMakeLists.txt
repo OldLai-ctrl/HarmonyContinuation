@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.9.0 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.10.0 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for a release)")
+set(HC_FACTORY_LIBRARY_VERSION 5 CACHE STRING "Versioned Factory content; V4 remains frozen")
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -91,6 +92,12 @@ if(HC_BUILD_PLUGIN)
     add_subdirectory("${VST3_SDK_ROOT}" sdk)
 endif()
 
+# RAII cleanup must run when C++ exceptions cross try/catch boundaries.
+# Without /EHsc, failed updates can retain file locks and SQLite handles on MSVC.
+if(MSVC)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/EHsc>)
+endif()
+
 if(HC_BUILD_PLUGIN)
     # The SDK's moduleinfotool reads PROJECT_VERSION. Include the prerelease
     # suffix there so the bundle header and class metadata agree.
@@ -99,7 +106,7 @@ if(HC_BUILD_PLUGIN)
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
         src/plugin/RecommendationWorker.cpp src/plugin/HostAdapters.cpp
-        src/ui/MainView.cpp)
+        src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
     endif()
@@ -125,7 +132,8 @@ add_library(harmony_core STATIC src/core/ChordNormalizer.cpp src/core/HarmonyAna
 target_link_libraries(harmony_core PUBLIC harmony_version)
 target_include_directories(harmony_core PUBLIC src)
 target_compile_features(harmony_core PUBLIC cxx_std_20)
-add_library(harmony_color STATIC src/color/HarmonyColorAnalyzer.cpp src/color/ColorPreferenceReranker.cpp)
+add_library(harmony_color STATIC src/color/HarmonyColorAnalyzer.cpp src/color/ColorPreferenceReranker.cpp
+    src/color/RelativeColorCurve.cpp)
 target_link_libraries(harmony_color PUBLIC harmony_core)
 target_compile_features(harmony_color PUBLIC cxx_std_20)
 if(MSVC)
@@ -174,7 +182,10 @@ if(MSVC)
 endif()
 add_library(harmony_preview STATIC src/preview/PreviewSequence.cpp
     src/preview/PreviewSynth.cpp src/preview/OfflinePreviewRenderer.cpp
-    src/preview/VoiceLeadingMetrics.cpp)
+    src/preview/VoiceLeadingMetrics.cpp src/preview/PreviewTransport.cpp src/preview/WindowsPreview.cpp)
+if(WIN32)
+    target_link_libraries(harmony_preview PUBLIC winmm)
+endif()
 target_link_libraries(harmony_preview PUBLIC harmony_core)
 target_include_directories(harmony_preview PUBLIC src)
 target_compile_features(harmony_preview PUBLIC cxx_std_20)
@@ -242,7 +253,7 @@ add_executable(benchmark_compare tools/benchmark_compare.cpp)
 target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
-        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp)
+        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
     target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment harmony_host harmony_io vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
@@ -270,15 +281,35 @@ target_link_libraries(recommend_bench PRIVATE harmony_library)
 file(GLOB HC_FACTORY_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory/*.json")
 file(GLOB HC_FACTORY_V3_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3/*.json")
 set(HC_FACTORY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory.db")
-set(HC_FACTORY_LIBRARY_VERSION 3 CACHE STRING "Factory content version; 2 retains historical rows")
 set(HC_FACTORY_ADDITIONS)
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     list(APPEND HC_FACTORY_ADDITIONS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3")
 endif()
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+    target_compile_definitions(harmony_library PRIVATE HC_BUNDLED_FACTORY_VERSION=${HC_FACTORY_LIBRARY_VERSION})
+    add_executable(factory_v4_compiler tools/factory_v4_compiler.cpp)
+    target_link_libraries(factory_v4_compiler PRIVATE harmony_library)
+    if(MSVC)
+        target_compile_options(factory_v4_compiler PRIVATE /utf-8 /W4)
+    endif()
+    file(GLOB HC_FACTORY_V4_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4/*.json")
+    set(HC_FACTORY_NEXT_ARGS)
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+        file(GLOB HC_FACTORY_V5_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-proposals/20261019-pop-variants/*.json")
+        list(APPEND HC_FACTORY_NEXT_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-proposals/20261019-pop-variants" 5)
+    endif()
+    add_custom_command(OUTPUT "${HC_FACTORY_DB}" "${CMAKE_CURRENT_BINARY_DIR}/factory-v4-maintenance.tsv"
+        COMMAND $<TARGET_FILE:factory_v4_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
+            "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3" "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4"
+            "${HC_FACTORY_DB}" "${CMAKE_CURRENT_BINARY_DIR}/factory-v4-maintenance.tsv" ${HC_FACTORY_NEXT_ARGS}
+        DEPENDS factory_v4_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON} ${HC_FACTORY_V4_JSON} ${HC_FACTORY_V5_JSON}
+        VERBATIM)
+else()
 add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_DB}" "${HC_FACTORY_LIBRARY_VERSION}" ${HC_FACTORY_ADDITIONS}
     DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
+endif()
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 set(HC_FACTORY_LEGACY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v2.db")
 add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
@@ -286,6 +317,27 @@ add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON}
     VERBATIM)
 add_custom_target(factory_legacy_database DEPENDS "${HC_FACTORY_LEGACY_DB}")
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+    set(HC_FACTORY_V3_REFERENCE_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v3.db")
+    add_custom_command(OUTPUT "${HC_FACTORY_V3_REFERENCE_DB}"
+        COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
+            "${HC_FACTORY_V3_REFERENCE_DB}" 3 "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3"
+        DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
+        VERBATIM)
+    add_custom_target(factory_reference_databases DEPENDS "${HC_FACTORY_LEGACY_DB}" "${HC_FACTORY_V3_REFERENCE_DB}")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+        set(HC_FACTORY_V4_REFERENCE_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
+        add_custom_command(OUTPUT "${HC_FACTORY_V4_REFERENCE_DB}"
+            COMMAND $<TARGET_FILE:factory_v4_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
+                "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3" "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4"
+                "${HC_FACTORY_V4_REFERENCE_DB}" "${CMAKE_CURRENT_BINARY_DIR}/factory-v4-reference-maintenance.tsv"
+            DEPENDS factory_v4_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON} ${HC_FACTORY_V4_JSON}
+            VERBATIM)
+        add_custom_target(factory_v4_reference DEPENDS "${HC_FACTORY_V4_REFERENCE_DB}")
+        add_dependencies(factory_reference_databases factory_v4_reference)
+    endif()
+    add_dependencies(library_manager factory_reference_databases)
+endif()
 add_dependencies(continuation_benchmark_cli factory_database)
 add_dependencies(constraint_benchmark factory_database)
 add_dependencies(TendencyTests factory_database)
@@ -351,6 +403,16 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+        add_executable(FactoryV4Tests tests/FactoryV4Tests.cpp)
+        target_link_libraries(FactoryV4Tests PRIVATE harmony_product harmony_midi harmony_snapshot)
+        target_compile_definitions(FactoryV4Tests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}" HC_FACTORY_V4_PATH="${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
+        add_dependencies(FactoryV4Tests factory_database factory_reference_databases)
+        if(MSVC)
+            target_compile_options(FactoryV4Tests PRIVATE /utf-8 /W4)
+        endif()
+        add_test(NAME FactoryV${HC_FACTORY_LIBRARY_VERSION}Focused COMMAND FactoryV4Tests)
+    endif()
     if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     add_executable(FactoryCatalogTests tests/FactoryCatalogTests.cpp)
     target_link_libraries(FactoryCatalogTests PRIVATE harmony_library harmony_midi)
@@ -487,7 +549,7 @@ if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
     target_link_libraries(hc_sdk_host_loader PUBLIC sdk_hosting)
     target_compile_features(hc_sdk_host_loader PRIVATE cxx_std_17)
     add_executable(HostContractHarness tests/HostContractHarness.cpp
-        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp
 )
     target_link_libraries(HostContractHarness PRIVATE harmony_host harmony_io harmony_product harmony_xml harmony_snapshot hc_sdk_host_loader vstgui_support winmm)
     target_link_libraries(HostContractHarness PRIVATE harmony_color)
@@ -529,4 +591,60 @@ if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32 AND EXISTS "${HC_TESTHOST_EXECUTA
         -Executable "${HC_TESTHOST_EXECUTABLE}" -PluginDirectory "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>"
         -Report "${CMAKE_BINARY_DIR}/testhost-smoke.json")
     set_tests_properties(VST3PluginTestHostSmoke PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
+endif()
+if(BUILD_TESTING)
+ add_executable(RecommendationReliabilityTests tests/RecommendationReliabilityTests.cpp)
+ target_link_libraries(RecommendationReliabilityTests PRIVATE harmony_product harmony_midi harmony_snapshot)
+ set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${HC_FACTORY_DB}")
+ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+  set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
+  add_dependencies(RecommendationReliabilityTests factory_v4_reference)
+ endif()
+ target_compile_definitions(RecommendationReliabilityTests PRIVATE
+  HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
+  HC_RELIABILITY_MATRIX_FACTORY_PATH="${HC_RELIABILITY_MATRIX_FACTORY_PATH}"
+  HC_RELIABILITY_PRODUCT_FACTORY_VERSION=${HC_FACTORY_LIBRARY_VERSION})
+ add_dependencies(RecommendationReliabilityTests factory_database)
+ if(HC_BUILD_PLUGIN)
+  target_sources(RecommendationReliabilityTests PRIVATE src/plugin/RecommendationWorker.cpp)
+  target_link_libraries(RecommendationReliabilityTests PRIVATE harmony_xml)
+  target_compile_definitions(RecommendationReliabilityTests PRIVATE HC_RELIABILITY_PLUGIN)
+ endif()
+ if(MSVC)
+  target_compile_options(RecommendationReliabilityTests PRIVATE /utf-8 /W4)
+ endif()
+ add_test(NAME RecommendationReliabilityFocused COMMAND RecommendationReliabilityTests "${CMAKE_BINARY_DIR}/reliability" strict)
+ add_test(NAME RecommendationRhythmDecoupling COMMAND RecommendationReliabilityTests "${CMAKE_BINARY_DIR}/rhythm-decoupling" rhythm-decoupling)
+ set_tests_properties(RecommendationRhythmDecoupling PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE)
+endif()
+
+if(HC_BUILD_PLUGIN)
+ add_executable(CubaseReliabilityTests tests/CubaseReliabilityTests.cpp src/plugin/RecommendationWorker.cpp)
+ target_link_libraries(CubaseReliabilityTests PRIVATE harmony_product harmony_midi harmony_snapshot harmony_xml)
+ target_compile_definitions(CubaseReliabilityTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}")
+ add_dependencies(CubaseReliabilityTests factory_database)
+ if(MSVC)
+  target_compile_options(CubaseReliabilityTests PRIVATE /utf-8 /W4)
+ endif()
+ add_test(NAME CubaseReliabilityFocused COMMAND CubaseReliabilityTests "${CMAKE_BINARY_DIR}/cubase-reliability" strict)
+ add_executable(Phase4DTests tests/Phase4DTests.cpp src/plugin/RecommendationWorker.cpp src/plugin/HostContextAdapter.cpp)
+ target_link_libraries(Phase4DTests PRIVATE harmony_product harmony_midi harmony_snapshot harmony_xml harmony_color sdk)
+ target_compile_definitions(Phase4DTests PRIVATE HC_FACTORY_DB_PATH="${HC_FACTORY_DB}" NOMINMAX)
+ if(MSVC)
+  target_compile_options(Phase4DTests PRIVATE /utf-8 /W4)
+ endif()
+ add_dependencies(Phase4DTests factory_database)
+ add_test(NAME Phase4DCubaseFeedback COMMAND Phase4DTests "${CMAKE_BINARY_DIR}/phase4d")
+ set_tests_properties(Phase4DCubaseFeedback PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+endif()
+if(BUILD_TESTING AND TARGET HostContractHarness)
+ add_test(NAME CompactEditorUI COMMAND HostContractHarness --compact-ui "${CMAKE_BINARY_DIR}/compact-ui-evidence")
+ set_tests_properties(CompactEditorUI PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+endif()
+if(WIN32)
+ foreach(HC_WORKER_TARGET HarmonyContinuation HarmonyContinuationDemo ProductizationTests ContinuationEngineTests HostContractHarness RecommendationReliabilityTests CubaseReliabilityTests Phase4DTests)
+  if(TARGET ${HC_WORKER_TARGET})
+   target_link_libraries(${HC_WORKER_TARGET} PRIVATE bcrypt)
+  endif()
+ endforeach()
 endif()

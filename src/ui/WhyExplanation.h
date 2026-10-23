@@ -4,6 +4,17 @@
 
 namespace harmony::ui {
 struct WhyExplanation {std::vector<std::string> sentences;};
+inline std::string realizationWhy(const ContinuationCandidate& candidate,session::Locale locale) {
+    bool bass=false,tones=false;
+    for(const auto& event:candidate.continuation)if(event.harmonicData){
+        const auto pitches=chordPitches(*event.harmonicData);
+        bass|=pitches.bass!=pitches.root;tones|=pitches.exactIntervals;
+    }
+    std::string out;
+    if(bass)out+=std::string(localization::text(locale,"whyV4.bass"));
+    if(tones){if(!out.empty())out+=' ';out+=std::string(localization::text(locale,"whyV4.pitchSet"));}
+    return out;
+}
 inline WhyExplanation explainWhy(std::string functional,const ColorHint& hint,session::Locale locale,
     color::Preference preference,std::optional<color::RankReason> reason={},bool promoted=false) {
     WhyExplanation out;out.sentences.push_back(std::move(functional));

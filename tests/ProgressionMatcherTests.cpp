@@ -179,7 +179,7 @@ int main() {
         expect(bool(progression), "P actual ambiguous progression parses");
         if (progression) {
             const auto p = makeMatchQuery(progression.events);
-            expect(p.interpretations.size() == 3, "P top 3 key interpretations evaluated");
+            expect(p.interpretations.size() == 24, "P short ambiguous prefix retains bounded alternate keys");
             expect(std::any_of(p.interpretations.begin(), p.interpretations.end(), [](const auto& e) { return e.key.key.mode == Mode::Major; }) &&
                    std::any_of(p.interpretations.begin(), p.interpretations.end(), [](const auto& e) { return e.key.key.mode == Mode::Minor; }),
                    "P major and relative minor present");

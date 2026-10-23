@@ -94,6 +94,12 @@ FactorySelection loadAvailableFactory(const std::filesystem::path& bundled,const
             result.library=loadFactory(result.path);
             if (!result.library || result.library.libraryVersion!=version)
                 throw std::runtime_error("installed library invalid: "+result.library.error);
+#if defined(HC_BUNDLED_FACTORY_VERSION)
+            // Development builds use their own newer versioned bundle without
+            // activating or overwriting the production ProgramData library.
+            if(version<HC_BUNDLED_FACTORY_VERSION){auto development=loadFactory(bundled);
+                if(development&&development.libraryVersion==HC_BUNDLED_FACTORY_VERSION){result.path=bundled;result.library=std::move(development);}}
+#endif
             return result;
         }
     } catch (const std::exception& e) { result.warning=std::string(e.what())+"; using bundled library"; }

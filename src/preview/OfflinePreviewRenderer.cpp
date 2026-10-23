@@ -1,25 +1,37 @@
 #include "OfflinePreviewRenderer.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <limits>
 
 namespace harmony::preview {
-AudioBuffer renderOffline(const Sequence& sequence,double rate) {
+AudioBuffer renderOffline(const Sequence& sequence,double rate,PreviewScope scope) {
     AudioBuffer result; result.sampleRate=rate;
     if (!std::isfinite(rate)||rate<8000||rate>192000||sequence.events.empty()) return result;
-    double endQN=sequence.totalQN;
-    for (const auto& event:sequence.events) endQN=std::max(endQN,event.startQN+event.durationQN);
-    const auto frames=qnToSamples(endQN,sequence.tempoBPM,rate)+
+    const auto range=previewRange(sequence,scope);
+    const auto startFrame=qnToSamples(range.startQN,sequence.tempoBPM,rate);
+    const auto totalFrames=qnToSamples(range.endQN,sequence.tempoBPM,rate)+
         static_cast<std::int64_t>(rate*0.15);
-    if (frames<=0 || frames>static_cast<std::int64_t>(rate*600)) return result;
+    if (startFrame<0||totalFrames<=startFrame||totalFrames>static_cast<std::int64_t>(rate*600)) return result;
     PreviewSynth synth; synth.prepare(rate);
     if (!synth.start(sequence)) return result;
-    result.left.resize(static_cast<std::size_t>(frames)); result.right.resize(static_cast<std::size_t>(frames));
+    const auto outputFrames=totalFrames-startFrame;
+    result.left.resize(static_cast<std::size_t>(outputFrames)); result.right.resize(static_cast<std::size_t>(outputFrames));
     constexpr int block=512;
-    for (std::int64_t pos=0;pos<frames;pos+=block) {
-        const int count=static_cast<int>(std::min<std::int64_t>(block,frames-pos));
-        synth.process(result.left.data()+pos,result.right.data()+pos,count);
+    std::array<float,block> left{},right{};
+    for (std::int64_t pos=0;pos<totalFrames;pos+=block) {
+        const int count=static_cast<int>(std::min<std::int64_t>(block,totalFrames-pos));
+        synth.process(left.data(),right.data(),count);
+        const auto copyStart=std::max(pos,startFrame);
+        const auto copyEnd=std::min(pos+count,totalFrames);
+        if (copyEnd>copyStart) {
+            const auto sourceOffset=static_cast<std::size_t>(copyStart-pos);
+            const auto destinationOffset=static_cast<std::size_t>(copyStart-startFrame);
+            const auto copyCount=static_cast<std::size_t>(copyEnd-copyStart);
+            std::copy_n(left.data()+sourceOffset,copyCount,result.left.data()+destinationOffset);
+            std::copy_n(right.data()+sourceOffset,copyCount,result.right.data()+destinationOffset);
+        }
     }
     result.peakVoices=synth.peakVoices();
     long double squares{};

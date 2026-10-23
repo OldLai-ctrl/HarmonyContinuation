@@ -1,4 +1,9 @@
 {
+  "structure.all": "All nodes retained; short chords may still carry structure.",
+  "structure.view": "FULL: all; SKELETON: core. Gray nodes remain in preview/MIDI.",
+  "enrich.protected": "No safe operation for this group preserves the defined tones or bass.",
+  "enrich.constraints": "Candidates do not satisfy the melody or preservation constraints.",
+
   "mode.continue": "Continue",
   "mode.enrich": "Enrich",
   "nav.more": "More",
@@ -167,11 +172,14 @@
   ,"completion.dominantTonic": "Dominant to tonic completes the resolution"
   ,"completion.stableTonic": "Ends on a stable tonic"
   ,"completion.phraseReturn": "Returns to the phrase beginning"
-  ,"completion.loopClosure": "Forms a clear loop connection"
+  ,"completion.loopClosure": "Completes the library loop segment"
   ,"completion.developedPath": "Opens a further development path"
   ,"completion.functionalPivot": "Creates a functional turn"
   ,"completion.shortDevelopment": "Development path is short"
   ,"completion.audibleColor": "Adds audible harmonic color"
+  ,"completion.borrowedColor": "Borrows from the parallel key"
+  ,"completion.secondaryColor": "Uses secondary dominant or leading-tone harmony"
+  ,"completion.extendedColor": "Adds seventh or suspended harmony"
   ,"completion.noEvidence": "Limited evidence for the chosen intent"
   ,"voice.inversionImprovesBass": "Inversion smooths the bass connection"
   ,"voice.smoother": "Smoother voice connection"
@@ -221,7 +229,7 @@
   ,"midi.uncertain": "Recognition notices"
   ,"midi.unsupported": "Only Format 0/1 PPQ MIDI files are supported; SMPTE is not supported.",
   "nav.hostDiagnostics": "Host Diagnostics",
-  "nav.exportHostDiagnostics": "Export Host Diagnostics",
+  "nav.exportHostDiagnostics": "Export local input and recommendation diagnostics",
   "color.show": "Color Hints",
   "color.warm": "Warm",
   "color.cool": "Cool",
@@ -294,11 +302,14 @@
   "whyV2.completion.dominantTonic": "This path resolves from dominant to tonic, providing closure.",
   "whyV2.completion.stableTonic": "This path ends on the tonic, closing the current phrase.",
   "whyV2.completion.phraseReturn": "This path returns to the opening, helping the phrase loop.",
-  "whyV2.completion.loopClosure": "This path connects its ending back to the opening.",
+  "whyV2.completion.loopClosure": "This continuation completes the library loop segment; audition two rounds to compare the return to the opening.",
   "whyV2.completion.developedPath": "This complete path develops the current phrase.",
   "whyV2.completion.functionalPivot": "This path changes harmonic direction to support further development.",
   "whyV2.completion.shortDevelopment": "This path offers a short continuation.",
-  "whyV2.completion.audibleColor": "This path varies the phrase through its existing color harmony treatment.",
+  "whyV2.completion.audibleColor": "The continuation uses altered, diminished, or augmented harmony to change the harmonic color.",
+  "whyV2.completion.borrowedColor": "The continuation borrows chords from the parallel key to change the harmonic color.",
+  "whyV2.completion.secondaryColor": "The continuation uses secondary dominant or leading-tone harmony to point temporarily toward another chord.",
+  "whyV2.completion.extendedColor": "The continuation uses seventh or suspended chords to add color within the harmony.",
   "whyV2.completion.noEvidence": "This option is available for comparison; evidence for functional closure is limited.",
   "colorSort.labelShort": "Color Pref.",
   "whyV2.details": "Details",
@@ -309,5 +320,11 @@
   "color.staticMixed": "mixed warmth",
   "color.staticWhy": "Reliable per-chord static warmth shows ",
   "color.whyMissingTiming": "; OPEN or missing timing prevents a whole-path mean or time trend.",
-  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration."
+  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration.",
+  "whyV4.bass": "Preserves the specified bass notes.",
+  "whyV4.pitchSet": "Preserves the explicitly defined chord tones.",
+  "key.searchAuto": "Auto explores multiple keys; the top bar shows the leading analysis.",
+  "key.searchFixed": "Fixed key: search only in",
+  "key.match": "Key used by this recommendation:",
+  "key.alternatives": "Other key interpretations of the same music"
 }

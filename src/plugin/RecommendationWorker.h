@@ -2,6 +2,7 @@
 #include "core/ContinuationEngine.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "library/ProgressionLibrary.h"
+#include "plugin/DevelopmentMode.h"
 #include <condition_variable>
 #include <filesystem>
 #include <mutex>
@@ -18,15 +19,23 @@ struct WorkerResult {
     double computationMs{};
     std::size_t factoryCount{}, userCount{};
     bool analysisReused{};
+    std::optional<DevelopmentAlgorithmPreset> algorithmPreset; // legacy request echo only; execution is always Unified
+    int factoryVersion{};
+    std::string factorySha256{"unavailable"};
 };
 class RecommendationWorker {
 public:
-    RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath);
+    RecommendationWorker(std::filesystem::path factoryPath, std::filesystem::path userPath,
+                         std::optional<std::filesystem::path> factoryStore = std::nullopt);
     ~RecommendationWorker();
     RecommendationWorker(const RecommendationWorker&) = delete;
     RecommendationWorker& operator=(const RecommendationWorker&) = delete;
     std::uint64_t submit(Progression, AnalysisContext, RecommendationRequest = {},
                          bool rankingOnly = false, std::uint64_t phraseRevision = 0);
+    // Migration alias for old development clients. Preset never selects behavior.
+    std::uint64_t submitPreset(Progression, AnalysisContext, DevelopmentAlgorithmPreset,
+                               RecommendationRequest = {}, bool rankingOnly = false,
+                               std::uint64_t phraseRevision = 0);
     void cancel();
     void invalidateLibrary();
     std::optional<WorkerResult> takeLatest();
@@ -38,9 +47,14 @@ private:
         RecommendationRequest request;
         bool rankingOnly{};
         std::uint64_t phraseRevision{};
+        std::optional<DevelopmentAlgorithmPreset> algorithmPreset;
     };
+    std::uint64_t submitImpl(Progression, AnalysisContext, RecommendationRequest,
+                             bool rankingOnly, std::uint64_t phraseRevision,
+                             std::optional<DevelopmentAlgorithmPreset>);
     void run();
     std::filesystem::path factoryPath_, userPath_;
+    std::optional<std::filesystem::path> factoryStore_;
     std::thread thread_;
     std::mutex mutex_;
     std::condition_variable wake_;

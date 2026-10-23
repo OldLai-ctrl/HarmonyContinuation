@@ -41,8 +41,12 @@ if (!(Test-Path -LiteralPath $manager)) {
 $info = & $manager inspect $FactoryDatabase
 if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw '进行库检查失败。' }
 $libraryVersion = $Matches[1]
+if ($info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
+$factoryEntryCount = $Matches[1]
 if ($header -notmatch 'HC_PRODUCT_VERSION\s+"([^"]+)"') { throw '无法读取产品版本。' }
 $productVersion = $Matches[1]
+if ($header -notmatch ('HC_PRODUCT_FACTORY_LIBRARY_VERSION\s+'+$libraryVersion+'\b')) { throw 'Plugin/Factory content versions differ.' }
+if ($libraryVersion -eq '4' -and [version]($productVersion.Split('-')[0]) -lt [version]'0.10.0') { throw 'Factory V4 requires a compatible 0.10+ engine build.' }
 $stage = Join-Path $outputPath ('stage-' + $libraryVersion)
 New-Item -ItemType Directory -Force -Path $stage,(Join-Path $stage 'runtime') | Out-Null
 Copy-Item -LiteralPath $manager -Destination (Join-Path $stage 'library_manager.exe')
@@ -69,12 +73,23 @@ $manifest = Get-ChildItem -LiteralPath $stageBundle -Recurse -File | Sort-Object
     (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '|' + $relative
 }
 [IO.File]::WriteAllText((Join-Path $stage 'plugin-files.txt'),($manifest -join "`n")+"`n",[Text.UTF8Encoding]::new($false))
+$referenceDir = Join-Path $stage 'official-factory'
+New-Item -ItemType Directory -Force -Path $referenceDir | Out-Null
+$historicalReferences = @('factory-v2.db','factory-v3.db')
+if ([int]$libraryVersion -ge 5) { $historicalReferences += 'factory-v4.db' }
+foreach ($reference in $historicalReferences) {
+    $source = Join-Path $buildPath $reference
+    if (!(Test-Path -LiteralPath $source)) { throw "Missing official reference compiled from repository data: $reference" }
+    Copy-Item -LiteralPath $source -Destination (Join-Path $referenceDir $reference)
+}
+Copy-Item -LiteralPath $FactoryDatabase -Destination (Join-Path $referenceDir ('factory-v'+$libraryVersion+'.db'))
 $factoryHash = (Get-FileHash -LiteralPath $FactoryDatabase -Algorithm SHA256).Hash.ToLowerInvariant()
 $legacyFactoryHash = ''
 $legacyDb = Join-Path $buildPath 'factory-v2.db'
 if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -LiteralPath $legacyDb -Algorithm SHA256).Hash.ToLowerInvariant() }
-$setupFileStem = if ($productVersion -match '^\d+\.\d+\.\d+$') { "HarmonyContinuation-$productVersion-Setup" } else { 'HarmonyContinuation-Setup' }
+$setupFileStem = "HarmonyContinuation-$productVersion-Setup"
 $common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
+$common += '/DFactoryEntryCount='+$factoryEntryCount
 if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
 & $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }

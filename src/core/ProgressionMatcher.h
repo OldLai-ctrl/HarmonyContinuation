@@ -33,10 +33,11 @@ struct MatchEvent {
     float structuralWeight{0.7f};
     std::optional<double> durationQN;
     std::size_t sourceIndex{};
-    // Persistence/realization metadata; deliberately ignored by matcher costs.
+    // Optional exact realization; explicit template values also guide matching.
     std::optional<int> bassInterval;
     std::uint16_t intervalMask{}, colorMask{};
     std::string displaySuffix;
+    float sourceUncertainty{}; // small compatibility cost for contradictory host fields
 };
 
 struct ProgressionFingerprint {
@@ -94,11 +95,13 @@ struct MatchQuery {
     std::optional<StyleFlags> styleHint;
     bool forcedKey{};
     Progression source;
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
 };
 
 // All score-affecting constants live here. Values are dimensionless costs.
 struct MatchWeights {
     std::size_t maxKeyCandidates{3};
+    std::size_t shortPrefixKeyCandidates{24};
     float minKeyConfidence{0.005f};
     float degreeDifference{0.9f};
     float alteredDegree{0.28f};
@@ -109,6 +112,8 @@ struct MatchWeights {
     float sameFunctionDegreeFactor{0.52f};
     float roleDifference{0.22f};
     float secondaryTargetDifference{0.34f};
+    float explicitBassDifference{0.45f};
+    float explicitPitchSetDifference{0.30f};
     float borrowedVariantFactor{0.58f};
     float substitutionMaxCost{1.30f};
     float rhythmWeight{0.18f};
@@ -131,6 +136,7 @@ struct MatchWeights {
     float minimumMatchedFraction{0.75f};
     float lowCoveragePenalty{0.80f};
     std::size_t shortlistLimit{800};
+    bool abstractChordCompatibility{false}; // directional explicit pitch-set experiment; default off
 };
 
 enum class AlignmentOp : std::uint8_t { Match, Substitute, QueryInsertion, TemplateDeletion };
@@ -142,7 +148,7 @@ enum class MatchReason : std::uint32_t {
     EmbellishingDeletion = 1u << 10, StructuralDeletion = 1u << 11,
     RhythmMismatch = 1u << 12, CadentialImportance = 1u << 13,
     LowStructuralPenalty = 1u << 14, ResolvesToMatchedTarget = 1u << 15,
-    EnharmonicDegree = 1u << 16
+    EnharmonicDegree = 1u << 16, AbstractExtensionCompatibility = 1u << 17
 };
 using MatchReasonFlags = std::uint32_t;
 constexpr MatchReasonFlags flag(MatchReason reason) noexcept { return static_cast<MatchReasonFlags>(reason); }
@@ -168,6 +174,10 @@ struct MatchResult {
     std::string templateName;
     float similarity{}; // 0..1 similarity, not a probability
     float rawCost{};
+    std::string disposition; // diagnostic only, never persisted
+    std::string timingSource; // effective output timing evidence, never persisted
+    float candidateRankingScore{-1.f};
+    float candidateEligibilityScore{-1.f};
     KeySignature key;
     float keyPrior{};
     std::size_t templateMatchStart{};
@@ -181,6 +191,8 @@ struct MatchResult {
 };
 
 struct MatchRunStats {
+    std::size_t imported{}, analyzed{}, keys{}, aligned{}, similarityPassed{}, tailPassed{},
+        realizationPassed{}, pathPassed{}, distinct{}, scorePassed{}, output{};
     double prefilterMs{};
     double alignmentMs{};
     double totalMs{};
@@ -203,7 +215,8 @@ private:
 
 std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,
                                           const MatchWeights& = {}, std::size_t topN = 5,
-                                          MatchRunStats* stats = nullptr);
+                                          MatchRunStats* stats = nullptr,
+                                          bool retainKeyInterpretations = false);
 
 const char* alignmentOpName(AlignmentOp) noexcept;
 std::string reasonNames(MatchReasonFlags);

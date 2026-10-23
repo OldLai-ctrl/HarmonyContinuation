@@ -1,24 +1,24 @@
 #include "vstgui/lib/vstguiinit.h"
 #include "io/AsyncMidiImport.h"
-#include "host/HostEnvironment.h"
 #include "DemoScenario.h"
 #include "plugin/RecommendationWorker.h"
 #include "session/ProductServices.h"
 #include "library/LibraryStore.h"
 #include "ui/MainView.h"
-#include "preview/OfflinePreviewRenderer.h"
+#include "preview/PreviewSequence.h"
+#include "preview/WindowsPreview.h"
 #include "midi/StandardMidiFileWriter.h"
 #include "midi/MidiImportWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "snapshot/EnrichmentSnapshot.h"
 #include "benchmark/Benchmark.h"
 #include "vstgui/lib/cframe.h"
+#include "vstgui/lib/coffscreencontext.h"
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
-#include <mmsystem.h>
 #include <commdlg.h>
 #include <chrono>
 #include <algorithm>
@@ -75,13 +75,19 @@ public:
         actions.updateUser=[this](const ProgressionTemplate& t) { return update(t); };
         actions.deleteUser=[this](const std::string& id) { return remove(id); };
         actions.audition=[this](const ContinuationCandidate& c) { audition(c); };
+        actions.stopAudition=[this] { stopAudition(); };
+        actions.pauseAudition=[this] { pauseAudition(); };
+        actions.resumeAudition=[this] { resumeAudition(); };
+        actions.previewBackend=[this](bool host) { selectPreviewBackend(host); };
+        actions.seekAudition=[this](const std::string& id,double qn) { seekAudition(id,qn); };
+        actions.previewSettings=[this](bool custom,double bpm,bool suffix) { setPreviewSettings(custom,bpm,suffix); };
         actions.exportMidi=[this](const ContinuationCandidate& c) { return exportRecommendation(c); };
         actions.saveSnapshot=[this](const ContinuationCandidate& c) { return saveRecommendationSnapshot(c); };
         actions.exportLibraryMidi=[this](const ProgressionTemplate& t) { return exportLibrary(t); };
         actions.benchmarkSelect=[this](const ContinuationCandidate& c) { ratingCandidate_=c; };
         actions.auditionEnrichment=[this](const enrichment::EnrichmentCandidate& c) { auditionEnrichment(c); };
         actions.exportEnrichmentMidi=[this](const enrichment::EnrichmentCandidate& c) { return exportEnrichment(c); };
-        actions.midiPayload=[this](const ContinuationCandidate& c){return midi::candidatePayload(exportContext(),c);};
+        actions.midiPayload=[this](const ContinuationCandidate& c){return recommendationPayload(c);};
         actions.enrichmentMidiPayload=[this](const enrichment::EnrichmentCandidate& c){return midi::candidatePayload(exportContext(),c);};
         actions.saveMidiPayload=[this](const midi::MidiClipPayload& payload){return savePayload(payload);};
         actions.importMidiFiles=[this](std::vector<std::filesystem::path> paths){importGeneration_=importWorker_.submit(std::move(paths),false);};
@@ -90,7 +96,8 @@ public:
         main_=new harmony::ui::MainView(VSTGUI::CRect(0,0,1100,900),std::move(actions));
         frame_->addView(main_);
         if (!frame_->open(host,VSTGUI::PlatformType::kHWND)) { frame_=nullptr; main_=nullptr; return false; }
-        main_->setHostText("HarmonyContinuation Demo · 120 BPM · simulated transport");
+        main_->setHostText("HarmonyContinuation Demo · Windows preview · no plug-in host");
+        main_->setPreviewTransport(preview::PlaybackState::Stopped,false,false,false);
         loadLibrary(); return true;
     }
     void resize(int width,int height) {
@@ -104,7 +111,12 @@ public:
     void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
     bool zoomSmoke(std::uint32_t percent) {if(!main_)return false;main_->setUserZoom(percent);return main_->runZoomSmoke();}
     bool midiWorkflowSmoke(const std::filesystem::path& fixture) {
-        if(!main_||!main_->runMidiWorkflowSmoke())return false;
+        if(!main_||!waitRecommendationsForSmoke())return false;
+        const auto size=main_->getViewSize();
+        const auto width=std::max(1,static_cast<int>(std::ceil(size.getWidth())));
+        const auto height=std::max(1,static_cast<int>(std::ceil(size.getHeight())));
+        const auto context=VSTGUI::COffscreenContext::create({double(width),double(height)});
+        if(!context||!main_->runCompactSmoke(context.get())||!main_->runBrowseSmoke(context.get()))return false;
         if(fixture.empty())return true;
         importMidi(false,fixture);if(!waitImportForSmoke())return false;if(state_.imported.events.size()!=4||state_.imported.events.back().openEnded||!state_.constraints.melody.empty())return false;
         const auto before=session::serialize(state_);importMidi(false,fixture.parent_path()/"missing.mid");if(!waitImportForSmoke())return false;
@@ -121,6 +133,7 @@ public:
         auto loaded=demo::loadScenario(path);
         if (!loaded) { if (main_) main_->setDropReport("Scenario error",loaded.error); return false; }
         scenario_=std::move(loaded.scenario);
+        recommendations_={};enrichments_={};recommendationReady_=false;
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
@@ -130,7 +143,8 @@ public:
         projectQN_=state_.imported.events.front().startQN; playing_=false;
         if (main_) { main_->setSessionState(state_); main_->setPlaybackPosition(projectQN_,false);
             main_->setAnalysis({}); main_->setMatches({},"Analyzing…"); main_->setRecommendations({});
-            main_->setHostText(scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM · simulated transport"); }
+            main_->setAuditionState(previewCustomTempo_,previewBpm_,previewSuffix_,false,effectivePreviewBPM());
+            main_->setHostText(scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM · Windows preview"); }
         submit(); return true;
     }
     bool loadBenchmark(const std::filesystem::path& path) {
@@ -140,16 +154,18 @@ public:
             benchmarkDescription_=item.name+"\n"+item.notes+"\n";
             if(main_)main_->setSnapshotMode(false);
             scenario_=item.scenario;
+            recommendations_={};enrichments_={};recommendationReady_=false;
             const auto width=state_.editorWidth,height=state_.editorHeight;
             state_={};state_.editorWidth=width;state_.editorHeight=height;
             state_.forcedKey=scenario_.forcedKey;state_.style=scenario_.style;state_.intent=scenario_.intent;
             state_.meterNumerator=scenario_.meterNumerator;state_.meterDenominator=scenario_.meterDenominator;
             state_.imported.replace(scenario_.chords,TimelineCoordinateMode::RelativeToSelection);
             projectQN_=state_.imported.events.front().startQN;playing_=false;
-            analysis_={};recommendations_={};
+            analysis_={};
             if(main_){main_->setSessionState(state_);main_->setPlaybackPosition(projectQN_,false);
                 main_->setAnalysis({});main_->setMatches({},"Analyzing…");main_->setRecommendations({});
-                main_->setHostText("BENCHMARK "+benchmarkId_+" · "+scenario_.name);}
+                main_->setAuditionState(previewCustomTempo_,previewBpm_,previewSuffix_,false,effectivePreviewBPM());
+                main_->setHostText("BENCHMARK "+benchmarkId_+" · "+scenario_.name+" · Windows preview");}
             submit();return true;
         }catch(const std::exception& e){if(main_)main_->setActionStatus(std::string("Benchmark: ")+e.what());return false;}
     }
@@ -193,9 +209,10 @@ public:
             if (!snapshotLoaded_) {
             ratingCandidate_.reset();
             analysis_=std::move(result->analysis); recommendations_=std::move(result->recommendations);
+            enrichments_=std::move(result->enrichments);recommendationReady_=true;
             if (main_) { main_->setAnalysis(analysis_); main_->setMatches(recommendations_.matches,
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
-                main_->setEnrichments(result->enrichments);
+                main_->setEnrichments(enrichments_);
                 main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
             if(main_&&!midiImportSummary_.empty()){main_->setActionStatus(midiImportSummary_+" · "+std::string(localization::text(state_.locale,"midi.key"))+" "+
                 (analysis_.selectedKey?formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();}
@@ -207,11 +224,7 @@ public:
             projectQN_+=std::clamp(seconds,0.0,0.2)*scenario_.tempo/60.0;
             if (main_) main_->setPlaybackPosition(projectQN_,true);
         }
-        if (!auditionId_.empty()) {
-            const auto elapsed=std::chrono::duration<double>(now-auditionStart_).count();
-            if (elapsed>=auditionSeconds_+0.15) stopAudition();
-            else if (main_) main_->setPreviewPosition(auditionId_,elapsed*scenario_.tempo/60.0,auditionQN_);
-        }
+        pollPreviewTransport();
     }
     void seek(double qn) { projectQN_=qn; if (main_) main_->setPlaybackPosition(projectQN_,playing_); }
     bool togglePlay() { playing_=!playing_; if (main_) main_->setPlaybackPosition(projectQN_,playing_); return playing_; }
@@ -234,6 +247,7 @@ public:
         const auto decoded=snapshot::loadFile(*path,&active);
         if (!decoded) return "Snapshot load: "+decoded.error;
         stopAudition(); snapshotLoaded_=true; playing_=false;
+        recommendationReady_=true;enrichments_={};
         const auto& snap=decoded.value;
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_={};state_.editorWidth=width;state_.editorHeight=height;
@@ -256,13 +270,13 @@ public:
             main_->setMatches(recommendations_.matches,"Frozen recommendation snapshot");
             main_->setRecommendations(recommendations_);
             main_->setWorkerStatus(0,0,false,0,0);
-            main_->setHostText("Snapshot · "+scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM");
+            main_->setAuditionState(previewCustomTempo_,previewBpm_,previewSuffix_,false,effectivePreviewBPM());
+            main_->setHostText("Snapshot · "+scenario_.name+" · "+std::to_string(static_cast<int>(scenario_.tempo))+" BPM · Windows preview");
         }
         return snap.candidateAvailable?"Snapshot loaded":"方案暂不可用；原进行已恢复";
     }
 private:
     io::AsyncMidiImport importWorker_;
-    host::PreviewOwnership previewOwnership_;
     std::uint64_t importGeneration_{},completedImportGeneration_{};
     void pollMidiImport(){if(auto completed=importWorker_.takeLatest()){
         completedImportGeneration_=completed->generation;applyMidiImport(completed->result);
@@ -270,19 +284,22 @@ private:
     bool waitImportForSmoke(){
         for(int i=0;i<500;++i){pollMidiImport();if(completedImportGeneration_==importGeneration_)return true;Sleep(10);}return false;
     }
+    bool waitRecommendationsForSmoke(){
+        for(int i=0;i<500;++i){tick();if(recommendationReady_)return true;Sleep(10);}return false;
+    }
     HWND hostWindow_{};
-    std::filesystem::path auditionFile_;
     std::string auditionId_;
-    double auditionSeconds_{},auditionQN_{};
-    std::chrono::steady_clock::time_point auditionStart_{};
     std::filesystem::path factoryPath_,userPath_;
     plugin::RecommendationWorker worker_;
+    preview::WindowsPreview previewOutput_;
     VSTGUI::CFrame* frame_{};
     harmony::ui::MainView* main_{};
     session::PluginSessionState state_;
     demo::Scenario scenario_;
     HarmonicAnalysisResult analysis_;
     RecommendationSet recommendations_;
+    enrichment::EnrichmentResult enrichments_;
+    bool recommendationReady_{};
     bool playing_{};
     bool snapshotLoaded_{};
     std::string benchmarkId_;
@@ -291,48 +308,181 @@ private:
     std::optional<ContinuationCandidate> ratingCandidate_;
     double projectQN_{};
     std::chrono::steady_clock::time_point lastTick_{std::chrono::steady_clock::now()};
+    enum class AuditionKind { None, Continuation, Enrichment };
+    AuditionKind auditionKind_{AuditionKind::None};
+    preview::PreparedPreview auditionClip_{};
+    preview::PlaybackState auditionState_{preview::PlaybackState::Stopped};
+    preview::PlaybackState latestRequestedState_{preview::PlaybackState::Stopped};
+    std::uint64_t transportSerial_{},latestTransportSerial_{},nextClipId_{},auditionClipId_{},auditionSeekId_{};
+    double auditionPositionQN_{},auditionTotalQN_{};
+    bool transportPending_{},previewCustomTempo_{},previewSuffix_{};
+    double previewBpm_{120.0};
+    double effectivePreviewBPM() const noexcept {
+        return previewCustomTempo_?preview::sanitizeTempo(previewBpm_):preview::sanitizeTempo(scenario_.tempo);
+    }
+    preview::PreviewScope auditionScope(AuditionKind kind) const noexcept {
+        return kind==AuditionKind::Continuation&&previewSuffix_?preview::PreviewScope::Suffix:preview::PreviewScope::Full;
+    }
+    static double sampleToQN(std::int64_t sample,double tempo) noexcept {
+        return static_cast<double>(sample)/preview::previewReferenceRate*preview::sanitizeTempo(tempo)/60.0;
+    }
+    void setPreviewTimer() {
+        if(hostWindow_)SetTimer(hostWindow_,1,playing_?50:(auditionState_==preview::PlaybackState::Playing||transportPending_?40:250),nullptr);
+    }
+    bool queueTransport(preview::PlaybackState state,double positionQN,std::uint64_t clipId,std::uint64_t seekId) {
+        preview::TransportRequest request;request.serial=++transportSerial_;request.clipId=clipId;
+        request.seekId=seekId;request.state=state;request.positionQN=positionQN;
+        if(clipId)request.clip=auditionClip_;
+        if(!previewOutput_.submit(request))return false;
+        latestTransportSerial_=request.serial;latestRequestedState_=state;transportPending_=true;
+        if(main_)main_->setPreviewTransport(state,false,false,true);
+        setPreviewTimer();return true;
+    }
     void stopAudition() {
-        if(previewOwnership_.release())PlaySoundW(nullptr,nullptr,0);
-        auditionId_.clear(); auditionSeconds_=auditionQN_=0;
-        if (main_) main_->setPreviewPosition({},0,0);
-        if (hostWindow_) SetTimer(hostWindow_,1,playing_?50:250,nullptr);
-        if (!auditionFile_.empty()) { std::error_code ec; std::filesystem::remove(auditionFile_,ec); auditionFile_.clear(); }
+        if(auditionId_.empty()&&auditionState_==preview::PlaybackState::Stopped&&
+           latestRequestedState_==preview::PlaybackState::Stopped){
+            if(main_){main_->setPreviewPosition({},0,0);main_->setPreviewTransport(preview::PlaybackState::Stopped,false,false,transportPending_);}
+            return;
+        }
+        auditionId_.clear();auditionKind_=AuditionKind::None;auditionState_=preview::PlaybackState::Stopped;
+        auditionClipId_=auditionSeekId_=0;auditionPositionQN_=auditionTotalQN_=0;auditionClip_={};
+        const bool queued=queueTransport(preview::PlaybackState::Stopped,0,0,0);
+        if(main_){main_->setPreviewPosition({},0,0);main_->setPreviewTransport(preview::PlaybackState::Stopped,false,false,transportPending_);}
+        if(!queued&&main_)main_->setActionStatus("Could not queue the Windows preview stop request");
+        setPreviewTimer();
+    }
+    void pauseAudition() {
+        if(auditionId_.empty()||auditionState_!=preview::PlaybackState::Playing)return;
+        auditionState_=preview::PlaybackState::Paused;
+        if(!queueTransport(auditionState_,auditionPositionQN_,auditionClipId_,auditionSeekId_)){
+            auditionState_=preview::PlaybackState::Playing;
+            if(main_)main_->setActionStatus("Could not queue the Windows preview pause request");
+        }
+    }
+    void resumeAudition() {
+        if(auditionId_.empty()||auditionState_!=preview::PlaybackState::Paused)return;
+        auditionState_=preview::PlaybackState::Playing;
+        if(!queueTransport(auditionState_,auditionPositionQN_,auditionClipId_,auditionSeekId_)){
+            auditionState_=preview::PlaybackState::Paused;
+            if(main_)main_->setActionStatus("Could not queue the Windows preview resume request");
+        }
+    }
+    void selectPreviewBackend(bool host) {
+        if(main_){
+            if(host)main_->setActionStatus("Standalone Demo has no plug-in host; Windows output remains selected");
+            main_->setPreviewTransport(auditionState_,false,false,transportPending_);
+        }
+    }
+    void setPreviewSettings(bool custom,double bpm,bool suffix) {
+        const bool changed=previewCustomTempo_!=custom||previewBpm_!=bpm||previewSuffix_!=suffix;
+        previewCustomTempo_=custom;previewBpm_=preview::sanitizeTempo(bpm);previewSuffix_=suffix;
+        if(main_)main_->setAuditionState(previewCustomTempo_,previewBpm_,previewSuffix_,false,effectivePreviewBPM());
+        if(changed&&!auditionId_.empty()){
+            if(recommendationReady_)reloadAudition();
+            else {stopAudition();if(main_)main_->setActionStatus("Preview stopped while recommendations are updating");}
+        }
+    }
+    const ContinuationCandidate* findRecommendation(const std::string& id) const {
+        for(const auto& group:recommendations_.groups)for(const auto& candidate:group)if(candidate.id==id)return &candidate;
+        return nullptr;
+    }
+    const enrichment::EnrichmentCandidate* findEnrichment(const std::string& id) const {
+        for(const auto& group:enrichments_.groups)for(const auto& candidate:group)if(candidate.id==id)return &candidate;
+        return nullptr;
+    }
+    bool installPreview(const std::string& id,const preview::BuildResult& built,AuditionKind kind,
+                        preview::PlaybackState state,std::optional<double> requestedQN={}) {
+        if(!built){stopAudition();if(main_)main_->setDropReport("Preview",built.error,false);return false;}
+        const auto prepared=preview::preparePreview(built.sequence,auditionScope(kind));
+        if(!prepared){stopAudition();if(main_)main_->setDropReport("Preview",prepared.error,false);return false;}
+        auditionClip_=prepared.clip;auditionId_=id;auditionKind_=kind;auditionState_=state;
+        auditionTotalQN_=built.sequence.totalQN;
+        const auto low=sampleToQN(auditionClip_.startSample,auditionClip_.tempoBPM);
+        const auto high=sampleToQN(auditionClip_.endSample,auditionClip_.tempoBPM);
+        auditionPositionQN_=requestedQN&&std::isfinite(*requestedQN)?std::clamp(*requestedQN,low,high):low;
+        auditionClipId_=++nextClipId_;if(auditionClipId_==0)auditionClipId_=++nextClipId_;
+        auditionSeekId_=requestedQN?1:0;
+        if(main_)main_->setPreviewPosition(auditionId_,auditionPositionQN_,auditionTotalQN_);
+        if(!queueTransport(auditionState_,auditionPositionQN_,auditionClipId_,auditionSeekId_)){
+            stopAudition();if(main_)main_->setActionStatus("Could not queue the Windows preview request");return false;
+        }
+        return true;
+    }
+    void previewContinuation(const ContinuationCandidate& candidate,preview::PlaybackState state,
+                             std::optional<double> requestedQN={}) {
+        if(!main_)return;
+        const auto route=main_->continuationRoute(candidate);
+        const auto built=route?preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
+            preview::BuildResult{{},route.error};
+        installPreview(candidate.id,built,AuditionKind::Continuation,state,requestedQN);
+    }
+    void previewEnrichment(const enrichment::EnrichmentCandidate& candidate,preview::PlaybackState state,
+                           std::optional<double> requestedQN={}) {
+        ImportedProgressionSession transformed;
+        if(!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection)){
+            stopAudition();if(main_)main_->setDropReport("Preview","Enrichment timeline is invalid",false);return;
+        }
+        installPreview(candidate.id,preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints),
+            AuditionKind::Enrichment,state,requestedQN);
+    }
+    void reloadAudition() {
+        const auto id=auditionId_;const auto kind=auditionKind_;const auto state=auditionState_;const auto position=auditionPositionQN_;
+        if(kind==AuditionKind::Continuation){if(const auto* candidate=findRecommendation(id)){previewContinuation(*candidate,state,position);return;}}
+        else if(kind==AuditionKind::Enrichment){if(const auto* candidate=findEnrichment(id)){previewEnrichment(*candidate,state,position);return;}}
+        stopAudition();if(main_)main_->setActionStatus("Preview target is no longer available");
     }
     void audition(const ContinuationCandidate& candidate) {
-        if (candidate.id==auditionId_) { stopAudition(); return; }
-        const auto built=preview::buildSequence(state_.imported,&candidate,scenario_.tempo);
-        playPreview(candidate.id,built);
+        if(candidate.id==auditionId_&&auditionKind_==AuditionKind::Continuation){stopAudition();return;}
+        previewContinuation(candidate,preview::PlaybackState::Playing);
     }
     void auditionEnrichment(const enrichment::EnrichmentCandidate& candidate) {
-        if (candidate.id==auditionId_) { stopAudition(); return; }
-        ImportedProgressionSession transformed;
-        if (!transformed.replace(candidate.progression,TimelineCoordinateMode::RelativeToSelection)) return;
-        playPreview(candidate.id,preview::buildSequence(transformed,nullptr,scenario_.tempo,candidate.constraints));
+        if(candidate.id==auditionId_&&auditionKind_==AuditionKind::Enrichment){stopAudition();return;}
+        previewEnrichment(candidate,preview::PlaybackState::Playing);
     }
-    void playPreview(const std::string& id,const preview::BuildResult& built) {
-        stopAudition();
-        if (!built) { if (main_) main_->setDropReport("Preview",built.error,false); return; }
-        const auto audio=preview::renderOffline(built.sequence,48000);
-        if (audio.left.empty()) { if (main_) main_->setDropReport("Preview","Render failed",false); return; }
-        auditionFile_=std::filesystem::temp_directory_path()/
-            ("HarmonyContinuationDemo-"+std::to_string(GetCurrentProcessId())+"-"+std::to_string(reinterpret_cast<std::uintptr_t>(this))+".wav");
-        std::string error;
-        if (!preview::writeWav16(audio,auditionFile_,error)){stopAudition();return;}
-        previewOwnership_.claim();
-        if (
-            !PlaySoundW(auditionFile_.c_str(),nullptr,SND_ASYNC|SND_FILENAME|SND_NODEFAULT)) {
-            if (main_) main_->setDropReport("Preview",error.empty()?"Audio playback failed":error,false);
-            stopAudition(); return;
+    void seekAudition(const std::string& id,double qn) {
+        if(id.empty()||!std::isfinite(qn))return;
+        if(id==auditionId_&&auditionClipId_&&auditionState_!=preview::PlaybackState::Stopped){
+            const auto low=sampleToQN(auditionClip_.startSample,auditionClip_.tempoBPM);
+            const auto high=sampleToQN(auditionClip_.endSample,auditionClip_.tempoBPM);
+            const auto previousPosition=auditionPositionQN_;const auto previousSeekId=auditionSeekId_;
+            auditionPositionQN_=std::clamp(qn,low,high);++auditionSeekId_;
+            if(!queueTransport(auditionState_,auditionPositionQN_,auditionClipId_,auditionSeekId_)){
+                auditionPositionQN_=previousPosition;auditionSeekId_=previousSeekId;
+                if(main_)main_->setActionStatus("Could not queue the Windows preview seek request");
+            }
+            return;
         }
-        auditionId_=id; auditionQN_=built.sequence.totalQN;
-        auditionSeconds_=audio.left.size()/audio.sampleRate;
-        auditionStart_=std::chrono::steady_clock::now();
-        if (main_) main_->setPreviewPosition(auditionId_,0,auditionQN_);
-        if (hostWindow_) SetTimer(hostWindow_,1,40,nullptr);
+        if(const auto* candidate=findRecommendation(id)){previewContinuation(*candidate,preview::PlaybackState::Paused,qn);return;}
+        if(const auto* candidate=findEnrichment(id)){previewEnrichment(*candidate,preview::PlaybackState::Paused,qn);return;}
+        stopAudition();if(main_)main_->setActionStatus("Preview target is no longer available");
+    }
+    void pollPreviewTransport() {
+        if(!latestTransportSerial_)return;
+        const auto feedback=previewOutput_.feedback();
+        if(feedback.serial!=latestTransportSerial_)return;
+        transportPending_=false;
+        if(main_)main_->setPreviewTransport(feedback.state,false,false,false);
+        if(feedback.error!=preview::AudioError::None){
+            const auto message=feedback.error==preview::AudioError::DeviceUnavailable?"Windows preview output device is unavailable":
+                feedback.error==preview::AudioError::InvalidClip?"Windows preview rejected the prepared clip":
+                feedback.error==preview::AudioError::CallbackAbsent?"Windows preview callback is unavailable":"Windows preview failed";
+            stopAudition();if(main_)main_->setActionStatus(message);return;
+        }
+        if(auditionClipId_&&feedback.clipId==auditionClipId_){
+            auditionPositionQN_=feedback.positionQN;
+            if(main_)main_->setPreviewPosition(auditionId_,feedback.positionQN,auditionTotalQN_);
+            if(feedback.state==preview::PlaybackState::Stopped){
+                auditionId_.clear();auditionKind_=AuditionKind::None;auditionClipId_=auditionSeekId_=0;
+                auditionState_=preview::PlaybackState::Stopped;auditionClip_={};auditionPositionQN_=auditionTotalQN_=0;
+                if(main_)main_->setPreviewPosition({},0,0);
+            }
+        }
+        setPreviewTimer();
     }
     void submit(bool rankingOnly=false) {
         if (snapshotLoaded_) return;
         if (state_.imported.events.empty()) return;
+        recommendationReady_=false;
         RecommendationRequest request{state_.style,state_.intent,state_.constraints,state_.tendency};
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
             rankingOnly,state_.imported.revision);
@@ -340,6 +490,7 @@ private:
     }
     void applyState(const session::PluginSessionState& next) {
         const auto recompute=session::recomputeScope(state_,next);
+        if(recompute!=session::RecomputeScope::None&&!auditionId_.empty())stopAudition();
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_=next;state_.editorWidth=width;state_.editorHeight=height;
         if (main_) main_->setSessionState(state_);
@@ -364,6 +515,14 @@ private:
         const auto key=state_.forcedKey?state_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
         return {state_.imported,scenario_.tempo,{scenario_.meterNumerator,scenario_.meterDenominator},key};
     }
+    midi::PayloadResult recommendationPayload(const ContinuationCandidate& candidate) const {
+        if(!main_)return {{},"Recommendation view is unavailable"};
+        const auto route=main_->continuationRoute(candidate);
+        if(!route)return {{},route.error};
+        auto context=exportContext();context.imported=route.imported;
+        context.meter={route.meterNumerator,route.meterDenominator};
+        return midi::candidatePayload(context,route.candidate);
+    }
     std::string savePayload(const midi::MidiClipPayload& payload) {
         const auto text=[this](const char* key){return std::string(localization::text(state_.locale,key));};
         const auto path=savePath(hostWindow_,std::wstring(payload.suggestedFilename.begin(),payload.suggestedFilename.end()),L"MIDI files\0*.mid\0\0",L"mid");
@@ -372,7 +531,7 @@ private:
         return text("midi.saved");
     }
     std::string exportRecommendation(const ContinuationCandidate& candidate) {
-        const auto result=midi::candidatePayload(exportContext(),candidate);
+        const auto result=recommendationPayload(candidate);
         return result?savePayload(result.payload):std::string(localization::text(state_.locale,"midi.saveFailed"));
     }
     std::string exportEnrichment(const enrichment::EnrichmentCandidate& candidate) {
@@ -435,8 +594,11 @@ private:
     }
     std::string saveRecommendationSnapshot(const ContinuationCandidate& candidate) {
         try {
-            auto snap=snapshot::capture(state_.imported,candidate,recommendations_.matches,
-                scenario_.tempo,scenario_.meterNumerator,scenario_.meterDenominator,
+            if(!main_)return "Recommendation view is unavailable";
+            const auto route=main_->continuationRoute(candidate);
+            if(!route)return "Snapshot save: "+route.error;
+            auto snap=snapshot::capture(route.imported,route.candidate,recommendations_.matches,
+                scenario_.tempo,route.meterNumerator,route.meterDenominator,
                 state_.forcedKey?state_.forcedKey:std::optional(candidate.key),state_.style,state_.intent);
             snap.factoryLibraryVersion=static_cast<int>(state_.factoryLibraryVersion);
             auto name=midi::suggestedFilename(candidate.intent,candidate.key,1);
@@ -712,8 +874,9 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     }
     if(!midiSmokeReport.empty()) {
         std::ofstream report(midiSmokeReport,std::ios::trunc);const bool okay=report&&app->midiWorkflowSmoke(midiSmokeInput);
-        report<<"MIDI workflow: visible/More Continue/Enrich identity, audition, save, drag arm, snapshot, overlay "<<(okay?"PASS":"FAIL")<<'\n';
-        report<<"Scrollable candidate groups: 7 groups x 0/1/2/3/6 rows x 100/125/150%; wheel priority, boundaries, preview, DAWClip drag arm, Why, Snapshot, fingerprint "<<(okay?"PASS":"FAIL")<<'\n';
+        report<<"Actual-data compact and paged-browse offscreen smoke "<<(okay?"PASS":"FAIL")<<'\n';
+        report<<"Fixture MIDI complete/open projection and failed-import state preservation "
+              <<(midiSmokeInput.empty()?"SKIP":okay?"PASS":"FAIL")<<'\n';
         DestroyWindow(hwnd);VSTGUI::exit();return okay?0:10;
     }
     if(!resizeSmokeReport.empty()) {

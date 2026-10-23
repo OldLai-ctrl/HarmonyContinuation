@@ -1,0 +1,64 @@
+# 0.10.0-dev.2 核心推荐可靠性修复
+
+## 目标与边界
+
+本轮修复 `library/v4` 上的短前缀漏召回、导入和弦保护过宽、升级候选消失及 FULL/SKELETON 反馈不清。它不改和声规则内容、Factory 曲库、数据库 Schema 或用户数据格式。安装器升级兼容修复是独立的先前提交，继续保留。
+
+自动验证包含 MIDI 文件导入和 Cubase VST XML 解析夹具，但 XML 是测试中构造的确定性输入，并非 Cubase Pro 15 真机记录。真实 Cubase 插件加载、操作与声音验收仍待人工完成。
+
+## 根因
+
+跨版本对照找到两处可复现的回归路径：
+
+1. 短输入的自动调性假设被截为前三种。两和弦的半音移位进行等结构短前缀容易因此失去正确调性解释。此前低音保护还把“没有显式指定低音”当成“指定根音低音”，会造成额外的错误约束。
+2. `exactRealization()` 把包含斜杠低音、精确音集或扩展信息的源和弦整体排除出多类升级操作；当 Polish 和转位都没有结果时，还会提前退出，使 Rich/Advanced 根本没有尝试。Cubase 式 XML 输入通常带完整的音集和低音字段，因此更容易触发过度保护。
+
+导入链还发现 slash 名称（如 `F/A`）在缺少结构化低音字段时未将 `/A` 分离为低音；MIDI 提取未可靠保留演奏音集合，且对十三和弦形状的识别不足。它们会让直接输入、MIDI 导入和带结构化字段的 XML 输入产生不一致的特征。
+
+## 修复内容
+
+- 短前缀保留 24 种受支持的调性解释；降低短输入置信度下限，不放宽匹配相似度及结果质量门槛。
+- 只有来源明确给出低音时才施加低音冲突约束；解析斜杠和弦名称中的低音。
+- 在 MIDI 识别中保留相对音集，识别十三和弦；相邻和弦只有在标签与音集都相同时才合并，抑制短经过音造成的瞬时误识别。
+- 将升级保护改成与具体操作相匹配：保护源和弦定义性音符与指定低音，同时允许不破坏它们的其它和弦与操作继续生成候选。基础 Polish/转位无结果不再阻断 Rich/Advanced；去重仍以源进行以外的实际改写为条件，避免伪候选。
+- 对 Factory V4 候选检查明确低音及相冲突的三音、七音；不把未知低音或未给出的音集误作冲突。
+- FULL/SKELETON 改为同一分析结果的可视化切换，界面显示完整和弦数、结构节点数及模式说明。切换不重新排序、不重算推荐、不改变 MIDI；隐藏的非结构节点不可被误点选择。斜杠低音线和关键特殊连接保留在骨架中。
+- 增加本地、可关闭的 DEBUG 计数，覆盖导入、分析、调性、模板、对齐、音集/低音、路径、去重、评分、Worker 与 UI 输出，以及 Polish/Rich/Advanced 和插入过滤原因；不上传诊断或增加网络遥测。
+
+修改集中于 `src/core/ProgressionMatcher.*`、`ContinuationEngine.cpp`、`HarmonyAnalysis.cpp`、`ChordNormalizer.cpp`、`src/midi/MidiHarmonyExtractor.cpp`、`src/enrichment/ProgressionEnrichmentEngine.*` 与 `src/ui/MainView.*`。针对性矩阵位于 `tests/RecommendationReliabilityTests.cpp`；结构视图和 MIDI 身份检查位于 `tests/HostContractHarness.cpp`。
+
+## 三版本对照
+
+同一矩阵比较官方 v0.9.0 标签重建基线、dev.1 源码提交 `86a8641` 和当前修复。五组普通输入按表内顺序为：`C–Am–F–G`、`C–F–G–C`、`Am–Dm–E7–Am`、`Dm7–G7–Cmaj7`、`Cmaj7–Am7–Dm7–G7`。数字是每组输入的候选数；Advanced 对不适用的输入可以为零。
+
+| 版本 | 继续发展 | Polish | Rich | Advanced |
+| --- | --- | --- | --- | --- |
+| v0.9.0 | 19 / 5 / 5 / 19 / 14 | 2 / 2 / 2 / 1 / 1 | 3 / 3 / 3 / 3 / 3 | 1 / 1 / 1 / 0 / 1 |
+| 0.10.0-dev.1 | 19 / 5 / 5 / 19 / 15 | 0 / 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 / 0 |
+| 修复后 dev.2 | 19 / 7 / 6 / 20 / 15 | 1 / 1 / 1 / 1 / 1 | 3 / 3 / 3 / 3 / 3 | 1 / 1 / 1 / 0 / 1 |
+
+这些用例的最高相似度保持不变；`Dm7–G7–Cmaj7` 从 dev.1 的 `0.901069` 提高到 `0.954219`。候选数量不是质量评分；需要用户在 Cubase 中继续听审。
+
+## 定向验证
+
+新的严格矩阵覆盖 15 组进行：B08 半音下行低音的 4 个递增前缀、B01 连续副属 2 组、B11 半音侧滑 2 组、5 组普通进行和 1 组扩展音进行。8 种节奏包含标准/缩放拍长、长短交替、Swing、弱拍提前、非整数时值、小量化抖动与短经过和弦；每种均比较直接事件、写入后读回并通过实际 MIDI 导入器提取的文件，以及具有同等字段的 VST XML 解析夹具。再组合 OPEN/CLOSED 和 Auto/Forced Key，共 1440 种情况。日志同时记录识别和弦、根音、低音、音集、色彩音、起点、时长以及各推荐过滤阶段；所有情况通过，B08/B01/B11 对应模板均可达。
+
+另有 11 个相关 CTest 目标通过，涵盖曲库可发现性、Enrichment、UI 布局、MIDI 导入/导出、Preview、和声分析、匹配、续写、VST XML 解析及上述可靠性矩阵。独立界面冒烟确认简化视图能隐藏短经过节点、两种视图保留同一推荐，且 B08 指定低音骨架完整。Preview/MIDI 维持候选低音及明确音集；Why 中文、英文均非空；Enrichment 快照往返身份一致。
+
+Factory V4 的 28 条可发现性检查仍为 26 条默认显示、2 条通过 More 访问、0 条受阻；B09 仍位于 More。Factory 数据库保持 Library 4 / Schema 2 / 657 条，Factory 文件 SHA-256 为 `74c529828f8c4b934bbaf4ada719aa95491ab498b58885522124ff6505671534`。本轮未修改 User Schema 2、Session 5、Continuation Snapshot 3、Enrichment Snapshot 2 或个人数据。
+
+没有运行全量 CTest、完整 VST Validator、DAW 矩阵或音乐 Benchmark。安装器先前的 704 项隔离升级生命周期结果见 [升级兼容性修复](INSTALLER_DEV2_UPGRADE_FIX.md)。该自动结果不替代本版本人工安装与 Cubase 验收。
+
+## 安装包与剩余验收
+
+已生成的独立包位于 `build-installer/v4-0.10.0-dev.2-core-fix/`，源码构建提交 `68b900d4b389426f54ce93b5c497834cf71ffd26`，Build ID 为 `0.10.0-dev.2 / 68b900d / Release / Library 4`。
+
+| 文件 | 路径 | SHA-256 |
+| --- | --- | --- |
+| 统一 Setup | `HarmonyContinuation-0.10.0-dev.2-Setup.exe` | `9ae63a721370f5210ba152caacc0f9be0636756055c8fb44c33223207a2c8a1d` |
+| VST3 主程序 | `stage-4/HarmonyContinuation.vst3/Contents/x86_64-win/HarmonyContinuation.vst3` | `ada5281ded29e615d2f05deafcee2f39b1b159b196ec8e8b2260fd3c2b7abe41` |
+| Factory V4 | `stage-4/factory.db` | `74c529828f8c4b934bbaf4ada719aa95491ab498b58885522124ff6505671534` |
+
+Setup、主要组件校验和、逐文件包清单、`BUILD_INFO.json` 与测试材料均在包目录。新核心修复包隔离验证 **413 项通过**，涵盖全新安装、官方 v0.9.0、可信 RC/手动替换、未知 Factory 保护和官方内容物理布局差异；取消组件不会删除未选项，修改/修复/卸载后用户库、收藏、设置、个人进行、历史与未管理文件哨兵保持完整。可信旧 Factory 先备份并验证后迁移；未知 Factory 保持原样，中英文提示均核对路径、版本、原因与安全处理建议。49 份安装日志和逐文件结果记录在包内 `evidence/installer-cases/`、`installer-upgrade-result.txt` 与 `INSTALLER_UPGRADE_TESTS.json`。另有此前 installer-only 包的 704 项结果，见 [安装器升级修复](INSTALLER_DEV2_UPGRADE_FIX.md)。
+
+因此当前状态是核心修复、Release 包和定向安装验证均就绪；源码已推送至 `library/v4`。Cubase/FL Studio 人工验收 Pending，**READY FOR DAW RE-ACCEPTANCE = YES**。下一步等待用户重新安装并手动检查真实 Cubase 工作流；不自动开始其它功能。

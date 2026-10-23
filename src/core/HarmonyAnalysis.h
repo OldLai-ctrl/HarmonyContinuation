@@ -30,12 +30,30 @@ struct KeySignature { PitchClass tonic{PitchClass::C}; Mode mode{Mode::Major}; }
 struct KeyCandidate { KeySignature key; float score{}; float confidence{}; };
 struct ScaleDegree { int degree{}; int alteration{}; }; // degree 1..7, semitone alteration
 
+// Unified is the product policy. Earlier values remain for explicit diagnostic
+// comparisons only; none are persisted in sessions or snapshots.
+enum class RetrievalTimingMode : std::uint8_t {
+    Legacy,
+    BarPositionIndependent,
+    ContinuousStructure,
+    HarmonyFirst,
+    Unified
+};
+
+enum class FieldConfidence : std::uint8_t { Unknown, Performed, Symbolic, Explicit };
 struct NormalizedChord {
     std::optional<PitchClass> root;
     std::optional<PitchClass> bass;
     ChordQuality quality{ChordQuality::Unknown};
     std::uint16_t intervalMask{}; // bits 0..11 relative to root
     std::uint16_t colorMask{};    // non-essential extension tones
+    // Non-persisted interpretation: raw ChordEvent fields remain lossless.
+    std::uint16_t matchingIntervalMask{};
+    std::optional<PitchClass> performedBass;
+    FieldConfidence rootSource{FieldConfidence::Unknown}, bassSource{FieldConfidence::Unknown},
+        qualitySource{FieldConfidence::Unknown};
+    bool symbolicHarmony{}, explicitBass{}, fieldConflict{};
+    float compatibilityUncertainty{};
     bool inversion{};
     float confidence{};
     std::string rootSpelling;
@@ -50,6 +68,8 @@ struct HarmonicEvent {
     HarmonicFunction function{HarmonicFunction::Unknown};
     RoleFlags roles{};
     float structuralWeight{};
+    RoleFlags retrievalRoles{};
+    float retrievalStructuralWeight{};
     float analysisConfidence{};
     std::size_t sourceChordIndex{};
 };
@@ -97,6 +117,7 @@ struct AnalysisContext {
     std::optional<int> timeSigNumerator; // used only when the project meter is known
     std::optional<int> timeSigDenominator;
     float skeletonThreshold{0.55f};
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
 };
 
 NormalizedChord normalizeChord(const ChordEvent& event);
