@@ -163,7 +163,7 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 跨设备开发与 AI 接手从 [PROJECT_INDEX.md](PROJECT_INDEX.md) 定位；按 [AGENTS.md](AGENTS.md) 搜索并读取当前任务相关内容。
 
 - 不提供音频和弦识别、实时键盘录入、私有 Piano Roll / Playlist 格式解析或完整歌曲生成。
-- 真实 FL 扫描、文件拖放、缩放、Detached、工程恢复和播放位置仍待验收。标准测试宿主通过不能替代 FL 实测。
+- 用户已确认 RC1 在 FL Studio 实机全部通过；本版复用该证据，不推断未提供的宿主版本、系统或设备组合。标准测试宿主与用户实测分别记录。
 - [FL 兼容状态与中英文说明](docs/FL_STUDIO_COMPATIBILITY.md)
 - [0.10.0 更新说明](docs/V0_10_RELEASE_NOTES.md)
 
