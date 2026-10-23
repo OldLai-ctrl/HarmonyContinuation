@@ -2,11 +2,11 @@
 
 ## 本轮工作与下一步
 
-2026-10-21：RC1 三项 UI 修复与精简技术门禁完成，结论 **CONDITIONAL**，待用户确认本轮 Cubase 复验。版本 `0.10.0-rc.1`，源码 / BuildCommit `435ed852d50346d3c1ae8163451e6580fe4dac9e`（`435ed85`），分支 `development/preview-transport-20261021`。唯一 [RC1 Setup](../HarmonyContinuation-rc1-delivery-20261021/HarmonyContinuation-0.10.0-rc.1-Setup.exe)；Factory V5 / 658 / Schema2、Session5 / Snapshot3不变，dev.15包保留。
+2026-10-23：当前发布版本 **v0.10.0**，正式源码以 `v0.10.0` Tag 固定，main 为正式发布主线。[正式 Release 与安装包](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)提供唯一 `HarmonyContinuation-0.10.0-Setup.exe`、SHA-256 和精确 BuildCommit；功能与已验收 RC1 相同，仅调整正式版本元数据、构建配置及文档。
 
-光标增加下端手柄、整根命中和悬停反馈，命中区裁到可见卡片；升级插入使用既有暖色语义，移除和弦名前缀；色彩曲线按 startQN 定位。最终 UILayoutTests 与 CompactEditorUI **2/2通过**（2.11秒）；普通/升级动作与MIDI身份冒烟、一次隔离dev.15→RC1升级及安装后SDK编辑器2/2加载通过，用户样本与V4历史保留。未改音频/PreviewTransport、推荐策略、Factory、Schema及安装器逻辑；复用完整CTest34/34、Validator47/47、原生宿主42/42与安装生命周期26项历史日志，未重复完整矩阵。
+用户已明确确认 RC1 / `435ed85` 在 Cubase 和 FL Studio 实机全部验收通过，含播放手柄、升级高亮、起点曲线；此为用户提供的 RC1 证据，正式二进制未另行 DAW 实测。正式构建的相关 CTest、Validator、安装后加载、Factory V5/658、Session/Snapshot/用户库、RC1升级与数据保护的实际结果随 Release 发布；不把历史通过数字当作新的运行结果。
 
-用户本轮明确报告dev.15 Cubase双输出、MIDI、工程恢复与稳定性通过；RC1仅复查手柄、统一高亮、起点曲线及简短输出/恢复。精确SHA、前后截图、证据及四项清单见[RC报告](docs/DEV15_RC_REVIEW.md)，[发布说明草案](docs/V0_10_RELEASE_NOTES.md)已准备。用户明确确认RC1通过后才继续正常合并main、正式构建、Tag与Release；FL Studio仍Pending。源码、构建提交及最终文档HEAD分别记录。
+Factory V5 / 658 / Schema2、Session5 / Snapshot3、推荐质量与音频实现不变。RC1、dev.15包及开发分支保留。发布与回退说明见[正式更新说明](docs/V0_10_RELEASE_NOTES.md)及[安装文档](docs/INSTALLER_AND_LIBRARY.md)，原RC技术证据见[RC报告](docs/DEV15_RC_REVIEW.md)。原开发checkout的未提交协作文档保持原状，发布使用独立干净工作树；完整身份与最终门禁见Release资产。
 
 ### dev.14 历史交付（本轮用户报告Cubase验收已全部通过）
 

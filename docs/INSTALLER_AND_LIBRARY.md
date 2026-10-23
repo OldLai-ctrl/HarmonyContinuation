@@ -1,6 +1,6 @@
 # Windows 统一安装管理器
 
-当前正式版：0.9.0，Factory Library V3 / 629 条，唯一面向用户的包为 `HarmonyContinuation-0.9.0-Setup.exe`。保留 RC4 修复和 RC3 统一组件维护逻辑；仅正式输出文件名和版本说明改变，内部管理入口继续使用 HarmonyContinuation-Setup.exe。实际提交、哈希和复用证据见 [NOW](../NOW.md)。
+当前正式版：**0.10.0**，Factory V5 / 658 条，唯一面向用户的包为 `HarmonyContinuation-0.10.0-Setup.exe`，见[正式Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。可直接从RC1升级；Session5、Snapshot3及Factory/用户库Schema2不变，个人库和旧Factory保护契约沿用。实际BuildCommit与SHA-256见Release资产，发布说明见[版本记录](V0_10_RELEASE_NOTES.md)。
 
 ## 安装与维护
 

@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-RC1 当前交付与条件结论见[RC评审](docs/DEV15_RC_REVIEW.md)：播放手柄/整根命中、统一升级高亮及起点曲线；BuildCommit `435ed85`，Factory V5 / 658不变。UI定向2/2、最小隔离升级与安装后SDK加载通过；用户已报告dev.15 Cubase双输出、MIDI、工程恢复与稳定性通过，RC1四项复验仍Pending。[发布说明草案](docs/V0_10_RELEASE_NOTES.md)已准备，用户确认后继续正式发布。
+v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 
 当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
 

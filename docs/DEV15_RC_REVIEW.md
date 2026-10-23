@@ -1,5 +1,7 @@
 # dev.15 与 v0.10.0 RC 技术评审
 
+**2026-10-23 验收更新：** 用户已确认 RC1 / `435ed85` 在 Cubase、FL Studio 实机全部通过，三项 UI 修复通过，正式发布获明确授权。以下 Pending/CONDITIONAL 为当时开发交付记录；当前正式版本见 [v0.10.0 更新说明](V0_10_RELEASE_NOTES.md)。
+
 RC1 接续基线为 `7336c1d`，dev.15 包为 `626f164`。用户在本轮明确报告 dev.15 的 Host/Windows 双输出、MIDI、工程恢复与稳定性已在 Cubase 验收通过。RC1 三项 UI 变化仍需用户复验，FL Studio 实机仍 Pending。下文保留 dev.15 的原始工程证据和历史测试契约。
 
 ## RC1 UI 修复与精简门禁

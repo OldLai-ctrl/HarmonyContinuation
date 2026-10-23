@@ -6,15 +6,15 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
-| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布分支 `main` / Tag `v0.9.0`；保留开发主线 `v0.9/dev`；`library/v3` 保留已完成内容历史 |
-| 主开发 checkout | `HarmonyContinuation-release/` → `development/preview-transport-20261021` | RC1源码/BuildCommit `435ed85`；三项UI修复与精简门禁完成，待RC1 Cubase确认；详见[NOW](NOW.md)及[RC报告](docs/DEV15_RC_REVIEW.md) |
-| 当前验证与测试包 | 同级 `HarmonyContinuation-rc1-validation-20261021/`、`HarmonyContinuation-rc1-delivery-20261021/`；隔离升级复用既有dev.15 workspace fixture | 唯一RC1 Setup、前后截图、UI2/2及最小升级/SDK加载证据；dev.15产物和历史完整门禁保留，真实RC1 Cubase复验Pending |
+| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 正式发布 `main` / Tag `v0.10.0`；保留全部既有开发分支和 v0.9.0 历史 |
+| 主开发 checkout | `HarmonyContinuation-release/` → `development/preview-transport-20261021` | 原未提交协作文档保留；正式合并来源为 PR #3，功能基线 RC1 / 435ed85 |
+| 当前验证与测试包 | 同级 `HarmonyContinuation-v010-validation-20261023/`、`HarmonyContinuation-v010-delivery-20261023/` | 正式 v0.10.0 构建、门禁日志与唯一Setup；RC1/dev.15目录保留 |
 | Phase 7 UI 原型 | 同级 `HarmonyContinuation-phase7/` → `design/phase7-ui-20261016` | 独立工作树；Phase6.1 没有修改 MainView |
 | Phase 7 正式 UI | 同级 `HarmonyContinuation-phase7-vstgui/` → `development/phase7-vstgui-20261019` | 保留A3设计历史，正式源码adb88dd已合入统一引擎dev.12单包；远端c17a795与unified/013b4c2源码相同，dev.13新增输出/UI在主开发分支；当前状态见[NOW](NOW.md)；定向构建/原生图在同级`HarmonyContinuation-phase7-build/` |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
-| 正式构建与打包输出 | `<checkout>/build-installer/release-0.9.0/`、其 `evidence/` 及 `build-installer/tools/Inno/` | 保留正式产物；`.gitignore` 排除，另一设备独立构建 |
+| 正式构建与打包输出 | 同级 `HarmonyContinuation-v010-release-20261023/` 干净发布工作树；正式产物见上一行与 GitHub Release | Tag、main发布提交、About BuildCommit、moduleinfo及Setup身份一致；旧0.9.0输出保留 |
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
