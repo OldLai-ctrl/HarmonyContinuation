@@ -2,6 +2,18 @@
 
 ## 本轮工作与下一步
 
+### G01 / G2 和弦祈愿核心（2026-10-23）
+
+分支 `development/g01-chord-wish-20261023`，接手HEAD `99310f1`，基于正式源码 `c8d8dc3`。G1由用户结项并批准G2；本轮仅完成独立多调式标注及双路径抽样核心。规格和编辑样例在[标注目录](data/mode-annotations/v1/README.md)，已批准决定见[D12](DECISIONS.md#d12-g01-多调式归属与独立抽样g2)。第六入口、插件UI、宿主接线与Setup未实施，G3/G4尚未验收。
+
+- 实现：精确ID/源音乐身份绑定、多归属与编辑常用程度、明确的未标注/未审校/无法确认/失配状态；纯随机输入隔离、Unified原资格约束路径、12主音、多选并集/严格筛选、完整音乐身份去重、固定种子及连续无放回。输入路径保留全局shortlist预算并逐源资格判定，避免引擎原后缀聚合丢失不同来源前缀。相关原评分、Factory、Schema2、Session5、Snapshot3未改。
+- 数据：3条真实进行/4个逐条编辑审校归属；其余655条保持无标注，可进入无调式约束池。无约束实化去重得到7788条完整音乐；枚举支持不代表所有调式已有审校卡池。
+- 本轮实际验证：Release / HC_BUILD_PLUGIN=OFF，`WishCoreFocused`报告1001检查通过；`MidiExportTests`598、`PreviewTests`129、`ContinuationEngineTests`323/323通过。覆盖真实V5加载、源失配、多归属、12调、完整前缀身份、单轮抽样与完整/空续写Snapshot3及MIDI字节往返。[首轮日志](../HarmonyContinuation-g02-validation-20261023/tests.log)中Wish曾因合成功能投影缺失而失败；修正夹具后[Wish最终日志](../HarmonyContinuation-g02-validation-20261023/tests-wish-final.log)通过，其他三个目标未重复运行。默认Debug探测曾报C1902，改为Release探测后构建成功；未跳过编译器检测。
+- 来源证据：[哈希核对](../HarmonyContinuation-g02-validation-20261023/source-hashes.log)显示本轮源码重建库与已安装V5逐字节SHA-256一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`；正式Setup本体与其既有哈希一致，包内DB尚未直接解包比对，继续保留此证据缺口。
+- 工程条件已满足进入G3；实际UI、原生宿主、用户实听及开发Setup仍待后续工作包。未推送、未合并main、未建Tag或Release；接手前既存协作文档改动保留。
+
+### 正式基线与既有整理
+
 2026-10-23：当前发布版本 **v0.10.0**，正式源码以 `v0.10.0` Tag 固定，main 为正式发布主线。[正式 Release 与安装包](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)提供唯一 `HarmonyContinuation-0.10.0-Setup.exe`、SHA-256 和精确 BuildCommit；功能与已验收 RC1 相同，仅调整正式版本元数据、构建配置及文档。
 
 用户已明确确认 RC1 / `435ed85` 在 Cubase 和 FL Studio 实机全部验收通过，含播放手柄、升级高亮、起点曲线；此为用户提供的 RC1 证据，正式二进制未另行 DAW 实测。正式构建的相关 CTest、Validator、安装后加载、Factory V5/658、Session/Snapshot/用户库、RC1升级与数据保护的实际结果随 Release 发布；不把历史通过数字当作新的运行结果。

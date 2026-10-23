@@ -83,6 +83,22 @@ BuildResult buildTemplateSequence(const ProgressionTemplate& item,KeySignature k
     if(!templateProgression(item,key,imported,error))return {{},error};
     return buildSequence(imported,nullptr,tempo);
 }
+SourceRouteResult templateRoute(const ProgressionTemplate& item,KeySignature key) {
+    SourceRouteResult result;
+    result.meterNumerator=item.meterNumerator;result.meterDenominator=item.meterDenominator;
+    if(!templateProgression(item,key,result.imported,result.error))return result;
+    const auto realized=buildSequence(result.imported,nullptr,defaultTempoBPM);
+    if(!realized){result.error=realized.error;return result;}
+    for(std::size_t i=0;i<result.imported.events.size();++i) {
+        result.imported.events[i].durationQN=realized.sequence.events[i].durationQN;
+        result.imported.events[i].openEnded=false;
+    }
+    result.candidate.primaryTemplate=item.id;result.candidate.key=key;
+    result.candidate.intent=PhraseIntent::Neutral;
+    result.candidate.id="source:"+item.id;
+    result.candidate.baseQualified=false; // no input qualification was performed
+    return result;
+}
 SourceRouteResult sourceRoute(const ImportedProgressionSession& input,const ContinuationCandidate& candidate,
     const ProgressionTemplate& item) {
     SourceRouteResult result;result.candidate=candidate;

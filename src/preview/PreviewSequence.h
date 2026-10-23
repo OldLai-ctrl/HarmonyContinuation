@@ -40,6 +40,8 @@ PreviewRange previewRange(const Sequence&,PreviewScope) noexcept;
 BuildResult buildSequence(const ImportedProgressionSession&,const ContinuationCandidate*,double tempoBPM,
     const HarmonyConstraintSet& constraints={});
 BuildResult buildTemplateSequence(const ProgressionTemplate&,KeySignature,double tempoBPM);
+// Complete authored route without a query or a fabricated match; empty candidate suffix.
+SourceRouteResult templateRoute(const ProgressionTemplate&,KeySignature);
 SourceRouteResult sourceRoute(const ImportedProgressionSession&,const ContinuationCandidate&,const ProgressionTemplate&);
 Chord chordFromLabel(const std::string&,ChordQuality hint=ChordQuality::Unknown);
 } // namespace harmony::preview
