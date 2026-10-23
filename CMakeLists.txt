@@ -106,7 +106,7 @@ if(HC_BUILD_PLUGIN)
         src/plugin/Processor.cpp src/plugin/Controller.cpp src/plugin/PluginEntry.cpp
         src/plugin/HostContextAdapter.cpp src/plugin/DropCapture.cpp src/plugin/PluginView.cpp
         src/plugin/RecommendationWorker.cpp src/plugin/HostAdapters.cpp
-        src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
+        src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp src/ui/MainViewWish.cpp)
     if(WIN32)
         target_sources(HarmonyContinuation PRIVATE src/plugin/platform/windows/ClipboardInspector.cpp)
     endif()
@@ -190,9 +190,20 @@ target_link_libraries(harmony_preview PUBLIC harmony_core)
 target_include_directories(harmony_preview PUBLIC src)
 target_compile_features(harmony_preview PUBLIC cxx_std_20)
 
-# G01/G2 core only. No plugin/UI or persistence format integration.
-add_library(harmony_wish STATIC src/wish/MusicIdentity.cpp src/wish/ModeAnnotations.cpp src/wish/WishSampler.cpp)
-target_link_libraries(harmony_wish PUBLIC harmony_library harmony_preview)
+# Embed the reviewed sidecar; installed plugins must not depend on a source checkout path.
+set(HC_WISH_CATALOG "${CMAKE_CURRENT_SOURCE_DIR}/data/mode-annotations/v2/factory-v5.hca")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${HC_WISH_CATALOG}")
+file(STRINGS "${HC_WISH_CATALOG}" HC_WISH_LINES ENCODING UTF-8)
+set(HC_WISH_HEADER "#pragma once\nnamespace harmony::wish::generated {\ninline constexpr const char* catalogLines[] = {\n")
+foreach(HC_WISH_LINE IN LISTS HC_WISH_LINES)
+    string(APPEND HC_WISH_HEADER "R\"HCANN(${HC_WISH_LINE}\n)HCANN\",\n")
+endforeach()
+string(APPEND HC_WISH_HEADER "};\n}\n")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/WishCatalogData.h" "${HC_WISH_HEADER}")
+add_library(harmony_wish STATIC src/wish/MusicIdentity.cpp src/wish/ModeAnnotations.cpp src/wish/WishSampler.cpp
+    src/wish/WishCatalog.cpp src/wish/WishWorkflow.cpp)
+target_link_libraries(harmony_wish PUBLIC harmony_library harmony_preview harmony_color)
+target_include_directories(harmony_wish PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_compile_features(harmony_wish PUBLIC cxx_std_20)
 if(MSVC)
     target_compile_options(harmony_wish PRIVATE /W4 /permissive- /utf-8)
@@ -261,7 +272,7 @@ add_executable(benchmark_compare tools/benchmark_compare.cpp)
 target_link_libraries(benchmark_compare PRIVATE harmony_benchmark)
 if(HC_BUILD_PLUGIN AND WIN32)
     add_executable(HarmonyContinuationDemo WIN32 src/demo/DemoMain.cpp
-        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp)
+        src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp src/ui/MainViewWish.cpp)
     target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_benchmark harmony_enrichment harmony_host harmony_io vstgui_support comctl32 shell32 winmm comdlg32)
     target_compile_features(HarmonyContinuationDemo PRIVATE cxx_std_20)
     target_compile_definitions(HarmonyContinuationDemo PRIVATE NOMINMAX
@@ -269,7 +280,7 @@ if(HC_BUILD_PLUGIN AND WIN32)
         HC_BENCH_CASE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/continuation"
         HC_BENCH_RATING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark/ratings")
     target_include_directories(HarmonyContinuationDemo PRIVATE "${VST3_SDK_ROOT}")
-    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_color)
+    target_link_libraries(HarmonyContinuationDemo PRIVATE harmony_color harmony_wish)
     add_dependencies(HarmonyContinuationDemo factory_database)
     if(MSVC)
         target_compile_options(HarmonyContinuationDemo PRIVATE /utf-8 /W4)
@@ -360,7 +371,7 @@ target_compile_definitions(midi_export_cli PRIVATE HC_FACTORY_DB_PATH="${HC_FACT
     HC_DEMO_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/demo")
 add_dependencies(midi_export_cli factory_database)
 if(HC_BUILD_PLUGIN)
-    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment harmony_snapshot harmony_host harmony_io harmony_color)
+    target_link_libraries(HarmonyContinuation PRIVATE harmony_product harmony_enrichment harmony_snapshot harmony_host harmony_io harmony_color harmony_wish)
     if(WIN32)
         target_link_libraries(HarmonyContinuation PRIVATE winmm comdlg32)
     endif()
@@ -475,7 +486,7 @@ if(BUILD_TESTING)
     add_dependencies(MidiExportTests factory_legacy_database)
     add_test(NAME MidiExportTests COMMAND MidiExportTests)
     # Existing facilities have no draw-round/annotation coverage; one focused target reuses their APIs.
-    add_executable(WishTests tests/WishTests.cpp tests/WishAnnotationChecks.cpp tests/WishSamplerChecks.cpp)
+    add_executable(WishTests tests/WishTests.cpp tests/WishAnnotationChecks.cpp tests/WishSamplerChecks.cpp tests/WishWorkflowChecks.cpp)
     target_link_libraries(WishTests PRIVATE harmony_wish harmony_snapshot)
     target_compile_definitions(WishTests PRIVATE
         HC_WISH_FACTORY_DB_PATH="${HC_FACTORY_DB}"
@@ -568,10 +579,10 @@ if(BUILD_TESTING AND HC_BUILD_PLUGIN AND WIN32)
     target_link_libraries(hc_sdk_host_loader PUBLIC sdk_hosting)
     target_compile_features(hc_sdk_host_loader PRIVATE cxx_std_17)
     add_executable(HostContractHarness tests/HostContractHarness.cpp
-        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp
+        src/plugin/HostContextAdapter.cpp src/plugin/HostAdapters.cpp src/plugin/RecommendationWorker.cpp src/ui/MainView.cpp src/ui/MainViewCompact.cpp src/ui/MainViewPreview.cpp src/ui/MainViewWish.cpp
 )
     target_link_libraries(HostContractHarness PRIVATE harmony_host harmony_io harmony_product harmony_xml harmony_snapshot hc_sdk_host_loader vstgui_support winmm)
-    target_link_libraries(HostContractHarness PRIVATE harmony_color)
+    target_link_libraries(HostContractHarness PRIVATE harmony_color harmony_wish)
     target_include_directories(HostContractHarness PRIVATE "${VST3_SDK_ROOT}")
     target_compile_definitions(HostContractHarness PRIVATE NOMINMAX
         HC_FACTORY_DB_PATH="${HC_FACTORY_DB}"
@@ -658,6 +669,8 @@ if(HC_BUILD_PLUGIN)
 endif()
 if(BUILD_TESTING AND TARGET HostContractHarness)
  add_test(NAME CompactEditorUI COMMAND HostContractHarness --compact-ui "${CMAKE_BINARY_DIR}/compact-ui-evidence")
+ add_test(NAME WishEditorUI COMMAND HostContractHarness --wish-ui "${CMAKE_BINARY_DIR}/wish-ui-evidence")
+ set_tests_properties(WishEditorUI PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
  set_tests_properties(CompactEditorUI PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
 endif()
 if(WIN32)

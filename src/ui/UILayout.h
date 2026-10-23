@@ -97,7 +97,7 @@ inline CompactLayoutResult computeCompactLayout(double width,double height,doubl
     return out;
 }
 
-inline UiRect compactIntentTabGeometry(UiRect toolbar,std::size_t index,std::size_t count=5) noexcept {
+inline UiRect compactIntentTabGeometry(UiRect toolbar,std::size_t index,std::size_t count=6) noexcept {
     if(count==0||index>=count)return {};
     constexpr double gap=4.;
     const double width=(toolbar.width()-gap*(count-1))/count;

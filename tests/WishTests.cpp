@@ -3,6 +3,7 @@
 #include "midi/MidiWorkflow.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "TemplateJson.h"
+#include "wish/WishCatalog.h"
 #include <algorithm>
 #include <array>
 #include <iomanip>
@@ -14,6 +15,7 @@
 
 int runWishAnnotationChecks();
 int runWishSamplerChecks();
+int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>&,const harmony::wish::AnnotationCatalog&);
 int main(int argc,char** argv) {
     try {
         using namespace harmony;
@@ -35,6 +37,10 @@ int main(int argc,char** argv) {
         require(factory.libraryVersion==5 && factory.storageSchemaVersion==2 && factory.templates.size()==658,"real V5 contract");
         const auto annotations=wish::loadAnnotations(HC_WISH_ANNOTATION_PATH);
         require(bool(annotations),annotations.error.c_str());
+        const auto embedded=wish::builtinAnnotations();
+        require(bool(embedded)&&wish::serializeAnnotations(embedded.catalog)==wish::serializeAnnotations(annotations.catalog),
+                "embedded deployment annotations exactly match reviewed sidecar");
+        checks+=runWishWorkflowChecks(factory.templates,embedded.catalog);
         std::map<std::string,const wish::ModeAnnotation*> annotationsById;
         for(const auto& entry:annotations.catalog.entries)
             require(annotationsById.emplace(entry.templateId,&entry).second,

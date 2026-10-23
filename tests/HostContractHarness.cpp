@@ -206,6 +206,63 @@ private:
 };
 }
 int main(int argc,char** argv){
+    if(argc==3&&std::string(argv[1])=="--wish-ui") {
+        const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+        VSTGUI::init(GetModuleHandleW(nullptr));
+        auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
+        platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
+        Window window;VSTGUI::CFrame* frame{};bool frameOpened{};bool passed{};
+        try {
+            const auto output=std::filesystem::absolute(argv[2]);
+            std::filesystem::create_directories(output);
+            auto factory=library::loadFactory(HC_FACTORY_DB_PATH);
+            require(static_cast<bool>(factory),"configured V5 Factory database could not be loaded: "+factory.error);
+            const auto factoryCount=factory.templates.size();
+
+            auto parsed=dev::parseProgressionJson(
+                R"([{"name":"C","start":0},{"name":"G","start":4},{"name":"Am","start":8}])");
+            require(static_cast<bool>(parsed),"Wish UI input-isolation fixture could not be parsed: "+parsed.error);
+            require(sortAndInferDurations(parsed.events),"Wish UI input-isolation fixture could not be normalized");
+            session::PluginSessionState state;state.editorWidth=800;state.editorHeight=780;
+            state.factoryLibraryVersion=factory.libraryVersion;
+            require(state.imported.replace(std::move(parsed.events),TimelineCoordinateMode::RelativeToSelection),
+                    "Wish UI input-isolation progression could not be installed");
+
+            frame=new VSTGUI::CFrame({0,0,800,780},nullptr);
+            auto* view=new ui::MainView({0,0,800,780},{});frame->addView(view);
+            frameOpened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);
+            require(frameOpened,"Wish UI VSTGUI frame could not be opened at 800x780");
+            view->setSessionState(state);
+            view->setLibrary(std::move(factory.templates),{});
+            view->setAnalysis(analyzeHarmony(state.imported.events,state.analysisContext()));
+            view->setMatches({},"Wish UI smoke");
+            view->setRecommendations({});
+            view->setWorkerStatus(0,0,false,factoryCount,0,false);
+
+            const auto context=VSTGUI::COffscreenContext::create({800,780});
+            require(static_cast<bool>(context),"Wish UI VSTGUI offscreen context could not be created");
+            const auto saveScreenshot=[&](const std::string& name){
+                auto filename=std::filesystem::path(name);
+                if(filename.extension().empty())filename += ".png";
+                context->beginDraw();view->drawRect(context,{0,0,800,780});context->endDraw();
+                const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(
+                    context->getBitmap()->getPlatformBitmap());
+                std::ofstream file(output/filename,std::ios::binary);
+                file.write(reinterpret_cast<const char*>(png.data()),static_cast<std::streamsize>(png.size()));
+                file.close();
+                require(file.good()&&!png.empty(),"Wish UI VSTGUI PNG capture failed: "+filename.string());
+            };
+            require(view->runWishSmoke(context.get(),saveScreenshot),"Wish UI interaction smoke failed");
+            saveScreenshot("wish-final.png");
+            frame->close();frame=nullptr;frameOpened=false;passed=true;
+            std::cout<<"Wish VSTGUI PNGs saved under: "<<output.string()<<'\n';
+        } catch(const std::exception& e) {
+            std::cerr<<"Wish UI smoke failure: "<<e.what()<<'\n';
+            if(frame&&frameOpened)frame->close();
+        }
+        VSTGUI::exit();if(SUCCEEDED(comResult))CoUninitialize();
+        return passed?0:1;
+    }
     if(argc==3&&(std::string(argv[1])=="--compact-ui"||std::string(argv[1])=="--exploration-ui"||std::string(argv[1])=="--source-route-ui"||std::string(argv[1])=="--template-skip-ui")) {
         const bool exploration=std::string(argv[1])=="--exploration-ui";
         const bool sourceRouteCase=std::string(argv[1])=="--source-route-ui";

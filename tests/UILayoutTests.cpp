@@ -232,14 +232,17 @@ int main(){
             !overlap(compact.recommendationHeading,compact.intentToolbar)&&
             !overlap(compact.intentToolbar,compact.cardsViewport)&&!overlap(compact.cardsViewport,compact.footer),
             "A3 region separation");
-        for(const auto toolbar:{compact.intentToolbar,computeCompactLayout(800,780,1.5).intentToolbar}) {
-            std::array<UiRect,5> tabs{};
+        for(const auto zoom:{1.,1.25,1.5}) {
+            const auto toolbar=computeCompactLayout(800,780,zoom).intentToolbar;
+            std::array<UiRect,6> tabs{};
             for(std::size_t i=0;i<tabs.size();++i){
                 tabs[i]=compactIntentTabGeometry(toolbar,i);
-                check(inside(tabs[i],toolbar)&&tabs[i].width()>70,"A3 five intent tabs remain readable");
-                for(std::size_t j=0;j<i;++j)check(!overlap(tabs[j],tabs[i]),"A3 intent tabs do not overlap");
+                check(inside(tabs[i],toolbar)&&tabs[i].width()>70,"A3 six primary tabs remain clickable at 800x780 and 100/125/150% zoom");
+                check(tabs[i].contains((tabs[i].left+tabs[i].right)/2,(tabs[i].top+tabs[i].bottom)/2),
+                    "A3 six primary tab center remains inside its hit rectangle");
+                for(std::size_t j=0;j<i;++j)check(!overlap(tabs[j],tabs[i]),"A3 six primary tab hit rectangles do not overlap");
             }
-            check(compactIntentTabGeometry(toolbar,5).width()==0,"A3 invalid intent tab is empty");
+            check(compactIntentTabGeometry(toolbar,tabs.size()).width()==0,"A3 invalid seventh primary tab is empty");
         }
 
         const auto wideCard=compactCandidateGeometry({12,270,788,664},270,false);

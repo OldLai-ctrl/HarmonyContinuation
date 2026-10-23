@@ -81,6 +81,14 @@ void MainView::refreshBrowse(){
 const std::vector<BrowseEntry>& MainView::browseRows(){refreshBrowse();return browseRows_[browseCategory()];}
 void MainView::changeBrowseCategory(std::size_t category){
     seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;
+    if(category==5){
+        if(!wishMode_){browseScroll_[browseCategory()]=compactScroll_;browseSelected_[browseCategory()]=compactSelected_;}
+        wishMode_=true;ensureWish();compactScroll_=wishScroll_;compactSelected_=wishSelected_;
+        selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();overviewOpen_=false;
+        midiPending_.reset();midiClick_={};if(actions_.stopAudition)actions_.stopAudition();invalid();return;
+    }
+    if(wishMode_){wishScroll_=compactScroll_;wishSelected_=compactSelected_;wishMode_=false;
+        compactScroll_=browseScroll_[browseCategory()];compactSelected_=browseSelected_[browseCategory()];}
     if(category!=browseCategory()&&actions_.stopAudition)actions_.stopAudition();
     browseScroll_[browseCategory()]=compactScroll_;browseSelected_[browseCategory()]=compactSelected_;
     state_.productMode=category==4?session::ProductMode::Enrich:session::ProductMode::Continue;
@@ -138,6 +146,14 @@ std::string MainView::recommendationListText(){
     }return out.str();
 }
 void MainView::drawBrowseControls(CDrawContext* dc,const CompactLayoutResult& g){
+    if(wishMode_){
+        const auto count=wishView_?wishView_->items.size():0;const auto page=browsePage(count,wishPage_);
+        const double y=g.footer.bottom-25;const bool ready=wishView_&&!wishView_->busy;
+        text(dc,"已抽 "+std::to_string(count)+" · 剩余 "+std::to_string(wishView_?wishView_->remaining:0),{g.cardsViewport.left+4,y,g.cardsViewport.right-220,y+22},10,secondary);
+        text(dc,(page.pages?std::to_string(page.page+1):"0")+" / "+std::to_string(page.pages),{g.cardsViewport.right-150,y,g.cardsViewport.right-68,y+22},11,secondary,kCenterText);
+        compactButton(dc,{g.cardsViewport.right-216,y,g.cardsViewport.right-152,y+22},"上一页",CompactAction::PagePrevious,{},0,false,ready&&page.page>0);
+        compactButton(dc,{g.cardsViewport.right-64,y,g.cardsViewport.right,y+22},"下一页",CompactAction::PageNext,{},0,false,ready&&page.page+1<page.pages);return;
+    }
     const bool zh=state_.locale==session::Locale::ZhCN;const auto& rows=browseRows();
     const auto page=browsePage(rows.size(),browsePages_[browseCategory()]);browsePages_[browseCategory()]=page.page;
     const bool ready=!workerBusy_&&recommendationResultReady_;
@@ -264,7 +280,7 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
     if(display>=0){cursorHit={playheadX-11,area.top,playheadX+11,area.bottom-2};cursorHit.bound(rect(area));
         if(compactInCards_)cursorHit.bound(rect(computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom()).cardsViewport));}
     if(seek.getWidth()>0&&seek.getHeight()>0)seekHits_.push_back({seek,candidate.id,area.left-offset,width,total,
-        auditionSuffix_&&!findEnrichment(candidate.id)?sourceQN:0.,cursorHit});
+        auditionSuffix_&&!findEnrichment(candidate.id)&&!(wishItem(candidate.id)&&!wishItem(candidate.id)->match)?sourceQN:0.,cursorHit});
     ConcatClip clip(*dc,rect(area));double x=area.left-offset,position{};
     for(const auto& e:cells){const double w=width*e.qn/total;
         const auto kind=e.sourceIndex&&*e.sourceIndex<provenance.size()?provenance[*e.sourceIndex].kind:EnrichmentProvenanceKind::Original;
@@ -294,8 +310,11 @@ void MainView::drawCompactRibbon(CDrawContext* dc,const preview::SourceRouteResu
 void MainView::drawRecommendationAlignment(CDrawContext* dc,const ContinuationCandidate& c,UiRect area){
     const bool zh=state_.locale==session::Locale::ZhCN;
     text(dc,(zh?std::string("输入与匹配 · 上方播放来源，下方原输入 · "):std::string("Input alignment · source above / query below · "))+formatKey(c.key),{area.left,area.top,area.right,area.top+18},10,secondary);
-    const auto found=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
-    const auto cells=found==matches_.end()?std::vector<RecommendationAlignmentCell>{}:recommendationAlignment(state_.imported,c,*found,snapshotMode_);
+    const auto matched=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
+    const auto* wish=wishItem(c.id);
+    const auto* found=wish&&wish->match?&*wish->match:matched==matches_.end()?nullptr:&*matched;
+    const auto& query=wish?wishInput_.imported:state_.imported;
+    const auto cells=found?recommendationAlignment(query,c,*found,wish?false:snapshotMode_):std::vector<RecommendationAlignmentCell>{};
     if(cells.empty()){text(dc,zh?"原始输入匹配关系不可用":"Original query alignment unavailable",{area.left,area.top+22,area.right,area.bottom},11,secondary);return;}
     const double top=area.top+21,width=std::max(area.width(),cells.size()*100.);
     auto& offset=compactRibbonScroll_[c.id+"@source"];offset=std::clamp(offset,0.,width-area.width());
@@ -308,7 +327,7 @@ void MainView::drawRecommendationAlignment(CDrawContext* dc,const ContinuationCa
         const auto color=insert?CColor(92,70,38,255):skip?CColor(91,48,63,255):cell.kind==AlignmentCellKind::Continuation?CColor(52,75,112,255):CColor(48,58,73,255);
         fill(dc,{x,top,x+cellWidth-1,area.bottom-3},color);
         std::string chord="—",duration,degree;
-        if(cell.queryIndex){const auto& e=state_.imported.events[*cell.queryIndex];chord=e.name;duration=e.openEnded||!e.durationQN?"OPEN":number(*e.durationQN)+" QN";}
+        if(cell.queryIndex){const auto& e=query.events[*cell.queryIndex];chord=e.name;duration=e.openEnded||!e.durationQN?"OPEN":number(*e.durationQN)+" QN";}
         else if(cell.kind==AlignmentCellKind::Continuation){const auto& events=route?route.candidate.continuation:c.continuation;
             if(suffix<events.size()){chord=events[suffix].label;duration=number(events[suffix].durationQN)+" QN";}++suffix;}
         if(cell.templateIndex)degree=found->templateLabels[*cell.templateIndex];
@@ -330,6 +349,7 @@ void MainView::drawCompact(CDrawContext* dc){
     compactButton(dc,{g.header.right-218,8,g.header.right-122,40},zh?(detailedCards_?"简略模式":"详细模式"):(detailedCards_?"Compact":"Detailed"),CompactAction::Density);
     compactButton(dc,{g.header.right-114,8,g.header.right-64,40},zh?"曲库":"Library",CompactAction::Library);
     compactButton(dc,{g.header.right-56,8,g.header.right-8,40},zh?"高级":"More",CompactAction::Advanced);
+    if(wishMode_){drawWish(dc,g);return;}
     rounded(dc,g.input,surface,edge,10);
     const double l=g.input.left+10,r=g.input.right-10,y=g.input.top;
     text(dc,zh?"当前输入":"INPUT",{l,y+4,l+85,y+25},11,secondary);
@@ -360,17 +380,13 @@ void MainView::drawCompact(CDrawContext* dc){
     compactButton(dc,{r-96,y+100,r,y+130},state_.skeletonView?"SKELETON":"FULL",CompactAction::FullView);
     text(dc,state_.meterNumerator&&state_.meterDenominator?std::to_string(*state_.meterNumerator)+"/"+std::to_string(*state_.meterDenominator):"—",{l+284,y+100,r-100,y+130},11,secondary);
     text(dc,state_.productMode==session::ProductMode::Enrich?(zh?"升级进行":"ENRICHMENTS"):(zh?"推荐续写":"CONTINUATIONS"),g.recommendationHeading,14);
-    constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};
-    for(std::size_t i=0;i<4;++i)compactButton(dc,compactIntentTabGeometry(g.intentToolbar,i),tIntent(intents[i]),
-        CompactAction::Intent,{},i,state_.productMode==session::ProductMode::Continue&&compactGroup_==i);
-    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,4),zh?"升级进行":"Enrich",CompactAction::Enrichment,{},0,
-        state_.productMode==session::ProductMode::Enrich);
+    drawPrimaryTabs(dc,g);
     if(state_.productMode==session::ProductMode::Enrich){
         drawCompactEnrichments(dc,g);compactInCards_=false;drawCompactTransport(dc);drawResponsiveForm(dc);drawRecommendationOverview(dc);return;
     }
     const auto& all=browseRows();const auto page=browsePage(all.size(),browsePages_[browseCategory()]);
     if(compactSelected_.empty()&&page.begin<page.end)compactSelected_=recommendations_.groups[compactGroup_][all[page.begin].index].id;
-    const bool ready=!workerBusy_&&recommendationResultReady_;
+    const bool ready=wishMode_?(wishView_&&!wishView_->busy):!workerBusy_&&recommendationResultReady_;
     double cy=g.cardsViewport.top-compactScroll_,end=cy;
     {
     ConcatClip clip(*dc,rect(g.cardsViewport));
@@ -518,10 +534,10 @@ void MainView::drawCompactEnrichments(CDrawContext* dc,const CompactLayoutResult
 
 void MainView::drawCompactTransport(CDrawContext* dc){
     const bool zh=state_.locale==session::Locale::ZhCN;const auto g=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
-    const bool ready=!workerBusy_&&recommendationResultReady_;
+    const bool ready=wishMode_?(wishView_&&!wishView_->busy):!workerBusy_&&recommendationResultReady_;
     fill(dc,g.footer,surface);const double fy=g.footer.top+8,fl=g.footer.left+12,fr=g.footer.right-12;
     const auto* selectedContinuation=findCandidate(compactSelected_);
-    compactButton(dc,{fl,fy,fl+48,fy+36},auditionState_==preview::PlaybackState::Paused?"▶ 继续":"▶",CompactAction::Play,{},0,false,ready&&!auditionPending_&&(state_.productMode==session::ProductMode::Enrich?
+    compactButton(dc,{fl,fy,fl+48,fy+36},auditionState_==preview::PlaybackState::Paused?"▶ 继续":"▶",CompactAction::Play,{},0,false,ready&&!auditionPending_&&(!wishMode_&&state_.productMode==session::ProductMode::Enrich?
         (findEnrichment(compactSelected_)&&static_cast<bool>(actions_.auditionEnrichment)):
         (selectedContinuation&&static_cast<bool>(actions_.audition)&&static_cast<bool>(continuationRoute(*selectedContinuation)))));
     compactButton(dc,{fl+54,fy,fl+94,fy+36},"Ⅱ",CompactAction::Pause,{},0,false,auditionState_==preview::PlaybackState::Playing&&!auditionPending_&&static_cast<bool>(actions_.pauseAudition));
@@ -530,13 +546,14 @@ void MainView::drawCompactTransport(CDrawContext* dc){
     text(dc,std::string(status)+" · "+(auditionHostBackend_?"Host Audio":"Windows Audio"),{fl+152,fy,fr-132,fy+19},11,secondary);
     compactButton(dc,{fr-128,fy,fr,fy+32},auditionHostBackend_?"Host Audio":"Windows Audio",CompactAction::Backend,{},0,auditionHostBackend_,!auditionPending_&&static_cast<bool>(actions_.previewBackend));
     const auto objectId=!previewCandidateId_.empty()?previewCandidateId_:
-        state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()?selectedEnrichment()->id:compactSelected_;
+        !wishMode_&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()?selectedEnrichment()->id:compactSelected_;
     std::string object="—";
     if(const auto* candidate=findCandidate(objectId))object=(zh?"当前对象 · ":"Current · ")+candidate->primaryTemplate;
     else if(const auto* candidate=findEnrichment(objectId))object=(zh?"升级进行 · ":"Enrichment · ")+candidate->id;
     text(dc,object+(!actionStatus_.empty()?" · "+actionStatus_:""),{fl+152,fy+18,fr-132,fy+39},11);
     const double by=fy+44;
-    compactButton(dc,{fl,by,fl+98,by+30},state_.productMode==session::ProductMode::Enrich?(zh?"完整升级进行":"Full enrichment"):auditionSuffix_?(zh?"仅后续":"Suffix only"):(zh?"完整进行":"Full phrase"),CompactAction::Scope,{},0,auditionSuffix_,state_.productMode!=session::ProductMode::Enrich);
+    const bool fullWish=wishMode_&&(!wishSettings_.useInput);
+    compactButton(dc,{fl,by,fl+98,by+30},fullWish?"完整来源":!wishMode_&&state_.productMode==session::ProductMode::Enrich?(zh?"完整升级进行":"Full enrichment"):auditionSuffix_?(zh?"仅后续":"Suffix only"):(zh?"完整进行":"Full phrase"),CompactAction::Scope,{},0,auditionSuffix_&&!fullWish,!fullWish&&(wishMode_||state_.productMode!=session::ProductMode::Enrich));
     compactButton(dc,{fl+106,by,fl+220,by+30},auditionCustom_?(zh?"自定义 BPM":"Custom BPM"):(zh?"跟随宿主":"Follow host"),CompactAction::TempoMode);
     compactButton(dc,{fl+228,by,fl+310,by+30},number(auditionCustom_?auditionBpm_:auditionEffectiveBpm_)+" BPM",CompactAction::Tempo);
     text(dc,auditionCustom_?(zh?"仅影响试听":"Audition only"):auditionHostValid_?(zh?"宿主速度有效":"Host tempo valid"):(zh?"宿主不可用 · 回退 ":"Host unavailable · fallback ")+number(auditionEffectiveBpm_),
@@ -552,6 +569,8 @@ bool MainView::onCompactMouseDown(CPoint& where){
         if(!h.enabled)return true;
         compactPressed_=h.rect;
         const auto id=h.id;const auto index=h.index;const auto action=h.action;
+        if(action==CompactAction::Wish){changeBrowseCategory(5);return true;}
+        if(wishMode_&&onWishAction(h,where)){invalid();return true;}
         const bool zh=state_.locale==session::Locale::ZhCN;
         const auto* c=findCandidate(id);
         const auto enrichmentRef=[&]()->std::optional<std::pair<std::size_t,std::size_t>>{
@@ -821,10 +840,10 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
             for(const auto& h:compactHits_)if(h.action==CompactAction::Select){
                 ++circles;okay=okay&&std::abs(h.rect.getWidth()-h.rect.getHeight())<.01&&h.rect.getWidth()==28;
                 okay=okay&&!h.contains({h.rect.left+.1,h.rect.top+.1});}
-            std::size_t tabs=0;for(const auto& h:compactHits_)tabs+=h.action==CompactAction::Intent||h.action==CompactAction::Enrichment;
-            okay=okay&&tabs==5&&circles>0&&get(CompactAction::Play).has_value()&&get(CompactAction::Density).has_value();
+            std::size_t tabs=0;for(const auto& h:compactHits_)tabs+=h.action==CompactAction::Intent||h.action==CompactAction::Enrichment||h.action==CompactAction::Wish;
+            okay=okay&&tabs==6&&circles>0&&get(CompactAction::Play).has_value()&&get(CompactAction::Density).has_value();
         }
-        checkpoint("five tabs and default cards across zoom levels");
+        checkpoint("six tabs and default cards across zoom levels");
         {
             const std::array<double,4> equalStarts{0.,4.,8.,12.};
             const std::array<double,4> equalX{100.,200.,300.,400.};

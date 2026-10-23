@@ -257,6 +257,7 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
 
 void Controller::pollRecommendation() noexcept {
     try {
+        if(view_)view_->pollWish();
         pollMidiImport();
         if (!recommendationWorker_) return;
         auto latest = recommendationWorker_->takeLatest();
@@ -303,6 +304,7 @@ void Controller::submitRecommendation(bool rankingOnly) {
     if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_,recommendationResultReady_); }
 }
 bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidate) const {
+    if(candidate.id.starts_with("wish-v1:"))return view_&&view_->currentWishCandidate(candidate);
     if(!recommendationResultReady_)return false;
     const auto fingerprint=session::continuationFingerprint(candidate);
     for(const auto& group:recommendations_.groups)for(const auto& current:group)
@@ -524,7 +526,8 @@ void Controller::playPreview(const PreviewTarget& target,const harmony::preview:
         if (previewTransition_.phase==PreviewTransitionPhase::SwitchStop) {
             if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
         }
-        const auto scope=target.kind==PreviewTargetKind::Enrichment?harmony::preview::PreviewScope::Full:previewScope_;
+        const auto* wish=view_?view_->wishItem(target.id):nullptr;
+        const auto scope=target.kind==PreviewTargetKind::Enrichment||(wish&&!wish->match)?harmony::preview::PreviewScope::Full:previewScope_;
         auto prepared=harmony::preview::preparePreview(built.sequence,scope);
         if (!prepared) { if(view_)view_->setActionStatus("试听失败："+prepared.error);return; }
         const auto range=harmony::preview::previewRange(built.sequence,scope);
@@ -569,6 +572,11 @@ void Controller::playPreview(const PreviewTarget& target,const harmony::preview:
 
 bool Controller::buildPreviewTarget(const std::string& id,PreviewTarget& target,
                                     harmony::preview::BuildResult& built) const {
+    if(view_)if(const auto* wish=view_->wishItem(id)){
+        const auto& candidate=wish->route.candidate;if(!currentCandidate(candidate))return false;
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore};
+        built=harmony::preview::buildSequence(wish->route.imported,&candidate,effectivePreviewBPM());return bool(built);
+    }
     if (recommendationResultReady_&&view_) for(const auto& group:recommendations_.groups) for(const auto& candidate:group) {
         if(candidate.id!=id)continue;
         if(!currentCandidate(candidate))return false;
@@ -955,13 +963,15 @@ std::string Controller::saveSnapshot(const harmony::ContinuationCandidate& candi
         if(!currentCandidate(candidate)||!view_)return "Recommendation changed; choose a current result";
         const auto route=view_->continuationRoute(candidate);
         if(!route)return "快照保存失败："+route.error;
-        auto snapshot=harmony::snapshot::capture(route.imported,route.candidate,matches_,lastTempoBPM_,
+        const auto* wish=view_->wishItem(candidate.id);
+        const auto sourceMatches=wish?(wish->match?std::vector<harmony::MatchResult>{*wish->match}:std::vector<harmony::MatchResult>{}):matches_;
+        auto snapshot=harmony::snapshot::capture(route.imported,route.candidate,sourceMatches,lastTempoBPM_,
             route.meterNumerator,route.meterDenominator,
-            sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
-            sessionState_.style,sessionState_.intent);
+            wish?std::optional(candidate.key):sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
+            wish?std::nullopt:sessionState_.style,wish?std::nullopt:sessionState_.intent);
         snapshot.factoryLibraryVersion=static_cast<int>(sessionState_.factoryLibraryVersion);
 #if defined(_WIN32)
-        const auto path=savePath(owner,candidate.id+".hcrec.json",
+        const auto path=savePath(owner,(wish?std::string("HarmonyWish_")+candidate.primaryTemplate:candidate.id)+".hcrec.json",
             L"Recommendation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0",L"json");
         if (!path) return "已取消快照保存";
         std::string error;

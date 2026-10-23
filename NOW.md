@@ -2,16 +2,28 @@
 
 ## 本轮工作与下一步
 
-### G01 / G2 和弦祈愿核心（2026-10-23）
+### G01 / G3 和弦祈愿 UI（2026-10-23）
 
-分支 `development/g01-chord-wish-20261023`，接手HEAD `99310f1`，基于正式源码 `c8d8dc3`。G1由用户结项并批准G2；本轮仅完成独立多调式标注及双路径抽样核心。规格和全库编辑标注在[标注目录](data/mode-annotations/v2/README.md)，已批准决定见[D12](DECISIONS.md#d12-g01-多调式归属与独立抽样g2)。第六入口、插件UI、宿主接线与Setup未实施，G3/G4尚未验收。
+本地分支 `development/g01-chord-wish-20261023`，G3接手 `58222d0`（包含G2核心及全库标注；`0f0ff63`为其祖先）。实现第六同级入口及A3详细/简略卡片，技术门禁通过后停在G3，等待决策端审查G4。开发构建版本为 `0.10.0-g03.dev.1`；精确源码提交与二进制BuildCommit分别在Git和产物内核对。
+
+- 界面：六入口共用现有布局，800×780及100/125/150%缩放；快捷预设和进阶多选共用 `WishSettings`。默认自由随机，独立输入关联/清除、12主音、10种调式身份（自然大小调含中古同义身份）、严格筛选、六类现有风格及结构色彩方向。未审核归属不进入调式池，数据不足返回实际数量。
+- 对接：`WishWorkflow`在独立非实时worker调用G2 `makeFreePool` / `makeInputPool` / `WishRound`，没有另写抽样或资格算法；保存同批次一抽/十抽/再十抽的无放回状态。generation/revision阻止旧任务覆盖；清除和参数/输入约束变化清理结果及手势。自由模式不消费全局进行、调性分析或推荐历史；清除不写Session或用户库。
+- 对象：卡片持有 `shared_ptr<const WishItem>`，来源、可选匹配、调式中心及常用程度与完整路线绑定。复用来源播放带、原输入对齐、Why/色彩说明、PreviewTransport、MIDI和Snapshot3。自由卡完整来源/空续写；输入卡保留Unified资格和匹配边界。Controller验证当前对象后取冻结路线；自由卡不受旧“仅后续”试听范围影响。
+- 实际验证：Release插件构建成功；现有 `WishCoreFocused` 12646项、`UILayoutTests` 146480项通过，[首轮四目标日志](../HarmonyContinuation-g03-validation-20261023/tests-first.log)。新增覆盖是异步适配、风格/色彩过滤及第六入口交互缺口。`CompactEditorUI` / `WishEditorUI`在最终界面修复后通过，[UI最终日志](../HarmonyContinuation-g03-validation-20261023/tests-ui-final.log)；含真实V5、连续21抽、无自动播放、空输入/空池、跨页、窗口重开、上下文变更、MIDI/Snapshot音乐身份及离线试听非静音检查。插件构建自动执行SDK Validator，47/47通过；未运行无关全量CTest。首次构建遇到SDK调试符号C1902，本轮验证环境使用编译器 `/Z7` 嵌入式调试信息后通过，未改SDK或跳过编译检测。
+- 原生证据：[100%简略](../HarmonyContinuation-g03-validation-20261023/build/wish-ui-evidence/wish-100-compact.png)、[150%详细](../HarmonyContinuation-g03-validation-20261023/build/wish-ui-evidence/wish-150-detailed.png)、[150%进阶](../HarmonyContinuation-g03-validation-20261023/build/wish-ui-evidence/wish-150-advanced.png)、[输入匹配](../HarmonyContinuation-g03-validation-20261023/build/wish-ui-evidence/wish-input.png)。使用真实VSTGUI离屏绘制/PNG；首轮中间截图缺少绘制配对导致空白，修复测试绘制后重新生成并人工核图。
+- 来源与边界：版本化标注嵌入开发二进制，并测试与v2文本目录一致；正式Factory内容及Unified/Schema2/Session5/Snapshot3未改。本轮构建DB与实际已安装V5的SHA-256再次一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`。窗口关闭/重开在控制器内存中保留祈愿回合；祈愿参数、聚合来源标签及调式目录不写入Session5或Snapshot3，Snapshot3冻结实际音乐、主要来源与可选匹配。
+- 分工与待办：主代理负责UI/Controller、音乐语义、架构和最终门禁；Luna负责worker适配、定向测试与只读审查。原有协作文档改动保留。G4尚待开发Setup/打包哈希、安装生命周期、真实Cubase/FL Studio操作及人工听评；正式Setup包内DB直接比对的既有缺口保留。未推送、未合并main、未建Tag或Release。
+
+### G01 / G2 和弦祈愿核心基线（2026-10-23）
+
+分支 `development/g01-chord-wish-20261023`，接手HEAD `99310f1`，基于正式源码 `c8d8dc3`。G1由用户结项并批准G2；本轮仅完成独立多调式标注及双路径抽样核心。规格和全库编辑标注在[标注目录](data/mode-annotations/v2/README.md)，已批准决定见[D12](DECISIONS.md#d12-g01-多调式归属与独立抽样g2)。以上为G2交付边界；当前G3技术状态见上节，G4尚未验收。
 
 - 实现：精确ID/源音乐身份绑定、多归属与编辑常用程度、明确的未标注/未审校/无法确认/失配状态；纯随机输入隔离、Unified原资格约束路径、12主音、多选并集/严格筛选、完整音乐身份去重、固定种子及连续无放回。输入路径保留全局shortlist预算并逐源资格判定，避免引擎原后缀聚合丢失不同来源前缀。相关原评分、Factory、Schema2、Session5、Snapshot3未改。
 - 数据（本次完善）：658条全部有来源绑定记录，共727个归属；618条全部解释已审校、15条兼有已审校/未确认解释、25条仅有未确认解释。633条至少有一个已审校解释；69条多归属。687个已审校归属覆盖7种调式，40个未确认解释不参与调式筛选；Locrian及两种旋律小调缺乏充分证据而保留空池。无约束实化去重仍为7788条完整音乐。评级与音乐证据见标注目录，用户实听待完成。
 - G2核心首次验证（本次标注完善前）：Release / HC_BUILD_PLUGIN=OFF，`WishCoreFocused`报告1001检查通过；`MidiExportTests`598、`PreviewTests`129、`ContinuationEngineTests`323/323通过。覆盖真实V5加载、源失配、多归属、12调、完整前缀身份、单轮抽样与完整/空续写Snapshot3及MIDI字节往返。[首轮日志](../HarmonyContinuation-g02-validation-20261023/tests.log)中Wish曾因合成功能投影缺失而失败；修正夹具后[Wish最终日志](../HarmonyContinuation-g02-validation-20261023/tests-wish-final.log)通过，其他三个目标未重复运行。默认Debug探测曾报C1902，改为Release探测后构建成功；未跳过编译器检测。
 - 本次标注完善实际验证：Release / HC_BUILD_PLUGIN=OFF，扩展现有 `WishCoreFocused`，12585项检查通过，涵盖全658条记录/源指纹、完整音符严格池、真实未确认条目的无约束可抽/调式排除，以及既有输入隔离、抽样、Preview/MIDI/Snapshot3往返通过；结果见[最终日志](../HarmonyContinuation-g02-validation-20261023/tests-annotations-v2-final.log)。只重跑这一相关目标，独立历史测试未重跑；实际安装库与构建库哈希再次一致。
 - 来源证据：[哈希核对](../HarmonyContinuation-g02-validation-20261023/source-hashes.log)显示本轮源码重建库与已安装V5逐字节SHA-256一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`；正式Setup本体与其既有哈希一致，包内DB尚未直接解包比对，继续保留此证据缺口。
-- 工程条件已满足进入G3；实际UI、原生宿主、用户实听及开发Setup仍待后续工作包。未推送、未合并main、未建Tag或Release；接手前既存协作文档改动保留。
+- G2核心工程验证通过；后续G3技术状态见上节，真实宿主、用户实听及开发Setup留待G4。未推送、未合并main、未建Tag或Release；接手前既存协作文档改动保留。
 
 ### 正式基线与既有整理
 

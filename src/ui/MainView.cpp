@@ -383,8 +383,13 @@ void MainView::onKeyboardEvent(KeyboardEvent& event) {
 void MainView::onMouseWheelEvent(MouseWheelEvent& event) {
     auto point=event.mousePosition;point.x/=userZoom();point.y/=userZoom();
     const auto delta=event.deltaY*48.0;
+    if(wishMode_&&state_.tab==session::Tab::Recommend&&wishAdvanced_){event.consumed=true;return;}
     if(overviewOpen_){overviewScroll_=std::clamp(overviewScroll_-delta,0.,overviewScrollMax_);invalid();event.consumed=true;return;}
     if(state_.tab==session::Tab::Recommend&&form_==Form::None)for(const auto& band:compactRibbons_)if(band.maximum>0&&band.rect.pointInside(point)){compactRibbonScroll_[band.id]=std::clamp(compactRibbonScroll_[band.id]-delta,0.,band.maximum);invalid();event.consumed=true;return;}
+    if(wishMode_&&state_.tab==session::Tab::Recommend&&form_==Form::None){
+        const auto geometry=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
+        if(geometry.cardsViewport.contains(point.x,point.y)){compactScroll_=std::clamp(compactScroll_-delta,0.,compactScrollMax_);wishScroll_=compactScroll_;invalid();event.consumed=true;return;}
+    }
     if(state_.tab==session::Tab::Recommend&&state_.productMode==session::ProductMode::Continue&&form_==Form::None){
         if(compactDetailRect_.contains(point.x,point.y)&&layout_.content.contains(point.x,point.y)){inspectorScroll_=std::clamp(inspectorScroll_-delta,0.,inspectorScrollMax_);invalid();event.consumed=true;return;}
         if(layout_.content.contains(point.x,point.y)){compactScroll_=std::clamp(compactScroll_-delta,0.,compactScrollMax_);invalid();event.consumed=true;return;}
@@ -466,15 +471,23 @@ bool MainView::onDrop(DragEventData e) {
 }
 MainView::EditorUiState MainView::captureEditorUiState() const {
     EditorUiState out;
+    out.wishWorkspace=wishWorkspace_;out.wishSettings=wishSettings_;out.wishInput=wishInput_;
+    out.wishMode=wishMode_;out.wishAdvanced=wishAdvanced_;out.wishRequested=wishRequested_;out.wishPage=wishPage_;
+    out.wishSelected=wishMode_?compactSelected_:wishSelected_;out.wishExpanded=wishExpanded_;
+    out.wishScroll=wishMode_?compactScroll_:wishScroll_;
     if(const auto* c=selectedCandidate()){out.continuationId=c->id;out.continuationFingerprint=session::continuationFingerprint(*c);}
     if(const auto* c=selectedEnrichment()){out.enrichmentId=c->id;out.enrichmentFingerprint=c->fingerprint;}
     out.chord=selectedChord_;out.continuationScroll=continuationScroll_;out.enrichmentScroll=enrichmentScroll_;
     out.contentScroll=contentScroll_;out.timelineScroll=timelineScroll_;out.inspectorScroll=inspectorScroll_;
-    out.browsePages=browsePages_;out.browseScroll=browseScroll_;out.browseScroll[browseCategory()]=compactScroll_;
-    out.browseSelected=browseSelected_;out.browseSelected[browseCategory()]=compactSelected_;out.browseCategory=browseCategory();
+    out.browsePages=browsePages_;out.browseScroll=browseScroll_;if(!wishMode_)out.browseScroll[browseCategory()]=compactScroll_;
+    out.browseSelected=browseSelected_;if(!wishMode_)out.browseSelected[browseCategory()]=compactSelected_;out.browseCategory=browseCategory();
     out.detailedCards=detailedCards_;out.pinnedEnrichmentIds=pinnedEnrichmentIds_;out.showColorHints=showColorHints_;out.colorPreference=colorPreference_;return out;
 }
 void MainView::restoreEditorUiState(const EditorUiState& s){
+    wishWorkspace_=s.wishWorkspace;wishSettings_=s.wishSettings;wishInput_=s.wishInput;
+    wishMode_=s.wishMode;wishAdvanced_=s.wishAdvanced;wishRequested_=s.wishRequested;wishPage_=s.wishPage;
+    wishSelected_=s.wishSelected;wishExpanded_=s.wishExpanded;wishScroll_=std::isfinite(s.wishScroll)?std::max(0.,s.wishScroll):0.;
+    if(wishWorkspace_)wishView_=wishWorkspace_->view();
     browsePages_=s.browsePages;browseScroll_=s.browseScroll;browseSelected_=s.browseSelected;
     if(s.browseCategory<4)compactGroup_=s.browseCategory;
     compactSelected_=browseSelected_[browseCategory()];
@@ -495,6 +508,8 @@ void MainView::restoreEditorUiState(const EditorUiState& s){
     timelineScroll_=std::isfinite(s.timelineScroll)?std::max(0.,s.timelineScroll):0.;
     inspectorScroll_=std::isfinite(s.inspectorScroll)?std::max(0.,s.inspectorScroll):0.;
     pinnedEnrichmentIds_.clear();for(const auto& id:s.pinnedEnrichmentIds)if(findEnrichment(id))pinnedEnrichmentIds_.push_back(id);
+    if(wishMode_){compactSelected_=wishSelected_;compactScroll_=wishScroll_;}
+    if(wishSettings_.useInput&&wishInput_.imported.revision!=state_.imported.revision)resetWish();
     refreshLayout();invalid();
 }
 void MainView::notifyState() { sessionDirty_=true; if (actions_.stateChanged) actions_.stateChanged(state_); invalid(); }
@@ -502,9 +517,13 @@ void MainView::setSessionState(const session::PluginSessionState& s) {
     seekGesture_.reset();
     previewSeekHoverId_.clear();previewSeekCursorHover_=false;
     const bool timelineChanged=state_.imported.revision!=s.imported.revision || state_.imported.events.size()!=s.imported.events.size();
+    const bool wishContextChanged=timelineChanged||state_.constraints!=s.constraints||state_.meterNumerator!=s.meterNumerator||state_.meterDenominator!=s.meterDenominator||
+        state_.forcedKey.has_value()!=s.forcedKey.has_value()||(state_.forcedKey&&s.forcedKey&&
+            (state_.forcedKey->tonic!=s.forcedKey->tonic||state_.forcedKey->mode!=s.forcedKey->mode));
     const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
     if(state_.productMode!=s.productMode||state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints){enrichmentColorRankDirty_=true;browseDirty_=true;}
     state_=s;
+    if(wishContextChanged&&wishSettings_.useInput)resetWish();
     switch(s.intent.value_or(PhraseIntent::Neutral)){case PhraseIntent::Resolve:compactGroup_=0;break;case PhraseIntent::Develop:compactGroup_=1;break;
         case PhraseIntent::Loop:compactGroup_=2;break;case PhraseIntent::Color:compactGroup_=3;break;default:break;}
     if(timelineChanged){colorSource_=color::HarmonyColorAnalyzer::prepare(state_.imported.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;}
@@ -517,6 +536,7 @@ void MainView::setSessionState(const session::PluginSessionState& s) {
     } else std::erase_if(pinnedSnapshots_,[&](const auto& candidate) {
         return std::find(state_.pinnedCandidateIds.begin(),state_.pinnedCandidateIds.end(),candidate.id)==state_.pinnedCandidateIds.end();
     });
+    if(wishMode_){compactSelected_=wishSelected_;compactScroll_=wishScroll_;}
     invalid();
 }
 void MainView::setHostText(std::string s, std::string snapshot) {
@@ -526,9 +546,10 @@ void MainView::setProgressionSession(const ImportedProgressionSession& s) {
     if (state_.imported.revision==s.revision && state_.imported.events.size()==s.events.size()) return;
     seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;
     recommendationResultReady_=false;compactSelected_.clear();browsePages_.fill(0);browseScroll_.fill(0);browseSelected_.fill({});overviewOpen_=false;compactRibbonScroll_.clear();compactScroll_=0;midiPending_.reset();midiClick_={};
-    state_.imported=s; selectedChord_.reset(); selectedCandidate_.reset();
+    state_.imported=s;if(wishSettings_.useInput)resetWish();selectedChord_.reset(); selectedCandidate_.reset();
     colorSource_=color::HarmonyColorAnalyzer::prepare(s.events);colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;
     selectedEnrichment_.reset(); pinnedEnrichmentIds_.clear(); rebuildTimeline();
+    if(wishMode_){compactSelected_=wishSelected_;compactScroll_=wishScroll_;}
     currentLocation_=locateCurrentChord(state_.imported,projectQN_); playheadX_=projectQN_?projectQNToX(*projectQN_):std::nullopt; invalid();
 }
 void MainView::setAnalysis(const HarmonicAnalysisResult& a) { analysis_=a;colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true; invalid(); }
@@ -934,6 +955,10 @@ void MainView::setSnapshotMode(bool enabled) {
     invalid();
 }
 preview::SourceRouteResult MainView::continuationRoute(const ContinuationCandidate& candidate) const {
+    if(candidate.id.starts_with("wish-v1:")) {
+        if(currentWishCandidate(candidate))return wishItem(candidate.id)->route;
+        preview::SourceRouteResult result;result.error="祈愿结果已更新，请重新选择";return result;
+    }
     if(snapshotMode_) {
         preview::SourceRouteResult result;result.imported=state_.imported;result.candidate=candidate;
         result.meterNumerator=state_.meterNumerator.value_or(4);
@@ -961,9 +986,9 @@ void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<Progres
     factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e); invalid();
 }
 void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc,bool resultReady) {
-    if(g!=generation_||busy||!resultReady){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;}
+    if(!wishMode_&&(g!=generation_||busy||!resultReady)){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;}
     generation_=g; computationMs_=ms; workerBusy_=busy; recommendationResultReady_=resultReady;
-    if(busy||!resultReady){midiPending_.reset();midiClick_={};compactHits_.clear();overviewOpen_=false;}
+    if(!wishMode_&&(busy||!resultReady)){midiPending_.reset();midiClick_={};compactHits_.clear();overviewOpen_=false;}
     if (!busy && std::all_of(recommendations_.groups.begin(),recommendations_.groups.end(),
             [](const auto& group){return group.empty();}) && !state_.pinnedCandidateIds.empty()) {
         state_.resolvePins(recommendations_);
@@ -1274,6 +1299,7 @@ void MainView::drawEnrichments(CDrawContext* dc,const CRect&) {
     drawCompare(dc,getViewSize());
 }
 const ContinuationCandidate* MainView::findCandidate(const std::string& id) const {
+    if(const auto* item=wishItem(id))return &item->route.candidate;
     for (const auto& group:recommendations_.groups) for (const auto& candidate:group)
         if (candidate.id==id) return &candidate;
     for (const auto& candidate:pinnedSnapshots_) if (candidate.id==id) return &candidate;
@@ -1562,7 +1588,8 @@ CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
         try {
             movePreviewSeek({where.x/userZoom(),where.y/userZoom()});const auto gesture=*seekGesture_;seekGesture_.reset();
             previewSeekHoverId_.clear();previewSeekCursorHover_=false;
-            if(gesture.generation==generation_&&!workerBusy_&&recommendationResultReady_&&actions_.seekAudition)
+            if(((wishMode_&&wishView_&&gesture.generation==wishView_->revision&&wishItem(gesture.hit.id))||
+                (!wishMode_&&gesture.generation==generation_&&!workerBusy_&&recommendationResultReady_))&&actions_.seekAudition)
                 actions_.seekAudition(gesture.hit.id,gesture.targetQN);
         }catch(...){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;actionStatus_="Preview seek failed";invalid();}
         return kMouseEventHandled;

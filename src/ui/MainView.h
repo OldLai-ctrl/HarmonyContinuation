@@ -16,6 +16,7 @@
 #include "ui/RecommendationBrowse.h"
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
+#include "wish/WishWorkflow.h"
 #include "preview/PreviewSequence.h"
 #include "preview/PreviewTransport.h"
 #include "vstgui/lib/ccolor.h"
@@ -32,6 +33,13 @@ namespace harmony::ui {
 class MainView final : public VSTGUI::CView, public VSTGUI::IDropTarget {
 public:
     struct EditorUiState {
+        std::shared_ptr<wish::WishWorkflow> wishWorkspace;
+        wish::WishSettings wishSettings;
+        wish::WishInput wishInput;
+        bool wishMode{},wishAdvanced{},wishRequested{};
+        std::size_t wishPage{};
+        std::string wishSelected,wishExpanded;
+        double wishScroll{};
         std::string continuationId,continuationFingerprint,enrichmentId,enrichmentFingerprint;
         std::optional<std::size_t> chord;
         std::array<double,4> continuationScroll{};std::array<double,3> enrichmentScroll{};
@@ -100,6 +108,10 @@ public:
     void setPreviewTransport(preview::PlaybackState,bool hostBackend,bool hostAvailable,bool pending=false);
     void setSnapshotMode(bool enabled);
     preview::SourceRouteResult continuationRoute(const ContinuationCandidate&) const;
+    const wish::WishItem* wishItem(const std::string&) const;
+    bool currentWishCandidate(const ContinuationCandidate&) const;
+    void pollWish();
+    bool runWishSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
@@ -133,6 +145,8 @@ public:
     bool runColorVisibilitySmoke(VSTGUI::CDrawContext*,const std::function<bool(VSTGUI::CRect,VSTGUI::CRect,ColorTone,bool)>&);
 private:
     enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
+        Wish, WishPreset, WishAdvanced, WishInput, WishClear, WishTonic, WishMode, WishStrict, WishStyle, WishColor,
+        WishOne, WishTen, WishAgain, WishSnapshot, WishCopy,
         OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
         Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Backend, TempoMode, Tempo, Scope };
     struct CompactHit {
@@ -147,6 +161,19 @@ private:
         }
     };
     std::vector<CompactHit> compactHits_;
+    std::shared_ptr<wish::WishWorkflow> wishWorkspace_;
+    std::shared_ptr<const wish::WishView> wishView_;
+    wish::WishSettings wishSettings_;
+    wish::WishInput wishInput_;
+    bool wishMode_{},wishAdvanced_{},wishRequested_{};
+    std::size_t wishPage_{};
+    std::string wishSelected_,wishExpanded_;
+    double wishScroll_{};
+    void ensureWish();
+    void resetWish();
+    void drawPrimaryTabs(VSTGUI::CDrawContext*,const CompactLayoutResult&);
+    void drawWish(VSTGUI::CDrawContext*,const CompactLayoutResult&);
+    bool onWishAction(const CompactHit&,VSTGUI::CPoint&);
     bool compactInCards_{};
     std::string compactSelected_;
     std::size_t compactGroup_{};

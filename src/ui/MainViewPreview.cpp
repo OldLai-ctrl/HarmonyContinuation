@@ -26,12 +26,13 @@ double MainView::previewDisplayQN(const std::string& id) const {
     return seekGesture_&&seekGesture_->hit.id==id?seekGesture_->targetQN:previewCandidateId_==id?previewQN_:-1.;
 }
 bool MainView::beginPreviewSeek(CPoint point){
-    if(state_.tab!=session::Tab::Recommend||form_!=Form::None||overviewOpen_||workerBusy_||!recommendationResultReady_||auditionPending_||!actions_.seekAudition)return false;
+    const bool ready=wishMode_?(wishView_&&!wishView_->busy&&!wishAdvanced_):!workerBusy_&&recommendationResultReady_;
+    if(state_.tab!=session::Tab::Recommend||form_!=Form::None||overviewOpen_||!ready||auditionPending_||!actions_.seekAudition)return false;
     for(const auto& control:compactHits_)if(control.action==CompactAction::Midi&&control.contains(point))return false;
     const auto begin=[&](const SeekHit& hit,bool cursor){
         if(!previewCandidateId_.empty()&&previewCandidateId_!=hit.id&&actions_.stopAudition)actions_.stopAudition();
         compactSelected_=hit.id;previewSeekHoverId_=hit.id;previewSeekCursorHover_=cursor;
-        seekGesture_=SeekGesture{hit,generation_,0};movePreviewSeek(point);return true;
+        seekGesture_=SeekGesture{hit,wishMode_?wishView_->revision:generation_,0};movePreviewSeek(point);return true;
     };
     for(const auto& hit:seekHits_)if(hit.cursorRect.getWidth()>0&&hit.cursorRect.pointInside(point))return begin(hit,true);
     for(const auto& hit:seekHits_)if(hit.rect.pointInside(point))return begin(hit,false);
@@ -111,7 +112,7 @@ void MainView::drawRelativeColorCurve(CDrawContext* dc,const preview::SourceRout
     if(hit.getWidth()>0&&hit.getHeight()>0){
         if(cursorHit.getWidth()>0&&cursorHit.getHeight()>0)cursorHit.bound(hit);
         seekHits_.push_back({hit,c.id,plot.left,plot.width(),end,
-            auditionSuffix_&&!findEnrichment(c.id)?boundary:0.,cursorHit});
+            auditionSuffix_&&!findEnrichment(c.id)&&!(wishItem(c.id)&&!wishItem(c.id)->match)?boundary:0.,cursorHit});
     }
 }
 }
