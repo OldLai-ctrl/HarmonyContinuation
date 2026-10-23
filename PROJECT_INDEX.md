@@ -6,7 +6,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 
-当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
+当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。仓库仅保留main及四个正式版本Tag，过程引用的恢复入口见MAP；历史文档中的开发分支及旧草稿地址不再作为当前入口。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
 
 Phase7入口为 [A3密度微调与审计](design/phase7/README.md) 和 [原型](design/phase7/index.html)。正式800×780界面已与统一引擎合入dev.12，dev.13增加同级升级入口与完整来源试听/MIDI，dev.14增加完整分页推荐列表、同序总览及Matcher轨迹对齐；Factory V5变体提案保留在 `data/factory-proposals/20261019-pop-variants/`，构建身份及验收以 NOW 为准。
 

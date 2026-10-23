@@ -6,7 +6,9 @@
 
 用户已明确确认 RC1 / `435ed85` 在 Cubase 和 FL Studio 实机全部验收通过，含播放手柄、升级高亮、起点曲线；此为用户提供的 RC1 证据，正式二进制未另行 DAW 实测。正式构建的相关 CTest、Validator、安装后加载、Factory V5/658、Session/Snapshot/用户库、RC1升级与数据保护的实际结果随 Release 发布；不把历史通过数字当作新的运行结果。
 
-Factory V5 / 658 / Schema2、Session5 / Snapshot3、推荐质量与音频实现不变。RC1、dev.15包及开发分支保留。发布与回退说明见[正式更新说明](docs/V0_10_RELEASE_NOTES.md)及[安装文档](docs/INSTALLER_AND_LIBRARY.md)，原RC技术证据见[RC报告](docs/DEV15_RC_REVIEW.md)。原开发checkout的未提交协作文档保持原状，发布使用独立干净工作树；完整身份与最终门禁见Release资产。
+Factory V5 / 658 / Schema2、Session5 / Snapshot3、推荐质量与音频实现不变。发布与回退说明见[正式更新说明](docs/V0_10_RELEASE_NOTES.md)及[安装文档](docs/INSTALLER_AND_LIBRARY.md)，原RC技术证据见[RC报告](docs/DEV15_RC_REVIEW.md)。完整身份与最终门禁见Release资产。
+
+2026-10-23 仓库精简：按用户确认，本地及远端仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`；撤除过程分支、四个阶段Tag、三个临时工作树及旧未发布交接草稿。精简前全部引用和未提交文档已在同级 `_archive/HarmonyContinuation-repo-cleanup-20261023-180326/` 冷备份，包括唯一未合并的两行状态文档提交。保留主工作区协作文档改动、完整主线提交历史及正式发布资产；本轮仅维护文档，不重建插件或移动正式Tag。正式 BuildCommit 仍为 `c8d8dc364b616e8d75402d977fa0cb9083d760e6`；后续文档提交与构建身份分别核实。以下开发分支及草稿记录均为历史。
 
 ### dev.14 历史交付（本轮用户报告Cubase验收已全部通过）
 
