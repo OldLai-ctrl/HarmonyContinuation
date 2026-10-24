@@ -1,0 +1,1502 @@
+[
+  {
+    "id": "V6_B1_001",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_002",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_003",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_004",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_005",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_006",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_007",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_008",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_009",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_010",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_011",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_012",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_013",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_014",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_015",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_016",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_017",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_018",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_019",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_020",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_021",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_022",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_023",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "pop:0.7,rock:0.6",
+        "newStyles": "pop:0.6,rock:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      },
+      {
+        "style": "rock",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Modal/pop-rock schema"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_024",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_025",
+    "initialGrade": "B",
+    "grade": "B",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain B: style/mixed-mode evidence insufficient"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_026",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_027",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_028",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_029",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_030",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_031",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_032",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_033",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_034",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_035",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_036",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "rnb:1,citypop:0.8,jazz:0.6",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_037",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_038",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_039",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_040",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_041",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_042",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_043",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_044",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "functional:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "functional",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_045",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "jazz:1,rnb:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_046",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain original dispute isolation"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_047",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_048",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_049",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_050",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_051",
+    "initialGrade": "A",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "functional:0.5,jazz:0.5",
+        "newStyles": "pop:0.4"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "pop",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_052",
+    "initialGrade": "B",
+    "grade": "B",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain B: style/mixed-mode evidence insufficient"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_053",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_054",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "isolate: missing verifiable full-phrase mode"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_055",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "functional:0.5,jazz:0.5",
+        "newStyles": "functional:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "functional",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_056",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "functional:0.5,jazz:0.5",
+        "newStyles": "jazz:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "jazz",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_057",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain original dispute isolation"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_058",
+    "initialGrade": "B",
+    "grade": "A",
+    "adoptionStatus": "approved",
+    "labelActions": [
+      {
+        "action": "replace unsupported genre-strength claim with bounded editorial application",
+        "oldStyles": "functional:0.5,jazz:0.5",
+        "newStyles": "functional:0.6"
+      },
+      {
+        "action": "usage medium/low replaced with unrated; no frequency evidence"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": [
+      {
+        "style": "functional",
+        "level": "editorial-application",
+        "scope": "usage recommendation, not a documented source-song genre",
+        "basis": "Functional/extended-harmony keyboard application; source supports technique, not City Pop/Neo-Soul attribution"
+      }
+    ]
+  },
+  {
+    "id": "V6_B1_059",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain original dispute isolation"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  },
+  {
+    "id": "V6_B1_060",
+    "initialGrade": "C",
+    "grade": "C",
+    "adoptionStatus": "pending",
+    "labelActions": [
+      {
+        "action": "retain original dispute isolation"
+      }
+    ],
+    "oldMusicPreserved": true,
+    "sourceSupport": "concept-only",
+    "styleEvidence": []
+  }
+]

@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树的当前任务为独立Factory V6内容线：[首轮集中评审](docs/FACTORY_V6_REVIEW.md)、[V5覆盖矩阵](data/factory-v6/audit/REPORT.md)、[60条候选](data/factory-v6/CANDIDATE_REVIEW.md)。V5正式数据保留658条；V6尚未进入生产活动库，人工听评待完成，状态见NOW。
+本工作树当前为独立Factory V6 B3内容线：[集中评审](docs/FACTORY_V6_REVIEW.md)、[V5覆盖矩阵](data/factory-v6/audit/REPORT.md)、[170条提案审校](data/factory-v6/CANDIDATE_REVIEW.md)。V5保留658条；隔离V6实验790条，810真实A池触发800输入预算门禁，20A待决，未激活；状态见NOW。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 

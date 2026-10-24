@@ -2,6 +2,7 @@
 #include "benchmark/BenchJson.h"
 #include "core/ContinuationEngine.h"
 #include "core/RecommendationPolicy.h"
+#include "enrichment/ProgressionEnrichmentEngine.h"
 #include "library/LegacyFactoryIdResolver.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/MidiClip.h"
@@ -23,10 +24,13 @@
 #include <filesystem>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
+#include <numeric>
 #include <random>
 #include <set>
 #include <stdexcept>
+#include <string_view>
 
 using namespace harmony;
 namespace {
@@ -131,13 +135,59 @@ std::optional<std::pair<std::size_t, std::size_t>> groupRank(
     return std::nullopt;
 }
 
-std::vector<std::string> rankedIds(const RecommendationSet& results) {
-    std::vector<std::string> ids;
-    for (const auto& group : results.groups)
-        for (const auto& candidate : group)
-            ids.push_back(candidate.id + "|" + candidate.primaryTemplate + "|" +
-                          std::to_string(candidate.rankingScore));
-    return ids;
+std::string rankedSourceDifference(const RecommendationSet& expected,
+                                   const RecommendationSet& actual,
+                                   float similarityTolerance,
+                                   float scoreTolerance) {
+    for (std::size_t group = 0; group < expected.groups.size(); ++group) {
+        const auto& expectedEntries = expected.groups[group];
+        const auto& actualEntries = actual.groups[group];
+        if (expectedEntries.size() != actualEntries.size()) {
+            return std::string{"group="} + groupName(group) + " entry_count=" +
+                   std::to_string(expectedEntries.size()) + " vs " +
+                   std::to_string(actualEntries.size());
+        }
+        for (std::size_t rank = 0; rank < expectedEntries.size(); ++rank) {
+            const auto& left = expectedEntries[rank];
+            const auto& right = actualEntries[rank];
+            if (left.primaryTemplate != right.primaryTemplate ||
+                left.supportingTemplates != right.supportingTemplates) {
+                std::ostringstream difference;
+                difference << "group=" << groupName(group) << " rank=" << (rank + 1)
+                           << " sources=" << left.primaryTemplate << "/";
+                for (std::size_t source = 0; source < left.supportingTemplates.size(); ++source) {
+                    if (source) difference << ',';
+                    difference << left.supportingTemplates[source];
+                }
+                difference << " vs " << right.primaryTemplate << "/";
+                for (std::size_t source = 0; source < right.supportingTemplates.size(); ++source) {
+                    if (source) difference << ',';
+                    difference << right.supportingTemplates[source];
+                }
+                return difference.str();
+            }
+            const auto scoreDifference = [&](const char* name, float leftScore, float rightScore,
+                                             float tolerance) -> std::string {
+                if (std::abs(leftScore - rightScore) <= tolerance) return {};
+                std::ostringstream difference;
+                difference << "group=" << groupName(group) << " rank=" << (rank + 1)
+                           << " source=" << left.primaryTemplate << " score=" << name
+                           << " values=" << leftScore << " vs " << rightScore
+                           << " tolerance=" << tolerance;
+                return difference.str();
+            };
+            if (const auto difference = scoreDifference(
+                    "matchSimilarity", left.matchSimilarity, right.matchSimilarity,
+                    similarityTolerance); !difference.empty()) return difference;
+            if (const auto difference = scoreDifference(
+                    "eligibilityScore", left.eligibilityScore, right.eligibilityScore,
+                    scoreTolerance); !difference.empty()) return difference;
+            if (const auto difference = scoreDifference(
+                    "rankingScore", left.rankingScore, right.rankingScore,
+                    scoreTolerance); !difference.empty()) return difference;
+        }
+    }
+    return {};
 }
 
 void requirePreserved(const library::LoadResult& baseline, const library::LoadResult& combined,
@@ -205,8 +255,18 @@ void verifyAnnotations(const library::LoadResult& baseline,
     std::map<std::string, const ProgressionTemplate*> candidateById;
     for (const auto& item : candidates)
         require(candidateById.emplace(item.id, &item).second, "duplicate candidate ID: " + item.id);
-    std::set<std::string> metadataIds, editorialIds, pendingIds;
+    const std::set<std::string> originalPendingIds{
+        "V6_B1_046", "V6_B1_057", "V6_B1_059", "V6_B1_060"};
+    const std::set<std::string> originalNoMembershipIds{
+        "V6_B1_024", "V6_B1_026", "V6_B1_042", "V6_B1_047", "V6_B1_048",
+        "V6_B1_049", "V6_B1_050", "V6_B1_053", "V6_B1_054"};
+    const std::set<std::string> representativePassIds{
+        "V6_B1_001", "V6_B1_011", "V6_B1_016", "V6_B1_017", "V6_B1_025",
+        "V6_B1_032", "V6_B1_045", "V6_B1_050", "V6_B1_059", "V6_B1_060"};
+    std::set<std::string> metadataIds, editorialIds, pendingIds, approvedByMetadata, noMembershipIds;
+    std::array<std::size_t, 3> gradeCounts{};
     std::size_t membershipRows{};
+    std::size_t candidatesWithoutMembership{};
     for (const auto& item : metadata.at("candidates").items()) {
         const auto& id = item.at("id").text();
         require(metadataIds.insert(id).second, "duplicate metadata ID: " + id);
@@ -216,13 +276,52 @@ void verifyAnnotations(const library::LoadResult& baseline,
         if (status == "editorial-reviewed") editorialIds.insert(id);
         else if (status == "pending") pendingIds.insert(id);
         else throw std::runtime_error("unknown V6 admission status: " + status);
-        require(item.at("auditionStatus").text() == "pending-human",
-                "candidate must retain pending-human audition status: " + id);
+        const auto& grade = item.at("grade").text();
+        const auto gradeIndex = grade == "A" ? 0 : grade == "B" ? 1 : grade == "C" ? 2 : 3;
+        require(gradeIndex < gradeCounts.size(), "unknown candidate grade: " + grade);
+        ++gradeCounts[gradeIndex];
+        const auto* initialGradeValue = item.find("initialGrade");
+        const auto* labelActionsValue = item.find("labelActions");
+        if (id.starts_with("V6_B1_"))
+            require(initialGradeValue != nullptr,
+                    "original B1 candidate needs an initialGrade review record: " + id);
+        if (initialGradeValue) {
+            const auto& initialGrade = initialGradeValue->text();
+            require(initialGrade == "A" || initialGrade == "B" || initialGrade == "C",
+                    "unknown initial candidate grade: " + initialGrade);
+            if (grade != initialGrade)
+                require(labelActionsValue && !labelActionsValue->items().empty(),
+                        "changed candidate grade requires a labelActions audit record: " + id);
+        }
+        if (labelActionsValue) (void)labelActionsValue->items();
+        const auto& adoptionStatus = item.at("adoptionStatus").text();
+        const bool qualifiesForApproval = grade == "A" && status == "editorial-reviewed";
+        const std::string_view expectedAdoption = qualifiesForApproval ? "approved" : "pending";
+        require(adoptionStatus == expectedAdoption,
+                "adoptionStatus disagrees with grade/editorial status: " + id);
+        if (qualifiesForApproval) approvedByMetadata.insert(id);
+
+        const auto& auditionStatus = item.at("auditionStatus").text();
+        const bool representativePass = auditionStatus == "user-representative-pass";
+        require(representativePass || auditionStatus == "pending-human",
+                "unknown candidate audition status: " + auditionStatus);
+        require(representativePass == representativePassIds.contains(id),
+                "representative audition status must match the ten explicitly sampled IDs: " + id);
+        if (originalPendingIds.contains(id))
+            require(status == "pending" && adoptionStatus == "pending",
+                    "original pending candidate was promoted: " + id);
         const auto& memberships = item.at("memberships").items();
         membershipRows += memberships.size();
+        if (memberships.empty()) {
+            ++candidatesWithoutMembership;
+            noMembershipIds.insert(id);
+        }
         const auto* annotation = findAnnotation(merged.catalog, id);
         if (memberships.empty()) {
             require(annotation == nullptr, "HCA has an invented mode membership: " + id);
+            if (originalNoMembershipIds.contains(id))
+                require(grade == "C" && adoptionStatus == "pending",
+                        "original no-membership candidate must remain grade C and unadopted: " + id);
             continue;
         }
         require(annotation != nullptr, "HCA missing metadata memberships: " + id);
@@ -230,12 +329,14 @@ void verifyAnnotations(const library::LoadResult& baseline,
                 "V6 HCA fingerprint mismatch: " + id);
         require(annotation->memberships.size() == memberships.size(),
                 "V6 HCA membership count mismatch: " + id);
+        if (originalPendingIds.contains(id))
+            require(!memberships.empty(), "original pending candidate lost its membership: " + id);
         for (const auto& membership : memberships) {
             require(wish::parseMode(membership.at("mode").text()).has_value(),
                     "unsupported metadata mode token: " + membership.at("mode").text());
-            if (status == "pending")
+            if (originalPendingIds.contains(id))
                 require(membership.at("review").text() == "pending",
-                        "pending candidate has a non-pending membership: " + id);
+                        "original pending candidate has a reviewed membership: " + id);
         }
         const auto resolution = wish::resolveAnnotations(*templateIt->second, merged.catalog);
         require(resolution.state != wish::AnnotationState::Invalid &&
@@ -243,10 +344,21 @@ void verifyAnnotations(const library::LoadResult& baseline,
                 "V6 HCA did not resolve to its exact source: " + id);
     }
     require(metadataIds.size() == candidateById.size(), "metadata and candidates have different counts");
-    require(editorialIds == approved, "approved IDs differ from editorial-reviewed metadata IDs");
-    require(pendingIds.size() == 4 && editorialIds.size() == 56 &&
-            membershipRows == 51 && metadataIds.size() == 60,
-            "V6 editorial/membership content counts changed");
+    require(approvedByMetadata == approved,
+            "approved IDs differ from grade-A editorial-reviewed metadata IDs");
+    for (std::size_t number = 1; number <= 60; ++number) {
+        const auto suffix = std::to_string(number);
+        const auto id = "V6_B1_" + std::string(3 - suffix.size(), '0') + suffix;
+        require(candidateById.contains(id) && metadataIds.contains(id),
+                "an original B1 source ID is missing: " + id);
+    }
+    for (const auto& id : originalPendingIds)
+        require(metadataIds.contains(id) && pendingIds.contains(id) && !approved.contains(id),
+                "an original pending source is missing or promoted: " + id);
+    for (const auto& id : originalNoMembershipIds) {
+        require(metadataIds.contains(id) && noMembershipIds.contains(id) && !approved.contains(id),
+                "an original no-membership source was omitted or adopted: " + id);
+    }
     for (const auto& id : pendingIds)
         require(!approved.contains(id), "pending candidate entered the experiment allowlist: " + id);
     for (const auto& [id, item] : candidateById) {
@@ -255,7 +367,13 @@ void verifyAnnotations(const library::LoadResult& baseline,
     }
     std::cout << "annotations v5_sources=" << base.catalog.entries.size()
               << " v6_sources=" << merged.catalog.entries.size() - base.catalog.entries.size()
-              << " v6_memberships=" << membershipRows << " candidates_without_membership=9"
+              << " v6_memberships=" << membershipRows
+              << " v6_candidates_without_membership=" << candidatesWithoutMembership
+              << " v6_original_without_membership=" << originalNoMembershipIds.size()
+              << " grades_A_B_C=" << gradeCounts[0] << '/' << gradeCounts[1] << '/' << gradeCounts[2]
+              << " approved=" << approved.size() << " pending_adoption=" << candidateById.size() - approved.size()
+              << " editorial_reviewed=" << editorialIds.size() << " editorial_pending=" << pendingIds.size()
+              << " representative_audition_pass=" << representativePassIds.size()
               << " byte_prefix_preserved=yes pending_experiment_ids=0 PASS\n";
 }
 
@@ -369,34 +487,56 @@ void exactOutput(const preview::Sequence& sequence) {
     verifyPreviewAudio(sequence);
 }
 
+struct RankedPrefixSelection {
+    std::size_t prefix{};
+    Progression input;
+    RecommendationSet results;
+};
+
+RankedPrefixSelection selectRankedPrefix(const ProgressionTemplate& item, KeySignature key,
+                                         const CandidateIndex& index,
+                                         const RecommendationRequest& request,
+                                         const RecommendationWeights& weights,
+                                         bool preferLongest) {
+    std::optional<RankedPrefixSelection> selected;
+    for (std::size_t prefix = 1; prefix < item.full.size(); ++prefix) {
+        auto input = makePrefix(item, key, prefix);
+        AnalysisContext context;
+        context.forcedKey = key;
+        auto results = recommendContinuations(
+            makeMatchQuery(input, recommendationContext(context)), index, request, weights);
+        if (!findCandidate(results, item.id)) continue;
+        RankedPrefixSelection match{prefix, std::move(input), std::move(results)};
+        if (!preferLongest) return match;
+        selected = std::move(match);
+    }
+    if (selected) return std::move(*selected);
+    throw std::runtime_error("approved candidate is absent from every legal ranked prefix: " + item.id);
+}
+
 void verifySnapshotAndPreview(const library::LoadResult& experimental,
                               const ProgressionTemplate& item,
                               const CandidateIndex& index) {
     const KeySignature key{PitchClass(0), item.mode};
-    const auto prefixLength = item.full.size() > 2 ? item.full.size() - 1 : 1;
-    const auto input = makePrefix(item, key, prefixLength);
-    AnalysisContext context;
-    context.forcedKey = key;
     RecommendationRequest request;
     request.preferredIntent = item.intent;
     auto weights = recommendationWeights();
     weights.perGroup = 0;
-    const auto results = recommendContinuations(makeMatchQuery(input, recommendationContext(context)),
-                                                index, request, weights);
-    const auto* chosen = findCandidate(results, item.id);
-    require(chosen != nullptr, "approved candidate is absent from ranked experiment results: " + item.id);
+    auto selected = selectRankedPrefix(item, key, index, request, weights, false);
+    const auto* chosen = findCandidate(selected.results, item.id);
+    require(chosen != nullptr, "selected legal prefix lost its ranked candidate: " + item.id);
     const auto chosenContainsSource = chosen->primaryTemplate == item.id ||
         std::find(chosen->supportingTemplates.begin(), chosen->supportingTemplates.end(), item.id) !=
             chosen->supportingTemplates.end();
     require(chosenContainsSource, "ranked candidate lost its approved source: " + item.id);
     const auto previewResult = preview::buildSequence(
-        ImportedProgressionSession{input, TimelineCoordinateMode::RelativeToSelection}, chosen, 120.0);
+        ImportedProgressionSession{selected.input, TimelineCoordinateMode::RelativeToSelection}, chosen, 120.0);
     require(static_cast<bool>(previewResult), "V6 preview build");
     exactOutput(previewResult.sequence);
 
     ImportedProgressionSession imported;
-    require(imported.replace(input, TimelineCoordinateMode::RelativeToSelection), "V6 imported session");
-    auto captured = snapshot::capture(imported, *chosen, results.matches, 120.0, 4, 4, key,
+    require(imported.replace(selected.input, TimelineCoordinateMode::RelativeToSelection), "V6 imported session");
+    auto captured = snapshot::capture(imported, *chosen, selected.results.matches, 120.0, 4, 4, key,
                                       {}, item.intent);
     captured.factoryLibraryVersion = 6;
     const auto encoded = snapshot::serialize(captured);
@@ -458,6 +598,183 @@ void reportTiming(const char* label, std::size_t poolSize, const TimingSummary& 
               << " shortlist_limit=800 median_ms=" << timing.medianMs
               << " p95_ms=" << timing.p95Ms << " max_ms=" << timing.maxMs
               << (poolSize <= 800 ? " full_scan=yes" : " full_scan=no") << '\n';
+}
+
+TimingSummary summarize(std::vector<double> elapsedMs) {
+    require(!elapsedMs.empty(), "empty shortlist timing suite");
+    std::sort(elapsedMs.begin(), elapsedMs.end());
+    const auto quantile = [&](double fraction) {
+        const auto at = static_cast<std::size_t>(std::ceil(fraction * elapsedMs.size())) - 1;
+        return elapsedMs[std::min(at, elapsedMs.size() - 1)];
+    };
+    return {quantile(0.50), quantile(0.95), elapsedMs.back()};
+}
+
+std::vector<std::string> matchIds(const std::vector<MatchResult>& matches) {
+    std::vector<std::string> result;
+    result.reserve(matches.size());
+    for (const auto& match : matches) result.push_back(match.templateId);
+    return result;
+}
+
+std::size_t sharedIdCount(const std::vector<std::string>& left,
+                          const std::vector<std::string>& right) {
+    const std::set<std::string> rightIds(right.begin(), right.end());
+    return static_cast<std::size_t>(std::count_if(left.begin(), left.end(),
+        [&](const auto& id) { return rightIds.contains(id); }));
+}
+
+void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
+                               const CandidateIndex& experimentalIndex,
+                               const std::vector<QueryCase>& cases,
+                               const std::filesystem::path& outputDirectory) {
+    require(!cases.empty(), "real shortlist comparison needs query cases");
+    std::filesystem::create_directories(outputDirectory);
+    const auto reportPath = outputDirectory / "real-shortlist-gate.tsv";
+    std::ofstream report(reportPath, std::ios::binary);
+    require(static_cast<bool>(report), "cannot write real shortlist gate report");
+    report << "record\tpool\tentries\tcap_inputs\tquery_source\tkey\tprefix\tfull_matches\tcap_matches"
+              "\tfull_top20\ttop20_retained\tfull_source_rank\tcap_source_rank\tfull_only_ids"
+              "\tdefault_qualified\tdefault_visible\tdefault_group\tdefault_rank\tdefault_top_id"
+              "\tcap_ms\tfull_ms\n";
+
+    const auto evaluate = [&](const char* poolLabel, const CandidateIndex& index, bool checkDefault) {
+        MatchWeights cappedWeights;
+        cappedWeights.shortlistLimit = 800;
+        MatchWeights fullWeights = cappedWeights;
+        fullWeights.shortlistLimit = index.templates().size();
+        std::vector<double> cappedTimes, fullTimes;
+        std::size_t fullMatchCount{}, cappedMatchCount{}, top20Count{}, top20Retained{};
+        std::size_t fullOnlyCount{}, sourceMisses{}, qualified{}, defaultVisible{};
+        std::size_t truncatedQueries{};
+        std::array<std::size_t, 4> defaultGroupEntries{};
+        bool top20Loss{};
+        for (const auto& test : cases) {
+            const KeySignature key{PitchClass(test.tonic), test.item->mode};
+            const auto query = queryFor(*test.item, key, test.prefix);
+            MatchRunStats cappedStats, fullStats;
+            auto started = Clock::now();
+            const auto cappedMatches = matchProgression(
+                query, index, cappedWeights, index.templates().size(), &cappedStats);
+            cappedTimes.push_back(std::chrono::duration<double, std::milli>(Clock::now() - started).count());
+            started = Clock::now();
+            const auto fullMatches = matchProgression(
+                query, index, fullWeights, index.templates().size(), &fullStats);
+            fullTimes.push_back(std::chrono::duration<double, std::milli>(Clock::now() - started).count());
+
+            const auto cappedIds = matchIds(cappedMatches);
+            const auto fullIds = matchIds(fullMatches);
+            const auto fullTopCount = std::min<std::size_t>(20, fullIds.size());
+            const std::vector<std::string> fullTop(fullIds.begin(), fullIds.begin() + fullTopCount);
+            const auto retainedTop = sharedIdCount(fullTop, cappedIds);
+            fullMatchCount += fullIds.size();
+            cappedMatchCount += cappedIds.size();
+            top20Count += fullTopCount;
+            top20Retained += retainedTop;
+            if (retainedTop != fullTopCount) top20Loss = true;
+            if (cappedStats.shortlistSize < fullStats.shortlistSize) ++truncatedQueries;
+
+            const auto rankOf = [](const std::vector<std::string>& ids, const std::string& id) {
+                const auto found = std::find(ids.begin(), ids.end(), id);
+                return found == ids.end() ? std::size_t{} : static_cast<std::size_t>(found - ids.begin()) + 1;
+            };
+            const auto fullSourceRank = rankOf(fullIds, test.item->id);
+            const auto capSourceRank = rankOf(cappedIds, test.item->id);
+            if (fullSourceRank && !capSourceRank) ++sourceMisses;
+            std::vector<std::string> omitted;
+            for (const auto& id : fullIds)
+                if (std::find(cappedIds.begin(), cappedIds.end(), id) == cappedIds.end())
+                    omitted.push_back(id);
+            fullOnlyCount += omitted.size();
+
+            bool isQualified{};
+            bool isVisible{};
+            std::string defaultGroup, defaultTopId;
+            std::size_t defaultRank{};
+            if (checkDefault) {
+                RecommendationRequest request;
+                auto qualifiedWeights = RecommendationWeights{};
+                qualifiedWeights.perGroup = 0;
+                const auto eligible = recommendContinuations(query, index, request, qualifiedWeights);
+                isQualified = findCandidate(eligible, test.item->id) != nullptr;
+                if (isQualified) ++qualified;
+                auto weights = RecommendationWeights{};
+                const auto recommended = recommendContinuations(query, index, request, weights);
+                const auto* visible = findCandidate(recommended, test.item->id);
+                isVisible = visible != nullptr;
+                if (isVisible) {
+                    const auto position = groupRank(recommended, visible->id);
+                    require(position.has_value(), "default-qualified source has no group rank: " + test.item->id);
+                    defaultGroup = groupName(position->first);
+                    defaultRank = position->second;
+                    ++defaultVisible;
+                }
+                for (std::size_t group = 0; group < recommended.groups.size(); ++group) {
+                    const auto& entries = recommended.groups[group];
+                    defaultGroupEntries[group] += entries.size();
+                    if (!entries.empty() && defaultTopId.empty()) defaultTopId = entries.front().id;
+                    for (std::size_t position = 1; position < entries.size(); ++position)
+                        require(entries[position - 1].rankingScore >= entries[position].rankingScore,
+                                "default recommendation group is not sorted by ranking score");
+                }
+            }
+            std::string omittedText;
+            for (std::size_t i = 0; i < omitted.size(); ++i) {
+                if (i) omittedText += ';';
+                omittedText += omitted[i];
+            }
+            report << "query\t" << poolLabel << '\t' << index.templates().size() << '\t'
+                   << cappedStats.shortlistSize << '\t' << test.item->id << '\t'
+                   << static_cast<int>(test.tonic) << '\t' << test.prefix << '\t'
+                   << fullIds.size() << '\t' << cappedIds.size() << '\t' << fullTopCount << '\t'
+                   << retainedTop << '\t' << fullSourceRank << '\t' << capSourceRank << '\t'
+                   << omittedText << '\t' << (isQualified ? "yes" : "no") << '\t'
+                   << (isVisible ? "yes" : "no") << '\t'
+                   << defaultGroup << '\t' << defaultRank << '\t' << defaultTopId << '\t'
+                   << cappedTimes.back() << '\t' << fullTimes.back() << '\n';
+        }
+        const auto cappedTiming = summarize(std::move(cappedTimes));
+        const auto fullTiming = summarize(std::move(fullTimes));
+        const bool inputTruncated = index.templates().size() > 800;
+        const bool acquisitionStop = inputTruncated || fullOnlyCount > 0 || sourceMisses > 0 || top20Loss;
+        report << "summary\t" << poolLabel << '\t' << index.templates().size() << '\t'
+               << std::min<std::size_t>(800, index.templates().size()) << "\t-\t-\t-\t"
+               << fullMatchCount << '\t' << cappedMatchCount << '\t' << top20Count << '\t'
+               << top20Retained << "\t-\t-\tfull_only_raw_sources=" << fullOnlyCount
+               << ";query_source_misses=" << sourceMisses << ";truncated_queries=" << truncatedQueries
+               << ";gate=" << (acquisitionStop ? "STOP" : "OPEN") << "\t"
+               << "qualified=" << qualified << '/' << (checkDefault ? cases.size() : 0)
+               << "\tvisible=" << defaultVisible << '/' << (checkDefault ? cases.size() : 0)
+               << "\tresolve=" << defaultGroupEntries[0] << ",develop=" << defaultGroupEntries[1]
+               << ",loop=" << defaultGroupEntries[2] << ",color=" << defaultGroupEntries[3]
+               << "\t-\t-\t" << cappedTiming.medianMs << '\t' << fullTiming.medianMs << '\n';
+        require(static_cast<bool>(report), "cannot finish real shortlist gate report");
+        std::cout << "shortlist_gate pool=" << poolLabel << " entries=" << index.templates().size()
+                  << " cap_inputs=" << std::min<std::size_t>(800, index.templates().size())
+                  << " full_only_raw_sources=" << fullOnlyCount
+                  << " query_source_misses=" << sourceMisses
+                  << " full_top20_retained=" << top20Retained << '/' << top20Count
+                  << " default_qualified=" << qualified << '/' << (checkDefault ? cases.size() : 0)
+                  << " default_visible=" << defaultVisible << '/' << (checkDefault ? cases.size() : 0)
+                  << " continue_groups_resolve_develop_loop_color=" << defaultGroupEntries[0] << '/'
+                  << defaultGroupEntries[1] << '/' << defaultGroupEntries[2] << '/'
+                  << defaultGroupEntries[3]
+                  << " cap_median_ms=" << cappedTiming.medianMs
+                  << " cap_p95_ms=" << cappedTiming.p95Ms
+                  << " full_median_ms=" << fullTiming.medianMs
+                  << " full_p95_ms=" << fullTiming.p95Ms
+                  << " acquisition_gate=" << (acquisitionStop ? "STOP" : "OPEN")
+                  << " evidence=" << reportPath.string() << '\n';
+        if (checkDefault && !inputTruncated)
+            require(fullOnlyCount == 0 && sourceMisses == 0 && !top20Loss,
+                    "real experiment pool below 800 diverged between cap and full scan");
+        if (acquisitionStop)
+            std::cout << "shortlist_gate_action pool=" << poolLabel
+                      << " minimum_correction=hold_affected_additions_pending_until_real_shortlist_recall_is_resolved"
+                      << " scoring_gates_weights_and_algorithm=unchanged\n";
+    };
+    evaluate("baseline-plus-all-grade-A-shadow", shadowIndex, true);
+    evaluate("experiment-active", experimentalIndex, true);
 }
 
 std::vector<ProgressionTemplate> syntheticPool(const std::vector<ProgressionTemplate>& source,
@@ -542,7 +859,84 @@ void verifyStableRanking(const CandidateIndex& index, const ProgressionTemplate&
     weights.perGroup = 0;
     const auto first = recommendContinuations(query, index, request, weights);
     const auto second = recommendContinuations(query, index, request, weights);
-    require(rankedIds(first) == rankedIds(second), "ranking order changed for identical input");
+    const auto difference = rankedSourceDifference(first, second, 0.0001f, 0.0001f);
+    require(difference.empty(), "ranking changed for identical input: " + difference);
+}
+
+void verifyTranspositionRecommendationStability(const CandidateIndex& index,
+                                                const ProgressionTemplate& item) {
+    constexpr float similarityTolerance = 0.001f;
+    constexpr float scoreTolerance = 0.05f;
+    RecommendationRequest request;
+    request.preferredIntent = item.intent;
+    const auto weights = recommendationWeights();
+    const KeySignature referenceKey{PitchClass::C, item.mode};
+    const auto selected = selectRankedPrefix(item, referenceKey, index, request, weights, true);
+    const auto prefix = selected.prefix;
+    std::optional<RecommendationSet> reference;
+    std::size_t stableInputs{};
+    std::size_t matchingReferenceKeys{};
+    std::size_t targetPresentKeys{};
+    std::size_t nonemptyKeys{};
+    std::size_t referenceEntryCount{};
+    std::size_t minimumEntryCount = std::numeric_limits<std::size_t>::max();
+    std::size_t maximumEntryCount{};
+    std::vector<std::string> differences;
+    for (int shift = 0; shift < 12; ++shift) {
+        const KeySignature key{PitchClass(shift), item.mode};
+        const auto query = queryFor(item, key, prefix);
+        const auto first = recommendContinuations(query, index, request, weights);
+        const auto repeated = recommendContinuations(query, index, request, weights);
+        const auto repeatedDifference = rankedSourceDifference(
+            first, repeated, 0.0001f, 0.0001f);
+        if (!repeatedDifference.empty())
+            differences.push_back("shift=" + std::to_string(shift) +
+                                   " repeated-input " + repeatedDifference);
+        else ++stableInputs;
+        std::size_t entryCount{};
+        for (const auto& group : first.groups) entryCount += group.size();
+        if (entryCount) ++nonemptyKeys;
+        minimumEntryCount = std::min(minimumEntryCount, entryCount);
+        maximumEntryCount = std::max(maximumEntryCount, entryCount);
+        if (containsTemplate(first, item.id)) ++targetPresentKeys;
+        if (!reference) {
+            require(containsTemplate(first, item.id),
+                    "selected C-key prefix did not retain its ranked source: " + item.id);
+            reference = first;
+            referenceEntryCount = entryCount;
+            ++matchingReferenceKeys;
+            continue;
+        }
+        const auto transpositionDifference = rankedSourceDifference(
+            *reference, first, similarityTolerance, scoreTolerance);
+        if (!transpositionDifference.empty())
+            differences.push_back("shift=" + std::to_string(shift) + " vs C " +
+                                  transpositionDifference);
+        else ++matchingReferenceKeys;
+    }
+    const bool hasRankedCandidates = maximumEntryCount > 0;
+    std::cout << "transposition_recommendation id=" << item.id
+              << " keys=12 invariant_source_sequences=";
+    if (hasRankedCandidates) std::cout << matchingReferenceKeys << "/12";
+    else std::cout << "not-applicable-no-ranked-results";
+    std::cout
+              << " prefix=" << prefix
+              << " repeated_input_stable=" << stableInputs << "/12"
+              << " target_source_present=" << targetPresentKeys << "/12"
+              << " ranked_candidates_at_C=" << referenceEntryCount
+              << " nonempty_ranked_keys=" << nonemptyKeys << "/12"
+              << " ranked_candidates_min_max=" << minimumEntryCount << '/' << maximumEntryCount
+              << " score_tolerance=" << scoreTolerance
+              << " similarity_tolerance=" << similarityTolerance
+              << " candidate_ids_compared=no"
+              << " status=" << (!differences.empty() ? "MISMATCH" :
+                                  hasRankedCandidates ? "PASS" : "NO_RANKED_RESULTS") << '\n';
+    if (!differences.empty())
+        std::cout << "transposition_recommendation_first_difference id=" << item.id
+                  << " detail=" << differences.front()
+                  << " total_differences=" << differences.size() << '\n';
+    require(differences.empty(), "transposed recommendation changed for " + item.id +
+                                  ": " + (differences.empty() ? std::string{} : differences.front()));
 }
 
 std::set<std::string> verifyRecall(const library::LoadResult& experimental,
@@ -653,7 +1047,8 @@ std::set<std::string> verifyTargetPrefixQualification(
     const library::LoadResult& experimental, const CandidateIndex& index,
     const std::set<std::string>& approved, std::set<std::string> anyPrefixQualified) {
     constexpr std::array targets{
-        "V6_B1_022", "V6_B1_023", "V6_B1_027", "V6_B1_029", "V6_B1_030", "V6_B1_039"
+        "V6_B1_022", "V6_B1_023", "V6_B1_027", "V6_B1_029", "V6_B1_030", "V6_B1_039",
+        "V6_B3_01_048", "V6_B3_01_056", "V6_B3_01_065", "V6_B3_01_071"
     };
     std::size_t testedPrefixes{};
     std::size_t qualifiedPrefixes{};
@@ -723,8 +1118,8 @@ std::set<std::string> verifyTargetPrefixQualification(
         std::cout << " any_legal_prefix_qualified="
                   << (shortestQualified || anyPrefixQualified.contains(id) ? "yes" : "no") << '\n';
     }
-    std::cout << "qualification_coverage scope=50-observed-last-nonfull-plus-six-all-prefixes"
-              << " candidates=" << anyPrefixQualified.size() << '/' << approved.size()
+    std::cout << "qualification_coverage scope=all-approved-last-nonfull-plus-targeted-all-prefixes"
+              << " approved_sources=" << approved.size()
               << " qualified_at_any_tested_legal_prefix=" << anyPrefixQualified.size() << '/' << approved.size()
               << " targeted_prefixes_tested=" << testedPrefixes
               << " targeted_qualified_prefixes=" << qualifiedPrefixes << '\n';
@@ -740,27 +1135,90 @@ void verifyApprovedMidi(const std::vector<ProgressionTemplate>& candidates,
             item, {PitchClass::C, item.mode}, preview::defaultTempoBPM);
         require(static_cast<bool>(route), "cannot build full V6 route for MIDI verification: " + id);
         verifyMidiRoundTrip(route.sequence);
+        verifyPreviewAudio(route.sequence);
         chords += route.sequence.events.size();
     }
     std::cout << "midi approved_full_routes=" << approved.size() << " chord_events=" << chords
-              << " full_pitch_masks_and_smf_readback=PASS\n";
+              << " full_pitch_masks_and_smf_readback=PASS full_preview_audio=PASS\n";
+}
+
+void verifyApprovedEnrichment(const std::vector<ProgressionTemplate>& candidates,
+                              const std::set<std::string>& approved) {
+    std::array<std::size_t, 3> groupCounts{};
+    std::size_t sourcesWithCandidates{}, noOpSources{}, candidateCount{};
+    enrichment::EnrichmentResult::Diagnostics totalDiagnostics{};
+    for (const auto& id : approved) {
+        const auto& item = find(candidates, id);
+        const KeySignature key{PitchClass::C, item.mode};
+        const auto route = preview::templateRoute(item, key);
+        require(static_cast<bool>(route), "cannot build full source route for Enrich: " + id);
+        AnalysisContext context;
+        context.forcedKey = key;
+        const auto analysis = analyzeHarmony(route.imported.events, context);
+        const auto result = enrichment::enrichProgression(route.imported.events, analysis);
+        require(result.error.empty(), "Enrich API failed for approved source " + id + ": " + result.error);
+        totalDiagnostics.protectedChords += result.diagnostics.protectedChords;
+        totalDiagnostics.insertionAttempts += result.diagnostics.insertionAttempts;
+        totalDiagnostics.insertionFailed += result.diagnostics.insertionFailed;
+        totalDiagnostics.duplicates += result.diagnostics.duplicates;
+        totalDiagnostics.hardFiltered += result.diagnostics.hardFiltered;
+        const auto sourceCandidateCount = std::accumulate(result.groups.begin(), result.groups.end(),
+            std::size_t{}, [](std::size_t sum, const auto& group) { return sum + group.size(); });
+        if (sourceCandidateCount) ++sourcesWithCandidates;
+        else {
+            ++noOpSources;
+            if (noOpSources <= 5)
+                std::cout << "enrich_noop id=" << id << " opportunities=" << result.opportunities.size()
+                          << " protected_chords=" << result.diagnostics.protectedChords
+                          << " insertion_attempts=" << result.diagnostics.insertionAttempts
+                          << " insertion_failed=" << result.diagnostics.insertionFailed
+                          << " duplicates=" << result.diagnostics.duplicates
+                          << " hard_filtered=" << result.diagnostics.hardFiltered << '\n';
+        }
+        for (std::size_t groupIndex = 0; groupIndex < result.groups.size(); ++groupIndex) {
+            groupCounts[groupIndex] += result.groups[groupIndex].size();
+            for (const auto& candidate : result.groups[groupIndex]) {
+                require(!candidate.progression.empty() && !candidate.operations.empty() &&
+                        !candidate.fingerprint.empty() && std::isfinite(candidate.score) &&
+                        candidate.skeletonPreservation >= enrichment::EnrichmentConfig{}.minimumSkeletonPreservation,
+                        "Enrich produced an incomplete or unsafe candidate for " + id);
+                require(static_cast<std::size_t>(candidate.group) == groupIndex,
+                        "Enrich candidate was returned in the wrong output group: " + id);
+                for (std::size_t eventIndex = 0; eventIndex < candidate.progression.size(); ++eventIndex) {
+                    const auto& event = candidate.progression[eventIndex];
+                    require(std::isfinite(event.startQN) &&
+                            (!eventIndex || event.startQN > candidate.progression[eventIndex - 1].startQN) &&
+                            normalizeChord(event).quality != ChordQuality::Unknown,
+                            "Enrich returned an invalid event timeline or chord for " + id);
+                }
+                ++candidateCount;
+            }
+        }
+    }
+    std::cout << "enrich approved_sources=" << approved.size()
+              << " api_calls=" << approved.size()
+              << " sources_with_candidates=" << sourcesWithCandidates
+              << " no_op_sources=" << noOpSources
+              << " candidates=" << candidateCount
+              << " polish_rich_advanced=" << groupCounts[0] << '/' << groupCounts[1] << '/' << groupCounts[2]
+              << " protected_chords=" << totalDiagnostics.protectedChords
+              << " insertion_attempts=" << totalDiagnostics.insertionAttempts
+              << " insertion_failed=" << totalDiagnostics.insertionFailed
+              << " duplicates=" << totalDiagnostics.duplicates
+              << " hard_filtered=" << totalDiagnostics.hardFiltered
+              << " no_op_explanation=default_rules_found_no_safe_unique_edit_not_api_error\n";
 }
 
 void writeRepresentativeMedia(const std::vector<ProgressionTemplate>& candidates,
                               const std::set<std::string>& approved,
                               const std::filesystem::path& outputDirectory) {
-    struct Sample { const char* id; const char* role; bool pending; };
+    struct Sample { const char* id; const char* role; bool expectedApproved; };
     const std::array samples{
-        Sample{"V6_B1_001", "Dorian", false},
-        Sample{"V6_B1_011", "Lydian", false},
-        Sample{"V6_B1_017", "Phrygian", false},
-        Sample{"V6_B1_016", "Phrygian-pedal", false},
-        Sample{"V6_B1_025", "chromatic-slash-bass", false},
-        Sample{"V6_B1_032", "suspended-altered", false},
-        Sample{"V6_B1_050", "suspension", false},
-        Sample{"V6_B1_045", "jazz-melodic-minor", false},
-        Sample{"V6_B1_059", "Locrian-pending", true},
-        Sample{"V6_B1_060", "Locrian-pending", true}
+        Sample{"V6_B3_01_048", "mixed-minor", true},
+        Sample{"V6_B3_01_056", "F-sharp-extension", true},
+        Sample{"V6_B3_01_065", "chromatic-root-neighbor", true},
+        Sample{"V6_B3_01_071", "secondary-dominant-chain", true},
+        Sample{"V6_B3_01_070", "pending-suspension-independent-B-bass", false}
     };
     std::filesystem::create_directories(outputDirectory);
     std::ofstream index(outputDirectory / "media-index.tsv", std::ios::binary);
@@ -768,7 +1226,8 @@ void writeRepresentativeMedia(const std::vector<ProgressionTemplate>& candidates
     index << "id\trole\tpool_status\tfull_midi\tfull_preview_wav\n";
     for (const auto& sample : samples) {
         const auto& item = find(candidates, sample.id);
-        require(sample.pending ? !approved.contains(item.id) : approved.contains(item.id),
+        const bool isApproved = approved.contains(item.id);
+        require(sample.expectedApproved == isApproved,
                 "representative approval state changed: " + item.id);
         const auto route = preview::buildTemplateSequence(
             item, {PitchClass::C, item.mode}, preview::defaultTempoBPM);
@@ -802,10 +1261,10 @@ void writeRepresentativeMedia(const std::vector<ProgressionTemplate>& candidates
         require(preview::writeWav16(audio, wavPath, error),
                 "cannot write representative preview WAV: " + error);
         index << item.id << '\t' << sample.role << '\t'
-              << (sample.pending ? "pending-not-in-experiment" : "approved-experiment") << '\t'
+              << (isApproved ? "approved-experiment" : "pending-not-in-experiment") << '\t'
               << midiPath.filename().string() << '\t' << wavPath.filename().string() << '\n';
         std::cout << "media id=" << item.id << " role=" << sample.role
-                  << " status=" << (sample.pending ? "pending" : "approved")
+                  << " status=" << (isApproved ? "approved" : "pending")
                   << " midi_bytes=" << midiBytes.bytes.size() << " wav_frames=" << audio.left.size()
                   << " rms=" << audio.rms << '\n';
     }
@@ -861,14 +1320,39 @@ int main(int argc, char** argv) {
 
         const CandidateIndex proposalIndex(proposal.templates);
         const CandidateIndex experimentalIndex(experimental.templates);
+        const auto admissionMetadata = benchmark::json::parse(readText(argv[3]));
+        std::set<std::string> gradeAIds;
+        for (const auto& row : admissionMetadata.at("candidates").items())
+            if (row.at("grade").text() == "A")
+                gradeAIds.insert(row.at("id").text());
+        require(!gradeAIds.empty(), "grade-A shortlist shadow is empty");
+        std::vector<ProgressionTemplate> shadowEntries = baseline.templates;
+        for (const auto& item : parsed.templates)
+            if (gradeAIds.contains(item.id)) shadowEntries.push_back(item);
+        require(shadowEntries.size() == baseline.templates.size() + gradeAIds.size(),
+                "grade-A shadow is not exactly baseline plus all grade-A sources");
+        const CandidateIndex shadowIndex(std::move(shadowEntries));
+        const auto budgetHoldGradeA = std::count_if(gradeAIds.begin(), gradeAIds.end(),
+            [&](const auto& id) { return !approved.contains(id); });
+        std::cout << "shortlist_shadow baseline=" << baseline.templates.size()
+                  << " grade_A_sources=" << gradeAIds.size()
+                  << " budget_hold_grade_A=" << budgetHoldGradeA
+                  << " entries=" << shadowIndex.templates().size()
+                  << " includes_all_grade_A_even_if_pending=yes\n";
         verifyWishModePools(baseline, experimental, argv[7], argv[8]);
         verifyApprovedMidi(parsed.templates, approved);
+        verifyApprovedEnrichment(parsed.templates, approved);
         writeRepresentativeMedia(parsed.templates, approved, argv[9]);
         auto anyPrefixQualified = verifyRecall(experimental, approved, experimentalIndex);
         anyPrefixQualified = verifyTargetPrefixQualification(
             experimental, experimentalIndex, approved, std::move(anyPrefixQualified));
         verifyStableRanking(experimentalIndex, find(experimental, *approved.begin()));
-        verifySnapshotAndPreview(experimental, find(experimental, *approved.begin()), experimentalIndex);
+        for (const auto* id : {"V6_B3_01_048", "V6_B3_01_056", "V6_B3_01_065", "V6_B3_01_071"})
+            verifyTranspositionRecommendationStability(experimentalIndex, find(experimental, id));
+        for (const auto& id : approved)
+            verifySnapshotAndPreview(experimental, find(experimental, id), experimentalIndex);
+        std::cout << "snapshot_preview approved_sources=" << approved.size()
+                  << " shortest_legal_prefix_search=PASS restored_preview=PASS\n";
 
         std::vector<QueryCase> cases;
         for (const auto& id : approved) {
@@ -885,6 +1369,13 @@ int main(int argc, char** argv) {
             for (int shift = 0; shift < 12; ++shift)
                 transposed.push_back({item.item, shift, item.prefix});
 
+        std::vector<QueryCase> gradeAShadowCases;
+        for (const auto& id : gradeAIds) {
+            const auto& item = find(parsed.templates, id);
+            gradeAShadowCases.push_back(
+                {&item, 0, item.full.size() > 2 ? item.full.size() - 1 : 1});
+        }
+        verifyActualShortlistGate(shadowIndex, experimentalIndex, gradeAShadowCases, argv[9]);
         reportTiming("FactoryV5", baseline.templates.size(),
                      measure(CandidateIndex(baseline.templates), transposed, 2));
         reportTiming("FactoryV6Proposal", proposal.templates.size(), measure(proposalIndex, transposed, 2));

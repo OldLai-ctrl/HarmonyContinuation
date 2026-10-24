@@ -1,0 +1,205 @@
+{
+  "scope": "Final combined B1+B3 review; approved identity subset is exactly approved-ids.txt.",
+  "finalCombinedInputs": {
+    "candidateCount": 170,
+    "metadataCount": 170,
+    "approvedIdCount": 132,
+    "approvedIdsByBatch": {
+      "B1": 45,
+      "B3": 87
+    },
+    "withheldCount": 38,
+    "withheldBreakdown": {
+      "gradeA_budgetHold": 20,
+      "gradeB": 3,
+      "gradeC": 15
+    },
+    "gradeCountsByBatch": {
+      "B1": {
+        "A": 45,
+        "B": 2,
+        "C": 13
+      },
+      "B3": {
+        "A": 107,
+        "B": 1,
+        "C": 2
+      }
+    },
+    "gradeCountsCombined": {
+      "A": 152,
+      "B": 3,
+      "C": 15
+    },
+    "adoptionStatusCountsCombined": {
+      "approved": 132,
+      "pending": 38
+    },
+    "adoptionStatusCountsB3FinalCombinedMetadata": {
+      "approved": 87,
+      "pending": 23
+    },
+    "budgetHoldCountCombined": 20,
+    "rawB3NewMetadataAdoptionStatusCounts": {
+      "approved": 90,
+      "pending": 20
+    },
+    "rawB3NewMetadataRows": 110
+  },
+  "finalFamilyCounts": {
+    "all170": {
+      "Aeolian": 4,
+      "Dorian": 18,
+      "ExtendedKeyboard": 12,
+      "FunctionalChromatic": 10,
+      "Jazz": 13,
+      "Keys": 19,
+      "Locrian": 2,
+      "Lydian": 16,
+      "Minor": 8,
+      "MinorSpecial": 4,
+      "Mixolydian": 16,
+      "ModernPop": 20,
+      "PedalColor": 8,
+      "Phrygian": 12,
+      "Screen": 8
+    },
+    "approved132": {
+      "Dorian": 17,
+      "ExtendedKeyboard": 10,
+      "FunctionalChromatic": 8,
+      "Jazz": 10,
+      "Keys": 17,
+      "Lydian": 15,
+      "MinorSpecial": 3,
+      "Mixolydian": 15,
+      "ModernPop": 17,
+      "PedalColor": 1,
+      "Phrygian": 11,
+      "Screen": 8
+    }
+  },
+  "styleEvidenceLevelsCombined": {
+    "editorial-application": 224
+  },
+  "approved132IdentityAgainstV5": {
+    "fullUniqueWithinApprovedSet": 132,
+    "fullExactMatchesToV5": 0,
+    "newFullSignaturesAgainstV5": 132,
+    "rhythmlessUniqueWithinApprovedSet": 132,
+    "rhythmlessExactMatchesToV5": 0,
+    "newRhythmlessSignaturesAgainstV5": 132,
+    "coreFamiliesUniqueWithinApprovedSet": 132,
+    "coreFamilyMatchesToV5CandidateIds": [
+      "V6_B1_010",
+      "V6_B1_028"
+    ],
+    "coreFamilyOverlapCountWithV5": 2,
+    "newCoreFamilyBucketsAgainstV5": 130,
+    "coreFamilyConfidence": "Low; descriptive root/bass contour and simplified-quality family bucket, not a duplicate or musical identity verdict."
+  },
+  "all170IdentityAgainstV5": {
+    "fullUniqueWithin170": 170,
+    "rhythmlessUniqueWithin170": 170,
+    "fullExactMatchesToV5": 0,
+    "rhythmlessExactMatchesToV5": 0,
+    "coreFamiliesUniqueWithin170": 169,
+    "coreFamilyDuplicatePair": [
+      "V6_B1_039",
+      "V6_B3_01_073"
+    ]
+  },
+  "b3Batch110AgainstV5AndB1": {
+    "exactFullMatches": 0,
+    "rhythmlessMatches": 0,
+    "newLowConfidenceCoreFamilyBuckets": 108,
+    "extensionOnlyRelations": [
+      {
+        "candidate": "V6_B3_01_073",
+        "source": "B1:V6_B1_039"
+      },
+      {
+        "candidate": "V6_B3_01_079",
+        "source": "V5:V3_BLUE_007"
+      }
+    ],
+    "nearRootPairsWithinB3": 3,
+    "nearRootPairsAgainstV5AndB1": 17,
+    "stitchedLongLineLeadIds": [
+      "V6_B3_01_046",
+      "V6_B3_01_100"
+    ]
+  },
+  "completedB3ContentChecks": {
+    "candidateCount": 110,
+    "structureIssues": 0,
+    "durationOrMeterIssues": 0,
+    "notationVsEncodedPitchIssues": 0,
+    "strictScaleFailureMemberships": 44,
+    "strictFailureMeaning": "A static-scale filter should exclude these memberships from the strictly compatible pool; the failures do not by themselves invalidate contextual membership attribution.",
+    "noteSpecificContextInFinalMetadata": [
+      {
+        "id": "V6_B3_01_048",
+        "explanation": "Bb in Bb/D is bVII borrowed from parallel C natural minor; it coexists with the G-major/B-natural dominant color."
+      },
+      {
+        "id": "V6_B3_01_051",
+        "explanation": "Bb in Eb/G is borrowed from C natural minor; B natural in G supports the harmonic-minor cadence."
+      },
+      {
+        "id": "V6_B3_01_056",
+        "explanation": "F# in Em9 is a local extension color on Em (iii in C), local chord color, not a C-Ionian note."
+      },
+      {
+        "id": "V6_B3_01_058",
+        "explanation": "F# in Em9 is a local extension color on Em (iii in C), local chord color, not a C-Ionian note."
+      }
+    ],
+    "gradeCountsFinal": {
+      "A": 107,
+      "B": 1,
+      "C": 2
+    }
+  },
+  "specialDecisions": {
+    "V6_B3_01_070": {
+      "grade": "B",
+      "reason": "Special G7sus4/B bass route; targeted audition remains pending."
+    },
+    "V6_B3_01_073": {
+      "grade": "C",
+      "relation": "Extension-only family relation to B1:V6_B1_039; not approved."
+    },
+    "V6_B3_01_079": {
+      "grade": "C",
+      "relation": "Extension-only family relation to V5:V3_BLUE_007; not approved."
+    }
+  },
+  "hashes": {
+    "finalCombinedCandidates": "1BF81E453FD79238AADDF6A876438751E5867EFF2886A3C0E5727C81B50464BC",
+    "finalCombinedMetadata": "0C120B1EF86496BA96D0EAD12CE01B2CDF26EF951AAEF6F3285253BB3429275B",
+    "approvedIds": "5048B1ACCB725DD0460F4C110548F4B48F3F1B6A90070C4D299BFC00A0A12BD2",
+    "rawB3NewCandidates": "A6F7B29C1E0AF4C34352A0C4F3ADAC96BF3699F1BFEF13F1DAA126FEDB60F817",
+    "rawB3NewMetadataPreFinalStatus": "DD19F66FCFC389A0C4834739AEAE40F19DBCC6BFE5C430A65F403ABEC4DBC014",
+    "b3ManualBatch": "8972D00BE6D21A61D03B4CBBB5BBE302E217913D167DF74B01ADD01C49392AB7",
+    "v5FactoryDatabase": "F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C",
+    "repoAndEvidenceCombinedFilesMatch": true
+  },
+  "styleAndListeningBoundary": {
+    "styleEvidence": "All 224 combined styleEvidence claims are editorial-application and support suggested use context only, not source-genre provenance.",
+    "keysFamily": "A label/category; it does not establish NeoSoul or CityPop provenance.",
+    "listening": "This content check did not perform human listening."
+  },
+  "signatureDefinitions": {
+    "full": "Transposition-normalized realized chord pitch-class sets, bass, meter, and each event duration.",
+    "rhythmless": "Same realized chord pitch sets/bass/order with meter and durations ignored.",
+    "coreFamily": "Transposition-normalized relative root/bass contour; major7 merges with major and minor7 with minor; extensions, exact pitch sets, meter, and rhythm are ignored."
+  },
+  "previousFullAuditSourceFacts": {
+    "v5Rows": 658,
+    "v5Sha256": "F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C",
+    "b3NewCandidatesSha256": "A6F7B29C1E0AF4C34352A0C4F3ADAC96BF3699F1BFEF13F1DAA126FEDB60F817",
+    "rawB3NewMetadataSha256": "DD19F66FCFC389A0C4834739AEAE40F19DBCC6BFE5C430A65F403ABEC4DBC014",
+    "manualBatchSha256": "8972D00BE6D21A61D03B4CBBB5BBE302E217913D167DF74B01ADD01C49392AB7"
+  }
+}

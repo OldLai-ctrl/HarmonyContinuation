@@ -1,0 +1,112 @@
+family	title	chords	qn	meter	mode	technique	basis
+Dorian	长主音与上行小和弦桥	Cm F/A Dm7 Gm Cm	8 4 4 4 8	4/4	dorian	ModalPlagal,SlashBass	F/A将自然六度置于低音，Dm-Gm桥段后回Cm，不向Bb归主。
+Dorian	低音先降后升的多利亚句	Cm7 Bb/D F/A Gm/Bb Cm	8 4 4 4 8	4/4	dorian	SlashBass,ModalPlagal	低音C-D-A-Bb-C与小主音框架不同向，F/A明示A自然音。
+Dorian	五拍上主音延长	Cm9 Dm7 Ebmaj7 F Cm7	10 5 5 5 10	5/4	dorian	OddMeter,ModalPlagal	Dm的A与F大三和弦支持自然六度，C首尾停留占优势。
+Dorian	小属转向大下属	Cm Gm/D F Eb/G Cm	8 4 4 4 8	4/4	dorian	SlashBass,ModalPlagal	小属Gm排除功能大属牵引，F明示自然六度，Eb/G非降六。
+Dorian	下属低音回旋句	Cm F/C Eb/Bb Dm/A Cm/G Cm	8 4 4 4 4 8	4/4	dorian	PedalPoint,SlashBass	C-C-Bb-A-G-C低音有完整下行弧线，Dm与F提供A自然音。
+Dorian	附点小调邻接下属	Cm11 F6 Dm7 Ebmaj7 Cm	6 3 3 3 9	6/8	dorian	CompoundMeter,ModalPlagal	F6与Dm含A，Eb保留小三度，6/8长短交替并不等同原二和弦shuttle。
+Dorian	半减六级与小属回归	Cm Am7b5 Gm7 F Cm	8 4 4 4 8	4/4	dorian	HalfDiminishedColor,ModalPlagal	A半减的A/C/Eb/G引出六度，Gm-F-Cm给出非属回归。
+Dorian	短下属接长小三度平台	Cm F Ebmaj7 Gm7 Dm7 Cm	8 2 6 4 4 8	4/4	dorian	ModalPlagal,OpenHarmony	F短显A，Eb长停但最终Dm-Cm回接抑制相对大调中心。
+Dorian	中声部向上低音向下	Cm9 Eb/Bb F/A Cm/G Dm7 Cm	8 4 4 4 4 8	4/4	dorian	ChromaticBass,SlashBass	低音C-Bb-A-G到D-C，A是实际六度而非笼统小调兼容。
+Dorian	小七和弦交错的自然六度	Cm7 Dm7 Gm7 Ebmaj7 F6 Cm	8 4 4 4 4 8	4/4	dorian	ModalPlagal,ExtendedHarmony	Dm7与F6稳定A，Gm与Eb保留Bb/Eb，小主首尾长停。
+Dorian	弱拍大下属后的小属悬念	Cm Eb F Gm/D Dm7 Cm	7 3 4 4 3 7	7/4	dorian	OddMeter,SlashBass	两个过渡时组跨7拍，F-Dm的A和Cm的Eb双重确定Dorian色彩。
+Dorian	低音六度向主音攀升	Cm F/A Gm/Bb Eb/C F/C Cm	8 4 4 4 4 8	4/4	dorian	PedalPoint,SlashBass	A-Bb-C上行在后半C踏板稳定，F为下属而非Bb大调属和弦。
+Mixolydian	小属低音与降七迂回	C Gm/Bb Dm/A F/G C	8 4 4 4 8	4/4	mixolydian	SlashBass,SubtonicReturn	Gm与Bb低音提供降七，保留C大三度，悬挂F/G后回C。
+Mixolydian	二级小和弦开窗	C Dm Bb/F Gm C	8 4 4 4 8	4/4	mixolydian	SubtonicReturn,SlashBass	C长停，Bb/F与Gm无B自然音，Dm与C确定明亮主音。
+Mixolydian	降七到小五级的摇滚长句	C Bb Gm Dm F C	8 4 4 4 4 8	4/4	mixolydian	SubtonicReturn,ModalPlagal	从Bb转小属而非只作双下属，C为全句归宿。
+Mixolydian	下行低音悬挂二级	C Bb/D F/C Dm/A Gm/Bb C	8 4 4 4 4 8	4/4	mixolydian	SlashBass,SubtonicReturn	C-D-C-A-Bb-C低音错位，Bb与Gm的降七持续存在。
+Mixolydian	六度主和弦长线折返	C6 Gm7 Dm7 Bbmaj7 F/A C	8 4 4 4 4 8	4/4	mixolydian	ExtendedHarmony,SlashBass	Bbmaj7提供A而不是B，Gm-Dm桥段支持C Mixolydian。
+Mixolydian	下属悬二的降七长停	C Fsus2 Bb Gm/D F C	8 4 8 4 4 8	4/4	mixolydian	Suspension,SubtonicReturn	Fsus2提供开放中段，Bb长停后小属及F把句子拉回C。
+Mixolydian	七拍降七镜像	C Dm Bb C/E F Gm C	7 3 4 7 3 4 7	7/4	mixolydian	OddMeter,SlashBass	C/E给出大三度支点，Gm终段替代传统大属，保持降七语汇。
+Mixolydian	主属七色彩的反向下属	C7 Dm Gm F/A Bb C7	8 4 4 4 4 8	4/4	mixolydian	TonicDominantColor,SlashBass	C7首尾停留为主色彩，未向F终止，Dm-Gm方向不同于属链。
+Mixolydian	持续主音上的下属小属	C F/C Gm/C Dm/C Bb/C C	8 4 4 4 4 8	4/4	mixolydian	PedalPoint,SubtonicReturn	全程C低音，Gm和Bb使降七可听，Dm中的F防止Lydian重释。
+Mixolydian	三拍小二级到降七终回	Cadd9 Dm7 F6 Bb/D Gm7 C	6 3 3 3 3 9	3/4	mixolydian	SubtonicReturn,SlashBass	Bb/D与Gm延长降七平台，最后C占三个小节。
+Lydian	升四根音到大二级迂回	Cmaj7 F#m7b5 Em7 D Cmaj7	8 4 4 4 8	4/4	lydian	LydianColor,HalfDiminishedColor	F#半减含C/E，D含F#；C首尾长停，避免G大调终止。
+Lydian	大二级的转位台阶	C D/F# Em/G Bm/A C	8 4 4 4 8	4/4	lydian	SlashBass,LydianColor	F#低音明确升四，Bm/A保持C邻接上方张力，归C而非G。
+Lydian	持续C上的上方小和弦	Cmaj9 Bm/C Em/C D/C Cmaj7	8 4 4 4 8	4/4	lydian	PedalPoint,LydianColor	C持续低音上Bm与D陈述F#，Em给出B/E不引入F自然。
+Lydian	七拍升四与六级小和弦	Cmaj7 D Am7 F#m7b5 Cmaj7	7 7 7 7 14	7/4	lydian	OddMeter,LydianColor	Am维持A，F#半减给出升四，C长收束不靠V-I。
+Lydian	低音六度接升四悬浮	Cmaj7 Am7 D/F# Em7 Cmaj7#11	8 4 4 4 8	4/4	lydian	SlashBass,LydianColor	A-F#-E低音到C，D/F#与末#11双重确认升四。
+Lydian	四度色彩的非属上行	Cmaj7 Em7 F#m7b5 Bm7 D C	8 4 4 4 4 8	4/4	lydian	HalfDiminishedColor,LydianColor	从Em到F#半减后经Bm-D，避免D-G的副属解决。
+Lydian	大二级旁的六度共同音	C6 Bm7 Am7 D6 Cmaj7	8 4 4 4 8	4/4	lydian	CommonTone,LydianColor	A在C6/Bm7/Am7/D6间维系，F#与C主音长停并重。
+Lydian	三拍升四的复合踏板	Cmaj7 D/C F#m7b5/C Am7/C Cmaj9	9 3 3 3 12	3/4	lydian	PedalPoint,LydianColor	C踏板上F#半减比仅II上层更明确，Am缓和增四度后回C。
+Lydian	大二级开句后的主音锚定	C D Bm7 Em7 Am7 D/C C	12 4 4 4 4 4 12	4/4	lydian	PedalPoint,LydianColor	C首尾各12QN及末D/C阻止Bm/Em局部片段取得全句中心。
+Lydian	大七升十一与小属关系回转	Cmaj7#11 Bm7 D/A Em/G C	8 4 4 4 8	4/4	lydian	SlashBass,LydianColor	Bm和D/A保留F#，低音B-A-G-C为收束方向。
+Phrygian	降二之后的小下属平台	Cm Db Fm Ab Cm	8 4 4 4 8	4/4	phrygian	PhrygianColor,ModalPlagal	Db降二与Fm小下属在C首尾之间，无D自然或Gb外音。
+Phrygian	小属与降二低音折返	Cm Bbm/Db Ab/C Fm/Ab Db Cm	8 4 4 4 4 8	4/4	phrygian	SlashBass,PhrygianColor	Bbm/Db把降二置于低音，后段Db-Cm半音回主。
+Phrygian	五拍降二到降七的长句	Cm Db Eb Bbm Fm Cm	10 5 5 5 5 10	5/4	phrygian	OddMeter,PhrygianColor	Db提供降二，Eb大三度是G而非Gb，Bbm和Fm支撑小主。
+Phrygian	小下属低音的降二回声	Cm Fm/Ab Db/F Eb/G Db/C Cm	8 4 4 4 4 8	4/4	phrygian	SlashBass,PedalPoint	Ab-F-G-C低音后C踏板收束，Db/C不改变主音。
+Phrygian	降六大七至降二大七	Cm7 Abmaj7 Dbmaj7 Fm7 Bbm7 Cm	8 4 4 4 4 8	4/4	phrygian	ExtendedHarmony,PhrygianColor	Abmaj7与Dbmaj7共同含C，Db和Bb/Ab支持Phrygian音集。
+Phrygian	三拍反向小三和弦链	Cm Eb Bbm Db Fm Cm	9 3 3 3 3 12	3/4	phrygian	PhrygianColor,ModalPlagal	小主长停，Eb-Bbm非属链再经Db-Fm回Cm。
+Phrygian	踏板小三和弦与降二平移	Cm Fm/C Bbm/C Db/C Ab/C Cm	8 4 4 4 4 8	4/4	phrygian	PedalPoint,PhrygianColor	低音C固定且主和弦保留Eb，Db降二并非独立主音。
+Phrygian	降七下行六度后的归主	Cm Bbm Ab Db/F Fm Cm	8 4 4 4 4 8	4/4	phrygian	SlashBass,PhrygianColor	根音C-Bb-Ab反向到Db/F，最后小下属归Cm，保留降二。
+ModernPop	平行小调后门的开放尾句	C Am Fm Bb C/E F C/G	8 4 4 4 4 4 4	4/4	ionian	ModalMixture,OpenEnding	Fm-Bb回C/E而后F-C/G，开放桥段用途与闭合终止不同。
+ModernPop	低音向上借用下属	C Dm/F Fm/Ab C/G Am G/B C	8 4 4 4 4 4 8	4/4	ionian	ModalMixture,SlashBass	F-Ab-G低音的小下属插入，最终G/B导C锚定大调框架。
+ModernPop	降三到次属的回主句	C Eb A7 Dm G C	8 4 4 4 4 8	4/4	ionian	ChromaticMediant,SecondaryDominant	Eb借用后A7导Dm，ii-V-I使C中心可核证，不称全篇Ionian。
+ModernPop	上方半音包围小下属	C Dm Db Fm C/E G C	8 4 2 6 4 4 8	4/4	ionian	ModalMixture,ChromaticApproach	Db是向Fm的色彩连接，C/E-G-C重新锚定主音。
+ModernPop	小主到副属大下属	Cm Bb/D Eb F A7 Dm Gm Cm	8 4 4 4 4 4 4 8	4/4	dorian	ModalMixture,SecondaryDominant	F/A自然六度支持Dorian框架，A7的C#为Dm局部副属借用，严格拒绝。
+ModernPop	大调降六后的欺骗终止	C Ab F Dm G Am F C	8 4 4 4 4 4 4 8	4/4	ionian	ModalMixture,DeceptiveResolution	Ab借用与G-Am欺骗后再经F-C归主，增加独立长线用途。
+ModernPop	降七和小下属双回接	C Bb/D F/A Fm/Ab Dm G C	8 4 4 4 4 4 8	4/4	ionian	ChromaticBass,ModalMixture	D-A-Ab-D-G-C低音与借用F小调结合，末ii-V-I明确C。
+ModernPop	小调降六转亮再归暗	Cm Ab C/E Fm Bb/D G Cm	8 4 4 4 4 4 8	4/4	harmonic_minor	ModalMixture,ParallelMajorMinor	C/E转亮引入E自然，G大属含B，和声小调框架但全篇非严格。
+ModernPop	开放挂留前的半音属接近	C Em Eb7 Dm F G7sus4	8 4 4 4 4 8	4/4	ionian	TritoneSubstitution,OpenEnding	Eb7替A7导Dm，C开篇和Em锚定大调，末挂留属保留开放用途。
+ModernPop	主音踏板上的平行小调桥	C F/C Ab/C Fm/C G/C C	8 4 4 4 4 8	4/4	ionian	PedalPoint,ModalMixture	C持续低音和大主三度锚定，Ab/Fm为平行借用，非纯兼容归属。
+ModernPop	六拍小调的升导音回接	Cm Eb/G Ab Fm Dm7b5 G Cm	6 3 3 3 3 3 9	6/8	harmonic_minor	MinorTwoFive,SlashBass	Dm半减-G-Cm清楚小调终止，Eb/G与Ab延展前半段。
+ModernPop	七拍降三色彩与明亮下属	C Eb/G F/A Dm/F G/B C	7 3 4 3 4 14	7/4	ionian	ModalMixture,SlashBass	借用Eb的G低音与F/A形成线性上行，G/B-C是明确收束。
+Keys	主七低音降二级至小下属	Cmaj9 Am9/G Fmaj9 Fm6 Dm9 G13 Cmaj9	8 4 4 4 4 4 8	4/4	ionian	ModalMixture,SlashBass	G低音到F再Fm6时Ab向G半音回落，ii-V收束保证完整音乐用途。
+Keys	双重副属与小下属回旋长线	Cmaj9 Em7 A7b9 Dm9 G13 C7 Fmaj9 Fm9 Cmaj9	8 4 4 4 4 4 4 4 8	4/4	ionian	SecondaryDominant,ModalMixture	两次局部属分别去Dm与F，末小下属回C，不仅给循环添加九音。
+Keys	低音主三度保留的侧门	Cmaj9 Em7/G Fmaj9/A Fm9/Ab Bb13 Cmaj9	8 4 4 4 4 8	4/4	ionian	Backdoor,SlashBass	G-A-Ab低音运动和Fm-Bb侧门共同构成连接理由，非扩展音堆叠。
+Keys	属的悬挂层先向下属	Cmaj9 G7sus4 Fmaj9 Em9 A7 Dm9 G13 Cmaj9	8 4 4 4 4 4 4 8	4/4	ionian	Suspension,SecondaryDominant	sus属先向F而非立即主，随后Em-A-Dm-G给出长线收束。
+Keys	下属半音降至二级的键盘句	Cmaj9 Fmaj7 E7 Eb9 Dm9 G7b9 Cmaj9	8 4 2 2 4 4 8	4/4	ionian	ChromaticDominantChain,AlteredDominant	F-E-Eb-D根音降行，Eb9导Dm，G7b9的Ab在C归主时解向G。
+Keys	小七到大七的持续内声	Cmaj9 Am11 Fmaj9 Dm11 G13 Em9 A7 Dm9 G7 Cmaj9	8 4 4 4 4 4 4 4 4 8	4/4	ionian	ExtendedHarmony,SecondaryDominant	两次ii-V用途不同，中间Em-A延迟落点；内声C/B与E/F邻接可核证。
+Keys	小调大六度的斜低音句	Cm9 Dm7/A F13/A Gm7/Bb Cm9	8 4 4 4 8	4/4	dorian	SlashBass,ExtendedHarmony	A低音持续两和弦后升Bb-C，F13的A和Cm的Eb稳定Dorian。
+Keys	小调九和弦的降七平台	Cm9 Bbm9 Dbmaj7 Fm9 G7b9 CmMaj9	8 4 4 4 4 8	4/4	harmonic_minor	ModalMixture,MinorTwoFive	Db降二与Bb为借用，G7b9及末B自然建立和声小调归主，严格拒绝。
+Keys	九音共同音的三全音回接	Cmaj9 Am9 Dm9 Ab9 G13 Cmaj9	8 4 4 4 4 8	4/4	ionian	TritoneSubstitution,ExtendedHarmony	Ab9替D7导G，保留Eb至D半音趋近而非机械下行和弦复制。
+Keys	延长小下属后的属挂留	Cmaj9 Fmaj9 Fm9 Dm7b5 G7sus4 G7b9 Cmaj9	8 4 4 4 4 4 8	4/4	ionian	ModalMixture,Suspension	Fm和Dm半减共享Ab/C/F，挂留属再进入b9属形成可解释张力。
+Keys	大七三音低音的长线回主	Cmaj9 C/E Fmaj9 F#dim7 G13 Em9 A7b9 Dm9 G13 Cmaj9	8 4 4 2 6 4 4 4 4 8	4/4	ionian	SecondaryLeadingTone,SlashBass	E-F-F#-G为低音上行；后半Em-A-Dm-G是不同段落而非节奏复制。
+Keys	小主九到大下属六的侧向句	Cm9 F6/A Ebmaj7/G Dm7 F13 Cm9	8 4 4 4 4 8	4/4	dorian	SlashBass,ModalPlagal	A-G-D-F-C低音连接，F6/F13反复A自然音，避免降六小调歧义。
+Keys	大调半音根音包围二级	Cmaj9 Dm9 Eb9 Dm9 Db9 Cmaj9	8 4 2 4 4 8	4/4	ionian	ChromaticApproach,TritoneSubstitution	Dm先被上方Eb9包围，再经Db9向下导C，两个半音方向有不同功能。
+Keys	六拍大七到降六的桥	Cmaj9 E7 Am9 Abmaj9 Fm9 G7b9 Cmaj9	6 3 3 3 3 3 9	6/8	ionian	SecondaryDominant,ModalMixture	E7导Am后Ab下滑，Fm-G7b9张力最终回C。
+Keys	五拍悬挂与小下属对照	Cmaj9 Dm11 Fm6 G7sus4 Cmaj9	10 5 5 5 10	5/4	ionian	OddMeter,ModalMixture	Dm11提供E/G，Fm6提供Ab/D，属挂留后回C；不能声称全篇单音阶。
+Keys	小大七和弦导向大下属	CmMaj9 Dm7 F9 G7 CmMaj9	8 4 4 4 8	4/4	melodic_minor_ascending	JazzMelodicMinor,ExtendedHarmony	Eb与B由主和弦给出，Dm7/F9的A支持C爵士静态旋律小调，无E自然扩展。
+Keys	四度下行和半音低音交织	Cmaj9 G/B Fmaj9/A Ebmaj7/G Fm9/Ab G7b9 Cmaj9	8 4 4 4 4 4 8	4/4	ionian	SlashBass,ModalMixture	B-A-G-Ab-G-C低音与Eb/Fm借用关联，G7b9把长线拉回C。
+Keys	低音导音延迟在挂留属	Cmaj9 Am9 Fmaj9 G7sus4/B Dm9 Db9 Cmaj9	8 4 4 4 4 4 8	4/4	ionian	SlashBass,TritoneSubstitution	G7sus4/B带外置B低音形成待审张力，但Db9-C收束可核证；须针对性听评。
+Jazz	连续副属进入下中音	Cmaj7 F#7 Bm7 E7 Am7 Dm7 G7 Cmaj7	8 4 4 4 4 4 4 8	4/4	ionian	SecondaryDominant,TwoFiveOne	F#7-Bm-E7形成Am的前置链，最终ii-V-I确立C；F#7不误标G7的替代。
+Jazz	后门之前的下属副属	Cmaj9 C7 Fmaj7 Dm7 Fm7 Bb7 Cmaj9	8 4 4 4 4 4 8	4/4	ionian	SecondaryDominant,Backdoor	C7导F，Dm到Fm共享F/A-Ab线，Fm-Bb后门归C。
+Jazz	升五属与降九属分担张力	Cmaj7 Em7 A7b9 Dm7 G7#9b13 Cmaj7	8 4 4 4 4 8	4/4	ionian	SecondaryDominant,AlteredDominant	A7b9只局部导Dm，G7变化音导C，三音与七音趋向清楚。
+Jazz	小调平行借用再iiV归主	Cmaj7 Fm6 Dm7b5 G7b9 Cmaj7	8 4 4 4 8	4/4	ionian	ModalMixture,AlteredDominant	Fm6与Dm半减共享F/Ab/C/D，属b9再归C，不以复杂度定义风格。
+Jazz	双降半音属的转位闭合	Cmaj7 Eb7/G Dm7/F Db7/F C/E C	8 4 4 4 4 8	4/4	ionian	TritoneSubstitution,SlashBass	低音C-G-F-F-E-C，下行Eb7到Dm与Db7到C各有不同目标。
+Jazz	小主大七后的半减上方邻接	CmMaj7 Bm7b5 F9 Dm7 G7 CmMaj7	8 4 4 4 4 8	4/4	melodic_minor_ascending	JazzMelodicMinor,HalfDiminishedColor	B半减含A，F9含Eb，Dm7/G7避免E自然，全篇静态C旋律小调。
+Jazz	三度远关系后的明确二五	Cmaj9 Abmaj7 Emaj7 Dm7 G7 Cmaj9	8 4 4 4 4 8	4/4	ionian	ChromaticMediant,TwoFiveOne	Ab-E大三度色彩为借用平台，末ii-V-I重新锚定C，不宣称全篇Ionian。
+Jazz	下属小大七与替代属	Cmaj9 FmMaj7 Bb9 Dm7 Db9 Cmaj9	8 4 4 4 4 8	4/4	ionian	Backdoor,TritoneSubstitution	FmMaj7的E共同音悬挂，再经Bb9侧门与Dm-Db两步归C，非严格。
+Jazz	小调降六到变化属	Cm Abmaj7 Dm7b5 G7#9b13 Cm	8 4 4 4 8	4/4	harmonic_minor	AlteredDominant,ModalMixture	变化属#9为Bb非C和声小调B，记录借用张力而非严格标签。
+Jazz	属前半音上层小和弦	Cmaj9 Em7 Ebm7 Dm7 G7 Cmaj9	8 4 2 6 4 8	4/4	ionian	ChromaticApproach,TwoFiveOne	Em-Ebm-Dm半音连接有向ii的局部目标，G7-C确立全句中心。
+Jazz	半减和小下属六的不同低音	CmMaj7 Dm7b5 Fm6/Ab G7b9 CmMaj7	8 4 4 4 8	4/4	harmonic_minor	MinorTwoFive,SlashBass	Dm半减与Fm6音集相同但低音D/Ab不同，导致真实声部落点改变。
+Jazz	悬四属前的反向替代属	Cmaj9 Dm7 Ab7 G7sus4 G7 Cmaj9	8 4 4 4 4 8	4/4	ionian	TritoneSubstitution,Suspension	Ab7替D7导G，sus4再显三音B，末C明确终止。
+Screen	升四踏板的五拍星光	Cmaj7#11 Am7/C D/C Bm7/C Em/C Cmaj7	10 5 5 5 5 10	5/4	lydian	PedalPoint,OddMeter	C持续低音和#11提供中心与升四，五拍慢速句服务场景而非确定电影风格。
+Screen	小调踏板的两侧平台	Cm Ab/C Fm/C Db/C Bbm/C Cm	12 6 6 6 6 12	3/4	phrygian	PedalPoint,PhrygianColor	C低音长停，Db降二与Ab降六，全句Phrygian而非Db大调。
+Screen	大七同质移动后归主	Cmaj7 Ebmaj7 Abmaj7 Fmaj7 G7 Cmaj7	12 4 4 4 4 12	4/4	ionian	ConstantStructures,ModalMixture	中段同质大七跨调，末F-G-C锚定大调框架；不保证平行声部配器。
+Screen	静态旋律小调的明暗踏板	CmMaj7 F/C Bm7b5/C Dm7/C CmMaj9	12 4 4 4 12	4/4	melodic_minor_ascending	PedalPoint,JazzMelodicMinor	C踏板下F含A，B半减含B/F，主和弦Eb/B，无E自然扩展。
+Screen	大主延长后的对称中音桥	Cmaj7 Emaj7 Abmaj7 Fm6 G7 Cmaj7	12 4 4 4 4 12	4/4	ionian	ChromaticMediant,ModalMixture	C-E-Ab三度链后小下属-属-主结束，适合转场但不虚构来源曲目。
+Screen	七拍降七踏板的宽句	C Bb/C Dm/C Gm/C F/C C	14 7 7 7 7 14	7/4	mixolydian	PedalPoint,OddMeter	C主音与Bb降七清楚，Dm/Gm/F皆不含B自然，长时值强化中心。
+Screen	小调六度展开到非属终止	Cm Eb/C Am7b5/C F/C Gm/C Cm	12 4 4 4 4 12	4/4	dorian	PedalPoint,HalfDiminishedColor	A半减与F同时强调A自然，C踏板避免把六级半减听作独立主音。
+Screen	慢速大调借用下属尾声	Cmaj9 Fmaj9/C Abmaj7/C Dm7/C G7/C Cmaj9	12 4 4 4 4 12	4/4	ionian	PedalPoint,ModalMixture	Ab借用在C长踏板上短现，Dm-G-C回主，非全篇音阶兼容推断。
+Minor	小大七与六级半减的长线	CmMaj7 Am7b5 F9 Bm7b5 G7 CmMaj7	8 4 4 4 4 8	4/4	melodic_minor_ascending	JazzMelodicMinor,HalfDiminishedColor	A半减含Eb/G，B半减含B/F，两者与主小大七共同支持爵士旋律小调。
+Minor	旋律小调的升六低音桥	CmMaj9 F/A Bm7b5/A Dm7 G7 CmMaj9	8 4 4 4 4 8	4/4	melodic_minor_ascending	SlashBass,JazzMelodicMinor	连续A低音连接F与B半减，Dm7/G7不带E，静态音集完整。
+Minor	升六低音与属挂留对话	CmMaj7 Dm7 F/A G7sus4 G7 CmMaj7	8 4 4 4 4 8	4/4	melodic_minor_ascending	Suspension,JazzMelodicMinor	CmMaj7给出B，Dm7/F给出A，sus属的C到B是一条可验证声部趋向。
+Minor	大下属转位与七级半减	CmMaj9 F/C Am7b5 Dm7 Bm7b5 CmMaj9	8 4 4 4 4 8	4/4	melodic_minor_ascending	PedalPoint,HalfDiminishedColor	C踏板后转A-D-B-C根音路线，B半减非主音，C两端长停。
+Minor	小调增三度色彩的属终止	CmMaj7 Ebaug/G Abmaj7/F Dm7b5 G7b9 CmMaj7	8 4 4 4 4 8	4/4	harmonic_minor	AugmentedColor,SlashBass	Ebaug带B，Ab/F低音F后经Dm半减/G7b9归Cm。
+Minor	和声小调的导音低音上行	Cm Fm/Ab Bdim7 G7/B Cm	8 4 4 4 8	4/4	harmonic_minor	LeadingToneDiminished,SlashBass	低音C-Ab-B-B-C，Bdim7与G7/B共同明确升导音B与Ab。
+Minor	小大七持续中心的二级小七	CmMaj7 Dm7 G7/D F9/C CmMaj7	8 4 4 4 8	4/4	melodic_minor_ascending	PedalPoint,JazzMelodicMinor	D低音在Dm7/G7保持，F9/C归C踏板；A/B与Eb支持静态爵士小调。
+Minor	增三和弦转位再小下属	Cm Ebaug/B Fm/Ab Bdim7 G7 Cm	8 4 4 4 4 8	4/4	harmonic_minor	AugmentedColor,SlashBass	C-B-Ab-B-G-C低音与Ebaug升导音一致；不把增和弦单独当转调。
+Aeolian	降七转位的小调自然归主	Cm Eb/Bb Ab/C Fm/Ab Gm/Bb Cm	8 4 4 4 4 8	4/4	aeolian	SlashBass,SubtonicReturn	Eb/Bb和Fm/Ab保持自然小调Bb/Ab；末小属而非大属，C长时为中心。
+Aeolian	小下属延长的反向降六	Cm Fm Gm Eb Ab Bb Cm	8 4 4 4 4 4 8	4/4	aeolian	ModalPlagal,SubtonicReturn	先小下属再小属转Eb平台，Ab-Bb最终归Cm；不是常见i-VI-III-VII循环。
+Aeolian	二级半减接自然小属	Cm Dm7b5 Fm7 Abmaj7 Gm7 Cm	8 4 4 4 4 8	4/4	aeolian	HalfDiminishedColor,ModalPlagal	Dm半减给Ab但不引入B导音，Gm7中的Bb保留Aeolian而非和声小调。
+Aeolian	五拍降六踏板与双小属	Cm Ab/C Gm/C Fm/C Bb/C Gm/C Cm	10 5 5 5 5 5 10	5/4	aeolian	PedalPoint,OddMeter	C踏板下Ab降六与Bb降七明确，小属重复有不同邻接位置，不是延长拍数变体。
+ModernPop	大调小二级平台再主属	C Dm/F Am/E Fm6 C/G G C	8 4 4 4 4 4 8	4/4	ionian	ModalMixture,SlashBass	F-E到小下属的低音弧线，C/G-G-C的主六四到属主给出明确终止。
+ModernPop	小调侧门与导音共同结尾	Cm Fm Bb Eb/G Ab G7 Cm	8 4 4 4 4 4 8	4/4	harmonic_minor	ModalMixture,SlashBass	Bb自然小调平台后G7的B导音回主，记录混合而非全程和声小调。
+Keys	上方半音二级与属保留低音	Cmaj9 Dbmaj7 Dm9 G13/B Cmaj9/E Fmaj9 G7 Cmaj9	8 2 6 4 4 4 4 8	4/4	ionian	ChromaticApproach,SlashBass	Db大七含C可上邻装饰Dm，G13/B至C/E的低音落点区别标准ii-V-I。
+Jazz	三全音属的延迟半音落点	Cmaj9 Dm7 Db7 G7/B Cmaj9	8 4 4 4 8	4/4	ionian	TritoneSubstitution,SlashBass	Db替代属先延迟到G/B保留导音，随后C；不同于直接Db-C回主。
+Lydian	六度低音的升四共同音句	Cmaj7 D/A F#m7b5/A Em7/G D/F# Cmaj7	8 4 4 4 4 8	4/4	lydian	SlashBass,LydianColor	A-A-G-F#低音陈述升四，C大七首尾长时锚定而非G大调。
+Dorian	小七踏板后六度斜低音归主	Cm7 Eb/C F/A Dm/F Gm/D Cm	8 4 4 4 4 8	4/4	dorian	PedalPoint,SlashBass	C踏板后A-F-D-C低音与自然六度F大和弦共同支持小主。
+Mixolydian	降七后的六度二级回主	C Bb/A Dm/F Gm/D F/C C	8 4 4 4 4 8	4/4	mixolydian	SlashBass,SubtonicReturn	Bb/A是Bb大三和弦加独立A低音而非Bb属，C大主与Gm降七保持语境。
+Phrygian	降二大七的三音低音回接	Cm Dbmaj7/F Bbm/Db Fm/C Db/C Cm	8 4 4 4 4 8	4/4	phrygian	SlashBass,PedalPoint	低音F-Db-C降行后C踏板，Db大七含C提供近邻连接并显露降二。
+

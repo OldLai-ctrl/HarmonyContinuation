@@ -103,6 +103,15 @@ wish::AnnotationCatalog readCandidateAnnotations(
     std::set<std::string> metadataIds;
     std::set<std::string> reviewedIds;
     std::set<std::string> pendingIds;
+    std::set<std::string> approvedByMetadata;
+    const std::set<std::string> originalPendingIds{
+        "V6_B1_046", "V6_B1_057", "V6_B1_059", "V6_B1_060"};
+    const std::set<std::string> originalNoMembershipIds{
+        "V6_B1_024", "V6_B1_026", "V6_B1_042", "V6_B1_047", "V6_B1_048",
+        "V6_B1_049", "V6_B1_050", "V6_B1_053", "V6_B1_054"};
+    const std::set<std::string> representativePassIds{
+        "V6_B1_001", "V6_B1_011", "V6_B1_016", "V6_B1_017", "V6_B1_025",
+        "V6_B1_032", "V6_B1_045", "V6_B1_050", "V6_B1_059", "V6_B1_060"};
     for (const auto& metadata : root.at("candidates").items()) {
         const auto& id = jsonText(metadata, "id");
         require(metadataIds.insert(id).second, "duplicate metadata candidate ID: " + id);
@@ -111,14 +120,49 @@ wish::AnnotationCatalog readCandidateAnnotations(
         if (status == "editorial-reviewed") reviewedIds.insert(id);
         else if (status == "pending") pendingIds.insert(id);
         else throw std::runtime_error("unknown candidate admission status for " + id + ": " + status);
-        require(jsonText(metadata, "auditionStatus") == "pending-human",
-                "V6 candidate audition status must remain pending-human: " + id);
+        const auto& grade = jsonText(metadata, "grade");
+        require(grade == "A" || grade == "B" || grade == "C",
+                "unknown candidate grade for " + id + ": " + grade);
+        const auto* initialGradeValue = metadata.find("initialGrade");
+        const auto* labelActionsValue = metadata.find("labelActions");
+        if (id.starts_with("V6_B1_"))
+            require(initialGradeValue != nullptr,
+                    "original B1 candidate needs an initialGrade review record: " + id);
+        if (initialGradeValue) {
+            const auto& initialGrade = initialGradeValue->text();
+            require(initialGrade == "A" || initialGrade == "B" || initialGrade == "C",
+                    "unknown initial candidate grade for " + id + ": " + initialGrade);
+            if (grade != initialGrade)
+                require(labelActionsValue && !labelActionsValue->items().empty(),
+                        "changed candidate grade requires a labelActions audit record: " + id);
+        }
+        if (labelActionsValue) (void)labelActionsValue->items();
+        const auto& adoptionStatus = jsonText(metadata, "adoptionStatus");
+        const bool qualifiesForApproval = grade == "A" && status == "editorial-reviewed";
+        const std::string_view expectedAdoption = qualifiesForApproval ? "approved" : "pending";
+        require(adoptionStatus == expectedAdoption,
+                "adoptionStatus disagrees with grade/editorial status for " + id);
+        if (qualifiesForApproval) approvedByMetadata.insert(id);
+
+        const auto& auditionStatus = jsonText(metadata, "auditionStatus");
+        const bool representativePass = auditionStatus == "user-representative-pass";
+        require(representativePass || auditionStatus == "pending-human",
+                "unknown V6 audition status for " + id + ": " + auditionStatus);
+        require(representativePass == representativePassIds.contains(id),
+                "representative audition status must match the ten explicitly sampled IDs: " + id);
+        if (originalPendingIds.contains(id))
+            require(status == "pending" && adoptionStatus == "pending",
+                    "original pending candidate was promoted: " + id);
 
         wish::ModeAnnotation entry;
         entry.templateId = id;
         const auto templateIt = candidateById.find(id);
         entry.sourceFingerprint = wish::sourceFingerprint(templateIt->second);
-        for (const auto& rawMembership : metadata.at("memberships").items()) {
+        const auto& memberships = metadata.at("memberships").items();
+        if (memberships.empty() && originalNoMembershipIds.contains(id))
+            require(grade == "C" && adoptionStatus == "pending",
+                    "original no-membership candidate must remain grade C and unadopted: " + id);
+        for (const auto& rawMembership : memberships) {
             wish::ModeMembership membership;
             membership.tonicOffset = rawMembership.at("tonicOffset").integer(0, 11);
             const auto mode = wish::parseMode(jsonText(rawMembership, "mode"));
@@ -145,7 +189,11 @@ wish::AnnotationCatalog readCandidateAnnotations(
     }
     for (const auto& id : pendingIds)
         require(!approved.contains(id), "pending candidate is in approved-ids.txt: " + id);
-    require(reviewedIds == approved, "approved-ids.txt must exactly equal editorial-reviewed metadata IDs");
+    for (const auto& id : originalPendingIds)
+        require(metadataIds.contains(id) && pendingIds.contains(id),
+                "original pending candidate is missing or no longer pending: " + id);
+    require(approvedByMetadata == approved,
+            "approved-ids.txt must exactly equal grade-A editorial-reviewed metadata IDs");
     require(pendingIds.size() + reviewedIds.size() == candidateById.size(),
             "metadata admission status set does not cover candidates");
     return result;
