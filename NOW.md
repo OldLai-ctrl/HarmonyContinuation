@@ -2,6 +2,16 @@
 
 ## 本轮工作与下一步
 
+### G01 / G4-H 真实环境验收（2026-10-24，Pending）
+
+唯一受控候选保持 **0.11.0-dev.2 / f99dfa1657b04db0af50d76795141ea24b50ae10**，接手交付记录f2c3ee6。未重打包或修改二进制；本轮只读重核Setup SHA为 `08B0D6516BE1BF6EF5F4FD48D0FC523C9B221D6B09DBE1B928201C8C8D621ABA`，候选模块版本/提交/哈希与冻结身份一致。[当前证据](../HarmonyContinuation-g04h-acceptance-20261024/identity-and-environment.json)、[实机逐项清单](docs/G01_G4_ACCEPTANCE.md#g4-h真实验收进度2026-10-24)。
+
+本机标准路径仍为生产0.10.0-rc.1，Factory哈希保持V5基线；尚未获准替换为dev.2，已请求用户指定测试环境及DAW操作者。本机Cubase可执行文件元数据15.0.30 / 15.0.30.287；未启动或测试，FL Studio版本待提供。标准路径/UAC、新版标准安装后加载、Cubase/FL、双实例与音频所有权、实际抽取听评全部Pending，不将G4-R的58/47历史结果当作本轮实际执行。
+
+202诊断/恢复guard已对照源码审查；[人工处理说明](docs/INSTALLER_AND_LIBRARY.md#dev2恢复失败与人工处理)补齐保留日志与整个恢复目录、journal逆序恢复受管理文件、再恢复精确登记、核验后清标记的维护者流程，并修正旧“直接重跑修复”建议。未故意制造不可恢复状态，无人工恢复演练PASS。主代理负责包身份、恢复文档和RC判断，Luna进行只读恢复契约检查。
+
+当前工程基线可继续验收，但真实环境和音乐质量证据不足，**不建议冻结RC1**。等待获准环境及实际操作者结果；既存文档改动保留，未合并、推送、Tag或Release。
+
 ### G01 / G4-R 安装失败恢复（2026-10-24）
 
 恢复专项技术门禁通过，可进入RC候选评审；真实Cubase/FL Studio、标准路径/UAC及人工听评仍待验收。本地分支 `development/g01-chord-wish-20261023`，新开发构建 **0.11.0-dev.2 / Release x64**，冻结BuildCommit `f99dfa1657b04db0af50d76795141ea24b50ae10`；后续测试/文档提交与构建身份分开。唯一新[Setup](../HarmonyContinuation-g04r-delivery-20261024/HarmonyContinuation-0.11.0-dev.2-Setup.exe)、[身份和证据](../HarmonyContinuation-g04r-delivery-20261024/BUILD_INFO.json)、[根因/修复及人工清单](docs/G01_G4_ACCEPTANCE.md)。旧dev.1/fb68a6e包保留为失败诊断资产，禁止正常分发。
