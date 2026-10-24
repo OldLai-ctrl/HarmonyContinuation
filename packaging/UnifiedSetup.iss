@@ -105,6 +105,9 @@ var
   StatusPage: TOutputMsgWizardPage;
   Snapshots: TStringList;
   SnapshotPresent: TStringList;
+  SnapshotHashes: TStringList;
+  RecoveryDir, FailureMessage: String;
+  RegistryCaptured, RegistryWasPresent, CriticalFailure, RecoveryFailed, AppWasPresent, RecoveryCreated: Boolean;
   PluginWasPresent, LibraryWasPresent, OwnPlugin, OwnLibrary: Boolean;
   RemovePlugin, RemoveLibrary, SkipLibrary, Committed, TransactionStarted, Uninstalled: Boolean;
   DetectedVersion, DetectedLibrary, LegacyUninstaller, BundledFactoryHash: String;
@@ -253,12 +256,16 @@ var Index: Integer; Backup: String;
 begin
   if Snapshots.IndexOf(Path)>=0 then Exit;
   if not SafePath(Path) then RaiseException('Unsafe linked path: '+Path);
-  Index:=Snapshots.Count; Backup:=ExpandConstant('{tmp}\hc-backup\')+IntToStr(Index);
+  Index:=Snapshots.Count; Backup:=RecoveryDir+'\'+IntToStr(Index);
   if not ForceDirectories(ExtractFileDir(Backup)) then RaiseException('Cannot create recovery backup');
   if FileExists(Path) then begin
     if not FileCopy(Path,Backup,False) then RaiseException('Cannot back up '+Path);
     SnapshotPresent.Add('1');
-  end else SnapshotPresent.Add('0');
+    SnapshotHashes.Add(GetSHA256OfFile(Backup));
+  end else begin
+    if DirExists(Path) then SnapshotPresent.Add('D') else SnapshotPresent.Add('0');
+    SnapshotHashes.Add('');
+  end;
   Snapshots.Add(Path);
 end;
 procedure RememberManifest(Manifest: String);
@@ -268,17 +275,181 @@ begin
   LoadStringsFromFile(Manifest,Lines);
   for I:=0 to GetArrayLength(Lines)-1 do RememberFile(PluginFolder('')+'\'+Copy(Lines[I],66,Length(Lines[I])));
 end;
+function RecoveryRoot: String;
+begin
+#ifdef TestRoot
+  Result:='{#TestRoot}\Recovery';
+#else
+  Result:=ExpandConstant('{commonappdata}\HarmonyContinuation\InstallerRecovery');
+#endif
+end;
+procedure BeginRecovery;
+begin
+  RecoveryDir:=RecoveryRoot+'\'+ExtractFileName(ExpandConstant('{tmp}'));
+  if not SafePath(RecoveryDir) or DirExists(RecoveryDir) or not ForceDirectories(RecoveryDir) then
+    RaiseException('Cannot create private recovery directory');
+  RecoveryCreated:=True;
+end;
+function HasPendingRecovery: Boolean;
+var Find: TFindRec;
+begin
+  Result:=FileExists(RecoveryRoot+'\pending.txt');
+  if Result then Exit;
+  { A failed recovery may also fail to write a second marker. The journal
+    created before mutation is sufficient to refuse a destructive retry. }
+  if FindFirst(RecoveryRoot+'\*',Find) then begin
+    try repeat
+      if ((Find.Attributes and FILE_ATTRIBUTE_DIRECTORY)<>0) and (Find.Name<>'.') and (Find.Name<>'..') then
+        if FileExists(RecoveryRoot+'\'+Find.Name+'\files.txt') then begin Result:=True; Break; end;
+    until not FindNext(Find);
+    finally FindClose(Find); end;
+  end;
+end;
+function RegistryCommand(Params: String): Boolean;
+var Code: Integer;
+begin
+  { Setup 6 is 32 bit; use the native reg.exe to match HKLM64/HKCU64. }
+  Result:=Exec(ExpandConstant('{sysnative}\reg.exe'),Params,'',SW_HIDE,ewWaitUntilTerminated,Code);
+  Result:=Result and (Code=0);
+end;
+function RegistryName: String;
+begin
+#ifdef TestRoot
+  Result:='HKCU\'+MainKey;
+#else
+  Result:='HKLM\'+MainKey;
+#endif
+end;
+procedure CaptureRegistry;
+begin
+  RegistryWasPresent:=RegKeyExists(RegistryRoot,MainKey);
+  if RegistryWasPresent then
+    if not RegistryCommand('export "'+RegistryName+'" "'+RecoveryDir+'\registration.reg" /y') then
+      RaiseException('Cannot back up installation registration');
+  RegistryCaptured:=True;
+end;
+function RegistryMatches: Boolean;
+begin
+  Result:=RegKeyExists(RegistryRoot,MainKey)=RegistryWasPresent;
+  if Result and RegistryWasPresent then begin
+    Result:=RegistryCommand('export "'+RegistryName+'" "'+RecoveryDir+'\registration-check.reg" /y');
+    if Result then Result:=GetSHA256OfFile(RecoveryDir+'\registration-check.reg')=GetSHA256OfFile(RecoveryDir+'\registration.reg');
+  end;
+end;
+procedure RememberAppSupport;
+var Find: TFindRec; I: Integer; Base: String;
+begin
+  RememberFile(AppFolder+'\library_manager.exe');
+  RememberFile(AppFolder+'\HarmonyContinuation-Setup.exe');
+  RememberFile(AppFolder+'\LibraryUpdate.exe');
+  if FindFirst(ExpandConstant('{tmp}\*.dll'),Find) then begin
+    try repeat RememberFile(AppFolder+'\'+Find.Name); until not FindNext(Find);
+    finally FindClose(Find); end;
+  end;
+  { Native Inno can allocate any free uninsNNN name. Capture existing ones;
+    remember absence of the conventional initial name for a fresh install. }
+  for I:=0 to 2 do begin
+    if I=0 then Base:='exe' else if I=1 then Base:='dat' else Base:='msg';
+    RememberFile(AppFolder+'\unins000.'+Base);
+    if FindFirst(AppFolder+'\unins???.'+Base,Find) then begin
+      try repeat RememberFile(AppFolder+'\'+Find.Name); until not FindNext(Find);
+      finally FindClose(Find); end;
+    end;
+  end;
+#ifndef TestRoot
+  RememberFile(ExpandConstant('{autoprograms}\HarmonyContinuation\管理安装.lnk'));
+  RememberFile(ExpandConstant('{autoprograms}\HarmonyContinuation\卸载 HarmonyContinuation.lnk'));
+  RememberFile(ExpandConstant('{autoprograms}\HarmonyContinuation\更新进行库.lnk'));
+#endif
+end;
+procedure SaveRecoveryJournal;
+var Journal: TArrayOfString; I: Integer;
+begin
+  SetArrayLength(Journal,Snapshots.Count+3);
+  Journal[0]:='Build version: {#ProductVersion}'; Journal[1]:='Registry: '+RegistryName;
+  Journal[2]:='Registry existed: '+IntToStr(Ord(RegistryWasPresent));
+  for I:=0 to Snapshots.Count-1 do
+    Journal[I+3]:=IntToStr(I)+'|'+SnapshotPresent[I]+'|'+SnapshotHashes[I]+'|'+Snapshots[I];
+  if not SaveStringsToUTF8File(RecoveryDir+'\files.txt',Journal,False) then
+    RaiseException('Cannot save recovery journal');
+end;
+procedure CleanupRecovery;
+var I: Integer;
+begin
+  if not RecoveryCreated then Exit;
+  { Only files created by this transaction; never recursively clear a data tree. }
+  for I:=0 to Snapshots.Count-1 do DeleteFile(RecoveryDir+'\'+IntToStr(I));
+  DeleteFile(RecoveryDir+'\registration.reg'); DeleteFile(RecoveryDir+'\registration-check.reg');
+  DeleteFile(RecoveryDir+'\files.txt'); RemoveDir(RecoveryDir); RemoveDir(RecoveryRoot);
+  RecoveryCreated:=False;
+end;
 procedure Rollback;
-var I: Integer; Path, Backup: String;
+var I: Integer; Path, Backup: String; Ok, ItemOk: Boolean; Find: TFindRec;
 begin
   if not TransactionStarted then Exit;
+  Ok:=True;
+  { After native rollback has finished, undo app/plugin payload before publishing
+    restored component state and the Factory active pointer (captured first). }
   for I:=Snapshots.Count-1 downto 0 do begin
-    Path:=Snapshots[I]; Backup:=ExpandConstant('{tmp}\hc-backup\')+IntToStr(I);
-    if SnapshotPresent[I]='1' then begin
-      ForceDirectories(ExtractFileDir(Path)); if not FileCopy(Backup,Path,False) then Log('RESTORE FAILED: '+Path);
-    end else if FileExists(Path) then if not DeleteFile(Path) then Log('CLEANUP FAILED: '+Path);
+    Path:=Snapshots[I]; Backup:=RecoveryDir+'\'+IntToStr(I); ItemOk:=False;
+    try
+      if not SafePath(Path) then RaiseException('Unsafe recovery target');
+      if SnapshotPresent[I]='1' then begin
+        if FileExists(Path) then ItemOk:=GetSHA256OfFile(Path)=SnapshotHashes[I];
+        if not ItemOk then begin
+          if not ForceDirectories(ExtractFileDir(Path)) or not FileCopy(Backup,Path,False) then
+            RaiseException('Cannot restore file');
+          ItemOk:=GetSHA256OfFile(Path)=SnapshotHashes[I];
+        end;
+      end else if SnapshotPresent[I]='D' then ItemOk:=DirExists(Path)
+      else begin
+        if FileExists(Path) then DeleteFile(Path);
+        ItemOk:=not FileExists(Path) and not DirExists(Path);
+      end;
+    except Log('HC restore error: '+Path+': '+GetExceptionMessage); end;
+    if not ItemOk then begin Ok:=False; Log('HC RESTORE FAILED: '+Path); end;
+  end;
+  { Remove only new native uninstaller files; every pre-existing name was captured. }
+  if RegistryCaptured and FindFirst(AppFolder+'\unins???.*',Find) then begin
+    try repeat
+      Path:=AppFolder+'\'+Find.Name;
+      if (Snapshots.IndexOf(Path)<0) and
+         (Length(Find.Name)=12) and (Pos(Copy(Find.Name,6,1),'0123456789')>0) and
+         (Pos(Copy(Find.Name,7,1),'0123456789')>0) and (Pos(Copy(Find.Name,8,1),'0123456789')>0) and
+         ((CompareText(ExtractFileExt(Path),'.exe')=0) or (CompareText(ExtractFileExt(Path),'.dat')=0) or
+          (CompareText(ExtractFileExt(Path),'.msg')=0)) then
+        if not SafePath(Path) or not DeleteFile(Path) then Ok:=False;
+    until not FindNext(Find);
+    finally FindClose(Find); end;
+  end;
+  if RegistryCaptured then begin
+    try
+      if not RegistryMatches then begin
+        if RegKeyExists(RegistryRoot,MainKey) then
+          if not RegDeleteKeyIncludingSubkeys(RegistryRoot,MainKey) then RaiseException('Cannot remove failed registration');
+        if RegistryWasPresent then
+          if not RegistryCommand('import "'+RecoveryDir+'\registration.reg"') then RaiseException('Cannot restore registration');
+      end;
+      if not RegistryMatches then RaiseException('Restored registration differs');
+    except Ok:=False; Log('HC registry restore error: '+GetExceptionMessage); end;
   end;
   TransactionStarted:=False;
+  if Ok then begin
+    Log('HC rollback verified'); CleanupRecovery;
+    if RegistryCaptured and not AppWasPresent then RemoveDir(AppFolder);
+  end
+  else begin
+    RecoveryFailed:=True; CriticalFailure:=True;
+    SaveStringToFile(RecoveryDir+'\FAILURE.txt',FailureMessage+#13#10+'Recovery incomplete. Preserve these files.',False);
+    SaveStringToFile(RecoveryRoot+'\pending.txt',RecoveryDir,False);
+    Log('HC recovery incomplete; retained at '+RecoveryDir);
+  end;
+end;
+procedure TestFailure(Point: String);
+begin
+#ifdef TestRoot
+  if ExpandConstant('{param:HCFAIL|}')=Point then RaiseException('Injected transaction failure: '+Point);
+#endif
 end;
 procedure RemoveManagedPlugin;
 var Lines: TArrayOfString; I: Integer; Path, Parent: String;
@@ -389,7 +560,7 @@ begin
 end;
 function InitializeSetup: Boolean;
 begin
-  Snapshots:=TStringList.Create; SnapshotPresent:=TStringList.Create;
+  Snapshots:=TStringList.Create; SnapshotPresent:=TStringList.Create; SnapshotHashes:=TStringList.Create;
   Result:=True;
   if ExpandConstant('{param:OPERATION|}')='uninstall' then begin
     Uninstalled:=RunFullUninstall;
@@ -452,6 +623,9 @@ function PrepareToInstall(var NeedsRestart: Boolean): String;
 var Code, Active: Integer; Path, Hash: String;
 begin
   Result:='';
+  if HasPendingRecovery then begin
+    Result:='Previous recovery incomplete. Preserve recovery materials at '+RecoveryRoot+'; review before retrying.'; Exit;
+  end;
   if not SafePath(AppFolder) or not SafePath(PluginFolder('')) or not SafePath(StoreFolder) then begin Result:='Linked installation/data paths are not managed.'; Exit; end;
   ExtractPayload;
   if not Manager('check-plugin "'+PluginBinary+'"',True) or
@@ -488,19 +662,70 @@ begin
     LegacyUninstaller:='';
   end;
 end;
+procedure CommitComponentState;
+begin
+  if not ForceDirectories(AppFolder) then RaiseException('Cannot create component state directory');
+  if Selection('plugin') then begin
+    if not FileCopy(ExpandConstant('{tmp}\plugin-files.txt'),AppFolder+'\plugin-files.txt',False) then RaiseException('Cannot record plugin ownership');
+    OwnPlugin:=True;
+  end;
+  TestFailure('after-manifest');
+  if RemovePlugin then OwnPlugin:=False;
+  if Selection('library') and not SkipLibrary then OwnLibrary:=True;
+  if RemoveLibrary then OwnLibrary:=False;
+  if not SetIniString('Components','Plugin',IntToStr(Ord(OwnPlugin)),StateFile) or
+     not SetIniString('Components','Library',IntToStr(Ord(OwnLibrary)),StateFile) then RaiseException('Cannot record component state');
+  if Selection('library') and not SkipLibrary then begin
+    if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
+       not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
+  end;
+  if (GetIniString('Components','Plugin','',StateFile)<>IntToStr(Ord(OwnPlugin))) or
+     (GetIniString('Components','Library','',StateFile)<>IntToStr(Ord(OwnLibrary))) then
+    RaiseException('Component state verification failed');
+end;
+procedure VerifyInstalledState;
+var Version: String; Find: TFindRec; Path: String; Lines: TArrayOfString; I: Integer;
+begin
+  if Selection('plugin') then begin
+    if not ManifestPaths(ExpandConstant('{tmp}\plugin-files.txt'),True) or
+       not LoadStringsFromFile(ExpandConstant('{tmp}\plugin-files.txt'),Lines) then RaiseException('Installed plugin verification failed');
+    for I:=0 to GetArrayLength(Lines)-1 do
+      if not FileExists(PluginFolder('')+'\'+Copy(Lines[I],66,Length(Lines[I]))) then
+        RaiseException('Installed plugin file missing');
+  end;
+  if GetSHA256OfFile(AppFolder+'\library_manager.exe')<>GetSHA256OfFile(ExpandConstant('{tmp}\library_manager.exe')) then
+    RaiseException('Installed support tool verification failed');
+  if FindFirst(ExpandConstant('{tmp}\*.dll'),Find) then begin
+    try repeat
+      Path:=AppFolder+'\'+Find.Name;
+      if not FileExists(Path) or (GetSHA256OfFile(Path)<>GetSHA256OfFile(ExpandConstant('{tmp}\')+Find.Name)) then
+        RaiseException('Installed runtime verification failed: '+Path);
+    until not FindNext(Find);
+    finally FindClose(Find); end;
+  end;
+  if GetSHA256OfFile(AppFolder+'\HarmonyContinuation-Setup.exe')<>GetSHA256OfFile(ExpandConstant('{srcexe}')) then
+    RaiseException('Installed maintenance Setup verification failed');
+  if Selection('library') and not SkipLibrary then
+    if (ReadActive<>'{#LibraryVersion}') or (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
+      RaiseException('Installed Factory verification failed');
+  if not RegQueryStringValue(RegistryRoot,MainKey,'DisplayVersion',Version) or (Version<>'{#ProductVersion}') then
+    RaiseException('Installed registration verification failed');
+end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var Path: String;
 begin
   if CurStep=ssInstall then begin
-    TransactionStarted:=True;
-    RememberFile(StateFile); RememberFile(AppFolder+'\plugin-files.txt');
-    RememberFile(StoreFolder+'\active.txt');
-    if Selection('plugin') then RememberManifest(ExpandConstant('{tmp}\plugin-files.txt'));
-    if RemovePlugin then RememberManifest(AppFolder+'\plugin-files.txt');
-    if Selection('library') and not SkipLibrary then RememberFile(LibraryDatabase);
-    if RemoveLibrary then RememberFile(ManagedLibraryDatabase);
-    if Selection('plugin') or RemoveLibrary then RememberFile(PluginFolder('')+'\Contents\Resources\factory.db');
     try
+      AppWasPresent:=DirExists(AppFolder); BeginRecovery; CaptureRegistry;
+      RememberFile(StoreFolder+'\active.txt');
+      RememberFile(StateFile); RememberFile(AppFolder+'\plugin-files.txt');
+      if Selection('library') and not SkipLibrary then RememberFile(LibraryDatabase);
+      if RemoveLibrary then RememberFile(ManagedLibraryDatabase);
+      if Selection('plugin') then RememberManifest(ExpandConstant('{tmp}\plugin-files.txt'));
+      if RemovePlugin then RememberManifest(AppFolder+'\plugin-files.txt');
+      if Selection('plugin') or RemoveLibrary then RememberFile(BundledFactoryPath);
+      RememberAppSupport; SaveRecoveryJournal;
+      TransactionStarted:=True;
       if RemovePlugin then RemoveManagedPlugin;
       if RemoveLibrary then RemoveManagedLibrary;
       Path:=PluginFolder('')+'\Contents\Resources\factory.db';
@@ -514,37 +739,52 @@ begin
           if not DeleteFile(LibraryDatabase) then RaiseException('Cannot replace damaged managed Factory');
         if not Manager('install "'+ExpandConstant('{tmp}\factory.db')+'" "'+StoreFolder+'"',True) then RaiseException('Factory install failed; restoring previous data.');
       end;
-    except Rollback; RaiseException(GetExceptionMessage); end;
+      TestFailure('after-factory');
+      { All fallible custom writes precede native file copying and registration. }
+      CommitComponentState;
+    except
+      FailureMessage:=GetExceptionMessage; CriticalFailure:=True;
+      Log('HC transaction failed: '+FailureMessage);
+      if not TransactionStarted then CleanupRecovery;
+      SuppressibleMsgBox(Text('安装失败，将恢复原状态。请保留安装日志。','Installation failed; restoring the previous state. Preserve the Setup log.')+#13#10+FailureMessage,mbError,MB_OK,IDOK);
+      Abort;
+    end;
   end;
   if CurStep=ssPostInstall then begin
-    if Selection('plugin') then begin
-      if not FileCopy(ExpandConstant('{tmp}\plugin-files.txt'),AppFolder+'\plugin-files.txt',False) then RaiseException('Cannot record plugin ownership');
-      OwnPlugin:=True;
+    try
+      TestFailure('after-registration'); VerifyInstalledState;
+      Committed:=True; TransactionStarted:=False;
+      Log('HC transaction committed and verified'); CleanupRecovery;
+    except
+      FailureMessage:=GetExceptionMessage; CriticalFailure:=True;
+      Log('HC transaction failed: '+FailureMessage);
+      { Native Inno has committed at this point. Restore our complete snapshot
+        here and override the otherwise-success exit code explicitly. }
+      Rollback;
+      if not WizardSilent then MsgBox(FailureMessage+#13#10+'Installation failed; see Setup log.',mbError,MB_OK);
     end;
-    if RemovePlugin then OwnPlugin:=False;
-    if Selection('library') and not SkipLibrary then OwnLibrary:=True;
-    if RemoveLibrary then OwnLibrary:=False;
-    if not SetIniString('Components','Plugin',IntToStr(Ord(OwnPlugin)),StateFile) or
-       not SetIniString('Components','Library',IntToStr(Ord(OwnLibrary)),StateFile) then RaiseException('Cannot record component state');
-    if Selection('library') and not SkipLibrary then begin
-      if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
-         not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
-    end;
-    Committed:=True; TransactionStarted:=False;
   end;
+end;
+function GetCustomSetupExitCode: Integer;
+begin
+  Result:=0;
+  if CriticalFailure then Result:=201;
+  if RecoveryFailed then Result:=202;
+  Log('HC custom exit code='+IntToStr(Result));
 end;
 procedure DeinitializeSetup;
 begin
   if not Committed then Rollback;
   if Snapshots<>nil then Snapshots.Free;
   if SnapshotPresent<>nil then SnapshotPresent.Free;
+  if SnapshotHashes<>nil then SnapshotHashes.Free;
 end;
 function InitializeUninstall: Boolean;
 begin
-  Snapshots:=TStringList.Create; SnapshotPresent:=TStringList.Create;
+  Snapshots:=TStringList.Create; SnapshotPresent:=TStringList.Create; SnapshotHashes:=TStringList.Create;
   OwnPlugin:=GetIniString('Components','Plugin','0',StateFile)='1';
   OwnLibrary:=GetIniString('Components','Library','0',StateFile)='1';
-  Result:=SafePath(AppFolder) and SafePath(PluginFolder('')) and SafePath(StoreFolder);
+  Result:=not HasPendingRecovery and SafePath(AppFolder) and SafePath(PluginFolder('')) and SafePath(StoreFolder);
   if Result and OwnPlugin then Result:=ManifestPaths(AppFolder+'\plugin-files.txt',True);
   if Result and OwnLibrary and FileExists(ManagedLibraryDatabase) then Result:=CompareText(GetSHA256OfFile(ManagedLibraryDatabase),ManagedHash)=0;
   if Result then Result:=Manager('check-plugin "'+PluginBinary+'"',False) and Manager('check-plugin "'+LibraryDatabase+'"',False);
@@ -553,6 +793,7 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep=usUninstall then begin
+    BeginRecovery;
     TransactionStarted:=True;
     RememberFile(StoreFolder+'\active.txt');
     if OwnPlugin then RememberManifest(AppFolder+'\plugin-files.txt');
@@ -560,7 +801,7 @@ begin
     try
       if OwnPlugin then RemoveManagedPlugin;
       if OwnLibrary then RemoveManagedLibrary;
-      TransactionStarted:=False;
+      TransactionStarted:=False; CleanupRecovery;
     except Rollback; RaiseException(GetExceptionMessage); end;
   end;
 end;
@@ -569,4 +810,5 @@ begin
   Rollback;
   if Snapshots<>nil then Snapshots.Free;
   if SnapshotPresent<>nil then SnapshotPresent.Free;
+  if SnapshotHashes<>nil then SnapshotHashes.Free;
 end;
