@@ -1,0 +1,2831 @@
+{
+  "version": 6,
+  "baseline": "2421c6f",
+  "candidates": [
+    {
+      "id": "V6_B1_001",
+      "musicalIdentity": "六度光线与小主音踏板",
+      "family": "Dorian",
+      "chords": "Cm9 F13/C Cm11 Dm7 Cm9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C低音长时停留，F13中的A与Cm的Eb确立小三度和大六度；Dm7后回Cm。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C低音长时停留，F13中的A与Cm的Eb确立小三度和大六度；Dm7后回Cm。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_002",
+      "musicalIdentity": "小调侧向三和弦拱形",
+      "family": "Dorian",
+      "chords": "Cm Eb F Eb Cm",
+      "referenceTonic": "C",
+      "meter": "3/4",
+      "durationQN": [
+        6.0,
+        3.0,
+        3.0,
+        3.0,
+        9.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C首尾长停留；Eb到F引入A自然音，避免Bb大调终止。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C首尾长停留；Eb到F引入A自然音，避免Bb大调终止。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalPlagal",
+        "OpenHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_003",
+      "musicalIdentity": "多利亚下属延展",
+      "family": "Dorian",
+      "chords": "Cm11 Gm7 F9 Dm7 Cm9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        8.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F9包含A与Eb，Cm为框架，Gm替代大属防止功能小调牵引。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "F9包含A与Eb，Cm为框架，Gm替代大属防止功能小调牵引。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalPlagal",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_004",
+      "musicalIdentity": "切分低音与自然六度",
+      "family": "Dorian",
+      "chords": "Cm7 Bb/C F/C Dm7/C Cm9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        3.0,
+        3.0,
+        2.0,
+        4.0,
+        4.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C踏板稳定中心，Dm和F明确A自然音；跨两个4/4小节的3+3+2 QN产生独立使用场景。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C踏板稳定中心，Dm和F明确A自然音；跨两个4/4小节的3+3+2 QN产生独立使用场景。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "Syncopation"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_005",
+      "musicalIdentity": "开放小调上层循环",
+      "family": "Dorian",
+      "chords": "Cm9 Ebmaj7 F6 Gm7 F6 Cm11",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F6含A自然音，Cm停留和终回支持C；不以共享音阶推断Eb中心。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "F6含A自然音，Cm停留和终回支持C；不以共享音阶推断Eb中心。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalPlagal",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_006",
+      "musicalIdentity": "降七与二级小和弦回环",
+      "family": "Mixolydian",
+      "chords": "Cadd9 Bbadd9 Dm7 F Cadd9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "mixolydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C为首尾中心，Bb的降七与Dm的F构成混合利底亚标志。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C为首尾中心，Bb的降七与Dm的F构成混合利底亚标志。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SubtonicReturn",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_007",
+      "musicalIdentity": "摇滚降七低音台阶",
+      "family": "Mixolydian",
+      "chords": "C Bb F/A Gm7 C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "mixolydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Gm取代大属，Bb和F/A连接到C长时主音；不是常见三和弦循环的纯节奏变体。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Gm取代大属，Bb和F/A连接到C长时主音；不是常见三和弦循环的纯节奏变体。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SlashBass",
+        "SubtonicReturn"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_008",
+      "musicalIdentity": "属七主和弦的侧向回接",
+      "family": "Mixolydian",
+      "chords": "C9 Gm9 Bbmaj7 F6 C9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "mixolydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C9作为停留和弦而非F属和弦，Gm与Bb支持b7；末尾不解决F。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C9作为停留和弦而非F属和弦，Gm与Bb支持b7；末尾不解决F。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "TonicDominantColor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_009",
+      "musicalIdentity": "主音踏板的降七开放句",
+      "family": "Mixolydian",
+      "chords": "C Bb/C F/C Gm7/C C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "mixolydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C低音贯穿，Bb和Gm显露Bb音，尾部回C而无V-I。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C低音贯穿，Bb和Gm显露Bb音，尾部回C而无V-I。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "SubtonicReturn"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_010",
+      "musicalIdentity": "六拍明亮降七回旋",
+      "family": "Mixolydian",
+      "chords": "C6 Dm7 Bb F C6",
+      "referenceTonic": "C",
+      "meter": "6/8",
+      "durationQN": [
+        6.0,
+        3.0,
+        3.0,
+        6.0,
+        6.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "mixolydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C6延长主音；Bb与F保持降七语汇，6/8每小节3QN。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C6延长主音；Bb与F保持降七语汇，6/8每小节3QN。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "CompoundMeter",
+        "SubtonicReturn"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_011",
+      "musicalIdentity": "升四上层二级踏板",
+      "family": "Lydian",
+      "chords": "Cmaj9 D/C Cmaj7 Em7 D/C Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "D大和弦的F#显露升四；C踏板和Cmaj9长停留稳定C，避免G中心。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "D大和弦的F#显露升四；C踏板和Cmaj9长停留稳定C，避免G中心。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "LydianColor"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_012",
+      "musicalIdentity": "升四小和弦拱形",
+      "family": "Lydian",
+      "chords": "Cmaj7 Bm7 D6 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Bm7含F#且保持B，终止C大七；以C长停留抑制G大调重释。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Bm7含F#且保持B，终止C大七；以C长停留抑制G大调重释。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "LydianColor",
+        "NonfunctionalReturn"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_013",
+      "musicalIdentity": "增四度色彩长线",
+      "family": "Lydian",
+      "chords": "Cmaj7#11 Em9 Dadd9 Bm7 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        12.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Cmaj7#11直接陈述F#，D和Bm继续该色彩，C为长时首尾。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Cmaj7#11直接陈述F#，D和Bm继续该色彩，C为长时首尾。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "LydianColor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_014",
+      "musicalIdentity": "七拍悬浮主音",
+      "family": "Lydian",
+      "chords": "Cmaj7 D/C Em7/C Cmaj7#11",
+      "referenceTonic": "C",
+      "meter": "7/4",
+      "durationQN": [
+        7.0,
+        3.0,
+        4.0,
+        7.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C持续低音与D大三和弦支持F#；7/4时值为7QN。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C持续低音与D大三和弦支持F#；7/4时值为7QN。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "OddMeter"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_015",
+      "musicalIdentity": "宽距四和弦升四回归",
+      "family": "Lydian",
+      "chords": "C6 Dadd9 F#m7b5 Cmaj7#11",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F#半减七包含C与E，归回C#11；不解释成F#局部主音。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "F#半减七包含C与E，归回C#11；不解释成F#局部主音。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "LydianColor",
+        "HalfDiminishedColor"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_016",
+      "musicalIdentity": "降二踏板的暗色回环",
+      "family": "Phrygian",
+      "chords": "Cm Db/C Bbm/C Cm",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "phrygian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C踏板与Cm小三度、Db降二和Bbm中的Ab共同确立Phrygian。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C踏板与Cm小三度、Db降二和Bbm中的Ab共同确立Phrygian。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "PhrygianColor"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_017",
+      "musicalIdentity": "降二与降七的三拍拱形",
+      "family": "Phrygian",
+      "chords": "Cm Db Eb Bbm Cm",
+      "referenceTonic": "C",
+      "meter": "3/4",
+      "durationQN": [
+        6.0,
+        3.0,
+        3.0,
+        3.0,
+        9.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "phrygian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Db降二与Eb大三和弦在C小主的长时首尾间穿行，Bbm提供Ab；避免错误Gb音。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Db降二与Eb大三和弦在C小主的长时首尾间穿行，Bbm提供Ab；避免错误Gb音。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PhrygianColor",
+        "ModalPlagal"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_018",
+      "musicalIdentity": "下属小和弦降二折返",
+      "family": "Phrygian",
+      "chords": "Cm7 Fm7 Dbmaj7 Bbm7 Cm",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "phrygian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Cm7避免自然二音；Fm7、Dbmaj7与Bbm7显露Db/Ab，首尾C小主长停留。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Cm7避免自然二音；Fm7、Dbmaj7与Bbm7显露Db/Ab，首尾C小主长停留。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PhrygianColor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "characteristic",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_019",
+      "musicalIdentity": "平行小下属与降六回接",
+      "family": "ModernPop",
+      "chords": "Cadd9 Em7 Fm6 Abmaj7 C/G C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C大调框架中Fm6和Ab为平行小调借用；并非纯Ionian音集。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C大调框架中Fm6和Ab为平行小调借用；并非纯Ionian音集。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalMixture",
+        "SlashBass"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_020",
+      "musicalIdentity": "大调降三延迟归主",
+      "family": "ModernPop",
+      "chords": "C Ebmaj7 Fadd9 Dm7 Ab C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C首尾为中心，Eb和Ab色彩借用，没有属到主的必需关系。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C首尾为中心，Eb和Ab色彩借用，没有属到主的必需关系。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalMixture",
+        "ChromaticMediant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_021",
+      "musicalIdentity": "独立流行斜低音开放句",
+      "family": "ModernPop",
+      "chords": "Cmaj7 G/B Bbmaj7 F/A Fm/Ab C/G",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "低音C-B-Bb-A-Ab-G半音下行，开放在主和弦第二转位，回接C需试听。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "低音C-B-Bb-A-Ab-G半音下行，开放在主和弦第二转位，回接C需试听。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ChromaticBass",
+        "OpenEnding"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_022",
+      "musicalIdentity": "小调降六大调侧门",
+      "family": "ModernPop",
+      "chords": "Cm Abmaj7 Eb/G Fm9 Bbadd9 Cm",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "aeolian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C小主和弦长停留，Ab到Eb/G构造低音连接，Bb代替大属回接。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C小主和弦长停留，Ab到Eb/G构造低音连接，Bb代替大属回接。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SlashBass",
+        "SubtonicReturn"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_023",
+      "musicalIdentity": "非对称大小调折返",
+      "family": "ModernPop",
+      "chords": "Cadd9 Am7 Abmaj7 Fm9 C/E Dm7 C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        3.0,
+        3.0,
+        2.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Ab和Fm是借用；C/E使回归经低音向Dm侧移，不是单一四和弦套式。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Ab和Fm是借用；C/E使回归经低音向Dm侧移，不是单一四和弦套式。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalMixture",
+        "Syncopation"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_024",
+      "musicalIdentity": "另类摇滚远关系桥段",
+      "family": "ModernPop",
+      "chords": "C Ab E F C Bb C",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "pop:0.7,rock:0.6",
+      "memberships": [],
+      "structure": "C中心可感但Ab/E连用跨越多个音阶，保留模糊色彩说明，无全曲单调式断言。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "ChromaticMediant",
+        "NonfunctionalReturn"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_025",
+      "musicalIdentity": "大九到半音低音小下属",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Cmaj7/B Bb13 Fmaj9/A Fm9/Ab Cmaj9/G Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "低音C-B-Bb-A-Ab-G-C；Bb13作非功能色彩，Fm借用，C为框架。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "低音C-B-Bb-A-Ab-G-C；Bb13作非功能色彩，Fm借用，C为框架。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ChromaticBass",
+        "ModalMixture",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_026",
+      "musicalIdentity": "小调九和弦半音侧滑",
+      "family": "NeoSoul",
+      "chords": "Cm9 Dbm9 Dm9 G13 Cm9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        2.0,
+        2.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [],
+      "structure": "半音同质小九连接，G13含E与A，混合语汇；不归为纯和声小调。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "ChromaticPlaning",
+        "ExtendedHarmony"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_027",
+      "musicalIdentity": "延展下属的柔性回接",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Em11 A13 Dm9 Fm6 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Em到A13为ii的局部导向，Dm到Fm6平行借用回C；保留9/11/13实际音集。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Em到A13为ii的局部导向，Dm到Fm6平行借用回C；保留9/11/13实际音集。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SecondaryDominant",
+        "ModalMixture",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_028",
+      "musicalIdentity": "悬挂属与降七侧门",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Fmaj9 Fm9 Bb13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Fm9-Bb13为backdoor色彩连接；回Cmaj9而非Eb。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Fm9-Bb13为backdoor色彩连接；回Cmaj9而非Eb。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "Backdoor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_029",
+      "musicalIdentity": "城市流行上行减七桥",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 C#dim7 Dm9 D#dim7 Em9 A7b9 Dm9 G13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        2.0,
+        4.0,
+        2.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C#dim导向Dm，D#dim导向Em；A7b9局部导向Dm，长线功能清晰。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C#dim导向Dm，D#dim导向Em；A7b9局部导向Dm，长线功能清晰。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SecondaryLeadingTone",
+        "SecondaryDominant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_030",
+      "musicalIdentity": "大七到下中音的斜低音长线",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 E7/G# Am9 Am7/G Fmaj9 Fm6 C/E Dm9 G13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "E/G#导向Am，G下行到F后小下属借用，C/E-Dm再终止；区分完整长线与四和弦片段。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "E/G#导向Am，G下行到F后小下属借用，C/E-Dm再终止；区分完整长线与四和弦片段。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SecondaryDominant",
+        "SlashBass",
+        "ModalMixture"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_031",
+      "musicalIdentity": "小九上层与持续根音",
+      "family": "NeoSoul",
+      "chords": "Cm9 F9/C Dm7/C Gm9/C Cm11",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "dorian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C持续根音，F9和Dm明确A自然音；尾部Cm11稳定小主。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C持续根音，F9和Dm明确A自然音；尾部Cm11稳定小主。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_032",
+      "musicalIdentity": "悬挂四度延迟三音",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Dm11 G7sus4 G7b9 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "同属根上的sus4到b9明确张力变化；两属事件不可折叠成纯节奏重复。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "同属根上的sus4到b9明确张力变化；两属事件不可折叠成纯节奏重复。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "Suspension",
+        "AlteredDominant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_033",
+      "musicalIdentity": "三拍柔性色彩后门",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Am9 Abmaj9 Db9 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "3/4",
+      "durationQN": [
+        6.0,
+        3.0,
+        3.0,
+        3.0,
+        9.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Am到Ab半音根音，再Db9三全音替代回C；3/4全句24QN。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Am到Ab半音根音，再Db9三全音替代回C；3/4全句24QN。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "TritoneSubstitution",
+        "ModalMixture"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_034",
+      "musicalIdentity": "大调半音上方小九趋近",
+      "family": "NeoSoul",
+      "chords": "Cmaj9 Fmaj9 F#m7b5 Fm9 Em9 Ebm9 Dm9 G13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        2.0,
+        2.0,
+        4.0,
+        2.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F#半减-Fm-Em与Ebm-Dm为两段不同的半音连接；非全部同质planing。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "F#半减-Fm-Em与Ebm-Dm为两段不同的半音连接；非全部同质planing。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ChromaticApproach",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_035",
+      "musicalIdentity": "City Pop借用降六后次属",
+      "family": "NeoSoul",
+      "chords": "Cmaj7 Abmaj7 Gm9 C13 Fmaj9 Dm9 G7sus4 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Ab借用后Gm-C13局部导向F；F不是全曲主音，尾部回C。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Ab借用后Gm-C13局部导向F；F不是全曲主音，尾部回C。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ModalMixture",
+        "SecondaryDominant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_036",
+      "musicalIdentity": "小主大七与升六连线",
+      "family": "NeoSoul",
+      "chords": "CmMaj9 Dm7 G7 CmMaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "rnb:1,citypop:0.8,jazz:0.6",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "melodic_minor_ascending",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "CmMaj9含B与Eb，Dm7与G7保留A/B自然音且避免E自然扩展；全篇静态C爵士旋律小调，不宣称古典双向。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "CmMaj9含B与Eb，Dm7与G7保留A/B自然音且避免E自然扩展；全篇静态C爵士旋律小调，不宣称古典双向。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "JazzMelodicMinor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_037",
+      "musicalIdentity": "双三全音侧向终止",
+      "family": "JazzFusion",
+      "chords": "Cmaj9 Eb9 Dm9 Db13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Eb9替A7导Dm，Db13替G7导C；两目标不同。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Eb9替A7导Dm，Db13替G7导C；两目标不同。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "TritoneSubstitution",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_038",
+      "musicalIdentity": "小调半减与变化属",
+      "family": "JazzFusion",
+      "chords": "Cm9 Dm7b5 G7b9 CmMaj7",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "harmonic_minor",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Cm9的Bb是平行自然小调借用；Dm7b5与G7b9显露Ab/B，末CmMaj7收束和声小调语境；严格和声小调音集拒绝。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Cm9的Bb是平行自然小调借用；Dm7b5与G7b9显露Ab/B，末CmMaj7收束和声小调语境；严格和声小调音集拒绝。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only; Cm9 tonic has Bb whereas CmMaj7 has B: harmonic-minor context includes tonic-seventh mixture, strict scale rejects.",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "MinorTwoFive",
+        "AlteredDominant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_039",
+      "musicalIdentity": "变化属升九降十三归主",
+      "family": "JazzFusion",
+      "chords": "Cmaj9 Em7 A7b9 Dm9 G7#9b13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "A7b9局部导Dm，G变化属导C；全篇含借用变化音，严格Ionian不通过。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "A7b9局部导Dm，G变化属导C；全篇含借用变化音，严格Ionian不通过。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "SecondaryDominant",
+        "AlteredDominant"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_040",
+      "musicalIdentity": "后门之前的副属展开",
+      "family": "JazzFusion",
+      "chords": "Cmaj9 D7 Fm9 Bb9 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "D7没有照常解决G而侧向Fm-Bb，属于非传统回接设计，需试听该转折。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "D7没有照常解决G而侧向Fm-Bb，属于非传统回接设计，需试听该转折。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "Backdoor",
+        "NontraditionalResolution"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_041",
+      "musicalIdentity": "大小三度中音链",
+      "family": "JazzFusion",
+      "chords": "Cmaj7 Emaj7 Abmaj7 Dm9 G13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "E和Ab为三度色彩链，末段ii-V-I重新锚定C；不是E或Ab调式归属。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "E和Ab为三度色彩链，末段ii-V-I重新锚定C；不是E或Ab调式归属。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ChromaticMediant",
+        "TwoFiveOne"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_042",
+      "musicalIdentity": "小调后门与大主转亮",
+      "family": "JazzFusion",
+      "chords": "Cm9 Fm9 Bb13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [],
+      "structure": "以Cm开篇并以Cmaj9收束，大小主同根转亮，单一调式归属保留待审。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "Backdoor",
+        "ParallelMajorMinor"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_043",
+      "musicalIdentity": "下属前的半音属链",
+      "family": "JazzFusion",
+      "chords": "Cmaj9 B7 Bb7 A7 Dm9 G13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        2.0,
+        2.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "B7-Bb7-A7为根音半音属链，A7后才进入Dm，三条张力来源有不同用途。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "B7-Bb7-A7为根音半音属链，A7后才进入Dm，三条张力来源有不同用途。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ChromaticDominantChain",
+        "TwoFiveOne"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_044",
+      "musicalIdentity": "六拍小主与增三色彩",
+      "family": "JazzFusion",
+      "chords": "CmMaj7 Ebaug Abmaj7 G7b9 CmMaj7",
+      "referenceTonic": "C",
+      "meter": "6/8",
+      "durationQN": [
+        6.0,
+        3.0,
+        3.0,
+        3.0,
+        9.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "harmonic_minor",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Ebaug含B而非Bb，Ab与G7b9提供Ab/B；C小主大七长停留。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Ebaug含B而非Bb，Ab与G7b9提供Ab/B；C小主大七长停留。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "HarmonicMinor",
+        "AugmentedColor"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_045",
+      "musicalIdentity": "爵士旋律小调上层属延展",
+      "family": "JazzFusion",
+      "chords": "CmMaj9 F13 Dm7 Bm7b5 CmMaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "melodic_minor_ascending",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F13含A/Eb，B半减含B/D/F/A，Dm7避免E自然音，CmMaj9含Eb/B，全篇C爵士静态旋律小调。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "F13含A/Eb，B半减含B/D/F/A，Dm7避免E自然音，CmMaj9含Eb/B，全篇C爵士静态旋律小调。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "JazzMelodicMinor",
+        "ExtendedHarmony"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_046",
+      "musicalIdentity": "替代属与低音半音围绕",
+      "family": "JazzFusion",
+      "chords": "Cmaj9 Dm9 Db9 Cmaj9/B Bbm9 Eb13 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "jazz:1,rnb:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "ionian",
+          "usage": "medium",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Db导C但低音落B再Bb，后Bbm-Eb侧向返回C；末段较突兀需人工听评。",
+          "review": "pending",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Db导C但低音落B再Bb，后Bbm-Eb侧向返回C；末段较突兀需人工听评。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "pending",
+      "auditionStatus": "pending-human",
+      "uncertainties": "tonic stability and context require human review; excluded from experiment pool",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "TritoneSubstitution",
+        "ChromaticBass",
+        "NontraditionalResolution"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_047",
+      "musicalIdentity": "同质大九全音漂移",
+      "family": "Ambient",
+      "chords": "Cmaj9 Dmaj9 Emaj9 Dmaj9 Cmaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        16.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "同质大九平移跨多个音阶；只承认C首尾锚定，不认定Lydian。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "ChromaticPlaning",
+        "ExtendedHarmony"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_048",
+      "musicalIdentity": "大七小三度暗色镜像",
+      "family": "Ambient",
+      "chords": "Cmaj7 Ebmaj7 F#maj7 Amaj7 Cmaj7",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        16.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "减七分割根音的大七和弦色彩链，非调内；无可靠单调式。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "SymmetricRootCycle",
+        "ChromaticMediant"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_049",
+      "musicalIdentity": "主音踏板与多调式上层",
+      "family": "Ambient",
+      "chords": "Cmaj7 Db/C D/C Fm/C Cmaj7",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        8.0,
+        8.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "Db、D与Fm共享C低音但包含半音矛盾，记录踏板而非自动调式标签。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "PedalPoint",
+        "ModalMixture"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_050",
+      "musicalIdentity": "悬四平移五拍长句",
+      "family": "Ambient",
+      "chords": "Csus4 Dsus4 Absus4 Gsus4 Csus4",
+      "referenceTonic": "C",
+      "meter": "5/4",
+      "durationQN": [
+        5.0,
+        5.0,
+        5.0,
+        5.0,
+        10.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "sus和弦无三音、跨音阶平移；主音可感但大小调不确定。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "ChromaticPlaning",
+        "OddMeter"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_051",
+      "musicalIdentity": "利底亚慢速上层滑移",
+      "family": "Ambient",
+      "chords": "Cmaj7#11 D6/C Bm7/C Cmaj9",
+      "referenceTonic": "C",
+      "meter": "3/4",
+      "durationQN": [
+        12.0,
+        6.0,
+        6.0,
+        12.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "lydian",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C低音和#11、D/Bm共同显露F#，3/4慢速长时场景，结构不同于短D/C往返。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C低音和#11、D/Bm共同显露F#，3/4慢速长时场景，结构不同于短D/C往返。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "LydianColor"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_052",
+      "musicalIdentity": "小九半音邻接踏板",
+      "family": "Ambient",
+      "chords": "Cm7 Dbmaj7/C Abmaj7/C Cm11",
+      "referenceTonic": "C",
+      "meter": "3/4",
+      "durationQN": [
+        12.0,
+        6.0,
+        6.0,
+        12.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "phrygian",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C持续低音，Dbmaj7显露降二，Abmaj7显露降六；Cm7/Cm11中的D自然音使末和弦混合，严格Phrygian拒绝。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C持续低音，Dbmaj7显露降二，Abmaj7显露降六；Cm7/Cm11中的D自然音使末和弦混合，严格Phrygian拒绝。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "PhrygianColor",
+        "ModalMixture"
+      ],
+      "typicality": "mixed / non-strict",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_053",
+      "musicalIdentity": "远关系大三和弦桥",
+      "family": "Ambient",
+      "chords": "Cadd9 Abadd9 Eadd9 Bbadd9 Cadd9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        8.0,
+        8.0,
+        8.0,
+        16.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "根音C-Ab-E-Bb跨调三度关系；允许色彩用途，不赋予唯一调式。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "ChromaticMediant",
+        "NonfunctionalReturn"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_054",
+      "musicalIdentity": "持续低音的悬挂回落",
+      "family": "Ambient",
+      "chords": "C5 Fsus2/C Bbsus2/C Gsus4/C C5",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        12.0
+      ],
+      "use": "ambient/game cue",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [],
+      "structure": "全篇缺主三音；Bb支持降七但不能据此区分Mixolydian与Aeolian。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "uncertain / no global membership asserted",
+      "techniques": [
+        "PedalPoint",
+        "Suspension",
+        "AmbiguousThird"
+      ],
+      "typicality": "unasserted",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "major",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_055",
+      "musicalIdentity": "和声小调下属减七归主",
+      "family": "MinorSpecial",
+      "chords": "CmMaj7 Fm6 Bdim7 G7b9 CmMaj7",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "harmonic_minor",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Fm6含D自然音，Bdim7与G7b9含B/Ab；小主大七为长时归宿。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Fm6含D自然音，Bdim7与G7b9含B/Ab；小主大七为长时归宿。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "HarmonicMinor",
+        "LeadingToneDiminished"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_056",
+      "musicalIdentity": "爵士旋律小调半减上行",
+      "family": "MinorSpecial",
+      "chords": "CmMaj7 Dm7 F9 Am7b5 Bm7b5 CmMaj9",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "melodic_minor_ascending",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "A半减含Eb且B半减含F自然，A/B自然与Eb确立爵士静态旋律小调。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "A半减含Eb且B半减含F自然，A/B自然与Eb确立爵士静态旋律小调。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "JazzMelodicMinor",
+        "HalfDiminishedColor"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_057",
+      "musicalIdentity": "古典旋律小调双向设计",
+      "family": "MinorSpecial",
+      "chords": "Cm F G Cm Bb Ab Gm Cm",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "classical_melodic_minor",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "F-G上行区使用A/B自然，Bb-Ab-Gm下行区使用Bb/Ab；无旋律线不能确认方向，归属待审。",
+          "review": "pending",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": "Ascending and descending variants require an actual melodic line; unconfirmed."
+        }
+      ],
+      "structure": "F-G上行区使用A/B自然，Bb-Ab-Gm下行区使用Bb/Ab；无旋律线不能确认方向，归属待审。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf"
+      ],
+      "status": "pending",
+      "auditionStatus": "pending-human",
+      "uncertainties": "tonic stability and context require human review; excluded from experiment pool",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "ClassicalMelodicMinor",
+        "DirectionalContextPending"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_058",
+      "musicalIdentity": "小调增和弦至降六闭合",
+      "family": "MinorSpecial",
+      "chords": "Cm Ebaug Fm Ab G7 Cm",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        8.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "harmonic_minor",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Ebaug的B与Ab构成和声小调特色；Fm-Ab-G7最终导Cm。",
+          "review": "reviewed",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Ebaug的B与Ab构成和声小调特色；Fm-Ab-G7最终导Cm。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/"
+      ],
+      "status": "editorial-reviewed",
+      "auditionStatus": "pending-human",
+      "uncertainties": "voicing and loop boundary require human listening; theoretical review only",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "HarmonicMinor",
+        "AugmentedColor"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_059",
+      "musicalIdentity": "半减主音踏板实验",
+      "family": "Locrian",
+      "chords": "Cm7b5 Db/C Gb/C Bbm/C Cm7b5",
+      "referenceTonic": "C",
+      "meter": "4/4",
+      "durationQN": [
+        8.0,
+        4.0,
+        4.0,
+        4.0,
+        12.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "locrian",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "C半减和C踏板支持尝试中心，但Db/Gb可能更有稳定性；需要人工中心听审，禁止入池。",
+          "review": "pending",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "C半减和C踏板支持尝试中心，但Db/Gb可能更有稳定性；需要人工中心听审，禁止入池。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "pending",
+      "auditionStatus": "pending-human",
+      "uncertainties": "tonic stability and context require human review; excluded from experiment pool",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "PedalPoint",
+        "LocrianExperiment"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    },
+    {
+      "id": "V6_B1_060",
+      "musicalIdentity": "降五小调不对称实验",
+      "family": "Locrian",
+      "chords": "Cm7b5 Ebm Gb Bbm Cm7b5",
+      "referenceTonic": "C",
+      "meter": "7/4",
+      "durationQN": [
+        7.0,
+        7.0,
+        7.0,
+        7.0,
+        14.0
+      ],
+      "use": "composition / reharmonization sketch",
+      "styles": "functional:0.5,jazz:0.5",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "locrian",
+          "usage": "low",
+          "usageBasis": "编辑性用途分级，非作品频率统计；原创设计不声明商业常用率。",
+          "musicalEvidence": "Eb/Gb/Bb与C半减均为C Locrian音集；兼容不足以证明C主音，待审禁止入池。",
+          "review": "pending",
+          "reviewer": "Work package B primary-agent structural editorial review; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "structure": "Eb/Gb/Bb与C半减均为C Locrian音集；兼容不足以证明C主音，待审禁止入池。",
+      "sourceType": "original-editorial-design",
+      "source": "Hand-authored whole phrase; not transcribed from a commercial song or MIDI dataset.",
+      "theoryReferences": [
+        "https://openmusictheory.github.io/scales2.html"
+      ],
+      "status": "pending",
+      "auditionStatus": "pending-human",
+      "uncertainties": "tonic stability and context require human review; excluded from experiment pool",
+      "modeInterpretation": "modal membership with borrowing permitted; strict pitch test is separate",
+      "techniques": [
+        "LocrianExperiment",
+        "OddMeter"
+      ],
+      "typicality": "contextual",
+      "bassReference": "Each typedData event stores semitone bassInterval relative to chord root; null means root bass.",
+      "extensionConvention": "9 includes seventh+ninth; 11 includes seventh+ninth+eleventh; 13 uses seventh+ninth+13, omits 11; all actual tones explicit in intervalMask|colorMask.",
+      "sourceCoordinateMode": "minor",
+      "coordinateBasis": "Legacy Major/Minor is the retrieval frame; explicit degrees use that scale, not modal membership. Actual chord tones are preserved."
+    }
+  ],
+  "theorySources": {
+    "modes": "https://openmusictheory.github.io/scales2.html",
+    "mixture": "https://viva.pressbooks.pub/openmusictheory/chapter/modal-mixture/",
+    "substitution": "https://viva.pressbooks.pub/openmusictheorycopy/chapter/substitutions/",
+    "melodicMinor": "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf",
+    "planing": "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
+  }
+}

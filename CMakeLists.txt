@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.11.0 LANGUAGES C CXX)
 set(HC_PRERELEASE "dev.2" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 5 CACHE STRING "Versioned Factory content; V4 remains frozen")
+option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
     string(APPEND HC_PRODUCT_VERSION "-${HC_PRERELEASE}")
@@ -330,6 +331,48 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     VERBATIM)
 endif()
 add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
+if(HC_BUILD_FACTORY_V6_EXPERIMENT AND HC_FACTORY_LIBRARY_VERSION STREQUAL "5")
+    set(HC_FACTORY_V6_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v6")
+    set(HC_FACTORY_V6_CANDIDATES "${HC_FACTORY_V6_SOURCE_DIR}/candidates.json")
+    set(HC_FACTORY_V6_METADATA "${HC_FACTORY_V6_SOURCE_DIR}/metadata.json")
+    set(HC_FACTORY_V6_APPROVED_IDS "${HC_FACTORY_V6_SOURCE_DIR}/approved-ids.txt")
+    set(HC_FACTORY_V6_BASE_HCA "${CMAKE_CURRENT_SOURCE_DIR}/data/mode-annotations/v2/factory-v5.hca")
+    set(HC_FACTORY_V6_PROPOSAL_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-proposal.db")
+    set(HC_FACTORY_V6_EXPERIMENT_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-experiment.db")
+    set(HC_FACTORY_V6_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-initial.hca")
+    set(HC_FACTORY_V6_MEDIA_DIR "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-media")
+    set(HC_FACTORY_V6_SUMMARY "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-build-summary.txt")
+    add_executable(factory_v6_compiler tools/factory_v6_compiler.cpp)
+    target_link_libraries(factory_v6_compiler PRIVATE harmony_library harmony_wish)
+    if(MSVC)
+        target_compile_options(factory_v6_compiler PRIVATE /utf-8 /W4 /permissive-)
+    endif()
+    add_custom_target(factory_v6_database
+        COMMAND $<TARGET_FILE:factory_v6_compiler> "${HC_FACTORY_DB}" "${HC_FACTORY_V6_CANDIDATES}"
+            "${HC_FACTORY_V6_METADATA}" "${HC_FACTORY_V6_APPROVED_IDS}" "${HC_FACTORY_V6_PROPOSAL_DB}"
+            "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_BASE_HCA}" "${HC_FACTORY_V6_HCA}"
+            "${HC_FACTORY_V6_SUMMARY}"
+        DEPENDS factory_database factory_v6_compiler
+        COMMENT "Compile isolated Factory V6 proposal and experiment databases"
+        VERBATIM)
+    if(BUILD_TESTING)
+        add_executable(FactoryV6Tests EXCLUDE_FROM_ALL tests/FactoryV6Tests.cpp)
+        target_link_libraries(FactoryV6Tests PRIVATE harmony_snapshot harmony_product harmony_wish)
+        if(MSVC)
+            target_compile_options(FactoryV6Tests PRIVATE /utf-8 /W4 /permissive-)
+        endif()
+        if(EXISTS "${HC_FACTORY_V6_CANDIDATES}" AND EXISTS "${HC_FACTORY_V6_METADATA}" AND
+           EXISTS "${HC_FACTORY_V6_APPROVED_IDS}" AND EXISTS "${HC_FACTORY_V6_BASE_HCA}")
+            add_test(NAME FactoryV6Focused COMMAND FactoryV6Tests
+                "${HC_FACTORY_DB}" "${HC_FACTORY_V6_CANDIDATES}" "${HC_FACTORY_V6_METADATA}"
+                "${HC_FACTORY_V6_APPROVED_IDS}" "${HC_FACTORY_V6_PROPOSAL_DB}"
+                "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_BASE_HCA}" "${HC_FACTORY_V6_HCA}"
+                "${HC_FACTORY_V6_MEDIA_DIR}")
+        endif()
+    endif()
+elseif(HC_BUILD_FACTORY_V6_EXPERIMENT)
+    message(FATAL_ERROR "The isolated Factory V6 targets require HC_FACTORY_LIBRARY_VERSION=5")
+endif()
 set(HC_FACTORY_LEGACY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v2.db")
 add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
     COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory" "${HC_FACTORY_LEGACY_DB}" 2

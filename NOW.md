@@ -2,6 +2,14 @@
 
 ## 本轮工作与下一步
 
+### 工作包B / Factory V6 首轮（2026-10-24）
+
+本工作树为独立分支 `development/factory-v6-20261024`，基线 `2421c6f`；[集中评审与产物入口](docs/FACTORY_V6_REVIEW.md)。B1结构审计交付：V5 658个ID、649个跨移调独立音乐身份、9组完整重复、237条缺技法标注。旧库与G2归属保持；不由Major/Minor或音阶兼容自动补Reviewed。
+
+首批60条完整原创编辑候选，56条仅准入隔离experiment714，4条待审仅在proposal718；均Library6/Schema2，全体人工听评Pending。固定C严格池Dorian3→9、Lydian3→9、Phrygian1→4、Mixolydian8→13、爵士旋律小调0→3；Locrian/古典双向仍0。主代理负责音乐及门禁，LUNA完成统计、工程与独立核对。定向编译/CTest通过，194个底层合法前缀、672个移调、20个显式C-minor、56句MIDI306和弦事件及代表Snapshot/Preview通过；推荐层56/56至少有一个受测合法前缀合格，最长前缀仅50/56，030/039需前三以外结果。
+
+当前718条保留800预算与原算法；单查询合成千条压力未漏，不能证明未来真实千条公平。B-Gate2仍待人工音乐听评；暂不批准千条扩建。完整五功能UI/实机与安装生命周期留待B-Gate4，不把核心API证据当宿主验收。V5正式哈希不变，未安装、未切换活动库、未推送/合并/Tag/Release。下列G01记录为基线保留，本工作线不更新其验收结论。
+
 ### G01 / G4-H 真实环境验收（2026-10-24，Pending）
 
 唯一受控候选保持 **0.11.0-dev.2 / f99dfa1657b04db0af50d76795141ea24b50ae10**，接手交付记录f2c3ee6。未重打包或修改二进制；本轮只读重核Setup SHA为 `08B0D6516BE1BF6EF5F4FD48D0FC523C9B221D6B09DBE1B928201C8C8D621ABA`，候选模块版本/提交/哈希与冻结身份一致。[当前证据](../HarmonyContinuation-g04h-acceptance-20261024/identity-and-environment.json)、[实机逐项清单](docs/G01_G4_ACCEPTANCE.md#g4-h真实验收进度2026-10-24)。
