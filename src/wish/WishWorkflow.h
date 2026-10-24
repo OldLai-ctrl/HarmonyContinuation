@@ -21,9 +21,13 @@ struct WishSettings {
 
 struct WishView {
     std::uint64_t revision{};
+    // Changes whenever the visible result list is cleared, replaced, or extended.
+    std::uint64_t displayGeneration{};
+    // Monotonic completed-draw identity; distinguishes equal-length replacement batches.
+    std::uint64_t batchSerial{};
     std::vector<std::shared_ptr<const WishItem>> items;
     std::size_t remaining{}, poolSize{}, lastDraw{};
-    bool busy{}, usesInput{};
+    bool busy{}, usesInput{}, lastDrawAppended{};
     std::string error;
     std::string diagnostic;
 };
@@ -39,13 +43,16 @@ public:
 
     std::uint64_t reset(WishSettings, WishInput = {},
                         std::uint64_t seed = 424242);
-    bool draw(std::size_t count);
+    bool draw(std::size_t count, bool append = false);
+    std::uint64_t clearDisplay();
     std::shared_ptr<const WishView> view() const;
 
 private:
     struct DrawTask {
         std::uint64_t revision{};
+        std::uint64_t displayGeneration{};
         std::size_t count{};
+        bool append{};
     };
 
     void run();
@@ -56,7 +63,7 @@ private:
     std::condition_variable wake_;
     WishSettings settings_;
     WishInput input_;
-    std::uint64_t seed_{424242}, revision_{};
+    std::uint64_t seed_{424242}, revision_{}, displayGeneration_{}, batchSerial_{};
     std::optional<DrawTask> pending_;
     std::shared_ptr<const WishView> published_;
     bool stopping_{}, active_{};

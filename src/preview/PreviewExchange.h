@@ -14,6 +14,7 @@ struct TransportRequest {
     PlaybackState state{PlaybackState::Stopped};
     double positionQN{};
     PreparedPreview clip{};
+    bool repeat{};
 };
 inline bool validTransportRequest(const TransportRequest& r) noexcept {
     return r.serial>0&&std::isfinite(r.positionQN)&&
@@ -88,6 +89,8 @@ public:
             if(!transport.load(r.clip))return false;
             clipId=r.clipId;seekId=0;
         }
+        transport.setRepeat(r.repeat);
+        if(!r.clipId)clipId=0;
         if(r.state==PlaybackState::Stopped)transport.stop();
         else {
             if(r.state==PlaybackState::Playing&&transport.state()!=PlaybackState::Playing)transport.play();

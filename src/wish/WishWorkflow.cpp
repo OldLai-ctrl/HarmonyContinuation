@@ -85,6 +85,7 @@ std::uint64_t WishWorkflow::reset(WishSettings settings, WishInput input,
                                   std::uint64_t seed) {
     std::lock_guard lock(mutex_);
     ++revision_;
+    ++displayGeneration_;
     settings_ = std::move(settings);
     input_ = settings_.useInput ? std::move(input) : WishInput{};
     seed_ = seed;
@@ -92,6 +93,8 @@ std::uint64_t WishWorkflow::reset(WishSettings settings, WishInput input,
 
     auto next = std::make_shared<WishView>();
     next->revision = revision_;
+    next->displayGeneration = displayGeneration_;
+    next->batchSerial = batchSerial_;
     next->usesInput = settings_.useInput;
     next->busy = active_;
     if (next->usesInput) validInput(input_, next->error);
@@ -100,7 +103,7 @@ std::uint64_t WishWorkflow::reset(WishSettings settings, WishInput input,
     return revision_;
 }
 
-bool WishWorkflow::draw(std::size_t count) {
+bool WishWorkflow::draw(std::size_t count, bool append) {
     if (count == 0 || count > 10) return false;
     std::lock_guard lock(mutex_);
     if (stopping_ || active_ || pending_ || !published_ || published_->busy ||
@@ -110,9 +113,21 @@ bool WishWorkflow::draw(std::size_t count) {
     next->busy = true;
     next->lastDraw = 0;
     published_ = std::move(next);
-    pending_ = DrawTask{revision_, count};
+    pending_ = DrawTask{revision_, displayGeneration_, count, append};
     wake_.notify_one();
     return true;
+}
+
+std::uint64_t WishWorkflow::clearDisplay() {
+    std::lock_guard lock(mutex_);
+    ++displayGeneration_;
+    auto next = std::make_shared<WishView>(published_ ? *published_ : WishView{});
+    next->displayGeneration = displayGeneration_;
+    next->items.clear();
+    next->lastDraw = 0;
+    next->lastDrawAppended = false;
+    published_ = std::move(next);
+    return displayGeneration_;
 }
 
 std::shared_ptr<const WishView> WishWorkflow::view() const {
@@ -226,15 +241,33 @@ void WishWorkflow::run() {
             next->busy = false;
             next->error = std::move(error);
             next->diagnostic = diagnostic;
-            next->lastDraw = drawn.size();
             next->poolSize = roundPoolSize;
             next->remaining = remaining;
             if (drawn.size() < task.count && remaining == 0) {
                 if (!next->diagnostic.empty()) next->diagnostic += "; ";
                 next->diagnostic += "exhausted=1";
             }
+
+            // A clear can happen after the worker has accepted this task. Its samples
+            // stay consumed from the round, but the old display generation cannot
+            // repopulate the list after the user cleared it.
+            if (task.displayGeneration != displayGeneration_) {
+                next->displayGeneration = displayGeneration_;
+                next->lastDraw = 0;
+                next->lastDrawAppended = false;
+                published_ = std::move(next);
+                continue;
+            }
+
+            if (!task.append) next->items.clear();
             for (auto& item : drawn)
                 next->items.push_back(std::make_shared<const WishItem>(std::move(item)));
+            if (!task.append || !drawn.empty()) ++displayGeneration_;
+            ++batchSerial_;
+            next->displayGeneration = displayGeneration_;
+            next->batchSerial = batchSerial_;
+            next->lastDraw = drawn.size();
+            next->lastDrawAppended = task.append;
             published_ = std::move(next);
         }
     }

@@ -38,6 +38,8 @@ public:
     void play() noexcept;
     void pause() noexcept;
     void stop() noexcept;
+    void setRepeat(bool enabled) noexcept { repeat_ = enabled; }
+    bool repeat() const noexcept { return repeat_; }
     void seekQN(double) noexcept;
     void process(float* left, float* right, int samples) noexcept;
 
@@ -71,7 +73,7 @@ private:
     double sampleRate_{previewReferenceRate}, tempoBPM_{120.0};
     std::int64_t samplePosition_{}, startSample_{}, endSample_{};
     PlaybackState state_{PlaybackState::Stopped};
-    bool ratePrepared_{};
+    bool ratePrepared_{}, repeat_{};
 
     void clearVoices() noexcept;
     void resetAtStart() noexcept;

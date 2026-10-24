@@ -472,7 +472,7 @@ bool MainView::onDrop(DragEventData e) {
 MainView::EditorUiState MainView::captureEditorUiState() const {
     EditorUiState out;
     out.wishWorkspace=wishWorkspace_;out.wishSettings=wishSettings_;out.wishInput=wishInput_;
-    out.wishMode=wishMode_;out.wishAdvanced=wishAdvanced_;out.wishRequested=wishRequested_;out.wishPage=wishPage_;
+    out.wishMode=wishMode_;out.wishAdvanced=wishAdvanced_;out.wishRequested=wishRequested_;out.wishKeepHistory=wishKeepHistory_;out.wishPage=wishPage_;
     out.wishSelected=wishMode_?compactSelected_:wishSelected_;out.wishExpanded=wishExpanded_;
     out.wishScroll=wishMode_?compactScroll_:wishScroll_;
     if(const auto* c=selectedCandidate()){out.continuationId=c->id;out.continuationFingerprint=session::continuationFingerprint(*c);}
@@ -485,7 +485,7 @@ MainView::EditorUiState MainView::captureEditorUiState() const {
 }
 void MainView::restoreEditorUiState(const EditorUiState& s){
     wishWorkspace_=s.wishWorkspace;wishSettings_=s.wishSettings;wishInput_=s.wishInput;
-    wishMode_=s.wishMode;wishAdvanced_=s.wishAdvanced;wishRequested_=s.wishRequested;wishPage_=s.wishPage;
+    wishMode_=s.wishMode;wishAdvanced_=s.wishAdvanced;wishRequested_=s.wishRequested;wishKeepHistory_=s.wishKeepHistory;wishPage_=s.wishPage;
     wishSelected_=s.wishSelected;wishExpanded_=s.wishExpanded;wishScroll_=std::isfinite(s.wishScroll)?std::max(0.,s.wishScroll):0.;
     if(wishWorkspace_)wishView_=wishWorkspace_->view();
     browsePages_=s.browsePages;browseScroll_=s.browseScroll;browseSelected_=s.browseSelected;
@@ -1588,7 +1588,7 @@ CMouseEventResult MainView::onMouseUp(CPoint& where,const CButtonState&) {
         try {
             movePreviewSeek({where.x/userZoom(),where.y/userZoom()});const auto gesture=*seekGesture_;seekGesture_.reset();
             previewSeekHoverId_.clear();previewSeekCursorHover_=false;
-            if(((wishMode_&&wishView_&&gesture.generation==wishView_->revision&&wishItem(gesture.hit.id))||
+            if(((wishMode_&&wishView_&&gesture.generation==wishView_->displayGeneration&&wishItem(gesture.hit.id))||
                 (!wishMode_&&gesture.generation==generation_&&!workerBusy_&&recommendationResultReady_))&&actions_.seekAudition)
                 actions_.seekAudition(gesture.hit.id,gesture.targetQN);
         }catch(...){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;actionStatus_="Preview seek failed";invalid();}

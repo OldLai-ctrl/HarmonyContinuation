@@ -44,19 +44,25 @@ bool sameAudio(const float* a,const float* b,std::size_t count,float tolerance=1
     for(std::size_t i=0;i<count;++i)if(std::abs(a[i]-b[i])>tolerance)return false;
     return true;
 }
+double rms(const float* samples,std::size_t count) {
+    double sum{};
+    for(std::size_t i=0;i<count;++i)sum+=double(samples[i])*samples[i];
+    return count?std::sqrt(sum/count):0.0;
+}
 ChordEvent event(const char* name,double start,std::optional<double> duration) {
     ChordEvent e; e.name=name; e.startQN=start; e.durationQN=duration; e.openEnded=!duration;
     return e;
 }
 preview::TransportRequest transportRequest(std::uint64_t serial,std::uint64_t clipId,std::uint64_t seekId,
-    preview::PlaybackState state,double position,const preview::PreparedPreview& clip) {
+    preview::PlaybackState state,double position,const preview::PreparedPreview& clip,bool repeat=false) {
     preview::TransportRequest request;
     request.serial=serial;request.clipId=clipId;request.seekId=seekId;request.state=state;
-    request.positionQN=position;request.clip=clip;return request;
+    request.positionQN=position;request.clip=clip;request.repeat=repeat;return request;
 }
 preview::TransportRequest patternedRequest(std::uint64_t serial,const preview::PreparedPreview& base) {
     auto request=transportRequest(serial,serial,serial*7+3,
         static_cast<preview::PlaybackState>(serial%3),static_cast<double>(serial%128)/4.0,base);
+    request.repeat=(serial&1)!=0;
     request.clip.tempoBPM=20.0+static_cast<double>(serial%381);
     request.clip.count=static_cast<std::uint32_t>(preview::maximumPreviewChords);
     request.clip.startSample=static_cast<std::int64_t>(serial%50000);
@@ -77,7 +83,8 @@ bool patternedRequestIsCoherent(const preview::TransportRequest& request,std::ui
     const auto serial=request.serial;
     if(serial<=previousSerial||request.clipId!=serial||request.seekId!=serial*7+3||
        request.state!=static_cast<preview::PlaybackState>(serial%3)||
-       request.positionQN!=static_cast<double>(serial%128)/4.0||!preview::validTransportRequest(request))return false;
+       request.positionQN!=static_cast<double>(serial%128)/4.0||request.repeat!=((serial&1)!=0)||
+       !preview::validTransportRequest(request))return false;
     const auto& clip=request.clip;
     const auto start=static_cast<std::int64_t>(serial%50000);
     if(clip.version!=1||clip.count!=preview::maximumPreviewChords||
@@ -98,7 +105,7 @@ void previewExchangeContract(const preview::PreparedPreview& firstClip,const pre
     preview::PreviewMailbox mailbox;
     auto older=transportRequest(1,101,1,preview::PlaybackState::Stopped,0,firstClip);
     auto middle=transportRequest(2,202,2,preview::PlaybackState::Paused,1,firstClip);
-    auto latest=transportRequest(3,303,3,preview::PlaybackState::Playing,2,latestClip);
+    auto latest=transportRequest(3,303,3,preview::PlaybackState::Playing,2,latestClip,true);
     preview::TransportRequest received;
     preview::PreviewReceiver receiver;receiver.transport.prepare(48000);
     const auto beforeRealtimeExchange=allocations.load(std::memory_order_relaxed);
@@ -106,10 +113,11 @@ void previewExchangeContract(const preview::PreparedPreview& firstClip,const pre
     const bool receivedLatest=mailbox.take(received)&&received.serial==latest.serial&&
         received.clipId==latest.clipId&&received.seekId==latest.seekId&&
         received.positionQN==latest.positionQN&&received.state==latest.state&&
-        received.clip.tempoBPM==latestClip.tempoBPM;
+        received.repeat==latest.repeat&&received.clip.tempoBPM==latestClip.tempoBPM;
     const bool receiverApplied=receiver.apply(received)&&receiver.serial==3&&receiver.clipId==303&&
         receiver.transport.state()==preview::PlaybackState::Playing&&
-        near(receiver.transport.positionQN(),2.0)&&receiver.transport.tempoBPM()==latestClip.tempoBPM;
+        near(receiver.transport.positionQN(),2.0)&&receiver.transport.tempoBPM()==latestClip.tempoBPM&&
+        receiver.transport.repeat();
     const auto afterRealtimeExchange=allocations.load(std::memory_order_relaxed);
     check(publicationsAccepted&&receivedLatest&&receiverApplied&&
         beforeRealtimeExchange==afterRealtimeExchange,
@@ -119,25 +127,30 @@ void previewExchangeContract(const preview::PreparedPreview& firstClip,const pre
     const auto beforePause=receiver.transport.positionQN();
     const double blockQN=double(left.size())/48000.*latestClip.tempoBPM/60.;
     check(near(beforePause,2.+blockQN,1e-8),"receiver transport advances at the clip tempo before pause");
-    auto paused=transportRequest(4,303,3,preview::PlaybackState::Paused,beforePause,latestClip);
+    auto paused=transportRequest(4,303,3,preview::PlaybackState::Paused,beforePause,latestClip,true);
     check(receiver.apply(paused)&&receiver.transport.state()==preview::PlaybackState::Paused,
         "receiver accepts pause at the current transport position");
     const auto pausedPosition=receiver.transport.positionQN();
     receiver.transport.process(left.data(),right.data(),static_cast<int>(left.size()));
     check(near(receiver.transport.positionQN(),pausedPosition,1e-10),
         "receiver pause holds sample position while processing silent blocks");
-    auto resumed=transportRequest(5,303,3,preview::PlaybackState::Playing,pausedPosition,latestClip);
-    check(receiver.apply(resumed)&&receiver.transport.state()==preview::PlaybackState::Playing,
-        "receiver resumes the paused transport");
+    auto pausedRepeatOff=transportRequest(5,303,3,preview::PlaybackState::Paused,pausedPosition,latestClip,false);
+    check(receiver.apply(pausedRepeatOff)&&receiver.transport.state()==preview::PlaybackState::Paused&&
+        !receiver.transport.repeat()&&near(receiver.transport.positionQN(),pausedPosition),
+        "repeat request changes while paused without changing state or position");
+    auto resumed=transportRequest(6,303,3,preview::PlaybackState::Playing,pausedPosition,latestClip,true);
+    check(receiver.apply(resumed)&&receiver.transport.state()==preview::PlaybackState::Playing&&
+        receiver.transport.repeat(),"receiver resumes the paused transport with repeat enabled");
     receiver.transport.process(left.data(),right.data(),static_cast<int>(left.size()));
     const auto resumedPosition=receiver.transport.positionQN();
     check(near(resumedPosition,pausedPosition+blockQN,1e-8),"receiver resume advances from the paused sample at clip tempo");
-    auto repeatedPlay=transportRequest(6,303,3,preview::PlaybackState::Playing,1,latestClip);
+    auto repeatedPlay=transportRequest(7,303,3,preview::PlaybackState::Playing,1,latestClip,true);
     check(receiver.apply(repeatedPlay)&&near(receiver.transport.positionQN(),resumedPosition),
         "repeated playing snapshot without a new seek does not restart or seek");
-    auto seek=transportRequest(7,303,4,preview::PlaybackState::Playing,3,latestClip);
+    auto seek=transportRequest(8,303,4,preview::PlaybackState::Playing,3,latestClip,true);
     check(receiver.apply(seek)&&receiver.transport.state()==preview::PlaybackState::Playing&&
-        near(receiver.transport.positionQN(),3.0),"new seek identity applies its QN position");
+        near(receiver.transport.positionQN(),3.0)&&receiver.transport.repeat(),
+        "new seek identity applies its QN position and retains repeat");
 
     preview::PreviewMailbox concurrentMailbox;
     std::atomic<bool> producerDone{};
@@ -173,6 +186,147 @@ void previewExchangeContract(const preview::PreparedPreview& firstClip,const pre
     consumer.join();
     check(!publisherStalled&&!corrupted.load(std::memory_order_relaxed)&&finalSerial==packetCount,
         "single-producer three-slot mailbox preserves complete concurrent payloads and final state");
+}
+void previewRepeatContract(const preview::PreparedPreview& fullClip,
+    const preview::PreparedPreview& suffixClip,const preview::PreparedPreview& shortClip) {
+    preview::PreviewTransport transport;transport.prepare(48000);
+    check(!transport.repeat(),"repeat defaults off after prepare");
+    const auto stoppedPosition=transport.positionQN();
+    const auto beforeToggle=allocations.load(std::memory_order_relaxed);
+    transport.setRepeat(true);
+    const auto afterToggle=allocations.load(std::memory_order_relaxed);
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Stopped&&
+        near(transport.positionQN(),stoppedPosition)&&beforeToggle==afterToggle,
+        "enabling repeat changes only its allocation-free flag");
+    check(transport.load(shortClip)&&transport.repeat()&&transport.state()==preview::PlaybackState::Stopped,
+        "loading a clip preserves repeat and leaves playback stopped");
+
+    const auto periodSamples=static_cast<int>(shortClip.endSample-shortClip.startSample);
+    check(periodSamples>2048,"repeat fixture has a usable short period");
+    const auto startQN=transport.startQN();
+    const auto endQN=transport.endQN();
+    const auto qnPerSample=shortClip.tempoBPM/60.0/48000.0;
+    transport.play();
+    const int multiWrapFrames=periodSamples*2+37;
+    std::vector<float> multiLeft(static_cast<std::size_t>(multiWrapFrames));
+    std::vector<float> multiRight(multiLeft.size());
+    const auto beforeLoop=allocations.load(std::memory_order_relaxed);
+    transport.process(multiLeft.data(),multiRight.data(),multiWrapFrames);
+    const auto afterLoop=allocations.load(std::memory_order_relaxed);
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Playing&&
+        near(transport.positionQN(),startQN+37*qnPerSample)&&beforeLoop==afterLoop,
+        "one block crosses multiple repeat boundaries without allocation");
+
+    bool audioSafe=true;
+    for(std::size_t i=0;i<multiLeft.size();++i)
+        audioSafe=audioSafe&&std::isfinite(multiLeft[i])&&std::isfinite(multiRight[i])&&
+            std::abs(multiLeft[i])<=0.95f&&std::abs(multiRight[i])<=0.95f;
+    const auto fadeWindow=static_cast<std::size_t>(std::min(480,periodSamples/8));
+    const auto tailRms=rms(multiLeft.data()+periodSamples-fadeWindow,fadeWindow);
+    const auto preTailRms=rms(multiLeft.data()+periodSamples-2*fadeWindow,fadeWindow);
+    const auto attackRms=rms(multiLeft.data(),fadeWindow);
+    const auto settledRms=rms(multiLeft.data()+fadeWindow,fadeWindow);
+    const auto boundaryJump=std::abs(multiLeft[static_cast<std::size_t>(periodSamples-1)]-
+        multiLeft[static_cast<std::size_t>(periodSamples)]);
+    check(audioSafe&&preTailRms>0.01&&tailRms<preTailRms*0.9&&
+        settledRms>0.01&&attackRms<settledRms*0.9&&boundaryJump<0.02,
+        "repeat boundary stays finite, fades at the end, and restarts through the existing attack");
+
+    constexpr int blockFrames=256;
+    std::array<float,blockFrames> blockLeft{},blockRight{};
+    const int toNearEnd=periodSamples-64;
+    transport.process(multiLeft.data(),multiRight.data(),toNearEnd);
+    check(near(transport.positionQN(),endQN-27*qnPerSample),
+        "partial blocks advance to just before the scoped end");
+    transport.process(blockLeft.data(),blockRight.data(),64);
+    check(transport.state()==preview::PlaybackState::Playing&&
+        near(transport.positionQN(),startQN+37*qnPerSample),
+        "a block split across the end wraps by the exact sample remainder");
+    transport.process(multiLeft.data(),multiRight.data(),periodSamples*2+11);
+    check(transport.state()==preview::PlaybackState::Playing&&
+        near(transport.positionQN(),startQN+48*qnPerSample),
+        "a later block can cross multiple boundaries after prior partial blocks");
+
+    const auto beforeDisable=transport.positionQN();
+    transport.setRepeat(false);
+    check(!transport.repeat()&&transport.state()==preview::PlaybackState::Playing&&
+        near(transport.positionQN(),beforeDisable),
+        "disabling repeat does not seek or change the current playback state");
+    transport.process(multiLeft.data(),multiRight.data(),periodSamples-48);
+    check(transport.state()==preview::PlaybackState::Stopped&&near(transport.positionQN(),endQN),
+        "disabling repeat lets the current pass stop at its scoped end");
+    transport.setRepeat(true);
+    const auto stoppedAtEnd=transport.positionQN();
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Stopped&&
+        near(transport.positionQN(),stoppedAtEnd),"enabling repeat while stopped does not start or seek");
+    transport.stop();
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Stopped&&
+        near(transport.positionQN(),startQN),"stop resets to scoped start without clearing repeat");
+
+    transport.play();
+    transport.process(blockLeft.data(),blockRight.data(),blockFrames);
+    transport.pause();
+    const auto pausedPosition=transport.positionQN();
+    blockLeft.fill(1.0f);blockRight.fill(1.0f);
+    transport.process(blockLeft.data(),blockRight.data(),blockFrames);
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Paused&&
+        near(transport.positionQN(),pausedPosition)&&
+        std::all_of(blockLeft.begin(),blockLeft.end(),[](float v){return v==0.0f;})&&
+        std::all_of(blockRight.begin(),blockRight.end(),[](float v){return v==0.0f;}),
+        "pause keeps repeat and position while outputting silence");
+    transport.seekQN(1.0);
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Paused&&
+        near(transport.positionQN(),1.0),"interior seek preserves paused state and repeat");
+    const auto beforePausedToggle=transport.positionQN();
+    transport.setRepeat(false);
+    check(!transport.repeat()&&transport.state()==preview::PlaybackState::Paused&&
+        near(transport.positionQN(),beforePausedToggle),"repeat toggle while paused changes no transport position");
+    transport.setRepeat(true);
+    transport.seekQN(transport.endQN());
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Paused&&
+        near(transport.positionQN(),startQN),"paused seek to end wraps to scoped start and stays paused");
+    transport.play();
+    transport.process(blockLeft.data(),blockRight.data(),blockFrames);
+    check(transport.state()==preview::PlaybackState::Playing&&transport.repeat()&&
+        transport.positionQN()>startQN,"resume continues from the wrapped paused position");
+    transport.seekQN(transport.endQN());
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Playing&&
+        near(transport.positionQN(),startQN),"playing seek to end wraps to scoped start and stays playing");
+    transport.stop();
+    check(transport.repeat()&&transport.state()==preview::PlaybackState::Stopped&&
+        near(transport.positionQN(),startQN),"stop preserves repeat after an end seek");
+
+    preview::PreviewTransport suffixTransport;suffixTransport.prepare(48000);
+    suffixTransport.setRepeat(true);
+    check(suffixTransport.load(suffixClip)&&suffixTransport.repeat()&&
+        suffixTransport.state()==preview::PlaybackState::Stopped&&
+        near(suffixTransport.startQN(),8.0)&&near(suffixTransport.endQN(),14.0),
+        "repeat uses the nonzero suffix scope and load leaves it stopped");
+    const auto suffixSamples=static_cast<int>(suffixClip.endSample-suffixClip.startSample);
+    std::vector<float> suffixLeft(static_cast<std::size_t>(suffixSamples+13));
+    std::vector<float> suffixRight(suffixLeft.size());
+    suffixTransport.play();
+    suffixTransport.process(suffixLeft.data(),suffixRight.data(),static_cast<int>(suffixLeft.size()));
+    check(suffixTransport.state()==preview::PlaybackState::Playing&&suffixTransport.repeat()&&
+        near(suffixTransport.positionQN(),suffixTransport.startQN()+13*qnPerSample),
+        "suffix repeat wraps to its own nonzero start rather than the full-route prefix");
+
+    preview::PreviewTransport reprepared;reprepared.prepare(48000);reprepared.setRepeat(true);
+    reprepared.prepare(48000);
+    check(!reprepared.repeat()&&reprepared.state()==preview::PlaybackState::Stopped,
+        "prepare resets repeat to its documented default");
+
+    preview::PreviewReceiver receiver;receiver.transport.prepare(48000);
+    auto first=transportRequest(1,501,1,preview::PlaybackState::Playing,0,fullClip,true);
+    check(receiver.apply(first)&&receiver.transport.repeat()&&
+        receiver.transport.state()==preview::PlaybackState::Playing,
+        "receiver applies repeat to a playing clip");
+    auto changed=transportRequest(2,502,1,preview::PlaybackState::Stopped,
+        suffixTransport.startQN(),suffixClip,true);
+    check(receiver.apply(changed)&&receiver.clipId==502&&receiver.transport.repeat()&&
+        receiver.transport.state()==preview::PlaybackState::Stopped&&
+        near(receiver.transport.positionQN(),suffixTransport.startQN()),
+        "a stopped clip change carries repeat but does not auto-play");
 }
 template<class Predicate>
 preview::TransportFeedback waitWindowsFeedback(preview::WindowsPreview& output,std::uint64_t serial,
@@ -240,6 +394,77 @@ void windowsDeviceContract() {
         return s.state==preview::PlaybackState::Stopped&&!s.outputActive;
     });
     check(near(stopped.positionQN,0.0),"Windows stop acknowledges a stopped transport and closed output");
+
+    preview::Sequence loopSequence;loopSequence.tempoBPM=120;loopSequence.totalQN=0.5;
+    loopSequence.events.push_back({preview::chordFromLabel("Cmaj7"),0,0.5,preview::Segment::Existing,{}});
+    const auto loopClip=preview::preparePreview(loopSequence);
+    check(static_cast<bool>(loopClip),"Windows repeat fixture prepares");
+    preview::WindowsPreview loopingOutput;
+    auto loopRequest=transportRequest(1,1101,1,preview::PlaybackState::Playing,0,loopClip.clip,true);
+    check(loopingOutput.submit(loopRequest),"Windows repeat request accepted");
+    const double loopStart=double(loopClip.clip.startSample)/preview::previewReferenceRate*
+        loopClip.clip.tempoBPM/60.0;
+    const double loopEnd=double(loopClip.clip.endSample)/preview::previewReferenceRate*
+        loopClip.clip.tempoBPM/60.0;
+    bool sawLatePosition{},sawWrappedPosition{};
+    preview::TransportFeedback loopFeedback;
+    const auto wrapDeadline=std::chrono::steady_clock::now()+std::chrono::seconds(4);
+    while(std::chrono::steady_clock::now()<wrapDeadline&&!sawWrappedPosition) {
+        loopFeedback=loopingOutput.feedback();
+        if(loopFeedback.serial==loopRequest.serial&&loopFeedback.error==preview::AudioError::None&&
+           loopFeedback.state==preview::PlaybackState::Playing&&loopFeedback.outputActive) {
+            const double loopDuration=loopEnd-loopStart;
+            if(loopFeedback.positionQN>loopStart+loopDuration*0.75)sawLatePosition=true;
+            if(sawLatePosition&&loopFeedback.positionQN<loopStart+loopDuration*0.25)
+                sawWrappedPosition=true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    check(sawWrappedPosition&&loopFeedback.state==preview::PlaybackState::Playing&&
+        loopFeedback.outputActive&&loopFeedback.positionQN>=loopStart&&loopFeedback.positionQN<loopEnd,
+        "Windows device feedback wraps its position while repeat playback remains active");
+    const double loopDuration=loopEnd-loopStart;
+    const double positionBeforeDisable=loopFeedback.positionQN;
+    loopRequest.serial=2;loopRequest.repeat=false;
+    loopRequest.positionQN=loopStart+loopDuration*0.9; // Deliberately stale: repeat toggle must rebase from heard audio.
+    loopRequest.state=preview::PlaybackState::Playing;
+    check(loopingOutput.submit(loopRequest),"Windows repeat disable request accepted after wrap");
+    const auto repeatDisabled=waitWindowsFeedback(loopingOutput,loopRequest.serial,[](const auto& s) {
+        return s.state==preview::PlaybackState::Playing&&s.outputActive;
+    });
+    check(repeatDisabled.positionQN>=loopStart&&
+        repeatDisabled.positionQN<loopStart+loopDuration*0.5&&
+        std::abs(repeatDisabled.positionQN-positionBeforeDisable)<loopDuration*0.5,
+        "disabling repeat rebases from the wrapped heard position rather than the stale request position");
+
+    loopRequest.serial=3;loopRequest.state=preview::PlaybackState::Paused;
+    check(loopingOutput.submit(loopRequest),"Windows pause after repeat rebase accepted");
+    const auto repeatPaused=waitWindowsFeedback(loopingOutput,loopRequest.serial,[](const auto& s) {
+        return s.state==preview::PlaybackState::Paused&&s.outputActive;
+    });
+    check(repeatPaused.positionQN>=loopStart&&repeatPaused.positionQN<loopStart+loopDuration*0.5,
+        "Windows pause feedback retains the rebased position after repeat is disabled");
+
+    loopRequest.serial=4;loopRequest.state=preview::PlaybackState::Playing;
+    check(loopingOutput.submit(loopRequest),"Windows resume after repeat rebase accepted");
+    const auto repeatResumed=waitWindowsFeedback(loopingOutput,loopRequest.serial,[&](const auto& s) {
+        return s.state==preview::PlaybackState::Playing&&s.outputActive&&
+            s.positionQN>repeatPaused.positionQN+0.01;
+    });
+    loopRequest.serial=5;loopRequest.state=preview::PlaybackState::Paused;
+    check(loopingOutput.submit(loopRequest),"Windows pause after rebased resume accepted");
+    const auto repeatPausedAgain=waitWindowsFeedback(loopingOutput,loopRequest.serial,[](const auto& s) {
+        return s.state==preview::PlaybackState::Paused&&s.outputActive;
+    });
+    check(repeatResumed.positionQN>repeatPaused.positionQN&&
+        repeatPausedAgain.positionQN>=loopStart&&repeatPausedAgain.positionQN<loopStart+loopDuration*0.5,
+        "Windows resume advances from and pause reports the heard position after repeat rebase");
+
+    loopRequest.serial=6;loopRequest.state=preview::PlaybackState::Stopped;
+    check(loopingOutput.submit(loopRequest),"Windows repeat stop request accepted");
+    waitWindowsFeedback(loopingOutput,loopRequest.serial,[](const auto& s) {
+        return s.state==preview::PlaybackState::Stopped&&!s.outputActive;
+    });
 
     preview::WindowsPreview first,second;
     auto firstRequest=transportRequest(1,2001,1,preview::PlaybackState::Playing,0,prepared.clip);
@@ -530,6 +755,7 @@ int main(int argc,char** argv) {
         naturalEndTransport.process(naturalLeft.data(),naturalRight.data(),static_cast<int>(naturalLeft.size()));
         check(std::all_of(naturalLeft.begin(),naturalLeft.end(),[](float v){return v==0.0f;}),
             "natural end leaves subsequent blocks silent");
+        previewRepeatContract(preparedFull.clip,preparedSuffix.clip,shortClip.clip);
 
         preview::PreparedPreview invalidClip=preparedFull.clip;
         invalidClip.version=2;check(!preview::validPreparedPreview(invalidClip),"prepared version checked");

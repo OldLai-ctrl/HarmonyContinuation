@@ -542,15 +542,24 @@ void MainView::drawCompactTransport(CDrawContext* dc){
         (selectedContinuation&&static_cast<bool>(actions_.audition)&&static_cast<bool>(continuationRoute(*selectedContinuation)))));
     compactButton(dc,{fl+54,fy,fl+94,fy+36},"Ⅱ",CompactAction::Pause,{},0,false,auditionState_==preview::PlaybackState::Playing&&!auditionPending_&&static_cast<bool>(actions_.pauseAudition));
     compactButton(dc,{fl+100,fy,fl+140,fy+36},"■",CompactAction::Stop,{},0,false,static_cast<bool>(actions_.stopAudition));
+    compactButton(dc,{fl+146,fy,fl+186,fy+36},{},CompactAction::Repeat,{},0,auditionRepeat_,!auditionPending_&&static_cast<bool>(actions_.previewRepeat));
+    // Repeat uses vector strokes so it remains legible at every UI scale.
+    dc->setFrameColor(auditionRepeat_?blue:secondary);dc->setLineWidth(1.7);
+    dc->drawLine({fl+156,fy+13},{fl+176,fy+13});
+    dc->drawLine({fl+176,fy+13},{fl+172,fy+9});dc->drawLine({fl+176,fy+13},{fl+172,fy+17});
+    dc->drawLine({fl+176,fy+13},{fl+176,fy+21});
+    dc->drawLine({fl+176,fy+24},{fl+156,fy+24});
+    dc->drawLine({fl+156,fy+24},{fl+160,fy+20});dc->drawLine({fl+156,fy+24},{fl+160,fy+28});
+    dc->drawLine({fl+156,fy+24},{fl+156,fy+16});dc->setLineWidth(1);
     const auto status=auditionPending_?(zh?"音频处理中":"Audio pending"):auditionState_==preview::PlaybackState::Playing?(zh?"正在试听":"Playing"):auditionState_==preview::PlaybackState::Paused?(zh?"已暂停":"Paused"):(zh?"已停止":"Stopped");
-    text(dc,std::string(status)+" · "+(auditionHostBackend_?"Host Audio":"Windows Audio"),{fl+152,fy,fr-132,fy+19},11,secondary);
+    text(dc,std::string(status)+(auditionRepeat_?(zh?" · 循环开启":" · Repeat on"):""),{fl+198,fy,fr-132,fy+19},11,secondary);
     compactButton(dc,{fr-128,fy,fr,fy+32},auditionHostBackend_?"Host Audio":"Windows Audio",CompactAction::Backend,{},0,auditionHostBackend_,!auditionPending_&&static_cast<bool>(actions_.previewBackend));
     const auto objectId=!previewCandidateId_.empty()?previewCandidateId_:
         !wishMode_&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()?selectedEnrichment()->id:compactSelected_;
     std::string object="—";
     if(const auto* candidate=findCandidate(objectId))object=(zh?"当前对象 · ":"Current · ")+candidate->primaryTemplate;
     else if(const auto* candidate=findEnrichment(objectId))object=(zh?"升级进行 · ":"Enrichment · ")+candidate->id;
-    text(dc,object+(!actionStatus_.empty()?" · "+actionStatus_:""),{fl+152,fy+18,fr-132,fy+39},11);
+    text(dc,object+(!actionStatus_.empty()?" · "+actionStatus_:""),{fl+198,fy+18,fr-132,fy+39},11);
     const double by=fy+44;
     const bool fullWish=wishMode_&&(!wishSettings_.useInput);
     compactButton(dc,{fl,by,fl+98,by+30},fullWish?"完整来源":!wishMode_&&state_.productMode==session::ProductMode::Enrich?(zh?"完整升级进行":"Full enrichment"):auditionSuffix_?(zh?"仅后续":"Suffix only"):(zh?"完整进行":"Full phrase"),CompactAction::Scope,{},0,auditionSuffix_&&!fullWish,!fullWish&&(wishMode_||state_.productMode!=session::ProductMode::Enrich));
@@ -622,6 +631,8 @@ bool MainView::onCompactMouseDown(CPoint& where){
         case CompactAction::Backend:if(actions_.previewBackend)actions_.previewBackend(!auditionHostBackend_);break;
         case CompactAction::Play:if(auditionState_==preview::PlaybackState::Playing&&previewCandidateId_==compactSelected_)break;if(auditionState_==preview::PlaybackState::Paused&&previewCandidateId_==compactSelected_&&actions_.resumeAudition){actions_.resumeAudition();break;}if(!workerBusy_&&recommendationResultReady_){if(state_.productMode==session::ProductMode::Enrich){if(const auto* selected=findEnrichment(compactSelected_);selected&&actions_.auditionEnrichment)actions_.auditionEnrichment(*selected);}else if(const auto* selected=findCandidate(compactSelected_);selected&&actions_.audition&&continuationRoute(*selected))actions_.audition(*selected);}break;
         case CompactAction::Stop:if(actions_.stopAudition)actions_.stopAudition();actionStatus_=zh?"试听已停止":"Audition stopped";break;
+        case CompactAction::Repeat:
+            auditionRepeat_=!auditionRepeat_;if(actions_.previewRepeat)actions_.previewRepeat(auditionRepeat_);break;
         case CompactAction::TempoMode:auditionCustom_=!auditionCustom_;settings();break;
         case CompactAction::Scope:auditionSuffix_=!auditionSuffix_;settings();break;
         case CompactAction::Tempo:beginForm(Form::Tempo,number(auditionCustom_?auditionBpm_:auditionEffectiveBpm_));break;
@@ -784,12 +795,13 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
     const auto savedStatus=actionStatus_;const auto oldGeneration=generation_;
     const bool savedSnapshotMode=snapshotMode_;
     const auto savedPreviewId=previewCandidateId_;const auto savedPreviewQN=previewQN_,savedPreviewTotalQN=previewTotalQN_;
-    const auto savedTransport=auditionState_;const bool savedHostBackend=auditionHostBackend_,savedHostAvailable=auditionHostAvailable_,savedPending=auditionPending_;
+    const auto savedTransport=auditionState_;const bool savedHostBackend=auditionHostBackend_,savedHostAvailable=auditionHostAvailable_,savedPending=auditionPending_,savedRepeat=auditionRepeat_;
     const auto savedSeekGesture=seekGesture_;const auto savedSeekHoverId=previewSeekHoverId_;const bool savedCursorHover=previewSeekCursorHover_;
     std::size_t auditions=0,stops=0,settings=0,payloads=0,saves=0,enrichmentAuditions=0,enrichmentPayloads=0,enrichmentPauses=0,enrichmentSeeks=0;
     std::string auditionId,enrichmentId,enrichmentMidiId,enrichmentSeekId;double enrichmentSoughtQN=-1.,enrichmentTotalQN{};bool routeProjection=false;
     bool okay=true;
     actions_.stopAudition=[&]{++stops;};actions_.previewSettings=[&](bool,double,bool){++settings;};
+    std::size_t repeatChanges{};actions_.previewRepeat=[&](bool enabled){++repeatChanges;setPreviewRepeat(enabled);};
     midi::CandidateExportContext exportContext;exportContext.imported=state_.imported;
     exportContext.tempo=120;
     actions_.audition=[&](const auto& candidate){
@@ -844,6 +856,19 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
             okay=okay&&tabs==6&&circles>0&&get(CompactAction::Play).has_value()&&get(CompactAction::Density).has_value();
         }
         checkpoint("six tabs and default cards across zoom levels");
+        // All six categories use the same transient transport toggle. It never
+        // starts playback and does not alter the session's musical payload.
+        setPreviewTransport(preview::PlaybackState::Stopped,false,false);setPreviewRepeat(false);
+        const auto stateBeforeRepeat=state_;const auto sessionBeforeRepeat=session::serialize(state_);
+        for(std::size_t category=0;category<6;++category){
+            changeBrowseCategory(category);paint();const auto before=auditions+enrichmentAuditions;
+            const auto oldRepeat=auditionRepeat_;click(CompactAction::Repeat);paint();
+            okay=okay&&auditionRepeat_!=oldRepeat&&auditionState_==preview::PlaybackState::Stopped&&auditions+enrichmentAuditions==before;
+        }
+        okay=okay&&repeatChanges==6&&!auditionRepeat_;
+        changeBrowseCategory(savedGroup);state_=stateBeforeRepeat;paint();
+        okay=okay&&session::serialize(state_)==sessionBeforeRepeat;
+        checkpoint("shared repeat toggle does not play or change Session music");
         {
             const std::array<double,4> equalStarts{0.,4.,8.,12.};
             const std::array<double,4> equalX{100.,200.,300.,400.};
@@ -1081,7 +1106,7 @@ bool MainView::runCompactSmoke(CDrawContext* dc){
     snapshotMode_=savedSnapshotMode;
     generation_=oldGeneration;workerBusy_=false;recommendationResultReady_=true;auditionCustom_=false;auditionSuffix_=false;actionStatus_=savedStatus;
     previewCandidateId_=savedPreviewId;previewQN_=savedPreviewQN;previewTotalQN_=savedPreviewTotalQN;
-    auditionState_=savedTransport;auditionHostBackend_=savedHostBackend;auditionHostAvailable_=savedHostAvailable;auditionPending_=savedPending;
+    auditionState_=savedTransport;auditionHostBackend_=savedHostBackend;auditionHostAvailable_=savedHostAvailable;auditionPending_=savedPending;auditionRepeat_=savedRepeat;
     seekGesture_=savedSeekGesture;previewSeekHoverId_=savedSeekHoverId;previewSeekCursorHover_=savedCursorHover;
     detailedCards_=false;compactScroll_=0;selectedCandidate_.reset();resizeLayout(static_cast<int>(oldSize.getWidth()),static_cast<int>(oldSize.getHeight()));
     paint();return okay;

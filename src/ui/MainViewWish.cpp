@@ -54,6 +54,11 @@ std::string wishInformation(const wish::WishItem& item) {
     if(item.memberships.empty())out<<"无可消费的已审核归属；不据音阶兼容补标签。\n";
     return out.str();
 }
+bool containsWishCandidate(const std::shared_ptr<const wish::WishView>& view,
+                           const std::string& id) {
+    return view && !id.empty() && std::any_of(view->items.begin(), view->items.end(),
+        [&](const auto& item) { return item->route.candidate.id == id; });
+}
 }
 
 void MainView::ensureWish() {
@@ -64,33 +69,66 @@ void MainView::ensureWish() {
     resetWish();
 }
 void MainView::resetWish() {
+    const auto previousView=wishView_;
     if(wishSettings_.useInput){
         wishInput_.imported=state_.imported;wishInput_.analysis=state_.analysisContext();
         wishInput_.request={};wishInput_.request.constraints=state_.constraints;
     }else wishInput_.clear();
     if(wishWorkspace_)wishWorkspace_->reset(wishSettings_,wishInput_,
         static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()));
-    wishView_=wishWorkspace_?wishWorkspace_->view():nullptr;
+    auto nextView=wishWorkspace_?wishWorkspace_->view():nullptr;
+    if(containsWishCandidate(previousView,previewCandidateId_)&&
+       !containsWishCandidate(nextView,previewCandidateId_)){
+        if(actions_.clearAudition)actions_.clearAudition();else if(actions_.stopAudition)actions_.stopAudition();
+        previewCandidateId_.clear();auditionState_=preview::PlaybackState::Stopped;auditionPending_=false;
+    }
+    wishView_=std::move(nextView);
     wishPage_=0;wishScroll_=0;wishSelected_.clear();wishExpanded_.clear();wishRequested_=false;
     if(wishMode_)actionStatus_.clear();
     if(wishMode_){compactSelected_.clear();compactScroll_=0;compactHits_.clear();compactRibbonScroll_.clear();
-        seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;midiPending_.reset();midiClick_={};
-        if(actions_.stopAudition)actions_.stopAudition();}
+        seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;midiPending_.reset();midiClick_={};}
     invalid();
 }
 void MainView::pollWish() {
     if(!wishWorkspace_)return;auto next=wishWorkspace_->view();
     if(next==wishView_)return;
-    const auto previousCount=wishView_?wishView_->items.size():0;
+    const auto previousView=wishView_;
+    const auto previousCount=previousView?previousView->items.size():0;
+    const bool revisionChanged=previousView&&next->revision!=previousView->revision;
+    const bool displayChanged=previousView&&next->displayGeneration!=previousView->displayGeneration;
+    const bool batchChanged=previousView&&next->batchSerial!=previousView->batchSerial;
+    const bool appendedBatch=batchChanged&&next->lastDrawAppended;
+    const auto newView=next;
+    const auto selectionRemoved=[&](const std::string& id){
+        return containsWishCandidate(previousView,id)&&!containsWishCandidate(newView,id);
+    };
+    bool previewRemoved=false;
+    if(selectionRemoved(previewCandidateId_)){
+        if(actions_.clearAudition)actions_.clearAudition();else if(actions_.stopAudition)actions_.stopAudition();
+        previewCandidateId_.clear();auditionState_=preview::PlaybackState::Stopped;auditionPending_=false;
+        previewRemoved=true;
+    }
     wishView_=std::move(next);
-    if(wishView_&&!wishView_->busy&&wishView_->items.size()>previousCount){
+    if(selectionRemoved(wishSelected_))wishSelected_.clear();
+    if(selectionRemoved(compactSelected_))compactSelected_.clear();
+    if(!wishExpanded_.empty()&&!containsWishCandidate(wishView_,wishExpanded_))wishExpanded_.clear();
+
+    const bool replacedOrCleared=revisionChanged||(displayChanged&&!appendedBatch)||
+        (batchChanged&&!wishView_->lastDrawAppended);
+    if(replacedOrCleared){
+        wishPage_=0;wishScroll_=0;
+        if(wishMode_){compactScroll_=0;compactRibbonScroll_.clear();
+            seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;
+            midiPending_.reset();midiClick_={};}
+    }else if(wishView_&&!wishView_->busy&&appendedBatch&&wishView_->items.size()>previousCount){
         wishPage_=previousCount/recommendationPageSize;wishScroll_=0;
         if(wishMode_){compactScroll_=0;if(compactSelected_.empty())compactSelected_=wishView_->items[previousCount]->route.candidate.id;}
     }
-    if(wishMode_)invalid();
+    if(wishMode_||previewRemoved)invalid();
 }
 const wish::WishItem* MainView::wishItem(const std::string& id) const {
-    if(!wishView_||!wishWorkspace_||wishWorkspace_->view()->revision!=wishView_->revision)return nullptr;
+    if(!wishView_||!wishWorkspace_||wishWorkspace_->view()->revision!=wishView_->revision||
+       wishWorkspace_->view()->displayGeneration!=wishView_->displayGeneration)return nullptr;
     for(const auto& item:wishView_->items)if(item->route.candidate.id==id)return item.get();return nullptr;
 }
 bool MainView::currentWishCandidate(const ContinuationCandidate& candidate) const {
@@ -113,7 +151,8 @@ void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
     wishBox(dc,g.input);
     compactButton(dc,{l,y+7,l+100,y+35},"快捷预设",CompactAction::WishPreset);
     compactButton(dc,{l+106,y+7,l+192,y+35},"进阶设置",CompactAction::WishAdvanced,{},0,wishAdvanced_);
-    compactButton(dc,{r-146,y+7,r,y+35},"清除已输入进行",CompactAction::WishClear);
+    compactButton(dc,{r-258,y+7,r-152,y+35},wishKeepHistory_?"保留抽卡历史 ✓":"保留抽卡历史",CompactAction::WishHistory,{},0,wishKeepHistory_);
+    compactButton(dc,{r-146,y+7,r,y+35},"清空卡池",CompactAction::WishClear);
     std::string source=wishSettings_.useInput?"使用当前输入：":"自由随机 · 未关联当前输入";
     if(wishSettings_.useInput){for(const auto& e:wishInput_.imported.events)source+=e.name+"  ";if(wishInput_.imported.events.empty())source+="无有效输入，请先导入进行";}
     wishText(dc,source,{l,y+39,r,y+61},12);
@@ -138,7 +177,10 @@ void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
     {
         ConcatClip clip(*dc,{g.cardsViewport.left,g.cardsViewport.top,g.cardsViewport.right,g.cardsViewport.bottom});compactInCards_=true;
         if(page.total==0){
-            wishText(dc,wishRequested_?"实际候选 0 条；保持当前筛选。未审核归属不参与调式卡池。":"选择参数后点击一抽或十抽；抽取不会自动播放。",
+            const std::string emptyText=wishRequested_&&wishView_&&wishView_->poolSize>0?
+                "显示列表为空；当前卡池剩余 "+std::to_string(wishView_->remaining)+" 条。":
+                "实际候选 0 条；保持当前筛选。未审核归属不参与调式卡池。";
+            wishText(dc,wishRequested_?emptyText:std::string("选择参数后点击一抽或十抽；抽取不会自动播放。"),
                 {g.cardsViewport.left+10,cy+12,g.cardsViewport.right-10,cy+42},11,wishMuted);
             if(!modes.empty())wishText(dc,"Locrian、旋律小调↑及古典旋律小调目前无已审核候选。",{g.cardsViewport.left+10,cy+46,g.cardsViewport.right-10,cy+72},10,wishMuted);
         }
@@ -197,7 +239,7 @@ void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
         compactButton(dc,{right-65,top+5,right-9,top+33},"完成",CompactAction::WishAdvanced);
         const double mid=(left+right)/2;
         compactButton(dc,{left+10,top+40,mid-4,top+70},wishSettings_.useInput?"使用当前输入 ✓":"自由随机 ✓",CompactAction::WishInput);
-        compactButton(dc,{mid+4,top+40,right-10,top+70},"清除已输入进行",CompactAction::WishClear);
+        compactButton(dc,{mid+4,top+40,right-10,top+70},"清空卡池",CompactAction::WishClear);
         compactButton(dc,{left+10,top+77,mid-4,top+107},"主音："+(wishSettings_.filter.fixedTonic?tonicName(int(*wishSettings_.filter.fixedTonic)):"不固定"),CompactAction::WishTonic);
         compactButton(dc,{mid+4,top+77,right-10,top+107},"风格："+(wishSettings_.style?wishStyleName(*wishSettings_.style):"不限制"),CompactAction::WishStyle);
         const double width=(right-left-24)/5;
@@ -217,7 +259,8 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
     const auto action=hit.action;const auto* item=wishItem(hit.id);
     switch(action){
         case CompactAction::WishAdvanced:wishAdvanced_=!wishAdvanced_;compactHits_.clear();return true;
-        case CompactAction::WishClear:wishSettings_.useInput=false;wishInput_.clear();resetWish();return true;
+        case CompactAction::WishHistory:wishKeepHistory_=!wishKeepHistory_;invalid();return true;
+        case CompactAction::WishClear:if(wishWorkspace_){wishWorkspace_->clearDisplay();pollWish();}return true;
         case CompactAction::WishInput:wishSettings_.useInput=!wishSettings_.useInput;resetWish();return true;
         case CompactAction::WishPreset:{const auto n=popup({"全部不限制","自然大调","自然小调","和声小调"},where);if(n>=0){wishSettings_=wishPreset(static_cast<std::size_t>(n));resetWish();}return true;}
         case CompactAction::WishTonic:{std::vector<std::string> names{"不固定主音"};for(int i=0;i<12;++i)names.push_back(tonicName(i));const auto n=popup(names,where);if(n>=0){wishSettings_.filter.fixedTonic=n?std::optional(static_cast<PitchClass>(n-1)):std::nullopt;resetWish();}return true;}
@@ -226,8 +269,12 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
         case CompactAction::WishStyle:{const auto n=popup({"不限制","Pop","Rock","R&B","Jazz","City Pop","Functional"},where);constexpr Style styles[]{Style::Pop,Style::Rock,Style::Rnb,Style::Jazz,Style::CityPop,Style::Functional};if(n>=0){wishSettings_.style=n?std::optional(styles[n-1]):std::nullopt;resetWish();}return true;}
         case CompactAction::WishColor:{const auto n=popup({"不限制","升温","降温","张力上升","张力释放"},where);if(n>=0){wishSettings_.color=static_cast<wish::ColorDirection>(n);resetWish();}return true;}
         case CompactAction::WishOne:case CompactAction::WishTen:case CompactAction::WishAgain:
-            if(wishWorkspace_&&wishWorkspace_->draw(action==CompactAction::WishOne?1:10)){wishRequested_=true;pollWish();}return true;
-        case CompactAction::Select:if(item){compactSelected_=hit.id;wishSelected_=hit.id;if(!previewCandidateId_.empty()&&previewCandidateId_!=hit.id&&actions_.stopAudition)actions_.stopAudition();}return true;
+            if(wishWorkspace_&&wishWorkspace_->draw(action==CompactAction::WishOne?1:10,wishKeepHistory_)){wishRequested_=true;pollWish();}return true;
+        case CompactAction::Select:if(item){compactSelected_=hit.id;wishSelected_=hit.id;
+            if(previewCandidateId_!=hit.id&&containsWishCandidate(wishView_,previewCandidateId_)){
+                if(actions_.clearAudition)actions_.clearAudition();else if(actions_.stopAudition)actions_.stopAudition();
+                previewCandidateId_.clear();auditionState_=preview::PlaybackState::Stopped;auditionPending_=false;
+            }}return true;
         case CompactAction::Audition:case CompactAction::Play:{if(action==CompactAction::Play)item=wishItem(compactSelected_);if(item&&actions_.audition){compactSelected_=item->route.candidate.id;
             if(previewCandidateId_==compactSelected_&&auditionState_==preview::PlaybackState::Paused&&actions_.resumeAudition)actions_.resumeAudition();else actions_.audition(item->route.candidate);}return true;}
         case CompactAction::Midi:if(item)armMidi(item->route.candidate,where);return true;
@@ -237,7 +284,7 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
         case CompactAction::PagePrevious:case CompactAction::PageNext:if(action==CompactAction::PagePrevious){if(wishPage_)--wishPage_;}else ++wishPage_;compactScroll_=0;wishScroll_=0;wishExpanded_.clear();midiPending_.reset();midiClick_={};return true;
         case CompactAction::Intent:case CompactAction::Enrichment:case CompactAction::Density:case CompactAction::Advanced:
         case CompactAction::Library:case CompactAction::Pause:case CompactAction::Stop:case CompactAction::Backend:
-        case CompactAction::TempoMode:case CompactAction::Tempo:case CompactAction::Scope:return false;
+        case CompactAction::Repeat:case CompactAction::TempoMode:case CompactAction::Tempo:case CompactAction::Scope:return false;
         default:return true;
     }
 }
@@ -245,7 +292,11 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
 bool MainView::runWishSmoke(CDrawContext* dc,const std::function<void(const std::string&)>& capture) {
     const auto require=[](bool pass,const char* text){if(!pass)throw std::runtime_error(text);};
     require(factory_.size()==658,"wish UI requires current real Factory V5");
-    const auto original=state_;const auto actions=actions_;int played{},payloads{},snapshots{};
+    const auto original=state_;const auto actions=actions_;const auto originalRepeat=auditionRepeat_;
+    int played{},payloads{},snapshots{},clearedAuditions{},stoppedAuditions{};
+    actions_.clearAudition=[&]{++clearedAuditions;};
+    actions_.stopAudition=[&]{++stoppedAuditions;};
+    actions_.previewRepeat=[&](bool enabled){setPreviewRepeat(enabled);};
     actions_.audition=[&](const ContinuationCandidate& c){require(currentWishCandidate(c),"preview candidate identity");
         const auto route=continuationRoute(c);const auto built=preview::buildSequence(route.imported,&route.candidate,120);require(bool(built),"actual preview route builds");
         const auto* item=wishItem(c.id);require(item&&wish::performanceFingerprint(built.sequence,route.meterNumerator,route.meterDenominator)==item->musicIdentity,"preview full music identity");
@@ -270,13 +321,20 @@ bool MainView::runWishSmoke(CDrawContext* dc,const std::function<void(const std:
     click(CompactAction::WishStrict);require(wishSettings_.filter.strict,"strict mode uses shared core settings");click(CompactAction::WishMode,0);click(CompactAction::WishMode,1);
     require(wishSettings_.filter.modes.empty()&&!wishSettings_.filter.strict,"removing all modes removes invalid strict request");click(CompactAction::WishAdvanced);
     click(CompactAction::WishOne);wait();require(wishView_->items.size()==1&&played==0,"one draw never autoplays");
-    click(CompactAction::WishTen);wait();click(CompactAction::WishAgain);wait();require(wishView_->items.size()==21,"continuous 1+10+10 draws");
+    const auto firstIdentity=wishView_->items.front()->musicIdentity;
+    const auto historyRevision=wishView_->revision;const auto historyRemaining=wishView_->remaining;
+    click(CompactAction::WishHistory);require(wishKeepHistory_&&wishView_->revision==historyRevision&&
+        wishView_->remaining==historyRemaining,"history toggle preserves query and round");
+    click(CompactAction::WishTen);wait();require(wishView_->items.size()==11&&
+        wishView_->items.front()->musicIdentity==firstIdentity,"history appends without resetting the round");
+    click(CompactAction::WishAgain);wait();require(wishView_->items.size()==21,"continuous 1+10+10 history");
     std::set<std::string> identities;for(const auto& item:wishView_->items){require(!item->match&&item->route.candidate.continuation.empty(),"free draw has no invented continuation or match");require(identities.insert(item->musicIdentity).second,"single round duplicate music");}
     wishPage_=0;compactScroll_=0;paint();click(CompactAction::Audition);click(CompactAction::Midi);midiClick_={};midiPending_.reset();click(CompactAction::Details);paint();
     click(CompactAction::WishSnapshot);require(played==1&&payloads==1&&snapshots==1,"card route action dispatch");
     wishExpanded_.clear();click(CompactAction::PageNext);paint();require(wishPage_==1,"wish page next");click(CompactAction::Audition);require(played==2,"cross-page preview");
     const auto retained=captureEditorUiState();auto recreated=owned(new MainView(getViewSize(),actions_));recreated->setSessionState(state_);recreated->setLibrary(factory_,{});recreated->restoreEditorUiState(retained);
-    require(recreated->wishWorkspace_==wishWorkspace_&&recreated->wishView_->items.size()==21&&recreated->wishPage_==1,"editor reopen retains immutable round");
+    require(recreated->wishWorkspace_==wishWorkspace_&&recreated->wishView_->items.size()==21&&recreated->wishPage_==1&&
+        recreated->wishKeepHistory_,"editor reopen retains immutable round and display preference");
     changeBrowseCategory(0);require(!wishMode_,"return to existing entrance");changeBrowseCategory(5);require(wishView_->items.size()==21,"switching preserves wish round");
     for(const auto zoom:{100u,125u,150u}){setUserZoom(zoom);wishPage_=0;compactScroll_=0;detailedCards_=false;paint();
         require(std::count_if(compactHits_.begin(),compactHits_.end(),[](const auto& h){return h.action==CompactAction::Intent||h.action==CompactAction::Enrichment||h.action==CompactAction::Wish;})==6,"six equal entrances");
@@ -284,6 +342,25 @@ bool MainView::runWishSmoke(CDrawContext* dc,const std::function<void(const std:
         const bool oldSuffix=auditionSuffix_;auditionSuffix_=true;paint();for(const auto& hit:seekHits_)require(hit.minimumQN==0,"free wish curve/ribbon seeks full route despite old suffix setting");auditionSuffix_=oldSuffix;
         if(capture)capture("wish-"+std::to_string(zoom)+"-detailed");click(CompactAction::Density);require(!detailedCards_,"wish compact density click");
         click(CompactAction::WishAdvanced);paint();if(capture)capture("wish-"+std::to_string(zoom)+"-advanced");click(CompactAction::WishAdvanced);}
+    setUserZoom(100);wishPage_=0;compactScroll_=0;paint();
+    const auto playedBeforeRepeat=played;if(auditionRepeat_)click(CompactAction::Repeat);
+    click(CompactAction::Repeat);require(auditionRepeat_&&played==playedBeforeRepeat,
+        "wish repeat routes through shared transport without autoplay");
+    paint();if(capture)capture("wish-repeat-on");click(CompactAction::Repeat);
+    require(!auditionRepeat_&&played==playedBeforeRepeat,"wish repeat turns off without autoplay");
+
+    std::set<std::string> oldIdentities;for(const auto& item:wishView_->items)oldIdentities.insert(item->musicIdentity);
+    const auto replaceRevision=wishView_->revision;const auto replaceRemaining=wishView_->remaining;
+    const auto replaceGeneration=wishView_->displayGeneration;const auto replaceBatch=wishView_->batchSerial;
+    click(CompactAction::WishHistory);require(!wishKeepHistory_&&wishView_->revision==replaceRevision&&
+        wishView_->remaining==replaceRemaining,"turning history off leaves the round untouched");
+    click(CompactAction::WishTen);wait();
+    require(wishView_->items.size()==10&&wishView_->revision==replaceRevision&&
+        wishView_->displayGeneration>replaceGeneration&&wishView_->batchSerial==replaceBatch+1&&
+        !wishView_->lastDrawAppended&&wishPage_==0,"default draw replaces cards and resets pagination");
+    for(const auto& item:wishView_->items)require(!oldIdentities.contains(item->musicIdentity),
+        "replacement continues the no-replacement round");
+
     setUserZoom(100);detailedCards_=false;click(CompactAction::WishAdvanced);click(CompactAction::WishInput);require(wishSettings_.useInput&&!wishInput_.imported.events.empty(),"current input association explicit");click(CompactAction::WishAdvanced);
     click(CompactAction::WishOne);wait();require(!wishView_->items.empty()&&wishView_->items.front()->match.has_value(),"Unified input-constrained wish");
     click(CompactAction::Audition);click(CompactAction::Midi);midiClick_={};midiPending_.reset();click(CompactAction::Details);paint();click(CompactAction::WishSnapshot);
@@ -291,13 +368,47 @@ bool MainView::runWishSmoke(CDrawContext* dc,const std::function<void(const std:
     const auto contextRevision=wishView_->revision;auto newContext=state_;newContext.forcedKey=KeySignature{PitchClass::D,Mode::Major};setSessionState(newContext);
     require(wishView_->revision>contextRevision&&wishView_->items.empty()&&wishInput_.analysis.forcedKey&&wishInput_.analysis.forcedKey->tonic==PitchClass::D,"input context change invalidates old wish generation");
     setSessionState(original);click(CompactAction::WishOne);wait();require(!wishView_->items.empty(),"current input redraw after context reset");
-    const auto stale=wishView_->items.front()->route.candidate;
-    click(CompactAction::WishClear);require(!wishSettings_.useInput&&wishInput_.imported.events.empty()&&wishView_->items.empty()&&!currentWishCandidate(stale),"clear isolates input and invalidates old results");
+    const auto stale=wishView_->items.front()->route.candidate;const auto staleIdentity=wishView_->items.front()->musicIdentity;
+    const auto clearRevision=wishView_->revision;const auto clearDisplayGeneration=wishView_->displayGeneration;
+    const auto clearRemaining=wishView_->remaining;const auto inputRevision=wishInput_.imported.revision;
+    const auto inputCount=wishInput_.imported.events.size();const auto inputCoordinate=wishInput_.imported.coordinateMode;
+    const auto inputForcedKey=wishInput_.analysis.forcedKey;const auto inputUse=wishSettings_.useInput;
+    const auto inputTonic=wishSettings_.filter.fixedTonic;const auto inputModes=wishSettings_.filter.modes;
+    const auto inputStrict=wishSettings_.filter.strict;const auto inputStyle=wishSettings_.style;
+    const auto inputColor=wishSettings_.color;
+    const bool inputHadForcedKey=bool(inputForcedKey);
+    wishPage_=4;wishSelected_=stale.id;compactSelected_=stale.id;wishExpanded_=stale.id;
+    seekGesture_=SeekGesture{SeekHit{},wishView_->displayGeneration,0};previewSeekHoverId_=stale.id;
+    previewSeekCursorHover_=true;require(armMidi(stale,{}),"clear fixture arms a MIDI gesture");
+    require(midiPending_&&midiClick_,"clear fixture carries pending MIDI data");previewCandidateId_=stale.id;
+    const auto clearAuditionBefore=clearedAuditions;const auto stopAuditionBefore=stoppedAuditions;
+    click(CompactAction::WishClear);
+    const bool forcedKeyPreserved=inputHadForcedKey==bool(wishInput_.analysis.forcedKey)&&
+        (!inputHadForcedKey||(inputForcedKey->tonic==wishInput_.analysis.forcedKey->tonic&&
+                              inputForcedKey->mode==wishInput_.analysis.forcedKey->mode));
+    require(wishSettings_.useInput==inputUse&&wishInput_.imported.revision==inputRevision&&
+        wishInput_.imported.events.size()==inputCount&&wishInput_.imported.coordinateMode==inputCoordinate&&
+        forcedKeyPreserved&&wishSettings_.filter.fixedTonic==inputTonic&&
+        wishSettings_.filter.modes==inputModes&&wishSettings_.filter.strict==inputStrict&&
+        wishSettings_.style==inputStyle&&wishSettings_.color==inputColor,
+        "clear preserves input, query settings, and input association");
+    require(wishView_->revision==clearRevision&&wishView_->displayGeneration>clearDisplayGeneration&&
+        wishView_->remaining==clearRemaining&&wishView_->usesInput&&wishView_->items.empty()&&wishRequested_&&
+        wishPage_==0&&wishSelected_.empty()&&compactSelected_.empty()&&wishExpanded_.empty()&&
+        !seekGesture_&&previewSeekHoverId_.empty()&&!previewSeekCursorHover_&&!midiClick_&&!midiPending_&&
+        !currentWishCandidate(stale),"clear empties visible cards and invalidates old interactions only");
+    require(clearedAuditions==clearAuditionBefore+1&&stoppedAuditions==stopAuditionBefore,
+        "clear releases only the removed wish audition through clearAudition");
+    click(CompactAction::WishOne);wait();
+    require(wishView_->usesInput&&!wishView_->items.empty()&&wishView_->items.front()->match.has_value()&&
+        wishView_->items.front()->musicIdentity!=staleIdentity,
+        "cleared input wish continues its existing no-replacement round");
     require(state_.imported.revision==original.imported.revision&&state_.imported.events.size()==original.imported.events.size(),"wish never clears global MIDI input");
     auto noInput=state_;noInput.imported.events.clear();++noInput.imported.revision;setSessionState(noInput);wishSettings_.useInput=true;resetWish();paint();
     require(std::any_of(compactHits_.begin(),compactHits_.end(),[](const auto& hit){return hit.action==CompactAction::WishOne&&!hit.enabled;}),"missing current input disables continuation draw");
     setSessionState(original);wishSettings_.useInput=false;resetWish();
     click(CompactAction::WishAdvanced);click(CompactAction::WishMode,9);click(CompactAction::WishAdvanced);click(CompactAction::WishTen);wait();require(wishView_->items.empty()&&wishView_->poolSize==0&&wishView_->error.empty(),"unavailable mode has a genuine empty pool");
-    wishSettings_={};resetWish();click(CompactAction::WishTen);wait();paint();if(capture)capture("wish-final");actions_=actions;return true;
+    wishSettings_={};resetWish();click(CompactAction::WishTen);wait();paint();if(capture)capture("wish-final");
+    actions_=actions;setPreviewRepeat(originalRepeat);return true;
 }
 }
