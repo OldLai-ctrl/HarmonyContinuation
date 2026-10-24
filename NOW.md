@@ -2,15 +2,15 @@
 
 ## 本轮工作与下一步
 
-### G01 / G4 安装集成（2026-10-24，门禁未通过）
+### G01 / G4-R 安装失败恢复（2026-10-24）
 
-本地开发构建 **0.11.0-dev.1 / Release x64**，冻结BuildCommit `fb68a6ec47f27868e6856e1ab3aefcba35b77127`（G3 `857d228` 后仅调整版本）；后续测试/文档提交不作为二进制BuildCommit。唯一开发Setup及身份见[BUILD_INFO](../HarmonyContinuation-g04-delivery-20261024/BUILD_INFO.json)，[人工验收清单与停止原因](docs/G01_G4_ACCEPTANCE.md)。包保留供诊断，暂不用于生产安装。
+恢复专项技术门禁通过，可进入RC候选评审；真实Cubase/FL Studio、标准路径/UAC及人工听评仍待验收。本地分支 `development/g01-chord-wish-20261023`，新开发构建 **0.11.0-dev.2 / Release x64**，冻结BuildCommit `f99dfa1657b04db0af50d76795141ea24b50ae10`；后续测试/文档提交与构建身份分开。唯一新[Setup](../HarmonyContinuation-g04r-delivery-20261024/HarmonyContinuation-0.11.0-dev.2-Setup.exe)、[身份和证据](../HarmonyContinuation-g04r-delivery-20261024/BUILD_INFO.json)、[根因/修复及人工清单](docs/G01_G4_ACCEPTANCE.md)。旧dev.1/fb68a6e包保留为失败诊断资产，禁止正常分发。
 
-- 构建与来源：SDK Validator本轮47/47通过；构建/CRT来源、暂存和Setup提取的16项插件清单一致，moduleinfo与实际类版本为0.11.0-dev.1，二进制含fb68a6e。Factory源码构建、正式Setup提取、开发Setup提取及生产已装V5的SHA-256一致，均为 `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`，正式包内DB直接比对缺口已关闭；V5/Schema2/658、Session5/Snapshot3不变。v2的658源/727归属嵌入新模块，原3条4归属保留。
-- 实际检查：隔离已安装DB上的WishCoreFocused本轮12646项通过，覆盖完整来源指纹、3条4归属、多选/严格/空池、完整音乐身份及Preview/MIDI/Snapshot往返；[日志](../HarmonyContinuation-g04-delivery-20261024/installed-db-wish.log)。原生A3/UI截图与交互复用G3证据，未重跑无关全量。开发暂存模块实际SDK加载及moduleinfo校验成功；安装后新模块功能冒烟因下述缺陷停止，不能将暂存模块检查称为实装验收。
-- 安装结果：独立TestRoot/HKCU AppId的新装、组件增删修复和卸载16项通过；正式0.10.0原始载荷安装、仅库升级保留旧插件已执行。post-install故障注入后，插件16文件回退为0.10.0、Factory/历史V4/个人哨兵保持，但安装进程返回0且DisplayVersion为0.11.0-dev.1。[失败日志](../HarmonyContinuation-g04-delivery-20261024/isolation-lifecycle/upgrade/transaction-rollback.log)显示新卸载注册写入后才抛出 `Cannot record component state`；完整事务恢复FAIL。按持久状态风险边界暂停，未继续完整升级或降级回退。后续受控卸载已清理本轮隔离注册/组件，保留历史和个人哨兵；真实user.db未访问或修改。
-- 保护与质量：生产插件实际为0.10.0-rc.1，前后SHA均 `B1BA61B9BB188438D5DD05523650CEE8F79C62A5EF9ABA4C753F90E9EF34DF85`；生产Factory未变。代表性结构复核未发现抽样缺陷；已知COMMON_MINOR_016依据有一处bII/降六级来源措辞待校订。25条仅未确认及Locrian/旋律小调空池为内容边界；用户听评仍待完成。
-- 门禁与下一步：**不具备RC候选技术条件**。先由决策端审查安装失败的返回码/注册与应用组件恢复契约，再修复并重跑对应隔离故障与升级/回退路径；随后完成安装后模块功能冒烟、标准目录/UAC、Cubase/FL Studio及人工听评。仅本地提交，未推送、未合并main、未建Tag/Release；既存协作文档改动保留。
+- 根因与修复：原关键状态写入晚于Inno原生提交，异常不改变成功状态；旧恢复遗漏支持文件/卸载登记且不核验。关键写入已提前，修改前捕获受管理文件/哈希/卸载器/完整登记；失败按顺序恢复并验证，关键失败返回非零。无法恢复时保留材料并阻止重试，不重写安装器或扩大个人数据删除范围。
+- 本轮执行：SDK Validator 47/47；隔离生命周期58项通过。原组件状态写入失败、Factory后中断、manifest后中断均exit3，注册后升级/新装中断均exit201。四份升级故障快照中全应用目录/卸载器、登记键值/类型/子键、插件、Factory树/活动指针、V4及个人哨兵前后一致；[故障证据](../HarmonyContinuation-g04r-delivery-20261024/isolation-lifecycle-1/upgrade/test-evidence/)。恢复失败202分支经代码审查，未人为制造不可恢复状态，不计执行PASS。
+- 生命周期：新装失败后正常重试、正式0.10.0原脚本/原载荷升级、组件增删及损坏修复、直接静默降级安全拒绝、卸载开发版后重装正式版回退均通过；旧/新真实模块SDK加载和moduleinfo校验通过（工厂/类信息查询，非DAW）。最终隔离卸载exit0、测试注册/托管组件清理、用户哨兵和V4历史保留，见[清理证据](../HarmonyContinuation-g04r-delivery-20261024/isolation-lifecycle-1/cleanup-result.txt)。最终测试脚本两项审查修正仅做语法/直接检查及局部bundle查询，未重复整个生命周期。
+- 身份与保护：Setup SHA-256 `08B0D6516BE1BF6EF5F4FD48D0FC523C9B221D6B09DBE1B928201C8C8D621ABA`；构建、暂存、解包及实装插件一致。Factory源码/正式包/新包/实装均为V5/Schema2/658，SHA `F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C`。生产插件仍0.10.0-rc.1，前后hash不变，生产Factory不变，真实user.db未访问。Schema/Session5/Snapshot3和调式数据不变。
+- 范围与后续：仅安装机制及版本身份重建；G3音乐/UI/原生图和G4标注/音乐12646项证据按未改源码范围复用，未当作本轮新执行。主代理负责根因、事务修复和最终门禁，Luna负责隔离测试及独立只读检查。下一步由决策端审查进入RC候选及实机验收；未推送、未合并main、未建Tag/Release，既存协作文档改动保留。
 
 ### G01 / G3 和弦祈愿 UI（2026-10-23）
 
