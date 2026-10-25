@@ -216,9 +216,18 @@ int main() {
         buried.id = "buried-exact";
         many.push_back(std::move(buried));
         const CandidateIndex largeIndex(std::move(many));
-        const auto shortlist = largeIndex.shortlist(query("I vi ii V"));
-        expect(shortlist.size() == 800 && std::find(shortlist.begin(), shortlist.end(), 9999) != shortlist.end(),
-               "10k prefilter retains buried exact template");
+        const auto largeQuery = query("I vi ii V");
+        const auto fullDefault = largeIndex.shortlist(largeQuery);
+        bool fullDefaultIsOrdered = fullDefault.size() == 10000 && MatchWeights{}.shortlistLimit == 0;
+        for (std::size_t i = 0; i < fullDefault.size(); ++i)
+            fullDefaultIsOrdered = fullDefaultIsOrdered && fullDefault[i] == i;
+        expect(fullDefaultIsOrdered, "default zero shortlist limit returns every index in source order");
+        MatchWeights legacyCap;
+        legacyCap.shortlistLimit = 800;
+        const auto cappedShortlist = largeIndex.shortlist(largeQuery, legacyCap);
+        expect(cappedShortlist.size() == 800 &&
+               std::find(cappedShortlist.begin(), cappedShortlist.end(), 9999) != cappedShortlist.end(),
+               "explicit 800 fingerprint prefilter retains buried exact template");
         expect(!dev::parseTemplateJson("[{\"id\":\"x\",\"mode\":\"major\",\"sequence\":\"bad\"}]").error.empty(),
                "malformed template rejected");
         expect(!dev::parseTemplateJson("[{\"id\":\"x\",\"mode\":\"major\",\"sequence\":\"I\"},{\"id\":\"x\",\"mode\":\"major\",\"sequence\":\"V\"}]").error.empty(),

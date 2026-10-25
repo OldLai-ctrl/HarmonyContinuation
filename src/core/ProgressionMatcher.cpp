@@ -462,7 +462,7 @@ std::vector<std::size_t> CandidateIndex::shortlist(const MatchQuery& query, cons
     std::vector<std::size_t> result;
     if (query.interpretations.empty()) return result;
     result.reserve(templates_.size());
-    if (templates_.size() <= w.shortlistLimit) {
+    if (w.shortlistLimit == 0 || templates_.size() <= w.shortlistLimit) {
         for (std::size_t i = 0; i < templates_.size(); ++i) result.push_back(i);
         return result;
     }

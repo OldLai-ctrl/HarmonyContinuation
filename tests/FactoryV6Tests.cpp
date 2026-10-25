@@ -1270,6 +1270,253 @@ void writeRepresentativeMedia(const std::vector<ProgressionTemplate>& candidates
     }
     require(static_cast<bool>(index), "cannot finish representative media index");
 }
+
+int runR1DefaultScan(const std::filesystem::path& baselinePath,
+                    const std::filesystem::path& candidatesPath,
+                    const std::filesystem::path& metadataPath,
+                    const std::filesystem::path& outputDirectory) {
+    const auto baseline = library::loadFactory(baselinePath);
+    require(static_cast<bool>(baseline), "cannot load V5 baseline: " + baseline.error);
+    require(baseline.libraryVersion == 5 && baseline.storageSchemaVersion == 2 &&
+            baseline.templates.size() == 658, "Factory V5 baseline contract");
+
+    const auto parsed = dev::parseTemplateJson(readText(candidatesPath), true);
+    require(static_cast<bool>(parsed), "cannot parse candidates.json: " + parsed.error);
+    const auto metadata = benchmark::json::parse(readText(metadataPath));
+    std::set<std::string> gradeAIds;
+    for (const auto& row : metadata.at("candidates").items())
+        if (row.at("grade").text() == "A") gradeAIds.insert(row.at("id").text());
+    require(gradeAIds.size() == 152, "R1 frozen grade-A count changed");
+
+    std::vector<ProgressionTemplate> shadowEntries = baseline.templates;
+    std::set<std::string> candidateIds;
+    for (const auto& item : parsed.templates) {
+        require(candidateIds.insert(item.id).second, "duplicate candidate ID: " + item.id);
+        if (gradeAIds.contains(item.id)) shadowEntries.push_back(item);
+    }
+    for (const auto& id : gradeAIds)
+        require(candidateIds.contains(id), "grade-A metadata ID missing from candidates.json: " + id);
+    require(shadowEntries.size() == 810,
+            "R1 real shadow must contain V5 658 plus all 152 grade-A candidates");
+    const CandidateIndex shadowIndex(shadowEntries);
+    std::filesystem::create_directories(outputDirectory);
+
+    const std::array comparisonIds{
+        "V6_B3_01_048", "V6_B3_01_056", "V6_B3_01_065"
+    };
+    std::ofstream comparison(outputDirectory / "r1-cap-vs-default.tsv", std::ios::binary);
+    require(static_cast<bool>(comparison), "cannot write R1 cap comparison report");
+    comparison << "query\tfull_sources\tcap_sources\tfull_only_sources\tquery_rank_full"
+                  "\tquery_rank_cap\ttop20_retained\tshared_score_max_delta\tfull_ms\tcap_ms\n";
+
+    for (std::size_t queryIndex = 0; queryIndex < comparisonIds.size(); ++queryIndex) {
+        const auto& item = find(parsed.templates, comparisonIds[queryIndex]);
+        require(gradeAIds.contains(item.id), "R1 representative is not grade A: " + item.id);
+        const auto prefix = item.full.size() > 2 ? item.full.size() - 1 : std::size_t{1};
+        const auto query = queryFor(item, {PitchClass::C, item.mode}, prefix);
+        const auto defaultIndices = shadowIndex.shortlist(query);
+        require(defaultIndices.size() == 810,
+                "default shortlist did not include all 810 real shadow sources: " + item.id);
+        for (std::size_t i = 0; i < defaultIndices.size(); ++i)
+            require(defaultIndices[i] == i,
+                    "default shortlist order is not the complete source index: " + item.id);
+
+        MatchWeights defaultWeights;
+        MatchWeights cappedWeights = defaultWeights;
+        cappedWeights.shortlistLimit = 800;
+        MatchRunStats fullStats, capStats;
+        const auto fullResults = matchProgression(
+            query, shadowIndex, defaultWeights, shadowIndex.templates().size(), &fullStats);
+        const auto capResults = matchProgression(
+            query, shadowIndex, cappedWeights, shadowIndex.templates().size(), &capStats);
+        require(fullStats.shortlistSize == 810 && capStats.shortlistSize == 800,
+                "R1 full/capped matcher shortlist sizes changed: " + item.id);
+
+        const auto fullIds = matchIds(fullResults);
+        const auto capIds = matchIds(capResults);
+        std::map<std::string, const MatchResult*> cappedById;
+        for (const auto& result : capResults)
+            cappedById.emplace(result.templateId, &result);
+        float maxSharedScoreDelta{};
+        for (const auto& result : fullResults) {
+            const auto found = cappedById.find(result.templateId);
+            if (found == cappedById.end()) continue;
+            require(result.key.tonic == found->second->key.tonic &&
+                    result.key.mode == found->second->key.mode,
+                    "shared cap/full source changed selected key: " + result.templateId);
+            const auto delta = std::abs(result.similarity - found->second->similarity);
+            maxSharedScoreDelta = std::max(maxSharedScoreDelta, delta);
+            require(delta <= 1e-6f,
+                    "shared cap/full source changed similarity: " + result.templateId);
+        }
+        std::vector<std::string> fullOnly;
+        for (const auto& id : fullIds)
+            if (std::find(capIds.begin(), capIds.end(), id) == capIds.end()) fullOnly.push_back(id);
+        const auto top20 = std::vector<std::string>(fullIds.begin(),
+            fullIds.begin() + std::min<std::size_t>(20, fullIds.size()));
+        const auto top20Retained = sharedIdCount(top20, capIds);
+        const auto rankOf = [](const std::vector<std::string>& ids, const std::string& target) {
+            const auto found = std::find(ids.begin(), ids.end(), target);
+            return found == ids.end() ? std::size_t{} : static_cast<std::size_t>(found - ids.begin()) + 1;
+        };
+        const auto fullMs = queryIndex == 0 ? fullStats.totalMs : 0.0;
+        const auto capMs = queryIndex == 0 ? capStats.totalMs : 0.0;
+        comparison << item.id << '\t' << fullIds.size() << '\t' << capIds.size() << '\t'
+                   << fullOnly.size() << '\t' << rankOf(fullIds, item.id) << '\t'
+                   << rankOf(capIds, item.id) << '\t' << top20Retained << '/' << top20.size()
+                   << '\t' << maxSharedScoreDelta << '\t';
+        if (queryIndex == 0) comparison << fullMs << '\t' << capMs;
+        else comparison << "-\t-";
+        comparison << '\n';
+
+        std::cout << "r1_cap_compare query=" << item.id << " prefix=" << prefix
+                  << " index_default=810 cap=800 full_matches=" << fullIds.size()
+                  << " cap_matches=" << capIds.size() << " full_only=" << fullOnly.size()
+                  << " query_rank_full=" << rankOf(fullIds, item.id)
+                  << " query_rank_cap=" << rankOf(capIds, item.id)
+                  << " top20_retained=" << top20Retained << '/' << top20.size()
+                  << " shared_score_max_delta=" << maxSharedScoreDelta;
+        if (queryIndex == 0)
+            std::cout << " timing_ms_full=" << fullMs << " timing_ms_cap=" << capMs;
+        if (!fullOnly.empty()) {
+            std::cout << " full_only_ids=";
+            for (std::size_t i = 0; i < fullOnly.size(); ++i) {
+                if (i) std::cout << ',';
+                std::cout << fullOnly[i];
+            }
+        }
+        std::cout << '\n';
+    }
+    require(static_cast<bool>(comparison), "cannot finish R1 cap comparison report");
+
+    struct GroupQueryCase { const ProgressionTemplate* item; std::size_t prefix; };
+    const auto colorSource = std::find_if(baseline.templates.begin(), baseline.templates.end(),
+        [](const auto& item) { return item.intent == PhraseIntent::Color && item.full.size() >= 3; });
+    require(colorSource != baseline.templates.end(), "V5 baseline has no Color recommendation representative");
+    const std::array<GroupQueryCase, 4> groupQueries{{
+        {&find(parsed.templates, "V6_B3_01_048"), 6},
+        {&find(parsed.templates, "V6_B3_01_056"), 7},
+        {&find(parsed.templates, "V6_B3_01_065"), 5},
+        {&*colorSource, colorSource->full.size() - 2}
+    }};
+    std::array<std::size_t, 4> observedGroupEntries{};
+    for (std::size_t queryIndex = 0; queryIndex < groupQueries.size(); ++queryIndex) {
+        const auto& item = *groupQueries[queryIndex].item;
+        const auto query = queryFor(item, {PitchClass::C, item.mode}, groupQueries[queryIndex].prefix);
+        RecommendationRequest request;
+        request.preferredIntent = item.intent;
+        const auto recommendations = recommendContinuations(query, shadowIndex, request);
+        require(recommendations.stats.shortlistSize == 810,
+                "default recommendation did not use the full real index: " + item.id);
+        std::size_t total{};
+        for (std::size_t group = 0; group < recommendations.groups.size(); ++group) {
+            for (std::size_t rank = 0; rank < recommendations.groups[group].size(); ++rank) {
+                const auto& candidate = recommendations.groups[group][rank];
+                require(std::isfinite(candidate.rankingScore),
+                        "recommendation group returned non-finite ranking score: " + item.id);
+                if (rank)
+                    require(recommendations.groups[group][rank - 1].rankingScore >= candidate.rankingScore,
+                            "recommendation group is not sorted by ranking score: " + item.id);
+                ++observedGroupEntries[group];
+                ++total;
+            }
+        }
+        if (queryIndex == 3)
+            require(!recommendations.groups[3].empty(),
+                    "V5 Color representative did not reach the Color recommendation group");
+        std::cout << "r1_recommend query=" << item.id << " prefix=" << groupQueries[queryIndex].prefix
+                  << " shortlist=810"
+                  << " resolve=" << recommendations.groups[0].size()
+                  << " develop=" << recommendations.groups[1].size()
+                  << " loop=" << recommendations.groups[2].size()
+                  << " color=" << recommendations.groups[3].size()
+                  << " total=" << total << '\n';
+    }
+    std::cout << "r1_recommend_group_coverage resolve=" << observedGroupEntries[0]
+              << " develop=" << observedGroupEntries[1]
+              << " loop=" << observedGroupEntries[2]
+              << " color=" << observedGroupEntries[3] << '\n';
+
+    const auto& enrichSource = find(parsed.templates, "V6_B3_01_065");
+    const KeySignature enrichKey{PitchClass::C, enrichSource.mode};
+    const auto enrichRoute = preview::templateRoute(enrichSource, enrichKey);
+    require(static_cast<bool>(enrichRoute), "cannot build R1 Enrich source route");
+    AnalysisContext enrichContext;
+    enrichContext.forcedKey = enrichKey;
+    const auto enrichAnalysis = analyzeHarmony(enrichRoute.imported.events, enrichContext);
+    const auto enrichment = enrichment::enrichProgression(enrichRoute.imported.events, enrichAnalysis);
+    require(enrichment.error.empty(), "R1 Enrich API failed: " + enrichment.error);
+    const auto enrichmentCandidates = std::accumulate(enrichment.groups.begin(), enrichment.groups.end(),
+        std::size_t{}, [](std::size_t sum, const auto& group) { return sum + group.size(); });
+    std::cout << "r1_enrich source=" << enrichSource.id << " api=PASS candidates="
+              << enrichmentCandidates << " no_op=" << (enrichmentCandidates == 0 ? "yes" : "no") << '\n';
+
+    const auto& wishSource = baseline.templates.front();
+    const KeySignature wishKey{PitchClass::C, wishSource.mode};
+    const auto wishPrefixLength = wishSource.full.size() - 1;
+    wish::WishInput wishInput;
+    require(wishInput.imported.replace(makePrefix(wishSource, wishKey, wishPrefixLength),
+                                       TimelineCoordinateMode::RelativeToSelection),
+            "cannot create R1 input-constrained Wish prefix");
+    wishInput.analysis.forcedKey = wishKey;
+    wishInput.request.preferredIntent = wishSource.intent;
+    wish::AnnotationCatalog emptyCatalog;
+    const std::array<ProgressionTemplate, 1> wishSources{wishSource};
+    const auto wishPool = wish::makeInputPool(wishSources, emptyCatalog, wishInput);
+    require(static_cast<bool>(wishPool), "R1 input-constrained Wish API failed: " + wishPool.error);
+    require(!wishPool.items.empty(), "R1 input-constrained Wish returned no route for an exact source prefix");
+    require(wishPool.unifiedStats.shortlistSize == 1,
+            "R1 input-constrained Wish did not shortlist its isolated source");
+    require(std::any_of(wishPool.items.begin(), wishPool.items.end(), [&](const auto& wishItem) {
+        return std::any_of(wishItem.sources.begin(), wishItem.sources.end(), [&](const auto& source) {
+            return source.id == wishSource.id;
+        });
+    }), "R1 input-constrained Wish lost its source identity");
+    std::cout << "r1_wish source=" << wishSource.id << " constrained_prefix=" << wishPrefixLength
+              << " shortlist=" << wishPool.unifiedStats.shortlistSize
+              << " output_routes=" << wishPool.items.size() << " api=PASS\n";
+
+    auto isolatedUser = baseline.templates.front();
+    isolatedUser.id = "USER_B3R_ISOLATED_SOURCE";
+    isolatedUser.name = isolatedUser.nameEn = isolatedUser.nameZh = isolatedUser.id;
+    isolatedUser.aliases.clear();
+    isolatedUser.sourceType = "user";
+    const auto suffix = std::to_string(Clock::now().time_since_epoch().count());
+    const auto userDatabasePath = outputDirectory / ("r1-isolated-user-" + suffix + ".db");
+    std::string userError;
+    require(library::UserLibrary(userDatabasePath).addProgression(isolatedUser, userError),
+            "cannot persist isolated R1 user source: " + userError);
+    const auto loadedUser = library::UserLibrary(userDatabasePath).loadAll();
+    require(static_cast<bool>(loadedUser) && loadedUser.templates.size() == 1 &&
+            loadedUser.templates.front().id == isolatedUser.id &&
+            loadedUser.templates.front().sourceType == "user",
+            "isolated R1 user source did not reload from UserLibrary");
+    auto workerMergedEntries = shadowEntries;
+    for (const auto& userItem : loadedUser.templates) {
+        require(std::none_of(workerMergedEntries.begin(), workerMergedEntries.end(), [&](const auto& item) {
+            return item.id == userItem.id;
+        }), "isolated R1 user source ID collides with the factory index");
+        workerMergedEntries.push_back(userItem);
+    }
+    const CandidateIndex workerMergedIndex(std::move(workerMergedEntries));
+    const auto userQuery = queryFor(isolatedUser, {PitchClass::C, isolatedUser.mode},
+                                    isolatedUser.full.size() > 2 ? isolatedUser.full.size() - 1 : 1);
+    const auto mergedIndices = workerMergedIndex.shortlist(userQuery);
+    require(mergedIndices.size() == 811 && mergedIndices.back() == 810,
+            "Worker-style factory plus user merge is not fully visible to the default index");
+    const auto mergedMatches = matchProgression(
+        userQuery, workerMergedIndex, MatchWeights{}, workerMergedIndex.templates().size());
+    require(std::any_of(mergedMatches.begin(), mergedMatches.end(), [&](const auto& match) {
+        return match.templateId == isolatedUser.id;
+    }), "isolated user source was not matched after Worker-style merge");
+    std::cout << "r1_user_merge factory_grade_A=810 isolated_user=1 merged_index=811"
+              << " user_source=" << isolatedUser.id << " matched=yes db=" << userDatabasePath.string() << '\n';
+
+    std::cout << "r1_default_scan PASS baseline=658 grade_A=152 full_default=810 cap_comparison_queries=3"
+              << " group_queries=4 enrich_calls=1 wish_input_sources=1 user_sources=1"
+              << " report=" << (outputDirectory / "r1-cap-vs-default.tsv").string() << '\n';
+    return 0;
+}
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1277,6 +1524,15 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--r1-default-scan") {
+        try {
+            require(argc == 6, "usage: FactoryV6Tests --r1-default-scan v5.db candidates.json metadata.json output-dir");
+            return runR1DefaultScan(argv[2], argv[3], argv[4], argv[5]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V6 R1 default-scan FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     require(argc == 10, "usage: FactoryV6Tests v5.db candidates.json metadata.json approved-ids.txt "
                         "proposal.db experiment.db factory-v5.hca merged-v6.hca media-dir");
     try {
