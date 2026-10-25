@@ -216,6 +216,30 @@ void requirePreserved(const library::LoadResult& baseline, const library::LoadRe
     }
 }
 
+void requireV7Preserved(const library::LoadResult& baseline, const library::LoadResult& combined,
+                        const std::set<std::string>& expectedCandidateIds,
+                        std::string_view label) {
+    require(combined.libraryVersion == 7 && combined.storageSchemaVersion == 2,
+            std::string(label) + " must be Library 7 / Schema 2");
+    require(combined.templates.size() == baseline.templates.size() + expectedCandidateIds.size(),
+            std::string(label) + " entry count");
+    std::set<std::string> actualIds;
+    for (const auto& item : combined.templates) actualIds.insert(item.id);
+    require(actualIds.size() == combined.templates.size(), std::string(label) + " has duplicate IDs");
+    std::set<std::string> expectedIds;
+    for (const auto& item : baseline.templates) expectedIds.insert(item.id);
+    expectedIds.insert(expectedCandidateIds.begin(), expectedCandidateIds.end());
+    require(actualIds == expectedIds, std::string(label) + " ID set differs from explicit contents");
+    for (const auto& old : baseline.templates) {
+        const auto& restored = find(combined, old.id);
+        require(library::canonicalMusicalFingerprint(old) ==
+                library::canonicalMusicalFingerprint(restored),
+                std::string(label) + " inherited V6 musical fingerprint changed: " + old.id);
+        require(dev::serializeTemplateJson(old) == dev::serializeTemplateJson(restored),
+                std::string(label) + " inherited V6 payload changed: " + old.id);
+    }
+}
+
 const ProgressionTemplate& find(const std::vector<ProgressionTemplate>& items, const std::string& id) {
     const auto found = std::find_if(items.begin(), items.end(),
                                     [&](const auto& item) { return item.id == id; });
@@ -1950,6 +1974,504 @@ std::string wishCoreFamilyIdentity(const preview::Sequence& sequence) {
     return identity;
 }
 
+std::string rhythmlessPerformanceIdentity(const preview::Sequence& sequence) {
+    require(!sequence.events.empty(), "cannot identify an empty rhythmless V7 sequence");
+    const int anchor = sequence.events.front().chord.root;
+    std::string identity;
+    for (const auto& event : sequence.events) {
+        const auto& chord = event.chord;
+        identity += std::to_string(pitchClassOffset(chord.root - anchor)) + ":" +
+            std::to_string(pitchClassOffset(chord.bass - anchor)) + ":" +
+            std::to_string(chord.intervals | chord.colorMask) + "|";
+    }
+    return identity;
+}
+
+void requireV7MetadataFields(const benchmark::json::Value& metadata, const std::string& id) {
+    require(!id.empty(), "V7 metadata candidate ID is empty");
+    for (const auto key : {"source", "support", "ending"}) {
+        const auto& value = metadata.at(key).text();
+        require(value.find_first_not_of(" \t\r\n") != std::string::npos,
+                std::string("V7 metadata ") + key + " is empty: " + id);
+    }
+    const auto& boundary = metadata.at("boundary");
+    require(boundary.type == benchmark::json::Value::Type::Object,
+            "V7 metadata boundary must be an object: " + id);
+    const auto* loop = boundary.find("loop");
+    require(loop && loop->type == benchmark::json::Value::Type::Boolean,
+            "V7 metadata boundary.loop must be boolean: " + id);
+    const auto& basis = boundary.at("basis").text();
+    require(basis.find_first_not_of(" \t\r\n") != std::string::npos,
+            "V7 metadata boundary.basis is empty: " + id);
+}
+
+int runV7Incremental(const std::filesystem::path& baselinePath,
+                     const std::filesystem::path& candidatesPath,
+                     const std::filesystem::path& metadataPath,
+                     const std::filesystem::path& approvedPath,
+                     const std::filesystem::path& proposalPath,
+                     const std::filesystem::path& experimentPath,
+                     const std::filesystem::path& baseHcaPath,
+                     const std::filesystem::path& mergedHcaPath,
+                     const std::filesystem::path& mediaDirectory) {
+    const auto baseline = library::loadFactory(baselinePath);
+    const auto proposal = library::loadFactory(proposalPath);
+    const auto experiment = library::loadFactory(experimentPath);
+    require(static_cast<bool>(baseline), "cannot load G5 baseline: " + baseline.error);
+    require(static_cast<bool>(proposal), "cannot load V7 proposal DB: " + proposal.error);
+    require(static_cast<bool>(experiment), "cannot load V7 experiment DB: " + experiment.error);
+    require(baseline.libraryVersion == 6 && baseline.storageSchemaVersion == 2 &&
+            baseline.templates.size() == 1016, "G5 baseline must be Factory V6 / Schema 2 / 1016");
+
+    const auto parsed = dev::parseTemplateJson(readText(candidatesPath), true);
+    require(static_cast<bool>(parsed), "cannot parse V7 candidates.json: " + parsed.error);
+    require(!parsed.templates.empty(), "V7 candidates.json is empty");
+    std::map<std::string, const ProgressionTemplate*> candidateById;
+    for (const auto& item : parsed.templates) {
+        require(item.version == 7 && item.sourceType == "factory" && item.full.size() >= 2,
+                "invalid V7 candidate identity or route: " + item.id);
+        require(candidateById.emplace(item.id, &item).second, "duplicate V7 candidate ID: " + item.id);
+    }
+    const auto approved = readApprovedIds(approvedPath);
+    const auto metadataRoot = benchmark::json::parse(readText(metadataPath));
+    require(metadataRoot.at("version").integer(7, 7) == 7 &&
+            metadataRoot.at("baseline").text() == "24bdc239",
+            "V7 metadata version/baseline");
+    std::map<std::string, const benchmark::json::Value*> metadataById;
+    std::set<std::string> approvedByMetadata;
+    for (const auto& row : metadataRoot.at("candidates").items()) {
+        const auto& id = row.at("id").text();
+        requireV7MetadataFields(row, id);
+        require(candidateById.contains(id), "metadata ID absent from V7 candidates: " + id);
+        require(metadataById.emplace(id, &row).second, "duplicate V7 metadata ID: " + id);
+        const auto& grade = row.at("grade").text();
+        require(grade == "A" || grade == "B" || grade == "C", "invalid V7 grade: " + id);
+        const auto& status = row.at("status").text();
+        const bool qualifiesForApproval = grade == "A" && status == "editorial-reviewed";
+        require(qualifiesForApproval || status == "pending",
+                "only grade-A editorial-reviewed V7 metadata may leave pending status: " + id);
+        require(row.at("adoptionStatus").text() == (qualifiesForApproval ? "approved" : "pending"),
+                "V7 adoptionStatus disagrees with grade/status: " + id);
+        if (qualifiesForApproval) approvedByMetadata.insert(id);
+    }
+    require(metadataById.size() == candidateById.size(),
+            "V7 candidates.json and metadata.json have different ID counts");
+    for (const auto& [id, candidate] : candidateById) {
+        (void)candidate;
+        require(metadataById.contains(id), "V7 candidate absent from metadata.json: " + id);
+    }
+    require(approved == approvedByMetadata,
+            "V7 approved-ids.txt differs from grade-A editorial-reviewed metadata IDs");
+
+    std::set<std::string> candidateIds;
+    for (const auto& [id, candidate] : candidateById) {
+        (void)candidate;
+        require(candidateIds.insert(id).second, "duplicate V7 candidate ID: " + id);
+    }
+    for (const auto& id : approved)
+        require(candidateIds.contains(id), "approved ID absent from V7 candidates.json: " + id);
+    requireV7Preserved(baseline, proposal, candidateIds, "V7 proposal");
+    requireV7Preserved(baseline, experiment, approved, "V7 experiment");
+
+    for (const auto& [id, source] : candidateById) {
+        const auto& proposalItem = find(proposal, id);
+        require(dev::serializeTemplateJson(*source) == dev::serializeTemplateJson(proposalItem),
+                "V7 proposal changed candidate payload: " + id);
+        const auto experimentItem = std::find_if(experiment.templates.begin(), experiment.templates.end(),
+            [&](const auto& item) { return item.id == id; });
+        if (approved.contains(id)) {
+            require(experimentItem != experiment.templates.end(), "approved V7 candidate missing from experiment: " + id);
+            require(dev::serializeTemplateJson(*source) == dev::serializeTemplateJson(*experimentItem),
+                    "V7 experiment changed approved candidate payload: " + id);
+        } else {
+            require(experimentItem == experiment.templates.end(), "pending V7 candidate entered experiment: " + id);
+        }
+    }
+
+    const auto baseHcaText = readText(baseHcaPath);
+    const auto mergedHcaText = readText(mergedHcaPath);
+    require(baseHcaText.starts_with("HC_MODE_ANNOTATIONS 1\n") &&
+            mergedHcaText.starts_with("HC_MODE_ANNOTATIONS 1\n"), "G5/V7 HCAFormat1 header");
+    require(mergedHcaText.starts_with(baseHcaText), "V7 HCA changed the exact G5 byte prefix");
+    const auto baseHca = wish::parseAnnotations(baseHcaText);
+    const auto mergedHca = wish::parseAnnotations(mergedHcaText);
+    require(static_cast<bool>(baseHca), "cannot parse G5 HCA: " + baseHca.error);
+    require(static_cast<bool>(mergedHca), "cannot parse V7 HCA: " + mergedHca.error);
+    require(baseHca.catalog.entries.size() == baseline.templates.size(),
+            "G5 HCA does not contain one record per frozen V6 source");
+    const auto baselineById = [&] {
+        std::map<std::string, const ProgressionTemplate*> result;
+        for (const auto& item : baseline.templates) result.emplace(item.id, &item);
+        return result;
+    }();
+    for (const auto& entry : baseHca.catalog.entries) {
+        const auto source = baselineById.find(entry.templateId);
+        require(source != baselineById.end(), "G5 HCA ID is absent from frozen V6 rows: " + entry.templateId);
+        require(entry.sourceFingerprint == wish::sourceFingerprint(*source->second),
+                "G5 HCA binding differs from frozen V6 row: " + entry.templateId);
+        const auto* mergedEntry = findAnnotation(mergedHca.catalog, entry.templateId);
+        require(mergedEntry && wish::serializeAnnotations({1, {*mergedEntry}}) ==
+                wish::serializeAnnotations({1, {entry}}),
+                "V7 HCA changed frozen G5 annotation record: " + entry.templateId);
+    }
+
+    std::size_t expectedNewAnnotationRows{};
+    for (const auto& [id, row] : metadataById) {
+        const auto& source = *candidateById.at(id);
+        wish::ModeAnnotation expected;
+        expected.templateId = id;
+        expected.sourceFingerprint = wish::sourceFingerprint(source);
+        for (const auto& raw : row->at("memberships").items()) {
+            wish::ModeMembership membership;
+            membership.tonicOffset = raw.at("tonicOffset").integer(0, 11);
+            const auto mode = wish::parseMode(raw.at("mode").text());
+            require(mode.has_value(), "unsupported V7 membership mode: " + id);
+            membership.mode = *mode;
+            const auto& usage = raw.at("usage").text();
+            if (usage == "high") membership.usage = wish::EditorialUsage::High;
+            else if (usage == "medium") membership.usage = wish::EditorialUsage::Medium;
+            else if (usage == "low") membership.usage = wish::EditorialUsage::Low;
+            else if (usage == "unrated") membership.usage = wish::EditorialUsage::Unrated;
+            else throw std::runtime_error("unknown V7 membership usage: " + id);
+            membership.usageBasis = raw.at("usageBasis").text();
+            membership.musicalEvidence = raw.at("musicalEvidence").text();
+            const auto& review = raw.at("review").text();
+            if (review == "pending") membership.review = wish::ReviewStatus::Pending;
+            else if (review == "reviewed") membership.review = wish::ReviewStatus::Reviewed;
+            else if (review == "unconfirmed") membership.review = wish::ReviewStatus::Unconfirmed;
+            else throw std::runtime_error("unknown V7 membership review: " + id);
+            membership.reviewer = raw.at("reviewer").text();
+            membership.melodicContext = raw.at("melodicContext").text();
+            std::string validationError;
+            require(wish::validMembership(membership, validationError),
+                    "invalid V7 membership " + id + ": " + validationError);
+            expected.memberships.push_back(std::move(membership));
+        }
+        const auto* actual = findAnnotation(mergedHca.catalog, id);
+        if (expected.memberships.empty()) {
+            require(actual == nullptr, "V7 HCA invented a membership for " + id);
+        } else {
+            ++expectedNewAnnotationRows;
+            require(actual && wish::serializeAnnotations({1, {*actual}}) ==
+                    wish::serializeAnnotations({1, {expected}}),
+                    "V7 HCA membership differs from metadata: " + id);
+            const auto resolution = wish::resolveAnnotations(source, mergedHca.catalog);
+            require(resolution.state != wish::AnnotationState::Invalid &&
+                    resolution.state != wish::AnnotationState::SourceMismatch,
+                    "V7 HCA does not bind to candidate source: " + id);
+        }
+    }
+    require(mergedHca.catalog.entries.size() == baseHca.catalog.entries.size() + expectedNewAnnotationRows,
+            "V7 HCA record count differs from exact base plus annotated candidate rows");
+
+    std::set<std::string> baselineFullIdentities;
+    std::set<std::string> baselineRhythmlessIdentities;
+    std::map<std::string, std::vector<std::string>> baselineCoreSources;
+    for (const auto& source : baseline.templates) {
+        const auto route = preview::buildTemplateSequence(
+            source, {PitchClass::C, source.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot realize frozen G5 identity source: " + source.id);
+        baselineFullIdentities.insert(library::canonicalMusicalFingerprint(source));
+        baselineRhythmlessIdentities.insert(rhythmlessPerformanceIdentity(route.sequence));
+        const auto coreIdentity = wishCoreFamilyIdentity(route.sequence);
+        baselineCoreSources[coreIdentity].push_back(source.id);
+    }
+    std::set<std::string> approvedFullIdentities;
+    std::set<std::string> approvedRhythmlessIdentities;
+    auto allFullIdentities = baselineFullIdentities;
+    auto allRhythmlessIdentities = baselineRhythmlessIdentities;
+    std::size_t pendingFullIdentityDuplicates{};
+    std::size_t pendingRhythmlessDuplicates{};
+    std::map<std::string, std::vector<std::string>> candidateCoreSources;
+    std::map<std::string, std::string> candidateCoreById;
+    for (const auto& [id, source] : candidateById) {
+        const auto route = preview::buildTemplateSequence(
+            *source, {PitchClass::C, source->mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot realize V7 identity source: " + id);
+        const auto fullIdentity = library::canonicalMusicalFingerprint(*source);
+        const auto rhythmlessIdentity = rhythmlessPerformanceIdentity(route.sequence);
+        const auto coreIdentity = wishCoreFamilyIdentity(route.sequence);
+        const bool newFullIdentity = allFullIdentities.insert(fullIdentity).second;
+        const bool newRhythmlessIdentity = allRhythmlessIdentities.insert(rhythmlessIdentity).second;
+        candidateCoreSources[coreIdentity].push_back(id);
+        candidateCoreById.emplace(id, coreIdentity);
+        if (approved.contains(id)) {
+            require(approvedFullIdentities.insert(fullIdentity).second &&
+                    !baselineFullIdentities.contains(fullIdentity),
+                    "approved V7 candidate duplicates a normalized complete identity: " + id);
+            require(approvedRhythmlessIdentities.insert(rhythmlessIdentity).second &&
+                    !baselineRhythmlessIdentities.contains(rhythmlessIdentity),
+                    "approved V7 candidate duplicates a normalized rhythmless whole-progression identity: " + id);
+        } else {
+            if (!newFullIdentity) ++pendingFullIdentityDuplicates;
+            if (!newRhythmlessIdentity) ++pendingRhythmlessDuplicates;
+        }
+    }
+    std::filesystem::create_directories(mediaDirectory);
+    const auto coreNeighborPath = mediaDirectory / "v7-core-neighbors.tsv";
+    std::ofstream coreNeighborReport(coreNeighborPath, std::ios::binary);
+    require(static_cast<bool>(coreNeighborReport), "cannot write V7 core-neighbor report");
+    coreNeighborReport << "v7_id\tneighbor_scope\tneighbor_id\n";
+    std::size_t coreNeighborRows{};
+    for (const auto& [id, coreIdentity] : candidateCoreById) {
+        if (const auto baselineNeighbors = baselineCoreSources.find(coreIdentity);
+            baselineNeighbors != baselineCoreSources.end()) {
+            for (const auto& neighbor : baselineNeighbors->second) {
+                coreNeighborReport << id << "\tG5\t" << neighbor << '\n';
+                ++coreNeighborRows;
+            }
+        }
+        const auto candidateNeighbors = candidateCoreSources.find(coreIdentity);
+        if (candidateNeighbors != candidateCoreSources.end() && candidateNeighbors->second.size() > 1) {
+            for (const auto& neighbor : candidateNeighbors->second) {
+                if (neighbor == id) continue;
+                coreNeighborReport << id << "\tV7\t" << neighbor << '\n';
+                ++coreNeighborRows;
+            }
+        }
+    }
+    require(static_cast<bool>(coreNeighborReport), "cannot finish V7 core-neighbor report");
+    std::cout << "v7_identity approved_normalized_complete=" << approvedFullIdentities.size()
+              << " approved_rhythmless_whole=" << approvedRhythmlessIdentities.size()
+              << " pending_duplicate_complete=" << pendingFullIdentityDuplicates
+              << " pending_duplicate_rhythmless=" << pendingRhythmlessDuplicates
+              << " core_neighbor_rows=" << coreNeighborRows
+              << " core_neighbors=" << coreNeighborPath.string()
+              << " compared_with_g5=" << baseline.templates.size() << " PASS\n";
+
+    const auto approvedSource = [&](std::string_view id) -> const ProgressionTemplate& {
+        require(approved.contains(std::string(id)),
+                "representative ID is not approved: " + std::string(id));
+        const auto found = candidateById.find(std::string(id));
+        require(found != candidateById.end(),
+                "representative ID is absent from V7 candidates: " + std::string(id));
+        return *found->second;
+    };
+    struct QuerySpec {
+        const char* id;
+        std::optional<PhraseIntent> expectedIntent;
+        std::size_t prefix;
+    };
+    const std::array querySpecs{
+        QuerySpec{"V7_01_001", PhraseIntent::Develop, 3},
+        QuerySpec{"V7_01_010", PhraseIntent::Loop, 3},
+        QuerySpec{"V7_04_023", PhraseIntent::Color, 4},
+        QuerySpec{"V7_01_091", PhraseIntent::Resolve, 5},
+        QuerySpec{"V7_04_052", std::nullopt, 3},
+        QuerySpec{"V7_03_008", std::nullopt, 8}
+    };
+    std::vector<const ProgressionTemplate*> querySources;
+    std::vector<std::size_t> queryPrefixes;
+    querySources.reserve(querySpecs.size());
+    queryPrefixes.reserve(querySpecs.size());
+    for (const auto& spec : querySpecs) {
+        const auto& source = approvedSource(spec.id);
+        require(spec.prefix > 0 && spec.prefix < source.full.size(),
+                "representative prefix is not legal for source: " + source.id);
+        if (spec.expectedIntent)
+            require(source.intent == *spec.expectedIntent,
+                    "representative source intent changed: " + source.id);
+        querySources.push_back(&source);
+        queryPrefixes.push_back(spec.prefix);
+    }
+    const CandidateIndex index(experiment.templates);
+    const auto recommendationPath = mediaDirectory / "v7-recommendations.tsv";
+    std::ofstream recommendationReport(recommendationPath, std::ios::binary);
+    require(static_cast<bool>(recommendationReport), "cannot write V7 recommendation report");
+    recommendationReport << "query_id\tintent\tkey\tprefix\tgroup\trank\tcandidate_id\tprimary_source"
+                            "\tsupporting_sources\tbase_qualified\thard_constraints_passed\tranking_score"
+                            "\ttop_3_in_group\ttop_10_in_group\n";
+    for (std::size_t queryIndex = 0; queryIndex < querySources.size(); ++queryIndex) {
+        const auto* source = querySources[queryIndex];
+        const auto prefix = queryPrefixes[queryIndex];
+        const auto query = queryFor(*source, {PitchClass::C, source->mode}, prefix);
+        RecommendationRequest request;
+        request.preferredIntent = source->intent;
+        auto weights = recommendationWeights();
+        weights.perGroup = 0;
+        const auto results = recommendContinuations(query, index, request, weights);
+        require(results.stats.shortlistSize == experiment.templates.size(),
+                "V7 representative recommendation did not scan the complete experiment index");
+        std::size_t fullListEntries{};
+        std::vector<std::vector<std::string>> top3ByGroup(results.groups.size());
+        std::vector<std::vector<std::string>> topByGroup(results.groups.size());
+        for (std::size_t group = 0; group < results.groups.size(); ++group) {
+            for (std::size_t position = 0; position < results.groups[group].size(); ++position) {
+                const auto& item = results.groups[group][position];
+                const auto rank = position + 1;
+                require(item.baseQualified && item.hardConstraintsPassed,
+                        "V7 recommendation violated a hard eligibility constraint: " + item.id);
+                std::string supporting;
+                for (const auto& supportingId : item.supportingTemplates) {
+                    if (!supporting.empty()) supporting += ',';
+                    supporting += supportingId;
+                }
+                const bool top3 = rank <= 3;
+                const bool top10 = rank <= 10;
+                recommendationReport << source->id << '\t' << intentName(source->intent) << "\tC\t"
+                    << prefix << '\t' << groupName(group) << '\t' << rank << '\t' << item.id << '\t'
+                    << item.primaryTemplate << '\t' << supporting << '\t' << item.baseQualified << '\t'
+                    << item.hardConstraintsPassed << '\t' << item.rankingScore << '\t'
+                    << (top3 ? "yes" : "no") << '\t' << (top10 ? "yes" : "no")
+                    << '\n';
+                if (top3) top3ByGroup[group].push_back(std::to_string(rank) + ":" + item.id);
+                if (top10) topByGroup[group].push_back(std::to_string(rank) + ":" + item.id);
+                ++fullListEntries;
+            }
+        }
+        require(fullListEntries > 0, "V7 representative query returned no ranked candidates: " + source->id);
+        const auto* own = findCandidate(results, source->id);
+        const auto ownRank = own ? groupRank(results, own->id) : std::nullopt;
+        std::cout << "v7_query id=" << source->id << " intent=" << intentName(source->intent)
+                  << " key=C prefix=" << prefix << " source_self_rank=";
+        if (ownRank) std::cout << groupName(ownRank->first) << ':' << ownRank->second;
+        else std::cout << "absent";
+        const auto writeGroups = [](const std::vector<std::vector<std::string>>& groups) {
+            bool firstGroup = true;
+            for (std::size_t group = 0; group < groups.size(); ++group) {
+                if (groups[group].empty()) continue;
+                if (!firstGroup) std::cout << ';';
+                firstGroup = false;
+                std::cout << groupName(group) << '{';
+                for (std::size_t i = 0; i < groups[group].size(); ++i) {
+                    if (i) std::cout << ',';
+                    std::cout << groups[group][i];
+                }
+                std::cout << '}';
+            }
+        };
+        std::cout << " full_list_entries=" << fullListEntries << " full_scan=yes hard_rules=PASS top3=";
+        writeGroups(top3ByGroup);
+        std::cout << " top10=";
+        writeGroups(topByGroup);
+        std::cout << '\n';
+    }
+    require(static_cast<bool>(recommendationReport), "cannot finish V7 recommendation report");
+    std::cout << "v7_full_lists=" << recommendationPath.string() << '\n';
+
+    const std::array<std::string_view, 4> mediaIds{
+        "V7_05_001", "V7_04_023", "V7_04_052", "V7_03_008"
+    };
+    std::ofstream mediaIndex(mediaDirectory / "v7-media-index.tsv", std::ios::binary);
+    require(static_cast<bool>(mediaIndex), "cannot write V7 media index");
+    mediaIndex << "id\tfull_midi\tfull_preview_wav\n";
+    for (const auto& id : mediaIds) {
+        const std::string idString{id};
+        const auto& source = approvedSource(id);
+        const auto route = preview::buildTemplateSequence(
+            source, {PitchClass::C, source.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot build complete V7 sample route: " + idString);
+        verifyMidiRoundTrip(route.sequence);
+        const auto clip = midi::buildClip(route.sequence, midi::ArrangementMode::VoiceLed,
+                                          midi::ExportScope::FullPhrase, {});
+        require(static_cast<bool>(clip), "cannot build complete V7 sample MIDI: " + idString);
+        const auto midiBytes = midi::writeToMemory(clip.sequence);
+        require(midiBytes && midiBytes.bytes.size() > 14,
+                "cannot serialize complete V7 sample MIDI: " + idString);
+        const auto midiPath = mediaDirectory / (idString + "-complete.mid");
+        std::ofstream midiOut(midiPath, std::ios::binary);
+        require(static_cast<bool>(midiOut), "cannot write complete V7 MIDI: " + idString);
+        midiOut.write(reinterpret_cast<const char*>(midiBytes.bytes.data()),
+                      static_cast<std::streamsize>(midiBytes.bytes.size()));
+        require(static_cast<bool>(midiOut), "cannot finish complete V7 MIDI: " + idString);
+        const auto audio = preview::renderOffline(route.sequence, 48000.0);
+        require(!audio.left.empty() && audio.left.size() == audio.right.size() && audio.rms > 0,
+                "complete V7 Preview is silent: " + idString);
+        std::string wavError;
+        const auto wavPath = mediaDirectory / (idString + "-preview.wav");
+        require(preview::writeWav16(audio, wavPath, wavError),
+                "cannot write complete V7 Preview: " + wavError);
+        mediaIndex << idString << '\t' << midiPath.filename().string() << '\t'
+                   << wavPath.filename().string() << '\n';
+        std::cout << "v7_sample id=" << idString << " full_midi=PASS full_preview=PASS"
+                  << " midi_bytes=" << midiBytes.bytes.size() << " wav_frames=" << audio.left.size()
+                  << " rms=" << audio.rms << '\n';
+    }
+    require(static_cast<bool>(mediaIndex), "cannot finish V7 media index");
+
+    const auto& wishSource = approvedSource("V7_01_022");
+    const auto& wishMemberships = metadataById.at(wishSource.id)->at("memberships").items();
+    require(std::any_of(wishMemberships.begin(), wishMemberships.end(),
+        [](const auto& membership) { return membership.at("review").text() == "reviewed"; }),
+        "V7_01_022 does not have a reviewed membership for Wish verification");
+    wish::WishFilter freeFilter;
+    freeFilter.fixedTonic = PitchClass::C;
+    auto freePool = wish::makeFreePool(experiment.templates, mergedHca.catalog, freeFilter);
+    require(static_cast<bool>(freePool), "V7 free Wish pool: " + freePool.error);
+    require(freePool.sourceMismatches == 0 && freePool.invalidSources == 0 && freePool.invalidAnnotations == 0,
+            "V7 free Wish pool reported source or annotation integrity errors");
+    std::erase_if(freePool.items, [&](const auto& item) {
+        return item.match.has_value() || std::none_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == wishSource.id; });
+    });
+    require(!freePool.items.empty(), "V7 free Wish omitted its selected approved source");
+    wish::WishRound freeRound(std::move(freePool), 8701);
+    const auto freeItems = freeRound.draw(1);
+    require(freeItems.size() == 1 && !freeItems.front().match &&
+            std::any_of(freeItems.front().sources.begin(), freeItems.front().sources.end(),
+                [&](const auto& source) { return source.id == wishSource.id; }),
+            "V7 free Wish hard rules or source identity changed");
+
+    const KeySignature inputKey{PitchClass::C, wishSource.mode};
+    const auto inputPrefix = wishSource.full.size() > 2 ? wishSource.full.size() - 1 : std::size_t{1};
+    wish::WishInput input;
+    require(input.imported.replace(makePrefix(wishSource, inputKey, inputPrefix),
+                                   TimelineCoordinateMode::RelativeToSelection),
+            "V7 input Wish prefix construction");
+    input.analysis.forcedKey = inputKey;
+    auto inputPool = wish::makeInputPool(experiment.templates, mergedHca.catalog, input);
+    require(static_cast<bool>(inputPool), "V7 input Wish pool: " + inputPool.error);
+    require(inputPool.sourceMismatches == 0 && inputPool.invalidSources == 0 &&
+            inputPool.invalidAnnotations == 0,
+            "V7 input Wish pool reported source or annotation integrity errors");
+    const auto inputItem = std::find_if(inputPool.items.begin(), inputPool.items.end(), [&](const auto& item) {
+        return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == wishSource.id; });
+    });
+    require(inputItem != inputPool.items.end(), "V7 input Wish lost the exact approved source");
+    std::cout << "v7_wish free=PASS input=PASS source=" << wishSource.id
+              << " free_pool=" << freeRound.remaining() + freeItems.size()
+              << " input_pool=" << inputPool.items.size() << '\n';
+
+    const auto& enrichSource = approvedSource("V7_01_022");
+    const KeySignature enrichKey{PitchClass::C, enrichSource.mode};
+    const auto enrichRoute = preview::templateRoute(enrichSource, enrichKey);
+    require(static_cast<bool>(enrichRoute), "cannot build V7_01_022 Enrich source route");
+    AnalysisContext enrichContext;
+    enrichContext.forcedKey = enrichKey;
+    const auto enrichAnalysis = analyzeHarmony(enrichRoute.imported.events, enrichContext);
+    const auto enrichment = enrichment::enrichProgression(enrichRoute.imported.events, enrichAnalysis);
+    require(enrichment.error.empty(), "V7_01_022 Enrich API: " + enrichment.error);
+    const auto enrichCandidates = std::accumulate(enrichment.groups.begin(), enrichment.groups.end(),
+        std::size_t{}, [](std::size_t sum, const auto& group) { return sum + group.size(); });
+    std::cout << "v7_enrich id=" << enrichSource.id << " api=PASS candidates=" << enrichCandidates
+              << " input_events=" << enrichRoute.imported.events.size() << '\n';
+
+    const auto timingPrefix = queryPrefixes.front();
+    const auto timingQuery = queryFor(*querySources.front(),
+        {PitchClass::C, querySources.front()->mode}, timingPrefix);
+    RecommendationRequest timingRequest;
+    timingRequest.preferredIntent = querySources.front()->intent;
+    auto timingWeights = recommendationWeights();
+    timingWeights.perGroup = 0;
+    const auto started = Clock::now();
+    const auto timingResults = recommendContinuations(timingQuery, index, timingRequest, timingWeights);
+    const auto elapsedMs = std::chrono::duration<double, std::milli>(Clock::now() - started).count();
+    require(timingResults.stats.shortlistSize == experiment.templates.size(),
+            "final V7 timing query did not scan the complete experiment index");
+    std::cout << "v7_final_scale_timing id=" << querySources.front()->id
+              << " prefix=" << timingPrefix << " pool=" << experiment.templates.size()
+              << " scope=single_full_scan full_scan=yes elapsed_ms=" << elapsedMs << '\n';
+
+    std::cout << "Factory V7 incremental PASS baseline=1016 candidates=" << candidateIds.size()
+              << " approved=" << approved.size() << " proposal=" << proposal.templates.size()
+              << " experiment=" << experiment.templates.size()
+              << " queries=" << querySources.size() << " media_samples=" << mediaIds.size()
+              << " baseline_HCA_prefix=exact approved_complete_rhythmless=PASS"
+              << " core_neighbors=reported\n";
+    return 0;
+}
+
 std::size_t boundReviewedSourceCount(const std::vector<ProgressionTemplate>& sources,
                                     const wish::AnnotationCatalog& catalog,
                                     wish::MusicalMode mode) {
@@ -2407,6 +2929,18 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--v7-incremental") {
+        try {
+            require(argc == 11,
+                    "usage: FactoryV6Tests --v7-incremental g5.db candidates.json metadata.json "
+                    "approved-ids.txt proposal.db experiment.db g5.hca merged-v7.hca media-dir");
+            return runV7Incremental(argv[2], argv[3], argv[4], argv[5], argv[6], argv[7],
+                                    argv[8], argv[9], argv[10]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V7 incremental verification FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--empty-mode-check") {
         try {
             require(argc == 5,

@@ -56,17 +56,19 @@ std::string readText(const std::filesystem::path& path) {
     return {std::istreambuf_iterator<char>{file}, {}};
 }
 
-std::vector<ProgressionTemplate> readCandidates(const std::filesystem::path& path) {
+std::vector<ProgressionTemplate> readCandidates(const std::filesystem::path& path,
+                                               int expectedVersion = 6) {
     const auto parsed = dev::parseTemplateJson(readText(path), true);
     require(static_cast<bool>(parsed), path.string() + ": " + parsed.error);
-    require(!parsed.templates.empty(), "V6 candidates are empty");
+    require(!parsed.templates.empty(), "factory candidates are empty");
     std::vector<ProgressionTemplate> result = parsed.templates;
     for (const auto& item : result) {
         require(item.sourceType == "factory", "factory sourceType required: " + item.id);
-        require(item.version == 6, "V6 candidate version required: " + item.id);
-        require(item.full.size() >= 2, "V6 candidate needs at least two chords: " + item.id);
+        require(item.version == expectedVersion,
+                "candidate version " + std::to_string(expectedVersion) + " required: " + item.id);
+        require(item.full.size() >= 2, "candidate needs at least two chords: " + item.id);
         require(!item.nameZh.empty() && !item.nameEn.empty() && !item.aliases.empty() &&
-                !item.builtInTags.empty(), "V6 display metadata missing: " + item.id);
+                !item.builtInTags.empty(), "candidate display metadata missing: " + item.id);
     }
     std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.id < b.id; });
     return result;
@@ -89,6 +91,45 @@ wish::ReviewStatus readReview(std::string_view value) {
     if (value == "reviewed") return wish::ReviewStatus::Reviewed;
     if (value == "unconfirmed") return wish::ReviewStatus::Unconfirmed;
     throw std::runtime_error("unknown membership review status: " + std::string(value));
+}
+
+wish::ModeMembership readMembership(const JsonValue& rawMembership,
+                                    const std::string& id,
+                                    std::string_view context) {
+    wish::ModeMembership membership;
+    membership.tonicOffset = rawMembership.at("tonicOffset").integer(0, 11);
+    const auto mode = wish::parseMode(jsonText(rawMembership, "mode"));
+    require(mode.has_value(), "unsupported mode token for " + id + ": " +
+            jsonText(rawMembership, "mode"));
+    membership.mode = *mode;
+    membership.usage = readUsage(jsonText(rawMembership, "usage"));
+    membership.usageBasis = jsonText(rawMembership, "usageBasis");
+    membership.musicalEvidence = jsonText(rawMembership, "musicalEvidence");
+    membership.review = readReview(jsonText(rawMembership, "review"));
+    membership.reviewer = jsonText(rawMembership, "reviewer");
+    membership.melodicContext = jsonText(rawMembership, "melodicContext");
+    std::string validationError;
+    require(wish::validMembership(membership, validationError),
+            std::string(context) + " invalid membership for " + id + ": " + validationError);
+    return membership;
+}
+
+void requireV7MetadataFields(const JsonValue& metadata, const std::string& id) {
+    require(!id.empty(), "V7 metadata candidate ID is empty");
+    for (const auto key : {"source", "support", "ending"}) {
+        const auto& value = jsonText(metadata, key);
+        require(value.find_first_not_of(" \t\r\n") != std::string::npos,
+                std::string("V7 metadata ") + key + " is empty: " + id);
+    }
+    const auto& boundary = metadata.at("boundary");
+    require(boundary.type == JsonValue::Type::Object,
+            "V7 metadata boundary must be an object: " + id);
+    const auto* loop = boundary.find("loop");
+    require(loop && loop->type == JsonValue::Type::Boolean,
+            "V7 metadata boundary.loop must be boolean: " + id);
+    const auto& basis = jsonText(boundary, "basis");
+    require(basis.find_first_not_of(" \t\r\n") != std::string::npos,
+            "V7 metadata boundary.basis is empty: " + id);
 }
 
 wish::AnnotationCatalog readCandidateAnnotations(
@@ -163,22 +204,7 @@ wish::AnnotationCatalog readCandidateAnnotations(
             require(grade == "C" && adoptionStatus == "pending",
                     "original no-membership candidate must remain grade C and unadopted: " + id);
         for (const auto& rawMembership : memberships) {
-            wish::ModeMembership membership;
-            membership.tonicOffset = rawMembership.at("tonicOffset").integer(0, 11);
-            const auto mode = wish::parseMode(jsonText(rawMembership, "mode"));
-            require(mode.has_value(), "unsupported mode token for " + id + ": " +
-                    jsonText(rawMembership, "mode"));
-            membership.mode = *mode;
-            membership.usage = readUsage(jsonText(rawMembership, "usage"));
-            membership.usageBasis = jsonText(rawMembership, "usageBasis");
-            membership.musicalEvidence = jsonText(rawMembership, "musicalEvidence");
-            membership.review = readReview(jsonText(rawMembership, "review"));
-            membership.reviewer = jsonText(rawMembership, "reviewer");
-            membership.melodicContext = jsonText(rawMembership, "melodicContext");
-            std::string validationError;
-            require(wish::validMembership(membership, validationError),
-                    "invalid metadata membership for " + id + ": " + validationError);
-            entry.memberships.push_back(std::move(membership));
+            entry.memberships.push_back(readMembership(rawMembership, id, "metadata"));
         }
         if (!entry.memberships.empty()) result.entries.push_back(std::move(entry));
     }
@@ -196,6 +222,53 @@ wish::AnnotationCatalog readCandidateAnnotations(
             "approved-ids.txt must exactly equal grade-A editorial-reviewed metadata IDs");
     require(pendingIds.size() + reviewedIds.size() == candidateById.size(),
             "metadata admission status set does not cover candidates");
+    return result;
+}
+
+wish::AnnotationCatalog readV7CandidateAnnotations(
+    const std::filesystem::path& metadataPath,
+    const std::vector<ProgressionTemplate>& candidates,
+    const std::set<std::string>& approved) {
+    const auto root = benchmark::json::parse(readText(metadataPath));
+    require(root.at("version").integer(7, 7) == 7, "metadata version must be 7");
+    require(jsonText(root, "baseline") == "24bdc239",
+            "metadata baseline must identify 24bdc239");
+    const auto candidateById = toMap(candidates);
+    wish::AnnotationCatalog result;
+    std::set<std::string> metadataIds;
+    std::set<std::string> approvedByMetadata;
+    for (const auto& metadata : root.at("candidates").items()) {
+        const auto& id = jsonText(metadata, "id");
+        requireV7MetadataFields(metadata, id);
+        require(metadataIds.insert(id).second, "duplicate metadata candidate ID: " + id);
+        require(candidateById.contains(id), "metadata ID is absent from candidates.json: " + id);
+        const auto& grade = jsonText(metadata, "grade");
+        require(grade == "A" || grade == "B" || grade == "C",
+                "unknown candidate grade for " + id + ": " + grade);
+        const auto& status = jsonText(metadata, "status");
+        const bool qualifiesForApproval = grade == "A" && status == "editorial-reviewed";
+        require(qualifiesForApproval || status == "pending",
+                "only grade-A editorial-reviewed metadata may leave pending status: " + id);
+        const auto& adoptionStatus = jsonText(metadata, "adoptionStatus");
+        require(adoptionStatus == (qualifiesForApproval ? "approved" : "pending"),
+                "adoptionStatus disagrees with grade/editorial status for " + id);
+        if (qualifiesForApproval) approvedByMetadata.insert(id);
+
+        wish::ModeAnnotation entry;
+        entry.templateId = id;
+        entry.sourceFingerprint = wish::sourceFingerprint(candidateById.at(id));
+        for (const auto& rawMembership : metadata.at("memberships").items())
+            entry.memberships.push_back(readMembership(rawMembership, id, "V7 metadata"));
+        if (!entry.memberships.empty()) result.entries.push_back(std::move(entry));
+    }
+    require(metadataIds.size() == candidateById.size(),
+            "metadata candidate set size differs from candidates.json");
+    for (const auto& [id, item] : candidateById) {
+        (void)item;
+        require(metadataIds.contains(id), "candidate is absent from metadata.json: " + id);
+    }
+    require(approvedByMetadata == approved,
+            "approved-ids.txt must exactly equal grade-A editorial-reviewed metadata IDs");
     return result;
 }
 
@@ -329,11 +402,14 @@ EntriesById toMap(const std::vector<ProgressionTemplate>& entries) {
 
 void verifyRoundTrip(const std::filesystem::path& path,
                      const std::vector<ProgressionTemplate>& expected,
-                     const std::vector<ProgressionTemplate>& baseline) {
+                     const std::vector<ProgressionTemplate>& baseline,
+                     int expectedLibraryVersion = 6,
+                     std::string_view baselineName = "V5",
+                     std::string_view outputName = "V6") {
     const auto loaded = library::loadFactory(path);
     require(static_cast<bool>(loaded), "database readback failed: " + loaded.error);
-    require(loaded.libraryVersion == 6 && loaded.storageSchemaVersion == 2,
-            "V6 Library 6 / Schema 2 contract");
+    require(loaded.libraryVersion == expectedLibraryVersion && loaded.storageSchemaVersion == 2,
+            std::string(outputName) + " Library / Schema 2 contract");
     require(loaded.templates.size() == expected.size(), "database readback count mismatch");
     const auto expectedById = toMap(expected);
     const auto loadedById = toMap(loaded.templates);
@@ -349,12 +425,13 @@ void verifyRoundTrip(const std::filesystem::path& path,
     }
     for (const auto& old : baseline) {
         const auto found = loadedById.find(old.id);
-        require(found != loadedById.end(), "V5 content ID missing from V6: " + old.id);
+        require(found != loadedById.end(), std::string(baselineName) + " content ID missing from " +
+                std::string(outputName) + ": " + old.id);
         require(library::canonicalMusicalFingerprint(old) ==
                 library::canonicalMusicalFingerprint(found->second),
-                "V5 musical fingerprint changed: " + old.id);
+                std::string(baselineName) + " musical fingerprint changed: " + old.id);
         require(dev::serializeTemplateJson(old) == dev::serializeTemplateJson(found->second),
-                "V5 payload changed: " + old.id);
+                std::string(baselineName) + " payload changed: " + old.id);
     }
 }
 
@@ -391,18 +468,54 @@ void writeSummary(const std::filesystem::path& path, std::size_t baselineCount,
     require(static_cast<bool>(out), "cannot finish writing " + path.string());
 }
 
+void writeV7Summary(const std::filesystem::path& path,
+                    std::size_t baselineCount,
+                    std::size_t candidateCount,
+                    const std::set<std::string>& approved,
+                    const wish::AnnotationCatalog& annotations,
+                    std::size_t baselineAnnotationEntries) {
+    std::ofstream out(path, std::ios::binary);
+    require(static_cast<bool>(out), "cannot write " + path.string());
+    out << "Factory V7 isolated increment compiler\n"
+        << "library_version=7\n"
+        << "storage_schema_version=2\n"
+        << "baseline_library_version=6\n"
+        << "baseline_schema_version=2\n"
+        << "baseline_entries=" << baselineCount << '\n'
+        << "proposal_entries=" << baselineCount + candidateCount << '\n'
+        << "proposal_candidates=" << candidateCount << '\n'
+        << "experiment_entries=" << baselineCount + approved.size() << '\n'
+        << "approved_candidate_ids=" << approved.size() << '\n'
+        << "pending_candidate_ids=" << candidateCount - approved.size() << '\n'
+        << "baseline_annotation_source_ids=" << baselineAnnotationEntries << '\n'
+        << "v7_annotation_source_ids=" << annotations.entries.size() << '\n'
+        << "v7_annotation_memberships=" << std::accumulate(annotations.entries.begin(), annotations.entries.end(),
+            std::size_t{}, [](std::size_t count, const auto& entry) { return count + entry.memberships.size(); }) << '\n'
+        << "proposal_db=isolated review only\n"
+        << "experiment_db=explicit approved-ids.txt only\n"
+        << "production_plugin_and_installer=not built\n"
+        << "baseline_commit=24bdc239\n"
+        << "\napproved IDs\n";
+    for (const auto& id : approved) out << id << '\n';
+    require(static_cast<bool>(out), "cannot finish writing " + path.string());
+}
+
 std::string readAnnotationPrefix(const std::filesystem::path& path,
-                                const std::vector<ProgressionTemplate>& baseline) {
+                                const std::vector<ProgressionTemplate>& baseline,
+                                std::string_view baselineName = "V5") {
     const auto originalText = readText(path);
     const auto original = wish::parseAnnotations(originalText);
-    require(static_cast<bool>(original), "cannot parse V5 HCA: " + original.error);
-    require(originalText.ends_with('\n'), "V5 HCA must end with a newline before append");
+    require(static_cast<bool>(original), "cannot parse " + std::string(baselineName) +
+            " HCA: " + original.error);
+    require(originalText.ends_with('\n'), std::string(baselineName) +
+            " HCA must end with a newline before append");
     const auto byId = toMap(baseline);
     for (const auto& entry : original.catalog.entries) {
         const auto found = byId.find(entry.templateId);
-        require(found != byId.end(), "V5 HCA contains an ID absent from the V5 library: " + entry.templateId);
+        require(found != byId.end(), std::string(baselineName) +
+                " HCA contains an ID absent from the baseline library: " + entry.templateId);
         require(entry.sourceFingerprint == wish::sourceFingerprint(found->second),
-                "V5 HCA source fingerprint mismatch: " + entry.templateId);
+                std::string(baselineName) + " HCA source fingerprint mismatch: " + entry.templateId);
     }
     return originalText;
 }
@@ -411,8 +524,10 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
                             const std::filesystem::path& basePath,
                             const std::vector<ProgressionTemplate>& baseline,
                             const std::vector<ProgressionTemplate>& candidates,
-                            const wish::AnnotationCatalog& additions) {
-    const auto originalText = readAnnotationPrefix(basePath, baseline);
+                            const wish::AnnotationCatalog& additions,
+                            std::string_view baselineName = "V5",
+                            std::string_view candidateName = "V6") {
+    const auto originalText = readAnnotationPrefix(basePath, baseline, baselineName);
     const std::string header = "HC_MODE_ANNOTATIONS 1\n";
     const auto rows = wish::serializeAnnotations(additions);
     require(rows.starts_with(header), "internal HCA serializer header mismatch");
@@ -427,12 +542,15 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
     for (const auto& entry : additions.entries) {
         const auto found = std::find_if(parsed.catalog.entries.begin(), parsed.catalog.entries.end(),
             [&](const auto& candidate) { return candidate.templateId == entry.templateId; });
-        require(found != parsed.catalog.entries.end(), "merged HCA missing V6 source ID: " + entry.templateId);
+        require(found != parsed.catalog.entries.end(), "merged HCA missing " +
+                std::string(candidateName) + " source ID: " + entry.templateId);
         require(found->sourceFingerprint == entry.sourceFingerprint &&
                 wish::serializeAnnotations({1, {*found}}) == wish::serializeAnnotations({1, {entry}}),
-                "merged HCA changed V6 annotation membership: " + entry.templateId);
+                "merged HCA changed " + std::string(candidateName) +
+                " annotation membership: " + entry.templateId);
         const auto candidate = candidateById.find(entry.templateId);
-        require(candidate != candidateById.end(), "HCA ID is absent from V6 candidates: " + entry.templateId);
+        require(candidate != candidateById.end(), "HCA ID is absent from " +
+                std::string(candidateName) + " candidates: " + entry.templateId);
         const auto resolved = wish::resolveAnnotations(candidate->second, parsed.catalog);
         require(resolved.state != wish::AnnotationState::SourceMismatch &&
                 resolved.state != wish::AnnotationState::Invalid,
@@ -443,9 +561,105 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
     output.write(mergedText.data(), static_cast<std::streamsize>(mergedText.size()));
     require(static_cast<bool>(output), "cannot finish writing " + outputPath.string());
 }
+
+int compileV7Increment(int argc, char** argv) {
+    require(argc == 10 || argc == 11,
+            "usage: factory_v6_compiler --v7-incremental g5.db candidates.json metadata.json "
+            "approved-ids.txt proposal.db experiment.db g5.hca merged-v7.hca [summary.txt]");
+    const std::filesystem::path baselinePath = argv[2];
+    const std::filesystem::path candidatesPath = argv[3];
+    const std::filesystem::path metadataPath = argv[4];
+    const std::filesystem::path approvedPath = argv[5];
+    const std::filesystem::path proposalPath = argv[6];
+    const std::filesystem::path experimentPath = argv[7];
+    const std::filesystem::path baseAnnotationsPath = argv[8];
+    const std::filesystem::path annotationsPath = argv[9];
+    const std::filesystem::path summaryPath = argc == 11 ? argv[10] : std::filesystem::path{};
+    checkDistinctOutputs(baselinePath, proposalPath, experimentPath, annotationsPath,
+                         baseAnnotationsPath, summaryPath, {candidatesPath, metadataPath, approvedPath});
+
+    const auto baseline = library::loadFactory(baselinePath);
+    require(static_cast<bool>(baseline), "cannot load G5 baseline: " + baseline.error);
+    require(baseline.libraryVersion == 6 && baseline.storageSchemaVersion == 2 &&
+            baseline.templates.size() == 1016,
+            "expected G5 Factory V6 / Schema 2 / 1016-entry baseline");
+    const auto candidates = readCandidates(candidatesPath, 7);
+    const auto approved = readApprovedIds(approvedPath);
+    const auto annotations = readV7CandidateAnnotations(metadataPath, candidates, approved);
+
+    EntriesById allIds = toMap(baseline.templates);
+    std::set<std::string> namesZh, namesEn, audibleFingerprints;
+    for (const auto& item : baseline.templates) {
+        namesZh.insert(item.nameZh);
+        namesEn.insert(item.nameEn);
+        audibleFingerprints.insert(audibleSignature(item));
+    }
+    for (const auto& item : candidates) {
+        require(allIds.emplace(item.id, item).second,
+                "V7 ID collides with baseline or candidate: " + item.id);
+        require(namesZh.insert(item.nameZh).second, "duplicate Chinese display name: " + item.id);
+        require(namesEn.insert(item.nameEn).second, "duplicate English display name: " + item.id);
+        if (approved.contains(item.id))
+            require(audibleFingerprints.insert(audibleSignature(item)).second,
+                    "approved V7 ID duplicates a complete performance: " + item.id);
+    }
+    for (const auto& id : approved)
+        require(std::any_of(candidates.begin(), candidates.end(),
+            [&](const auto& item) { return item.id == id; }),
+            "approved ID is absent from candidates.json: " + id);
+
+    std::vector<ProgressionTemplate> proposalEntries;
+    proposalEntries.reserve(baseline.templates.size() + candidates.size());
+    proposalEntries.insert(proposalEntries.end(), baseline.templates.begin(), baseline.templates.end());
+    proposalEntries.insert(proposalEntries.end(), candidates.begin(), candidates.end());
+    std::sort(proposalEntries.begin(), proposalEntries.end(),
+              [](const auto& a, const auto& b) { return a.id < b.id; });
+
+    std::vector<ProgressionTemplate> experimentEntries;
+    experimentEntries.reserve(baseline.templates.size() + approved.size());
+    experimentEntries.insert(experimentEntries.end(), baseline.templates.begin(), baseline.templates.end());
+    for (const auto& item : candidates)
+        if (approved.contains(item.id)) experimentEntries.push_back(item);
+    std::sort(experimentEntries.begin(), experimentEntries.end(),
+              [](const auto& a, const auto& b) { return a.id < b.id; });
+
+    std::string error;
+    require(library::compileFactory(proposalPath, proposalEntries, error, 7),
+            "V7 proposal database compile failed: " + error);
+    error.clear();
+    require(library::compileFactory(experimentPath, experimentEntries, error, 7),
+            "V7 experiment database compile failed: " + error);
+    const auto baselineAnnotations = wish::parseAnnotations(readText(baseAnnotationsPath));
+    require(static_cast<bool>(baselineAnnotations), "cannot parse G5 HCA: " + baselineAnnotations.error);
+    writeMergedAnnotations(annotationsPath, baseAnnotationsPath, baseline.templates,
+                           candidates, annotations, "G5", "V7");
+    verifyRoundTrip(proposalPath, proposalEntries, baseline.templates, 7, "G5", "V7 proposal");
+    verifyRoundTrip(experimentPath, experimentEntries, baseline.templates, 7, "G5", "V7 experiment");
+    if (!summaryPath.empty())
+        writeV7Summary(summaryPath, baseline.templates.size(), candidates.size(), approved,
+                       annotations, baselineAnnotations.catalog.entries.size());
+
+    std::cout << "Factory V7 PASS library_version=7 schema=2"
+              << " baseline=" << baseline.templates.size()
+              << " candidates=" << candidates.size()
+              << " proposal=" << proposalEntries.size()
+              << " approved=" << approved.size()
+              << " experiment=" << experimentEntries.size()
+              << " pending=" << candidates.size() - approved.size()
+              << " hca_v7_sources=" << annotations.entries.size() << '\n';
+    return 0;
+}
 } // namespace
 
 int main(int argc, char** argv) {
+    if (argc > 1 && std::string_view(argv[1]) == "--v7-incremental") {
+        try {
+            return compileV7Increment(argc, argv);
+        } catch (const std::exception& e) {
+            std::cerr << "factory V7 compile FAIL: " << e.what() << '\n';
+            return 1;
+        }
+    }
     if (argc != 9 && argc != 10 && argc != 12) {
         std::cerr << "usage: factory_v6_compiler factory-v5.db candidates.json metadata.json approved-ids.txt "
                      "proposal.db experiment.db factory-v5.hca merged-v6.hca [summary.txt "
