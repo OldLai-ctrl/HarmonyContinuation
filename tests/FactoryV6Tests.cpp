@@ -2090,30 +2090,49 @@ int runV7Incremental(const std::filesystem::path& baselinePath,
 
     const auto baseHcaText = readText(baseHcaPath);
     const auto mergedHcaText = readText(mergedHcaPath);
-    require(baseHcaText.starts_with("HC_MODE_ANNOTATIONS 1\n") &&
-            mergedHcaText.starts_with("HC_MODE_ANNOTATIONS 1\n"), "G5/V7 HCAFormat1 header");
+    const auto hasHcaFormat1Header = [](std::string_view text) {
+        return text.starts_with("HC_MODE_ANNOTATIONS 1\n") ||
+               text.starts_with("HC_MODE_ANNOTATIONS 1\r\n");
+    };
+    require(hasHcaFormat1Header(baseHcaText) && hasHcaFormat1Header(mergedHcaText),
+            "G5/V7 HCAFormat1 header");
     require(mergedHcaText.starts_with(baseHcaText), "V7 HCA changed the exact G5 byte prefix");
     const auto baseHca = wish::parseAnnotations(baseHcaText);
     const auto mergedHca = wish::parseAnnotations(mergedHcaText);
     require(static_cast<bool>(baseHca), "cannot parse G5 HCA: " + baseHca.error);
     require(static_cast<bool>(mergedHca), "cannot parse V7 HCA: " + mergedHca.error);
-    require(baseHca.catalog.entries.size() == baseline.templates.size(),
-            "G5 HCA does not contain one record per frozen V6 source");
     const auto baselineById = [&] {
         std::map<std::string, const ProgressionTemplate*> result;
         for (const auto& item : baseline.templates) result.emplace(item.id, &item);
         return result;
     }();
+    std::size_t baselineBoundAnnotationIds{};
+    std::size_t baselineOrphanAnnotationIds{};
     for (const auto& entry : baseHca.catalog.entries) {
         const auto source = baselineById.find(entry.templateId);
-        require(source != baselineById.end(), "G5 HCA ID is absent from frozen V6 rows: " + entry.templateId);
-        require(entry.sourceFingerprint == wish::sourceFingerprint(*source->second),
-                "G5 HCA binding differs from frozen V6 row: " + entry.templateId);
+        if (source == baselineById.end()) {
+            ++baselineOrphanAnnotationIds;
+        } else {
+            ++baselineBoundAnnotationIds;
+            require(entry.sourceFingerprint == wish::sourceFingerprint(*source->second),
+                    "G5 HCA binding differs from frozen V6 row: " + entry.templateId);
+        }
         const auto* mergedEntry = findAnnotation(mergedHca.catalog, entry.templateId);
         require(mergedEntry && wish::serializeAnnotations({1, {*mergedEntry}}) ==
                 wish::serializeAnnotations({1, {entry}}),
                 "V7 HCA changed frozen G5 annotation record: " + entry.templateId);
     }
+    for (const auto& source : baseline.templates) {
+        const auto* entry = findAnnotation(baseHca.catalog, source.id);
+        require(entry && entry->sourceFingerprint == wish::sourceFingerprint(source),
+                "frozen V6 source lacks a correctly bound G5 HCA annotation: " + source.id);
+    }
+    require(baselineBoundAnnotationIds == baseline.templates.size(),
+            "G5 HCA does not cover every frozen V6 source");
+    std::cout << "v7_g5_hca baseline_sources=" << baselineBoundAnnotationIds
+              << " annotation_source_ids=" << baseHca.catalog.entries.size()
+              << " unbound_historical_ids=" << baselineOrphanAnnotationIds
+              << " raw_prefix=PASS bindings=PASS\n";
 
     std::size_t expectedNewAnnotationRows{};
     for (const auto& [id, row] : metadataById) {
@@ -2400,6 +2419,21 @@ int runV7Incremental(const std::filesystem::path& baselinePath,
     require(static_cast<bool>(freePool), "V7 free Wish pool: " + freePool.error);
     require(freePool.sourceMismatches == 0 && freePool.invalidSources == 0 && freePool.invalidAnnotations == 0,
             "V7 free Wish pool reported source or annotation integrity errors");
+    std::set<std::string> freePoolV7SourceIds;
+    std::size_t freePoolV7ItemCount{};
+    for (const auto& item : freePool.items) {
+        bool containsV7Source = false;
+        for (const auto& source : item.sources) {
+            if (approved.contains(source.id)) {
+                freePoolV7SourceIds.insert(source.id);
+                containsV7Source = true;
+            }
+        }
+        if (containsV7Source) ++freePoolV7ItemCount;
+    }
+    std::cout << "v7_free_pool_coverage total_items=" << freePool.items.size()
+              << " items_with_approved_v7=" << freePoolV7ItemCount
+              << " approved_v7_source_ids=" << freePoolV7SourceIds.size() << '\n';
     std::erase_if(freePool.items, [&](const auto& item) {
         return item.match.has_value() || std::none_of(item.sources.begin(), item.sources.end(),
             [&](const auto& source) { return source.id == wishSource.id; });
@@ -2424,14 +2458,69 @@ int runV7Incremental(const std::filesystem::path& baselinePath,
     require(inputPool.sourceMismatches == 0 && inputPool.invalidSources == 0 &&
             inputPool.invalidAnnotations == 0,
             "V7 input Wish pool reported source or annotation integrity errors");
-    const auto inputItem = std::find_if(inputPool.items.begin(), inputPool.items.end(), [&](const auto& item) {
+    const auto wishInputQuery = makeMatchQuery(input.imported.events, recommendationContext(input.analysis));
+    MatchWeights wishShortlistWeights;
+    wishShortlistWeights.abstractChordCompatibility = true;
+    wishShortlistWeights.keyPriorWeight = 0.f;
+    const auto wishShortlist = index.shortlist(wishInputQuery, wishShortlistWeights);
+    const auto wishIndexSource = std::find_if(index.templates().begin(), index.templates().end(),
+        [&](const auto& source) { return source.id == wishSource.id; });
+    require(wishIndexSource != index.templates().end() &&
+            std::find(wishShortlist.begin(), wishShortlist.end(),
+                static_cast<std::size_t>(std::distance(index.templates().begin(), wishIndexSource))) !=
+                wishShortlist.end(),
+            "V7_01_022 input Wish source was not in the global retrieval shortlist");
+    const auto wishSourceResult = recommendContinuations(
+        wishInputQuery, CandidateIndex({wishSource}), input.request, recommendationWeights());
+    const auto rejectedWishMatch = std::find_if(wishSourceResult.matches.begin(), wishSourceResult.matches.end(),
+        [&](const auto& match) {
+            return match.templateId == wishSource.id &&
+                   std::isfinite(match.candidateEligibilityScore) &&
+                   match.candidateEligibilityScore >= 0.f;
+        });
+    const auto wishWeights = recommendationWeights();
+    require(rejectedWishMatch != wishSourceResult.matches.end() &&
+            rejectedWishMatch->disposition == "minimum_score" &&
+            rejectedWishMatch->candidateEligibilityScore < wishWeights.minimumScore,
+            "V7_01_022 input Wish no longer reports its actual below-threshold rejection");
+    require(input.request.constraints.melody.empty(),
+            "V7_01_022 negative Input Wish unexpectedly requests melody constraints");
+    const auto rejectedInputItem = std::find_if(inputPool.items.begin(), inputPool.items.end(), [&](const auto& item) {
         return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
             [&](const auto& source) { return source.id == wishSource.id; });
     });
-    require(inputItem != inputPool.items.end(), "V7 input Wish lost the exact approved source");
-    std::cout << "v7_wish free=PASS input=PASS source=" << wishSource.id
+    require(rejectedInputItem == inputPool.items.end(),
+            "V7_01_022 below-threshold Input Wish source leaked into the draw pool");
+
+    const auto& inputPositiveSource = approvedSource("V7_04_023");
+    const KeySignature inputPositiveKey{PitchClass::C, inputPositiveSource.mode};
+    wish::WishInput inputPositive;
+    require(inputPositive.imported.replace(makePrefix(inputPositiveSource, inputPositiveKey, 4),
+                                           TimelineCoordinateMode::RelativeToSelection),
+            "V7_04_023 positive Input Wish prefix construction");
+    inputPositive.analysis.forcedKey = inputPositiveKey;
+    auto inputPositivePool = wish::makeInputPool(
+        experiment.templates, mergedHca.catalog, inputPositive);
+    require(static_cast<bool>(inputPositivePool), "V7_04_023 positive Input Wish pool: " + inputPositivePool.error);
+    require(inputPositivePool.sourceMismatches == 0 && inputPositivePool.invalidSources == 0 &&
+            inputPositivePool.invalidAnnotations == 0,
+            "V7_04_023 positive Input Wish pool reported source or annotation integrity errors");
+    const auto inputPositiveItem = std::find_if(inputPositivePool.items.begin(), inputPositivePool.items.end(),
+        [&](const auto& item) {
+            return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
+                [&](const auto& source) { return source.id == inputPositiveSource.id; });
+        });
+    require(inputPositiveItem != inputPositivePool.items.end(),
+            "V7_04_023 qualified Input Wish source was not available in the pool");
+    std::cout << "v7_wish free=PASS input_positive=PASS input_positive_source=" << inputPositiveSource.id
+              << " input_positive_pool=" << inputPositivePool.items.size()
+              << " input_negative=PASS input_negative_source=" << wishSource.id
+              << " input_negative_disposition=" << rejectedWishMatch->disposition
+              << " input_negative_eligibility=" << rejectedWishMatch->candidateEligibilityScore
+              << " input_negative_threshold=" << wishWeights.minimumScore
+              << " input_negative_pool=" << inputPool.items.size()
               << " free_pool=" << freeRound.remaining() + freeItems.size()
-              << " input_pool=" << inputPool.items.size() << '\n';
+              << '\n';
 
     const auto& enrichSource = approvedSource("V7_01_022");
     const KeySignature enrichKey{PitchClass::C, enrichSource.mode};
@@ -2469,6 +2558,131 @@ int runV7Incremental(const std::filesystem::path& baselinePath,
               << " queries=" << querySources.size() << " media_samples=" << mediaIds.size()
               << " baseline_HCA_prefix=exact approved_complete_rhythmless=PASS"
               << " core_neighbors=reported\n";
+    return 0;
+}
+
+int runV7MatchDiagnostics(const std::filesystem::path& experimentPath,
+                          const std::filesystem::path& annotationsPath) {
+    const auto experiment = library::loadFactory(experimentPath);
+    require(static_cast<bool>(experiment), "cannot load V7 experiment for diagnostics: " + experiment.error);
+    require(experiment.libraryVersion == 7 && experiment.storageSchemaVersion == 2,
+            "V7 diagnostics require LibraryVersion7/Schema2");
+    const auto annotations = wish::parseAnnotations(readText(annotationsPath));
+    require(static_cast<bool>(annotations), "cannot parse V7 HCA for diagnostics: " + annotations.error);
+    const CandidateIndex experimentIndex(experiment.templates);
+    const auto sourceFor = [&](std::string_view id) -> const ProgressionTemplate& {
+        const auto found = std::find_if(experiment.templates.begin(), experiment.templates.end(),
+            [&](const auto& item) { return item.id == id; });
+        require(found != experiment.templates.end(), "V7 diagnostic source is missing: " + std::string(id));
+        return *found;
+    };
+    const auto reportSourceMatches = [&](std::string_view scope, const RecommendationSet& results,
+                                         std::string_view id) {
+        std::size_t count{};
+        for (const auto& match : results.matches) {
+            if (match.templateId != id) continue;
+            ++count;
+            const bool scoreEvaluated = std::isfinite(match.candidateEligibilityScore) &&
+                                        match.candidateEligibilityScore >= 0.f;
+            std::cout << "v7_diagnostic_match scope=" << scope << " source=" << id
+                      << " similarity=" << match.similarity
+                      << " match_start=" << match.templateMatchStart
+                      << " match_end=" << match.templateMatchEnd
+                      << " continuation_start=" << match.continuationStartIndex
+                      << " has_continuation=" << match.hasContinuation
+                      << " continuation_length=" << match.continuationLength
+                      << " disposition=" << match.disposition
+                      << " score_evaluated=" << scoreEvaluated;
+            if (scoreEvaluated)
+                std::cout << " eligibility_score=" << match.candidateEligibilityScore
+                          << " base_qualified=" << (match.candidateEligibilityScore >= 60.f)
+                          << " ranking_score=" << match.candidateRankingScore;
+            std::cout << " hard_constraints=not_requested\n";
+        }
+        if (count == 0)
+            std::cout << "v7_diagnostic_match scope=" << scope << " source=" << id
+                      << " match=none hard_constraints=not_reached\n";
+    };
+    const auto reportQuery = [&](std::string_view id, std::size_t prefix) {
+        const auto& source = sourceFor(id);
+        require(prefix > 0 && prefix < source.full.size(),
+                "V7 diagnostic prefix is invalid for " + std::string(id));
+        const KeySignature key{PitchClass::C, source.mode};
+        const auto query = queryFor(source, key, prefix);
+        RecommendationRequest request;
+        request.preferredIntent = source.intent;
+        auto weights = recommendationWeights();
+        weights.perGroup = 0;
+        const auto results = recommendContinuations(query, experimentIndex, request, weights);
+        const auto* own = findCandidate(results, source.id);
+        const auto rank = own ? groupRank(results, own->id) : std::nullopt;
+        std::cout << "v7_diagnostic_query id=" << id << " prefix=" << prefix
+                  << " shortlist=" << results.stats.shortlistSize
+                  << " aligned=" << results.stats.aligned
+                  << " similarity_passed=" << results.stats.similarityPassed
+                  << " tail_passed=" << results.stats.tailPassed
+                  << " realization_passed=" << results.stats.realizationPassed
+                  << " path_passed=" << results.stats.pathPassed
+                  << " score_passed=" << results.stats.scorePassed
+                  << " source_present=" << (own != nullptr) << " source_self_rank=";
+        if (rank) std::cout << groupName(rank->first) << ':' << rank->second;
+        else std::cout << "absent";
+        std::cout << " self_detection=primary_or_supporting_source;ranked_by_generated_route_id\n";
+        reportSourceMatches("recommendation", results, id);
+    };
+    const auto reportInputWish = [&](std::string_view id, std::size_t prefix) {
+        const auto& source = sourceFor(id);
+        require(prefix > 0 && prefix < source.full.size(),
+                "V7 input diagnostic prefix is invalid for " + std::string(id));
+        const KeySignature key{PitchClass::C, source.mode};
+        wish::WishInput input;
+        require(input.imported.replace(makePrefix(source, key, prefix),
+                                       TimelineCoordinateMode::RelativeToSelection),
+                "V7 input diagnostic prefix construction failed for " + std::string(id));
+        input.analysis.forcedKey = key;
+        const auto pool = wish::makeInputPool(experiment.templates, annotations.catalog, input);
+        require(static_cast<bool>(pool), "V7 input diagnostic pool failed: " + pool.error);
+        const bool sourcePresent = std::any_of(pool.items.begin(), pool.items.end(), [&](const auto& item) {
+            return std::any_of(item.sources.begin(), item.sources.end(),
+                [&](const auto& itemSource) { return itemSource.id == id; });
+        });
+        MatchWeights shortlistWeights;
+        shortlistWeights.abstractChordCompatibility = true;
+        shortlistWeights.keyPriorWeight = 0.f;
+        const auto query = makeMatchQuery(input.imported.events, recommendationContext(input.analysis));
+        const auto shortlist = experimentIndex.shortlist(query, shortlistWeights);
+        const auto sourceIndex = static_cast<std::size_t>(
+            std::distance(experiment.templates.begin(), std::find_if(
+                experiment.templates.begin(), experiment.templates.end(),
+                [&](const auto& item) { return item.id == id; })));
+        const bool sourceShortlisted = sourceIndex < experiment.templates.size() &&
+            std::find(shortlist.begin(), shortlist.end(), sourceIndex) != shortlist.end();
+        std::cout << "v7_diagnostic_input id=" << id << " prefix=" << prefix
+                  << " pool_items=" << pool.items.size()
+                  << " source_present=" << sourcePresent
+                  << " source_shortlisted=" << sourceShortlisted
+                  << " shortlist_size=" << shortlist.size()
+                  << " aligned=" << pool.unifiedStats.aligned
+                  << " similarity_passed=" << pool.unifiedStats.similarityPassed
+                  << " tail_passed=" << pool.unifiedStats.tailPassed
+                  << " path_passed=" << pool.unifiedStats.pathPassed
+                  << " score_passed=" << pool.unifiedStats.scorePassed
+                  << " hard_constraints=not_requested\n";
+        if (!sourceShortlisted) {
+            std::cout << "v7_diagnostic_input_result id=" << id
+                      << " disposition=global_shortlist_excluded match_score=not_evaluated\n";
+            return;
+        }
+        const auto sourceOnly = recommendContinuations(query, CandidateIndex({source}),
+                                                       input.request, recommendationWeights());
+        reportSourceMatches("input_wish", sourceOnly, id);
+    };
+
+    reportInputWish("V7_01_022", 8);
+    reportInputWish("V7_04_023", 4);
+    reportQuery("V7_01_001", 3);
+    reportQuery("V7_01_010", 3);
+    reportQuery("V7_01_091", 5);
     return 0;
 }
 
@@ -2929,6 +3143,16 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--v7-match-diagnostics") {
+        try {
+            require(argc == 4,
+                    "usage: FactoryV6Tests --v7-match-diagnostics experiment-v7.db merged-v7.hca");
+            return runV7MatchDiagnostics(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V7 match diagnostics FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--v7-incremental") {
         try {
             require(argc == 11,

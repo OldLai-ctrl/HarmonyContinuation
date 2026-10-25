@@ -1,0 +1,101 @@
+family|title|events|mode|intent|ending|boundary|basis|source|section|case|meter
+RoyalRoad|主歌锚点到王道抬升|C@8 Em/B@4 Am7@4 Fmaj7@4 G@4 Em7@4 Am@4|ionian|develop|open|no|C先长驻，末四和弦进入王道；Am仅为新段起点，保留大小调游移。|Ramage|verse-prechorus|family-only|4/4
+RoyalRoad|王道后半句转二级|F@4 G@4 Em@4 Am@4 C/E@4 F@4 Dm7@4 Gsus4@4|ionian|develop|open|no|前半四和弦后C转位确认参照，后半ii到悬属构成八小节前副歌。|Ramage|prechorus|family-only|4/4
+RoyalRoad|副歌前主音踏板松开|C@4 F/C@4 C@4 G/B@4 Fmaj7/A@4 G@4 Em7@4 Am7@4|ionian|loop|open|yes|C踏板建立中心，再低音A-G-E-A；末Am到起点C共享C/E，循环不依赖属主。|Ramage|chorus|family-only|4/4
+RoyalRoad|王道副属照亮六级|Cmaj7@4 Fmaj7@4 G@4 Em7@4 E7/G#@4 Am@8 Dm7@4|ionian|develop|open|no|Em经G#导向Am，长vi后落ii作为下一段前属；副属有独立低音功能。|Ramage|chorus-link|family-only|4/4
+RoyalRoad|王道支线落借用小四|C@4 Em@4 F@4 G@4 Em7@4 Am7@4 F@4 Fm@4|ionian|color|open|no|前段确认C，王道尾由vi转IV-iv；Ab半音面向G，为下一段保留空间。|Ramage|bridge|family-only|4/4
+RoyalRoad|六级落点的上行低音|C/E@4 F@4 G@4 Am@4 Fmaj7@4 G/B@4 Em7@4 Am7/C@4|ionian|loop|modal-arrival|yes|E-F-G-A开头定向，尾Am/C保留主音低音；回C/E以共享音形成循环。|Ramage|chorus|family-only|4/4
+RoyalRoad|王道与双下属回接|C@8 F@4 G@4 Em@4 Am@4 Bb@4 F/A@4|ionian|loop|open|yes|王道后Bb-F/A构成混合双下属，A到C回首是段落重启，不称传统终止。|Ramage|chorus|family-only|4/4
+RoyalRoad|王道主歌的半减枢纽|Cmaj7@4 Bm7b5@4 E7@4 Am7@4 F@4 G@4 Em7@4 Am7@4|ionian|develop|open|no|主歌以半减-E7短暂锚A小调，F-G-Em-Am在末半重新打开相对双中心。|Ramage|verse-prechorus|family-only|4/4
+RoyalRoad|王道副歌的短暂主和弦|Fmaj7@4 G@4 Em7@4 Am7@4 Dm7@4 G@4 C@4 E7@4|ionian|develop|transition|no|ii-V-I短暂落C后E7立即指向下一轮Am，句末功能是转接。|Ramage|chorus-postchorus|family-only|4/4
+RoyalRoad|下属起句与延迟六级|F@8 G@4 C/E@4 Dm7@4 G@4 Em7@4 Am@4|ionian|loop|open|yes|C/E中途提供主功能，末G-Em-Am以vi到起F共享A/C，形成两段呼应。|Ramage|chorus|family-only|4/4
+RoyalRoad|王道经五级副属转出|C@4 F@4 G@4 Em@4 Am@4 D7/F#@4 Gsus4@4 G@4|ionian|develop|open|no|Am后F#低音使D7导G，完成前副歌半终止准备；不充当Resolve。|Ramage|prechorus|family-only|4/4
+RoyalRoad|王道尾部的下行连接|C@4 G/B@4 F/A@4 G@4 Em7@4 Am7@4 Am/G@4 Fmaj7@4|ionian|loop|open|yes|B-A-G下行和A-G-F尾线相接，F回起C为非属性回接。|Ramage|verse|family-only|4/4
+RoyalRoad|王道到同主小调阴影|C@4 F@4 G@4 Em@4 Am@4 Abmaj7@4 Bb@4 Cm@4|ionian|color|modal-arrival|no|C大调前景之后Ab-Bb-Cm建立平行小调落点；外音是明确色彩转向。|LiPR|bridge|concept-only|4/4
+RoyalRoad|王道副歌的下属局部化|C@4 F@4 G@4 Em@4 Am7@4 Gm7@4 C7@4 Fmaj7@4|ionian|develop|open|no|Gm-C7使末F成为局部主音；整句仍从C出发，开放后段可续王道。|Ramage|chorus-link|family-only|4/4
+RoyalRoad|主音悬置后的王道回答|Csus2@8 C@4 G/B@4 Am@4 F@4 G@4 Em7@4|ionian|loop|open|yes|悬置主音落C后下行到Am，末F-G-Em省略vi让Em回Csus2共享E/G。|Ramage|verse|family-only|4/4
+RoyalRoad|王道回旋与二级踏板|C@4 F@4 G@4 Em@4 Am@4 Dm7@4 G/D@4 Dm7@4|ionian|develop|open|no|D低音固定后三和弦，把王道尾的能量转为前属平台，保留段落推动。|Ramage|prechorus|family-only|4/4
+RoyalRoad|王道接大二级亮面|C@4 F@4 G@4 Em@4 Am@4 D@4 F@4 G@4|ionian|color|open|no|D大和弦F#作为邻近亮色后回F自然；不把这一瞬判成整句Lydian。|Ramage|bridge|family-only|4/4
+RoyalRoad|王道接降二级彩门|C@4 F@4 G@4 Em@4 Am@4 Dbmaj7@4 Fm@4 Gsus4@4|ionian|color|open|no|Db与Fm共享F/Ab，末悬G将平行小调色彩带到下一段的属准备。|Ramage|bridge|family-only|4/4
+RoyalRoad|王道与卡农尾段交织|C@4 G/B@4 Am@4 Em/G@4 F@4 G@4 Em@4 Am@4 Dm7@4 G@4|ionian|develop|open|no|前四下行低音接王道，再ii-V形成跨段落完整前奏而非简单四和弦加九音。|Ramage|intro-prechorus|family-only|4/4
+RoyalRoad|王道后的欺骗与悬置|C@4 F@4 G@4 Em@4 Am@4 Dm7@4 G7@4 Am7@8 Gsus4@4|ionian|develop|open|no|第二个G7逃向Am并延长，再退到悬属，双重推迟形成前副歌弧线。|Ramage|prechorus|family-only|4/4
+RoyalRoad|三拍王道转五级延长|C@6 F@3 G@3 Em@3 Am@3 Dm@3 Gsus4@3 G@6|ionian|develop|open|no|3/4两小节C后两组王道动作，最后悬属落G延长而不归主。|Ramage|prechorus|family-only|3/4
+RoyalRoad|王道上方的半音低音门|C@4 Fmaj7@4 G@4 Em7@4 Am@4 Abaug@4 C/G@4 F#m7b5@4 Fmaj7@4|ionian|color|open|no|A-Ab-G-F#-F下行将vi连到IV；Abaug与C/G共音，经过和弦有方向。|Ramage|bridge|family-only|4/4
+RoyalRoad|王道二级替换与小四回接|Cmaj7@4 Dm7@4 G@4 Em@4 Am@4 F@4 Fm6@4 C/E@4|ionian|loop|modal-arrival|yes|ii替换IV起势后借iv6下行到C/E，回C根位是低音归位非终止新增。|Ramage|verse|family-only|4/4
+RoyalRoad|王道后七级到相对小主|C@4 F@4 G@4 Em@4 Am@4 Bm7b5@4 E7b9@4 Am@8|ionian|develop|modal-arrival|no|结尾完整A小调ii半减-V-i，确立局部小主；C参照与A局部中心分别记。|Ramage|chorus-bridge|family-only|4/4
+RoyalRoad|主歌三度链与王道预副歌|C@4 Em/B@4 Am@4 F/A@4 Dm@4 F@4 G@4 Em@4 Am@4 G@4|ionian|develop|open|no|主歌主功能三度链后增加前属层，王道末再上G准备下一段。|Ramage|verse-prechorus|family-only|4/4
+RoyalRoad|王道中断后后属彩色|C@4 F@4 G@4 Em@4 Am@4 Fm7@4 Bb7@4 Cmaj7@4 Dm7@4|ionian|color|open|no|Fm-Bb回C为侧门色彩后再出ii；不是结尾C的封闭小节复制。|Ramage|chorus-link|family-only|4/4
+RoyalRoad|王道尾部侧滑到降六|C@4 F@4 G@4 Em@4 Am@4 Abmaj7@8 Fm@4 Bb@4|ionian|color|transition|no|Am到Ab共C/Eb邻接，Fm-Bb只准备Eb区域，尚不宣称已经转调。|LiPR|prechorus|concept-only|4/4
+RoyalRoad|王道延迟属的六拍推进|C@6 F@3 G@3 Em@6 Am@3 Dm@3 F/A@3 G/B@3 Gsus4@6|ionian|develop|open|no|6/8以三QN为拍组，长Em延后vi，F/A-G/B低音上行到悬属。|Ramage|prechorus|family-only|6/8
+RoyalRoad|王道后主低音上的小四|C@4 F@4 G@4 Em@4 Am@4 F/C@4 Fm/C@4 C@4 G/B@4|ionian|color|open|no|C低音IV-iv-I呈半音内声，末B低音离主使乐句再次打开。|Ramage|postchorus|family-only|4/4
+RoyalRoad|王道不完结的尾部属链|C@4 F@4 G@4 Em@4 Am@4 A7/C#@4 Dm7@4 D7/F#@4 G@8|ionian|develop|open|no|A7到Dm再D7到G，不同升音分别服务ii与V；末长G作明确半终止。|Ramage|prechorus|family-only|4/4
+KomuroCross|小室到王道的主和弦桥|C@4 Am@4 F@4 G@4 C@4 F@4 G@4 Em@4 Am@4|ionian|loop|open|yes|C锚点后vi-IV-V-I一轮接王道；尾Am回C共享两音，两个家族承担不同段落。|Ramage|verse-chorus|editorial-family-cross|4/4
+KomuroCross|小室路线的降六桥段|C@4 Am@4 F@4 G@4 C/E@4 Ab@4 Bb@4 F/A@4|ionian|color|open|no|vi-IV-V-I转位落点后借Ab/Bb，末F/A可作副歌抬升；不只延伸和弦变体。|Spicer|verse-bridge|concept-only|4/4
+KomuroCross|小室四度出口的前副歌|C@4 Am@4 F@4 G@4 Em7@4 Am7@4 Dm7@4 Gsus4@8|ionian|develop|open|no|主歌vi-IV-V出发绕过I进入iii-vi-ii，再长悬属形成新段准备。|Ramage|verse-prechorus|editorial-family-cross|4/4
+KomuroCross|小室尾部二级大和弦|C@8 Am@4 F@4 G@4 D/F#@4 F@4 C/E@4 Dm@4|ionian|color|open|no|G到D/F#回落F自然造成明暗反差，C/E到Dm转为前属平台。|Spicer|bridge|concept-only|4/4
+KomuroCross|自然小调入口的延后亮主|Am@8 F@4 G@4 Em@4 F@4 G@4 C@8 Dm7@4|ionian|develop|open|no|前段Am可听成小主，C在后段长驻才给大调锚点，末ii保持开放。|Ramage|verse-chorus|family-only|4/4
+KomuroCross|六级反复转后属平台|C@4 Am@4 F@4 G@4 Am@4 C/E@4 Fm@4 Bb@4|ionian|color|transition|no|G逃向Am而非I，C/E再接Fm-Bb；末两和弦是跨段门槛未解决。|Spicer|bridge|concept-only|4/4
+KomuroCross|卡农低音接小室转轮|C@4 G/B@4 Am@4 Em/G@4 F@4 C/E@4 Dm@4 G@4 Am@4 F@4 G@4 C/E@4|ionian|loop|open|yes|前八低音下降与后四vi-IV-V-I转位有段落对比，E到起C完成根位重启。|Ramage|verse-chorus|editorial-family-cross|4/4
+KomuroCross|小室属前的半减门|C@4 Am@4 F@4 Bm7b5@4 E7@4 Am@4 F@4 G@8|ionian|develop|open|no|F后半减-E7局部确认Am，再F-G形成大调前副歌边界。|Ramage|prechorus|editorial-family-cross|4/4
+KomuroCross|六级到四级的半音下行|C@4 Am@4 Am/G#@4 Am/G@4 F#m7b5@4 Fmaj7@4 G@4 Em7@4|ionian|loop|open|yes|A-G#-G-F#-F是实际低音线，G-Em回C通过共享E/G，持续而不归主。|Spicer|verse|concept-only|4/4
+KomuroCross|大二级与王道应答|C@4 Am@4 D@4 G@4 F@4 G@4 Em@4 Am@4 F@4|ionian|loop|open|yes|D作为五级副属后F-G-Em-Am回答，末F回C由下属共享C连接。|Ramage|chorus|editorial-family-cross|4/4
+CanonCross|卡农下行到王道高原|C@4 G/B@4 Am@4 Em/G@4 F@4 C/E@4 F@4 G@4 Em@4 Am@4|ionian|loop|open|yes|下降低音前句在C/E短驻，后句王道vi回C；家族转换而非卡农换节奏。|Ramage|verse-chorus|editorial-family-cross|4/4
+CanonCross|卡农借用小四的悬属出口|C@4 G/B@4 Am@4 Em/G@4 F@4 Fm/Ab@4 C/G@4 Gsus4@8|ionian|develop|open|no|F-G-Ab-G低音改变原卡农尾，平行小调借用后长悬属为预副歌留白。|Spicer|prechorus|concept-only|4/4
+CanonCross|下行卡农与六级属准备|C@4 G/B@4 Am@4 C/G@4 F@4 Dm/F@4 E7@4 Am@4 Dm7@4|ionian|develop|open|no|F低音前属转E7导Am，再到Dm保留相对小调发展，不以I封闭。|Ramage|verse-bridge|editorial-family-cross|4/4
+CanonCross|卡农中途转降七摇滚|C@4 G/B@4 Am@4 Em/G@4 F@4 Bb@4 F/A@4 G@4|ionian|color|open|no|Bb打断下行模式，A-G低音把双下属色彩带到五级开放落点。|Spicer|verse-prechorus|concept-only|4/4
+CanonCross|下行低音的增三和弦枢纽|C@4 C/B@4 Am@4 Abaug@4 C/G@4 D/F#@4 F@4 G@4|ionian|develop|open|no|B-A-Ab-G-F#-F连续低音，增和弦共享C/E而D引出F自然回落。|Spicer|prechorus|concept-only|4/4
+CanonCross|卡农半句转短暂小调|C@4 G/B@4 Am@4 Em/G@4 Fm@4 G7b9@4 Cm@4 Bb@4|ionian|color|modal-arrival|no|Fm-G7b9-Cm是实质同主小调到达，Bb作为小调开放下属性出口。|LiPR|bridge|concept-only|4/4
+CanonCross|卡农与双小调前属|Cmaj7@4 G/B@4 Am7@4 Em/G@4 Fmaj7@4 Dm7b5@4 G7b9@4 Am7@4|ionian|color|deceptive|no|半减与降九属引入Ab，却逃向Am自然小主；矛盾色彩是借用而非完整和声小调。|Spicer|bridge|concept-only|4/4
+CanonCross|卡农下行与后属回旋|C@4 G/B@4 Am@4 Em/G@4 F@4 Fm7@4 Bb7@4 C/E@4|ionian|loop|modal-arrival|yes|Fm-Bb侧门回C转位，尾E到起C低音移位形成回圈，非新九和弦模板。|Spicer|chorus|concept-only|4/4
+CanonCross|卡农起势的王道错位|C@4 G/B@4 Am@4 F/A@4 G@4 Em@4 F@4 G@4 Am@8|ionian|develop|deceptive|no|前句A低音延长再G-Em，后F-G逃Am；末长六级是段落临时落点。|Ramage|chorus|family-only|4/4
+CanonCross|卡农接属链的上升出口|C@4 G/B@4 Am@4 Em/G@4 F@4 A7/C#@4 Dm@4 D7/F#@4 G@8|ionian|develop|open|no|下降前句后C#-D-F#-G依次副属抬升，形成前副歌能量弧。|Spicer|prechorus|concept-only|4/4
+MaruCross|王道与循环五度的换轨|Cmaj7@4 Fmaj7@4 Bm7b5@4 E7@4 Am7@4 D7@4 Dm7@4 G7@4|ionian|develop|open|no|F-B半减-E-Am引入丸サ式相对小调环，D7转Dm7改变F#为F，末属待接。|Ramage|bridge-prechorus|editorial-family-cross|4/4
+MaruCross|六级属环通向王道|C@4 Bm7b5@4 E7b9@4 Am9@4 Dm7@4 G@4 Em@4 Am@4|ionian|loop|open|yes|A小调局部ii-V-i后王道后半，尾Am回C共享C/E，两个局部落点清晰。|Ramage|verse-chorus|editorial-family-cross|4/4
+MaruCross|大七前属改道小四|Cmaj7@4 Fmaj7@4 E7/G#@4 Am7@4 Dm7@4 Fm6@4 C/E@4 Gsus4@4|ionian|color|open|no|F-E7-Am的局部小调动作后Dm转Fm6，C/E回主片刻又出悬属。|Spicer|bridge|concept-only|4/4
+MaruCross|次属环的下属落点|Cmaj7@4 Fmaj7@4 E7@4 Am7@4 A7@4 Dm7@4 Gm7@4 C7@4 Fmaj7@8|ionian|develop|modal-arrival|no|局部A小调后A7-Dm再Gm-C7落F，尾F是新段IV平台不是C终止。|Ramage|chorus-postchorus|editorial-family-cross|4/4
+MaruCross|五度环被降六截断|C@4 Fmaj7@4 E7@4 Am@4 D7@4 Abmaj7@4 Gsus4@4 G@4|ionian|color|open|no|D7预期G被Ab截断，Ab到G半音回属；反差来自功能转向。|Spicer|bridge|concept-only|4/4
+MaruCross|小主平台走向降三色彩|C@4 Bm7b5@4 E7@4 Am7@4 Fm7@4 Bb7@4 Ebmaj7@4 G7@4|ionian|color|transition|no|A小调局部后Fm-Bb-Eb建立降三区，G7又把目标指向Cm，跨段未闭合。|LiPR|bridge|concept-only|4/4
+MaruCross|副属环与上行大二级|Cmaj7@4 Fmaj7@4 E7@4 Am@4 D@4 F/A@4 G/B@4 C/E@4|ionian|loop|modal-arrival|yes|D的大三F#后F/A回F自然，B-E低音支撑C转位；回根位循环保留。|Spicer|verse|concept-only|4/4
+MaruCross|六级属改写为欺骗|C@4 F@4 E7@4 Am@4 Dm7@4 G7@4 Am@4 F@4|ionian|loop|deceptive|yes|E7落Am后G7再次落Am，双中心中第二次是C框架欺骗，F回C构成回接。|Ramage|chorus|family-only|4/4
+MaruCross|小调半减环的低音回升|C@4 Bm7b5/F@4 E7@4 Am/E@4 Fmaj7@4 Fm/Ab@4 C/G@4 G@4|ionian|develop|open|no|F-E-E-F-Ab-G-G独立低音线，借用Fm后停属给下一副歌。|Spicer|prechorus|concept-only|4/4
+MaruCross|六拍小调环的王道出口|C@6 Fmaj7@3 E7@3 Am@6 Dm7@3 G@3 Em7@3 Am7@3 Fmaj7@6|ionian|loop|open|yes|6/8局部小调短驻后回王道，末F长音到C可作段落轮回。|Ramage|chorus|family-only|6/8
+OpenChorus|大主暗面与六级展开|C@8 Fm@4 C/E@4 Abmaj7@4 Bb@4 Am7@4 Dm7@4|ionian|color|open|no|iv回主后Ab-Bb避开C转Am，结束ii作为桥段起步，C锚点清楚。|Spicer|bridge|concept-only|4/4
+OpenChorus|副歌主音与后属双平台|C@4 Bb@4 F@4 C/E@4 Fm7@4 Bb7@4 Am@4 G@4|ionian|loop|open|yes|第一组双下属到C/E，第二侧门预期被Am打断，G回C有实际边界。|Spicer|chorus|concept-only|4/4
+OpenChorus|降六高原转相对六级|C@4 Ab@4 Bb@4 G@4 Am@4 F@4 Em@4 Dm@4|ionian|develop|open|no|Ab-Bb-G提供平行借用张力，后Am-F-Em-Dm逐步下降至前属。|Spicer|bridge-prechorus|concept-only|4/4
+OpenChorus|大二级上行与小四翻面|C@4 D@4 F@4 C/E@4 Dm@4 Fm@4 Gsus4@4 G@4|ionian|color|open|no|D到F的F#-F对照，Dm-Fm的A-Ab对照有明确内声，末属开放。|Spicer|prechorus|concept-only|4/4
+OpenChorus|主歌主音与六级升五邻接|C@4 Em@4 Am@4 E/G#@4 Am/G@4 D/F#@4 F@4 Em@4|ionian|loop|open|yes|A-G#-G-F#-F半音线衔接主功能前句，末Em回C依共音建立轮回。|Spicer|verse|concept-only|4/4
+OpenChorus|双下属的二级避让|C@4 Bb@4 F/A@4 Dm@4 Em@4 F@4 G@4 Am@4|ionian|loop|deceptive|yes|Bb-F/A后走ii而非I，后iii-IV-V-vi攀升；Am到C共享音循环。|Ramage|chorus|concept-only|4/4
+OpenChorus|小四降七转六级|Cmaj7@4 Fm7@4 Bb7@4 Am7@4 Dm7@4 Gsus4@4 Fmaj7@4 Em7@4|ionian|loop|open|yes|侧门先避主落vi，再ii-悬V-IV-iii下行，尾Em到C是共音重启。|Spicer|chorus|concept-only|4/4
+OpenChorus|借用小四的短暂主音|C@4 F@4 Fm@4 C/G@4 Ab@4 Bb@4 Gsus4@4 G@8|ionian|develop|open|no|小四回主转位不是整句终点，Ab-Bb-G再准备副歌，开放证据在末属延长。|Spicer|prechorus|concept-only|4/4
+OpenChorus|高原前的明确主音锚点|C@8 F@4 G@4 Am@4 G@4 F@4 G@4 Am@8|ionian|loop|open|yes|先长C确认参照，后IV-V-vi-V高原，末Am到C共享C/E；无额外Aeolian断言。|Duinker|chorus|concept-only|4/4
+OpenChorus|主歌短主与高原回落|C@4 Em/B@4 F/A@4 G@4 F@4 G@4 Am@4 Fmaj7@4|ionian|loop|open|yes|C锚点后低音B-A-G接高原，末F到C有下属式回接但乐句保持循环。|Duinker|verse|concept-only|4/4
+OpenChorus|开放副歌的降三桥面|C@4 F@4 G@4 Am@4 Eb@4 Bb/D@4 F/C@4 G@4|ionian|color|open|no|前段主调高原，Eb-Bb/D-F/C属平行借用下行平台，G重新指向C待接。|Spicer|bridge|concept-only|4/4
+OpenChorus|高原误入小四再升属|C@4 F@4 G@4 Am@4 G/B@4 Fm/Ab@4 Dm7@4 Gsus4@4|ionian|color|open|no|B到Ab突降后F-A-D前属三音保留，悬属承担段落边界而非未完成片段。|Spicer|prechorus|concept-only|4/4
+OpenChorus|相对小调尾与升四色彩|Cmaj7@4 Am7@4 Fmaj7@4 Em7@4 D@4 F@4 Am7@4 G@4|ionian|loop|open|yes|D引入F#但F随即恢复，末vi-V回C闭环；大二级只是局部色彩。|Duinker|chorus|concept-only|4/4
+OpenChorus|非对称高原接副属|C@8 F@4 G@4 Am@8 F@4 E7/G#@4 Am@4 Dm@4|ionian|develop|open|no|两次长停C与Am形成相对重心，E7只局部确认Am，ii末端引出后续。|Duinker|verse-prechorus|concept-only|4/4
+OpenChorus|低音上行的降六阻断|C/E@4 F@4 G@4 Am@4 Ab@4 Bb@4 C/G@4 Dm/F@4|ionian|color|open|no|E-F-G-A后Ab阻断，C/G到Dm/F下行重回前属；C转位提供大调中心。|Spicer|bridge|concept-only|4/4
+OpenChorus|双前属的开放对答|C@4 Dm7@4 Fmaj7@4 Em7@4 Am7@4 Fm@4 Bb@4 G@4|ionian|develop|open|no|主调ii-IV后iii-vi，借Fm-Bb替代第二前属区后停G，前后句用途不同。|Spicer|prechorus|concept-only|4/4
+OpenChorus|小四与后属的不对称循环|C@8 F@4 Fm@4 Am@8 Bb@4 F/A@4|ionian|loop|open|yes|长C和Am形成两个平台，IV-iv与Bb-F/A两种连接交替，末A到C共音回接。|Spicer|chorus|concept-only|4/4
+OpenChorus|主音低音下降到前属根位|C@4 C/B@4 Am7@4 Gm7@4 Fmaj7@4 Em7@4 Dm7@8|ionian|develop|open|no|Gm7的Bb为借用，根音C-B-A-G-F-E-D连线构成完整七步前属终点。|Spicer|verse-prechorus|concept-only|4/4
+OpenChorus|副属截断后属悬留|C@4 A7@4 Dm@4 Bb@4 F/A@4 G@4 Fm@4 Gsus4@8|ionian|color|open|no|A7-Dm功能明确，Bb-F/A是独立侧向支线，末Fm-悬G在借用区等待解决。|Spicer|prechorus|concept-only|4/4
+OpenChorus|六级桥段与低音三度回圈|C@4 Am/E@4 F@4 Dm/F@4 G@4 Em/G@4 Am@4 C/E@4|ionian|loop|open|yes|低音C-E-F-F-G-G-A-E有旋律连贯性，末C/E与首C为主功能换位而非强终止。|Ramage|verse|concept-only|4/4
+SectionLink|王道前句接降三新主|C@4 F@4 G@4 Em@4 Am@4 Ab@4 Bb7@4 Eb@8|ionian|develop|transition|no|明确C前景后Ab-Bb7-Eb确立新Eb区域，边界跨调而非大调内bIII色彩一闪。|LiPR|prechorus-chorus|Terminal Terminal VE2 model only|4/4
+SectionLink|卡农前句转同主小调门|C@4 G/B@4 Am@4 Em/G@4 F@4 Fm@4 Bb7@4 Eb@8|ionian|develop|transition|no|卡农下行后Fm-Bb-Eb给出降三新主，Fm是平行借用和新调ii的双重角色。|LiPR|verse-prechorus|ODDS&ENDS VE3 model only|4/4
+SectionLink|王道后属欺骗新小主|C@4 F@4 G@4 Em@4 Am@4 Ab@4 Bb7@4 Cm@8|ionian|color|deceptive|no|Ab-Bb暗示Eb区域而落Cm，C大到同主小的边界；不凭末Cm自动归Aeolian整句。|LiPR|prechorus-chorus|Sincerely VE4 model only|4/4
+SectionLink|高原后直接大三度色移|C@8 F@4 G@4 Am@4 G@4 Eb@4 Ab@4 Bb@4 Eb@8|ionian|color|transition|no|G直落Eb后Ab-Bb-Eb确认新主，不能把单个G-Eb关系等同全部转调证据。|LiPR|prechorus-chorus|Believe VE6 model only|4/4
+SectionLink|小室半句到相对大调平行化|C@4 Am@4 F@4 G@4 C/E@4 Bm7@4 E7@4 A@8 D@4|ionian|develop|transition|no|Bm-E7-A将vi平行大调化，末D为A调IV平台，新的重心需完整后句支持。|LiRP|prechorus-chorus|RP schema application|4/4
+SectionLink|C主歌经E属到A副歌|C@8 Em@4 F@4 G@4 E7@4 A@4 D@4 E@4 A@8|ionian|develop|transition|no|G到E7变为A属，A-D-E-A的后句确认A大调；来源只支持RP机制。|LiRP|verse-chorus|RP schema application|4/4
+SectionLink|王道到降三再留五级|C@4 F@4 G@4 Em@4 Am@4 Fm@4 Bb7@4 Eb@4 Ab@4 Bb@8|ionian|develop|open|no|Fm-Bb-Eb确认Eb后再IV-V开放，完整跨段设计并非原调半终止。|LiPR|prechorus-chorus|ODDS&ENDS VE3 model only|4/4
+SectionLink|主音踏板经降六准备|C@4 F/C@4 G/C@4 C@4 Ab@4 Fm@4 Bb7@4 Eb@8|ionian|color|transition|no|C踏板先稳中心，解除后Ab-Fm-Bb-Eb构成降三区清楚前属属主。|LiPR|prechorus-chorus|Terminal Terminal VE2 model only|4/4
+SectionLink|大三度下移的共同音枢纽|C@8 Am@4 F@4 E7@4 A@4 F#m@4 D@4 E@8|ionian|develop|open|no|C到A共有E，E7明确新属；A区vi-IV-V句末等待副歌，未声称全局单调式。|LiRP|prechorus|RP schema application|4/4
+SectionLink|降三副歌前的悬属解放|C@4 Dm@4 Gsus4@4 G@4 Ab@4 Bb7sus4@4 Bb7@4 Ebmaj7@8|ionian|color|transition|no|旧G悬属落地后改Ab前属，Bb悬置释放到Ebmaj7；两重延迟有形式意义。|LiPR|prechorus-chorus|PR schema application|4/4
+ClosureContrast|王道副歌的真实末收束|C@4 F@4 G@4 Em@4 Am@4 Dm@4 G7@4 C@8|ionian|resolve|closed|no|王道前半开放，末ii-V7-I根位长停提供真实C收束，区别其他开放条目。|Ramage|chorus-ending|family-only|4/4
+ClosureContrast|低音卡农接小四真实归主|C@4 G/B@4 Am@4 Em/G@4 F@4 Fm@4 G7@4 C@8|ionian|resolve|closed|no|借iv后G7-C有B-C导音和F-E内声，终点长停支持Resolve。|Spicer|section-ending|concept-only|4/4
+ClosureContrast|高原之后的首次根位主音|F@4 G@4 Am@4 G@4 F@4 Dm7@4 G7@4 C@12|ionian|resolve|closed|no|前段高原刻意避I，末长C是首次根位主和弦；起伏是涌现主音设计。|Spicer|chorus-ending|emergent-tonic application|4/4
+ClosureContrast|小调局部前景后的大主终止|C@4 Bm7b5@4 E7@4 Am@4 Fm@4 C/G@4 G7@4 C@8|ionian|resolve|closed|no|A局部小主后借Fm，C/G作为终止四六到G7再根位I收束。|Ramage|chorus-ending|family-only|4/4
+ClosureContrast|转调不是原主收束|C@4 F@4 G@4 C/E@4 Ab@4 Bb7@4 Eb@8|ionian|color|transition|no|旧调短主功能被Ab-Bb7-Eb取代，末Eb虽新调主音不标为C的Resolve。|LiPR|prechorus-chorus|PR schema application|4/4
+ClosureContrast|主音短暂出现后的降七出口|F@4 G@4 Em@4 Am@4 Dm@4 G7@4 C@4 Bb@8|ionian|develop|open|no|中途G-C只短驻，末Bb是离主的侧向开放，尾部行为与是否出现I分开。|Spicer|postchorus|fragile-tonic application|4/4
+ClosureContrast|转位主音后挂起六级属|C@4 F@4 G@4 Em@4 Am@4 Dm7@4 G7@4 C/E@4 E7@8|ionian|develop|transition|no|C/E并非全句终点，末E7明确指向下一Am段，Resolve不应接纳此用途。|Ramage|chorus-bridge|family-only|4/4
+ClosureContrast|借用小四的长主与后段重开|C@8 Fm@4 C@8 Am@4 Dm@4 G@8|ionian|develop|open|no|前句iv-I有局部收束但后句vi-ii-V重新打开，整体用途是段落链接。|Spicer|verse-prechorus|fragile-tonic application|4/4
+ClosureContrast|末I低音之上的悬置|C@4 Am@4 F@4 G@4 Fm@4 Ab@4 Gsus4/C@8|ionian|color|ambiguous|no|末低音C并不等于主和弦，Gsus4/C音集C-D-G使主三音E缺席，保留悬置。|Spicer|bridge-ending|concept-only|4/4
+ClosureContrast|副歌尾的双属与真实C终止|C@4 F@4 G@4 Em@4 Am@4 A7@4 Dm@4 D7@4 G7@4 C@12|ionian|resolve|closed|no|A7导Dm后D7-G7-C属链提供完整方向，最终C长驻与前段王道互补。|Ramage|chorus-ending|family-only|4/4

@@ -473,7 +473,8 @@ void writeV7Summary(const std::filesystem::path& path,
                     std::size_t candidateCount,
                     const std::set<std::string>& approved,
                     const wish::AnnotationCatalog& annotations,
-                    std::size_t baselineAnnotationEntries) {
+                    std::size_t baselineAnnotationEntries,
+                    std::size_t baselineOrphanAnnotationIds) {
     std::ofstream out(path, std::ios::binary);
     require(static_cast<bool>(out), "cannot write " + path.string());
     out << "Factory V7 isolated increment compiler\n"
@@ -488,6 +489,7 @@ void writeV7Summary(const std::filesystem::path& path,
         << "approved_candidate_ids=" << approved.size() << '\n'
         << "pending_candidate_ids=" << candidateCount - approved.size() << '\n'
         << "baseline_annotation_source_ids=" << baselineAnnotationEntries << '\n'
+        << "baseline_annotation_unbound_orphan_ids=" << baselineOrphanAnnotationIds << '\n'
         << "v7_annotation_source_ids=" << annotations.entries.size() << '\n'
         << "v7_annotation_memberships=" << std::accumulate(annotations.entries.begin(), annotations.entries.end(),
             std::size_t{}, [](std::size_t count, const auto& entry) { return count + entry.memberships.size(); }) << '\n'
@@ -502,7 +504,8 @@ void writeV7Summary(const std::filesystem::path& path,
 
 std::string readAnnotationPrefix(const std::filesystem::path& path,
                                 const std::vector<ProgressionTemplate>& baseline,
-                                std::string_view baselineName = "V5") {
+                                std::string_view baselineName = "V5",
+                                bool allowHistoricalUnboundIds = false) {
     const auto originalText = readText(path);
     const auto original = wish::parseAnnotations(originalText);
     require(static_cast<bool>(original), "cannot parse " + std::string(baselineName) +
@@ -512,6 +515,7 @@ std::string readAnnotationPrefix(const std::filesystem::path& path,
     const auto byId = toMap(baseline);
     for (const auto& entry : original.catalog.entries) {
         const auto found = byId.find(entry.templateId);
+        if (found == byId.end() && allowHistoricalUnboundIds) continue;
         require(found != byId.end(), std::string(baselineName) +
                 " HCA contains an ID absent from the baseline library: " + entry.templateId);
         require(entry.sourceFingerprint == wish::sourceFingerprint(found->second),
@@ -526,8 +530,10 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
                             const std::vector<ProgressionTemplate>& candidates,
                             const wish::AnnotationCatalog& additions,
                             std::string_view baselineName = "V5",
-                            std::string_view candidateName = "V6") {
-    const auto originalText = readAnnotationPrefix(basePath, baseline, baselineName);
+                            std::string_view candidateName = "V6",
+                            bool allowHistoricalUnboundIds = false) {
+    const auto originalText = readAnnotationPrefix(
+        basePath, baseline, baselineName, allowHistoricalUnboundIds);
     const std::string header = "HC_MODE_ANNOTATIONS 1\n";
     const auto rows = wish::serializeAnnotations(additions);
     require(rows.starts_with(header), "internal HCA serializer header mismatch");
@@ -631,13 +637,23 @@ int compileV7Increment(int argc, char** argv) {
             "V7 experiment database compile failed: " + error);
     const auto baselineAnnotations = wish::parseAnnotations(readText(baseAnnotationsPath));
     require(static_cast<bool>(baselineAnnotations), "cannot parse G5 HCA: " + baselineAnnotations.error);
+    std::set<std::string> baselineIds;
+    for (const auto& item : baseline.templates) baselineIds.insert(item.id);
+    const auto baselineOrphanAnnotationIds = static_cast<std::size_t>(std::count_if(
+        baselineAnnotations.catalog.entries.begin(), baselineAnnotations.catalog.entries.end(),
+        [&](const auto& entry) { return !baselineIds.contains(entry.templateId); }));
+    std::cout << "v7_g5_hca baseline_sources=" << baseline.templates.size()
+              << " annotation_source_ids=" << baselineAnnotations.catalog.entries.size()
+              << " unbound_historical_ids=" << baselineOrphanAnnotationIds
+              << " raw_prefix_preserved=yes\n";
     writeMergedAnnotations(annotationsPath, baseAnnotationsPath, baseline.templates,
-                           candidates, annotations, "G5", "V7");
+                           candidates, annotations, "G5", "V7", true);
     verifyRoundTrip(proposalPath, proposalEntries, baseline.templates, 7, "G5", "V7 proposal");
     verifyRoundTrip(experimentPath, experimentEntries, baseline.templates, 7, "G5", "V7 experiment");
     if (!summaryPath.empty())
         writeV7Summary(summaryPath, baseline.templates.size(), candidates.size(), approved,
-                       annotations, baselineAnnotations.catalog.entries.size());
+                       annotations, baselineAnnotations.catalog.entries.size(),
+                       baselineOrphanAnnotationIds);
 
     std::cout << "Factory V7 PASS library_version=7 schema=2"
               << " baseline=" << baseline.templates.size()

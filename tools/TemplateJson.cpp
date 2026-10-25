@@ -150,6 +150,9 @@ MatchEvent parseNotationEvent(std::string_view token, Mode mode, double duration
     else if (suffix == "dim7") e.quality = ChordQuality::Diminished7;
     else if (suffix == "m7b5") e.quality = ChordQuality::HalfDiminished7;
     else if (suffix == "m7") e.quality = ChordQuality::Minor7;
+    else if (suffix == "sus2") e.quality = ChordQuality::Sus2;
+    else if (suffix == "sus4") e.quality = ChordQuality::Sus4;
+    else if (suffix == "aug") e.quality = ChordQuality::Augmented;
     else if (suffix.empty()) e.quality = lower ? ChordQuality::Minor : ChordQuality::Major;
     else throw std::runtime_error("unsupported quality: " + std::string(suffix));
     if (slash != std::string_view::npos) {
