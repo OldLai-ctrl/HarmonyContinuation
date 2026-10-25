@@ -17278,8 +17278,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17309,9 +17309,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17331,7 +17336,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_092",
@@ -17382,8 +17387,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17413,9 +17418,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17435,7 +17445,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_093",
@@ -17486,8 +17496,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17517,9 +17527,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17539,7 +17554,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_094",
@@ -17590,8 +17605,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17621,9 +17636,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17643,7 +17663,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_095",
@@ -17693,8 +17713,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17724,9 +17744,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17746,7 +17771,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_096",
@@ -17795,8 +17820,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17826,9 +17851,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17848,7 +17878,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_097",
@@ -17898,8 +17928,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -17929,9 +17959,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -17951,7 +17986,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_098",
@@ -18001,8 +18036,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18032,9 +18067,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18054,7 +18094,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_099",
@@ -18103,8 +18143,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18134,9 +18174,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18156,7 +18201,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_100",
@@ -18206,8 +18251,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18237,9 +18282,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18276,7 +18326,7 @@
         ]
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_101",
@@ -18325,8 +18375,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18356,9 +18406,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18378,7 +18433,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_102",
@@ -18428,8 +18483,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18459,9 +18514,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18481,7 +18541,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_103",
@@ -18540,8 +18600,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18577,9 +18637,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18599,7 +18664,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_104",
@@ -18665,8 +18730,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18702,9 +18767,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18724,7 +18794,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_105",
@@ -18787,8 +18857,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18818,9 +18888,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "unadoptedStyleSuggestions": [
         "Neo-Soul",
         "R&B",
@@ -18846,7 +18921,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_106",
@@ -18905,8 +18980,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -18936,9 +19011,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -18958,7 +19038,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_107",
@@ -19007,8 +19087,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -19044,9 +19124,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -19066,7 +19151,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_108",
@@ -19115,8 +19200,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -19152,9 +19237,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -19174,7 +19264,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_109",
@@ -19223,8 +19313,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -19260,9 +19350,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -19282,7 +19377,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     },
     {
       "id": "V6_B3_01_110",
@@ -19332,8 +19427,8 @@
       "grade": "A",
       "initialGrade": "A",
       "labelActions": [],
-      "adoptionStatus": "pending",
-      "status": "pending",
+      "adoptionStatus": "approved",
+      "status": "editorial-reviewed",
       "auditionStatus": "pending-human",
       "uncertainties": "Individual full-phrase genre provenance not asserted; shared voicer does not establish genre or strict parallel planing.",
       "modeInterpretation": "Tonic evidence plus characteristic degrees; borrowing may cause strict rejection.",
@@ -19363,9 +19458,14 @@
           "decision": "A",
           "adoption": "pending",
           "reason": "hold beyond 800 shortlist budget; real all-A shadow810 input truncated, no observed tested-result loss"
+        },
+        {
+          "reviewer": "primary-agent",
+          "action": "R2 restore frozen A source after default full-scan R1 approval; no music/source/membership modification",
+          "decision": "A approved"
         }
       ],
-      "budgetHold": true,
+      "budgetHold": false,
       "relationshipAudit": {
         "exactCompleteV5": [],
         "sameHarmonyWithoutRhythmV5": [],
@@ -19385,7 +19485,7 @@
         "stitchedLongLineLeads": []
       },
       "relationshipAuditScope": "B3 normalized full music / rhythmless / low-confidence core-family comparison against immutable V5 and all B1/B3 candidates; related does not mean duplicate.",
-      "engineeringGate": "pending-budget-resolution"
+      "engineeringGate": "capacity-unblocked-by-R1"
     }
   ],
   "theorySources": {
@@ -19395,6 +19495,7 @@
     "melodicMinor": "https://www.jazzbooks.com/mm5/samples/D-BG2.pdf",
     "planing": "https://learnmusictheory.net/PDFs/pdffiles/06-06-ParallelismPlaningImpressionism.pdf"
   },
-  "phase": "B3",
-  "auditionDecision": "User approved B3 after ten representative B1 listens; genre labels not confirmed."
+  "phase": "B3-R",
+  "auditionDecision": "User approved B3 after ten representative B1 listens; genre labels not confirmed.",
+  "retrievalPolicy": "Default full ordered scan; positive explicit cap retained only for diagnostics."
 }

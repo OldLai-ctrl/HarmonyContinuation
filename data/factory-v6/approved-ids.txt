@@ -1,4 +1,4 @@
-# V6 candidate adoption; A grade and explicit approval only. Never activate production automatically.
+# Isolated V6 adoption; A grade editorial approval only. Default full scan; never activate production automatically.
 V6_B1_001
 V6_B1_002
 V6_B1_003
@@ -131,3 +131,23 @@ V6_B3_01_087
 V6_B3_01_088
 V6_B3_01_089
 V6_B3_01_090
+V6_B3_01_091
+V6_B3_01_092
+V6_B3_01_093
+V6_B3_01_094
+V6_B3_01_095
+V6_B3_01_096
+V6_B3_01_097
+V6_B3_01_098
+V6_B3_01_099
+V6_B3_01_100
+V6_B3_01_101
+V6_B3_01_102
+V6_B3_01_103
+V6_B3_01_104
+V6_B3_01_105
+V6_B3_01_106
+V6_B3_01_107
+V6_B3_01_108
+V6_B3_01_109
+V6_B3_01_110

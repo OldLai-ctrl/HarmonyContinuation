@@ -595,9 +595,9 @@ TimingSummary measure(const CandidateIndex& index, const std::vector<QueryCase>&
 
 void reportTiming(const char* label, std::size_t poolSize, const TimingSummary& timing) {
     std::cout << "timing label=" << label << " candidates=" << poolSize
-              << " shortlist_limit=800 median_ms=" << timing.medianMs
+              << " default_shortlist_limit=0 median_ms=" << timing.medianMs
               << " p95_ms=" << timing.p95Ms << " max_ms=" << timing.maxMs
-              << (poolSize <= 800 ? " full_scan=yes" : " full_scan=no") << '\n';
+              << " full_scan=yes\n";
 }
 
 TimingSummary summarize(std::vector<double> elapsedMs) {
@@ -633,7 +633,7 @@ void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
     const auto reportPath = outputDirectory / "real-shortlist-gate.tsv";
     std::ofstream report(reportPath, std::ios::binary);
     require(static_cast<bool>(report), "cannot write real shortlist gate report");
-    report << "record\tpool\tentries\tcap_inputs\tquery_source\tkey\tprefix\tfull_matches\tcap_matches"
+    report << "record\tmode\tpool\tentries\tcap_inputs\tquery_source\tkey\tprefix\tfull_matches\tcap_matches"
               "\tfull_top20\ttop20_retained\tfull_source_rank\tcap_source_rank\tfull_only_ids"
               "\tdefault_qualified\tdefault_visible\tdefault_group\tdefault_rank\tdefault_top_id"
               "\tcap_ms\tfull_ms\n";
@@ -641,8 +641,7 @@ void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
     const auto evaluate = [&](const char* poolLabel, const CandidateIndex& index, bool checkDefault) {
         MatchWeights cappedWeights;
         cappedWeights.shortlistLimit = 800;
-        MatchWeights fullWeights = cappedWeights;
-        fullWeights.shortlistLimit = index.templates().size();
+        MatchWeights fullWeights;
         std::vector<double> cappedTimes, fullTimes;
         std::size_t fullMatchCount{}, cappedMatchCount{}, top20Count{}, top20Retained{};
         std::size_t fullOnlyCount{}, sourceMisses{}, qualified{}, defaultVisible{};
@@ -723,7 +722,8 @@ void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
                 if (i) omittedText += ';';
                 omittedText += omitted[i];
             }
-            report << "query\t" << poolLabel << '\t' << index.templates().size() << '\t'
+            report << "query\texplicit-legacy-cap-diagnostic\t" << poolLabel << '\t'
+                   << index.templates().size() << '\t'
                    << cappedStats.shortlistSize << '\t' << test.item->id << '\t'
                    << static_cast<int>(test.tonic) << '\t' << test.prefix << '\t'
                    << fullIds.size() << '\t' << cappedIds.size() << '\t' << fullTopCount << '\t'
@@ -737,19 +737,22 @@ void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
         const auto fullTiming = summarize(std::move(fullTimes));
         const bool inputTruncated = index.templates().size() > 800;
         const bool acquisitionStop = inputTruncated || fullOnlyCount > 0 || sourceMisses > 0 || top20Loss;
-        report << "summary\t" << poolLabel << '\t' << index.templates().size() << '\t'
+        report << "summary\texplicit-legacy-cap-diagnostic\t" << poolLabel << '\t'
+               << index.templates().size() << '\t'
                << std::min<std::size_t>(800, index.templates().size()) << "\t-\t-\t-\t"
                << fullMatchCount << '\t' << cappedMatchCount << '\t' << top20Count << '\t'
                << top20Retained << "\t-\t-\tfull_only_raw_sources=" << fullOnlyCount
                << ";query_source_misses=" << sourceMisses << ";truncated_queries=" << truncatedQueries
-               << ";gate=" << (acquisitionStop ? "STOP" : "OPEN") << "\t"
+               << ";explicit_cap_diagnostic_gate=" << (acquisitionStop ? "STOP" : "OPEN") << "\t"
                << "qualified=" << qualified << '/' << (checkDefault ? cases.size() : 0)
                << "\tvisible=" << defaultVisible << '/' << (checkDefault ? cases.size() : 0)
                << "\tresolve=" << defaultGroupEntries[0] << ",develop=" << defaultGroupEntries[1]
                << ",loop=" << defaultGroupEntries[2] << ",color=" << defaultGroupEntries[3]
                << "\t-\t-\t" << cappedTiming.medianMs << '\t' << fullTiming.medianMs << '\n';
         require(static_cast<bool>(report), "cannot finish real shortlist gate report");
-        std::cout << "shortlist_gate pool=" << poolLabel << " entries=" << index.templates().size()
+        std::cout << "shortlist_gate mode=explicit-legacy-cap-diagnostic"
+                  << " default_shortlist_limit=0 cap_limit=800 pool=" << poolLabel
+                  << " entries=" << index.templates().size()
                   << " cap_inputs=" << std::min<std::size_t>(800, index.templates().size())
                   << " full_only_raw_sources=" << fullOnlyCount
                   << " query_source_misses=" << sourceMisses
@@ -763,13 +766,14 @@ void verifyActualShortlistGate(const CandidateIndex& shadowIndex,
                   << " cap_p95_ms=" << cappedTiming.p95Ms
                   << " full_median_ms=" << fullTiming.medianMs
                   << " full_p95_ms=" << fullTiming.p95Ms
-                  << " acquisition_gate=" << (acquisitionStop ? "STOP" : "OPEN")
+                  << " explicit_cap_diagnostic_gate=" << (acquisitionStop ? "STOP" : "OPEN")
                   << " evidence=" << reportPath.string() << '\n';
         if (checkDefault && !inputTruncated)
             require(fullOnlyCount == 0 && sourceMisses == 0 && !top20Loss,
                     "real experiment pool below 800 diverged between cap and full scan");
         if (acquisitionStop)
-            std::cout << "shortlist_gate_action pool=" << poolLabel
+            std::cout << "shortlist_gate_action mode=explicit-legacy-cap-diagnostic"
+                      << " default_shortlist_limit=0 cap_limit=800 pool=" << poolLabel
                       << " minimum_correction=hold_affected_additions_pending_until_real_shortlist_recall_is_resolved"
                       << " scoring_gates_weights_and_algorithm=unchanged\n";
     };
@@ -1517,6 +1521,221 @@ int runR1DefaultScan(const std::filesystem::path& baselinePath,
               << " report=" << (outputDirectory / "r1-cap-vs-default.tsv").string() << '\n';
     return 0;
 }
+
+int runIncremental(const std::filesystem::path& baselinePath,
+                   const std::filesystem::path& candidatesPath,
+                   const std::filesystem::path& metadataPath,
+                   const std::filesystem::path& approvedPath,
+                   const std::filesystem::path& proposalPath,
+                   const std::filesystem::path& experimentPath,
+                   const std::filesystem::path& baseHcaPath,
+                   const std::filesystem::path& mergedHcaPath,
+                   const std::filesystem::path& mediaDirectory,
+                   const std::filesystem::path& selectedIdsPath,
+                   const std::filesystem::path& sampleIdsPath) {
+    const auto baseline = library::loadFactory(baselinePath);
+    const auto proposal = library::loadFactory(proposalPath);
+    const auto experimental = library::loadFactory(experimentPath);
+    require(static_cast<bool>(baseline), "cannot load incremental V5 baseline: " + baseline.error);
+    require(static_cast<bool>(proposal), "cannot load incremental proposal DB: " + proposal.error);
+    require(static_cast<bool>(experimental), "cannot load incremental experiment DB: " + experimental.error);
+    require(baseline.libraryVersion == 5 && baseline.storageSchemaVersion == 2 &&
+            baseline.templates.size() == 658, "incremental V5 baseline contract");
+
+    const auto parsedCandidates = dev::parseTemplateJson(readText(candidatesPath), true);
+    require(static_cast<bool>(parsedCandidates),
+            "cannot parse incremental candidates.json: " + parsedCandidates.error);
+    const auto& candidates = parsedCandidates.templates;
+    std::set<std::string> candidateIds;
+    for (const auto& item : candidates)
+        require(candidateIds.insert(item.id).second, "duplicate incremental candidate ID: " + item.id);
+    const auto approved = readApprovedIds(approvedPath);
+    const auto selectedIds = readApprovedIds(selectedIdsPath);
+    const auto sampleIds = readApprovedIds(sampleIdsPath);
+    require(!selectedIds.empty(), "incremental selected ID list is empty");
+    require(proposal.libraryVersion == 6 && proposal.storageSchemaVersion == 2 &&
+            proposal.templates.size() == baseline.templates.size() + candidates.size(),
+            "incremental proposal DB identity/count");
+    require(experimental.libraryVersion == 6 && experimental.storageSchemaVersion == 2 &&
+            experimental.templates.size() == baseline.templates.size() + approved.size(),
+            "incremental experiment DB identity/count");
+
+    const auto metadataRoot = benchmark::json::parse(readText(metadataPath));
+    require(metadataRoot.at("version").integer(6, 6) == 6 &&
+            metadataRoot.at("baseline").text() == "2421c6f",
+            "incremental metadata version/baseline");
+    const auto baseHcaText = readText(baseHcaPath);
+    const auto mergedHcaText = readText(mergedHcaPath);
+    require(mergedHcaText.starts_with(baseHcaText), "incremental HCA changed the exact V5 prefix");
+    const auto baseHca = wish::parseAnnotations(baseHcaText);
+    const auto mergedHca = wish::parseAnnotations(mergedHcaText);
+    require(static_cast<bool>(baseHca), "incremental baseline HCA parse: " + baseHca.error);
+    require(static_cast<bool>(mergedHca), "incremental merged HCA parse: " + mergedHca.error);
+    require(mergedHca.catalog.entries.size() >=
+                baseHca.catalog.entries.size() + selectedIds.size(),
+            "incremental merged HCA is missing selected source annotations");
+
+    const auto& metadataRows = metadataRoot.at("candidates").items();
+    const auto parseUsage = [](std::string_view value) {
+        if (value == "high") return wish::EditorialUsage::High;
+        if (value == "medium") return wish::EditorialUsage::Medium;
+        if (value == "low") return wish::EditorialUsage::Low;
+        if (value == "unrated") return wish::EditorialUsage::Unrated;
+        throw std::runtime_error("unknown selected membership usage: " + std::string(value));
+    };
+    const auto parseReview = [](std::string_view value) {
+        if (value == "pending") return wish::ReviewStatus::Pending;
+        if (value == "reviewed") return wish::ReviewStatus::Reviewed;
+        if (value == "unconfirmed") return wish::ReviewStatus::Unconfirmed;
+        throw std::runtime_error("unknown selected membership review: " + std::string(value));
+    };
+    for (const auto& id : selectedIds) {
+        require(approved.contains(id), "selected source is not in approved-ids.txt: " + id);
+        const auto metadataCount = std::count_if(metadataRows.begin(), metadataRows.end(), [&](const auto& row) {
+            return row.at("id").text() == id;
+        });
+        require(metadataCount == 1, "selected source metadata ID count is not one: " + id);
+        const auto metadata = std::find_if(metadataRows.begin(), metadataRows.end(), [&](const auto& row) {
+            return row.at("id").text() == id;
+        });
+        require(metadata != metadataRows.end(), "selected source is absent from metadata.json: " + id);
+        require(metadata->at("grade").text() == "A" &&
+                metadata->at("status").text() == "editorial-reviewed" &&
+                metadata->at("adoptionStatus").text() == "approved",
+                "selected source metadata is not approved A/reviewed: " + id);
+
+        const auto& source = find(candidates, id);
+        const auto& proposalSource = find(proposal, id);
+        const auto& experimentSource = find(experimental, id);
+        const auto sourcePayload = dev::serializeTemplateJson(source);
+        require(sourcePayload == dev::serializeTemplateJson(proposalSource) &&
+                sourcePayload == dev::serializeTemplateJson(experimentSource),
+                "selected source complete payload differs across candidates/proposal/experiment: " + id);
+        require(library::canonicalMusicalFingerprint(source) ==
+                    library::canonicalMusicalFingerprint(experimentSource) &&
+                wish::sourceFingerprint(source) == wish::sourceFingerprint(experimentSource),
+                "selected source musical identity differs in experiment DB: " + id);
+
+        wish::ModeAnnotation expectedEntry;
+        expectedEntry.templateId = id;
+        expectedEntry.sourceFingerprint = wish::sourceFingerprint(source);
+        for (const auto& rawMembership : metadata->at("memberships").items()) {
+            wish::ModeMembership membership;
+            membership.tonicOffset = rawMembership.at("tonicOffset").integer(0, 11);
+            const auto mode = wish::parseMode(rawMembership.at("mode").text());
+            require(mode.has_value(), "unknown selected membership mode: " + id);
+            membership.mode = *mode;
+            membership.usage = parseUsage(rawMembership.at("usage").text());
+            membership.usageBasis = rawMembership.at("usageBasis").text();
+            membership.musicalEvidence = rawMembership.at("musicalEvidence").text();
+            membership.review = parseReview(rawMembership.at("review").text());
+            membership.reviewer = rawMembership.at("reviewer").text();
+            membership.melodicContext = rawMembership.at("melodicContext").text();
+            std::string validationError;
+            require(wish::validMembership(membership, validationError),
+                    "invalid selected membership " + id + ": " + validationError);
+            expectedEntry.memberships.push_back(std::move(membership));
+        }
+        require(!expectedEntry.memberships.empty(), "selected source metadata has no membership: " + id);
+        const auto* actualEntry = findAnnotation(mergedHca.catalog, id);
+        require(actualEntry, "selected source HCA membership is missing from compiled HCA: " + id);
+        require(expectedEntry.sourceFingerprint == wish::sourceFingerprint(source) &&
+                wish::serializeAnnotations({1, {expectedEntry}}) ==
+                    wish::serializeAnnotations({1, {*actualEntry}}),
+                "selected source metadata/HCA membership differs: " + id);
+        const auto resolution = wish::resolveAnnotations(experimentSource, mergedHca.catalog);
+        require(resolution.state != wish::AnnotationState::SourceMismatch &&
+                resolution.state != wish::AnnotationState::Invalid,
+                "selected source does not resolve against compiled HCA: " + id);
+        std::cout << "incremental_identity id=" << id
+                  << " candidate_proposal_experiment=exact"
+                  << " musical_fingerprint=exact metadata_grade=A status=editorial-reviewed"
+                  << " adoption=approved hca_memberships=" << actualEntry->memberships.size()
+                  << " hca_binding=PASS\n";
+    }
+
+    const CandidateIndex index(experimental.templates);
+    RecommendationRequest request;
+    auto weights = recommendationWeights();
+    weights.perGroup = 0;
+    std::vector<std::string> qualificationFailures;
+    std::size_t qualifiedSources{};
+    for (const auto& id : selectedIds) {
+        try {
+            const auto& item = find(experimental, id);
+            request.preferredIntent = item.intent;
+            const auto selected = selectRankedPrefix(
+                item, {PitchClass::C, item.mode}, index, request, weights, false);
+            const auto* candidate = findCandidate(selected.results, id);
+            require(candidate && candidate->baseQualified && candidate->hardConstraintsPassed,
+                    "selected source has no base-qualified candidate at the chosen prefix");
+            const auto match = std::find_if(selected.results.matches.begin(), selected.results.matches.end(),
+                [&](const auto& result) { return result.templateId == id; });
+            require(match != selected.results.matches.end(),
+                    "selected source has no corresponding matcher result at the chosen prefix");
+            const auto position = groupRank(selected.results, candidate->id);
+            require(position.has_value(), "selected source candidate has no recommendation group rank");
+            const bool primary = candidate->primaryTemplate == id;
+            ++qualifiedSources;
+            std::cout << "incremental_prefix id=" << id << " key=C mode="
+                      << (item.mode == Mode::Major ? "major" : "minor")
+                      << " prefix=" << selected.prefix << " qualified=yes group="
+                      << groupName(position->first) << " rank=" << position->second
+                      << " source_role=" << (primary ? "primary" : "supporting")
+                      << " similarity=" << match->similarity
+                      << " eligibility_score=" << candidate->eligibilityScore
+                      << " ranking_score=" << candidate->rankingScore << '\n';
+        } catch (const std::exception& error) {
+            qualificationFailures.push_back(id);
+            std::cout << "incremental_prefix id=" << id << " qualified=no detail="
+                      << error.what() << '\n';
+        }
+    }
+    require(qualificationFailures.empty(),
+            "selected sources failed legal-prefix qualification: " +
+            (qualificationFailures.empty() ? std::string{} : qualificationFailures.front()));
+
+    for (const auto& id : sampleIds) {
+        require(selectedIds.contains(id), "sample source is not in selected-ids.txt: " + id);
+        const auto& item = find(experimental, id);
+        const auto route = preview::buildTemplateSequence(
+            item, {PitchClass::C, item.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot build complete sample route: " + id);
+        verifyMidiRoundTrip(route.sequence);
+        verifyPreviewAudio(route.sequence);
+
+        const auto clip = midi::buildClip(route.sequence, midi::ArrangementMode::VoiceLed,
+                                          midi::ExportScope::FullPhrase, {});
+        require(static_cast<bool>(clip), "cannot build complete sample MIDI: " + id);
+        const auto midiBytes = midi::writeToMemory(clip.sequence);
+        require(midiBytes && midiBytes.bytes.size() > 14, "cannot serialize complete sample MIDI: " + id);
+        std::filesystem::create_directories(mediaDirectory);
+        const auto midiPath = mediaDirectory / (id + "-complete.mid");
+        std::ofstream midiOut(midiPath, std::ios::binary);
+        require(static_cast<bool>(midiOut), "cannot write complete sample MIDI: " + id);
+        midiOut.write(reinterpret_cast<const char*>(midiBytes.bytes.data()),
+                      static_cast<std::streamsize>(midiBytes.bytes.size()));
+        require(static_cast<bool>(midiOut), "cannot finish complete sample MIDI: " + id);
+
+        const auto audio = preview::renderOffline(route.sequence, 48000.0);
+        require(!audio.left.empty() && audio.left.size() == audio.right.size() && audio.rms > 0,
+                "complete sample Preview is silent: " + id);
+        std::string wavError;
+        const auto wavPath = mediaDirectory / (id + "-preview.wav");
+        require(preview::writeWav16(audio, wavPath, wavError),
+                "cannot write complete sample Preview: " + wavError);
+        std::cout << "incremental_sample id=" << id << " full_midi=PASS full_preview=PASS"
+                  << " midi_bytes=" << midiBytes.bytes.size() << " wav_frames=" << audio.left.size()
+                  << " rms=" << audio.rms << '\n';
+    }
+
+    std::cout << "incremental PASS baseline=658 candidates=" << candidates.size()
+              << " approved=" << approved.size() << " proposal=" << proposal.templates.size()
+              << " experiment=" << experimental.templates.size()
+              << " selected=" << selectedIds.size() << " qualified=" << qualifiedSources
+              << " sample_ids=" << sampleIds.size() << '\n';
+    return 0;
+}
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1524,6 +1743,18 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--incremental") {
+        try {
+            require(argc == 13, "usage: FactoryV6Tests --incremental v5.db candidates.json metadata.json "
+                                "approved-ids.txt proposal.db experiment.db factory-v5.hca merged-v6.hca "
+                                "media-dir selected-ids.txt sample-ids.txt");
+            return runIncremental(argv[2], argv[3], argv[4], argv[5], argv[6], argv[7],
+                                  argv[8], argv[9], argv[10], argv[11], argv[12]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V6 incremental verification FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--r1-default-scan") {
         try {
             require(argc == 6, "usage: FactoryV6Tests --r1-default-scan v5.db candidates.json metadata.json output-dir");
