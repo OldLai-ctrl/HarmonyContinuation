@@ -128,8 +128,8 @@ int runWishAnnotationChecks() {
                      "reviewed harmonic evidence", "reviewed", "fixture reviewer", "");
     verify(!parseAnnotations(conflict), "conflicting source fingerprint rejected");
     verify(!parseAnnotations("HC_MODE_ANNOTATIONS 2\n"), "unknown format version rejected");
-    const auto oversized=parseAnnotations(std::string(1024u*1024u+1u,'x'));
-    verify(!oversized&&oversized.error.find("1 MiB")!=std::string::npos,"annotation byte limit enforced");
+    const auto oversized=parseAnnotations(std::string(2u*1024u*1024u+1u,'x'));
+    verify(!oversized&&oversized.error.find("2 MiB")!=std::string::npos,"annotation byte limit enforced");
     std::string many="HC_MODE_ANNOTATIONS 1\n";
     for(int i=0;i<8193;++i)many+=quotedRecord("limit-"+std::to_string(i),"source-fixture",0,"dorian","unrated","","","pending","","");
     const auto excessive=parseAnnotations(many);

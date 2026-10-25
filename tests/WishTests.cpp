@@ -18,6 +18,11 @@ int runWishSamplerChecks();
 int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>&,const harmony::wish::AnnotationCatalog&);
 int main(int argc,char** argv) {
     try {
+        if(argc>1 && std::string_view(argv[1])=="--annotations-only") {
+            const int checks=runWishAnnotationChecks();
+            std::cout<<"WishAnnotationChecks PASS checks="<<checks<<'\n';
+            return 0;
+        }
         using namespace harmony;
         const auto factory=library::loadFactory(argc>2?argv[2]:HC_WISH_FACTORY_DB_PATH);
         if(!factory)throw std::runtime_error(factory.error);

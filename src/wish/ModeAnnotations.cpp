@@ -16,7 +16,7 @@
 
 namespace harmony::wish {
 namespace {
-constexpr std::size_t maximumBytes = 1024u * 1024u;
+constexpr std::size_t maximumBytes = 2u * 1024u * 1024u;
 constexpr std::size_t maximumRecords = 8192;
 constexpr std::size_t maximumIdLength = 256;
 constexpr std::size_t maximumFingerprintLength = 32768;
@@ -211,7 +211,7 @@ bool validMembership(const ModeMembership& membership, std::string& error) {
 }
 
 AnnotationLoadResult parseAnnotations(std::string_view text) {
-    if (text.size() > maximumBytes) return failure("annotation file exceeds 1 MiB");
+    if (text.size() > maximumBytes) return failure("annotation file exceeds 2 MiB");
     std::istringstream input{std::string(text)};
     input.imbue(std::locale::classic());
     std::string line;
@@ -300,7 +300,7 @@ AnnotationLoadResult loadAnnotations(const std::filesystem::path& path) {
         const auto count = input.gcount();
         if (count > 0) {
             if (text.size() + static_cast<std::size_t>(count) > maximumBytes)
-                return failure("annotation file exceeds 1 MiB");
+                return failure("annotation file exceeds 2 MiB");
             text.append(buffer.data(), static_cast<std::size_t>(count));
         }
     }
@@ -329,13 +329,13 @@ std::string serializeAnnotations(const AnnotationCatalog& catalog) {
                 << std::quoted(membership.reviewer) << ' ' << std::quoted(membership.melodicContext) << '\n';
             const auto serializedRow = row.str();
             if (serializedRow.size() > maximumBytes - outputBytes)
-                throw std::length_error("serialized annotations exceed 1 MiB");
+                throw std::length_error("serialized annotations exceed 2 MiB");
             outputBytes += serializedRow.size();
             output << serializedRow;
         }
     }
     auto result = output.str();
-    if (result.size() > maximumBytes) throw std::length_error("serialized annotations exceed 1 MiB");
+    if (result.size() > maximumBytes) throw std::length_error("serialized annotations exceed 2 MiB");
     return result;
 }
 

@@ -380,7 +380,8 @@ void verifyAnnotations(const library::LoadResult& baseline,
 void verifyWishModePools(const library::LoadResult& baseline,
                          const library::LoadResult& experimental,
                          const std::filesystem::path& baseHcaPath,
-                         const std::filesystem::path& mergedHcaPath) {
+                         const std::filesystem::path& mergedHcaPath,
+                         bool includeBaseline = true) {
     constexpr std::array modes{
         wish::MusicalMode::Ionian, wish::MusicalMode::Dorian, wish::MusicalMode::Phrygian,
         wish::MusicalMode::Lydian, wish::MusicalMode::Mixolydian, wish::MusicalMode::Aeolian,
@@ -395,9 +396,7 @@ void verifyWishModePools(const library::LoadResult& baseline,
         {wish::MusicalMode::MelodicMinorAscending, 0},
         {wish::MusicalMode::ClassicalMelodicMinor, 0}
     };
-    const auto baseCatalog = wish::parseAnnotations(readText(baseHcaPath));
     const auto mergedCatalog = wish::parseAnnotations(readText(mergedHcaPath));
-    require(static_cast<bool>(baseCatalog), "WishPool V5 annotations: " + baseCatalog.error);
     require(static_cast<bool>(mergedCatalog), "WishPool V6 annotations: " + mergedCatalog.error);
     const auto collect = [&](const library::LoadResult& factory,
                              const wish::AnnotationCatalog& annotations,
@@ -437,7 +436,11 @@ void verifyWishModePools(const library::LoadResult& baseline,
             std::cout << '\n';
         }
     };
-    (void)collect(baseline, baseCatalog.catalog, "FactoryV5", true);
+    if (includeBaseline) {
+        const auto baseCatalog = wish::parseAnnotations(readText(baseHcaPath));
+        require(static_cast<bool>(baseCatalog), "WishPool V5 annotations: " + baseCatalog.error);
+        (void)collect(baseline, baseCatalog.catalog, "FactoryV5", true);
+    }
     (void)collect(experimental, mergedCatalog.catalog, "FactoryV6Experiment", false);
 }
 
@@ -1532,7 +1535,8 @@ int runIncremental(const std::filesystem::path& baselinePath,
                    const std::filesystem::path& mergedHcaPath,
                    const std::filesystem::path& mediaDirectory,
                    const std::filesystem::path& selectedIdsPath,
-                   const std::filesystem::path& sampleIdsPath) {
+                   const std::filesystem::path& sampleIdsPath,
+                   bool finalInventory) {
     const auto baseline = library::loadFactory(baselinePath);
     const auto proposal = library::loadFactory(proposalPath);
     const auto experimental = library::loadFactory(experimentPath);
@@ -1729,11 +1733,33 @@ int runIncremental(const std::filesystem::path& baselinePath,
                   << " rms=" << audio.rms << '\n';
     }
 
+    if (finalInventory) {
+        verifyWishModePools(baseline, experimental, baseHcaPath, mergedHcaPath, false);
+        const auto& representative = find(experimental, "V6_B3_01_048");
+        const auto prefix = representative.full.size() > 2
+            ? representative.full.size() - 1 : std::size_t{1};
+        const auto query = queryFor(representative, {PitchClass::C, representative.mode}, prefix);
+        RecommendationRequest request;
+        request.preferredIntent = representative.intent;
+        const auto started = Clock::now();
+        const auto recommendation = recommendContinuations(query, index, request);
+        const auto elapsedMs = std::chrono::duration<double, std::milli>(Clock::now() - started).count();
+        require(recommendation.stats.shortlistSize == experimental.templates.size(),
+                "final representative recommendation did not scan the complete experiment index");
+        std::size_t recommendedEntries{};
+        for (const auto& group : recommendation.groups) recommendedEntries += group.size();
+        std::cout << "r3_representative_timing id=" << representative.id
+                  << " prefix=" << prefix << " pool=" << experimental.templates.size()
+                  << " default_shortlist_limit=0 full_scan=yes elapsed_ms=" << elapsedMs
+                  << " group_entries=" << recommendedEntries << '\n';
+    }
+
     std::cout << "incremental PASS baseline=658 candidates=" << candidates.size()
               << " approved=" << approved.size() << " proposal=" << proposal.templates.size()
               << " experiment=" << experimental.templates.size()
               << " selected=" << selectedIds.size() << " qualified=" << qualifiedSources
-              << " sample_ids=" << sampleIds.size() << '\n';
+              << " sample_ids=" << sampleIds.size()
+              << " final_inventory=" << (finalInventory ? "yes" : "no") << '\n';
     return 0;
 }
 } // namespace
@@ -1745,11 +1771,13 @@ int main(int argc, char** argv) {
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
     if (argc > 1 && std::string_view(argv[1]) == "--incremental") {
         try {
-            require(argc == 13, "usage: FactoryV6Tests --incremental v5.db candidates.json metadata.json "
+            const bool finalInventory = argc == 14 && std::string_view(argv[13]) == "--inventory";
+            require(argc == 13 || finalInventory,
+                    "usage: FactoryV6Tests --incremental v5.db candidates.json metadata.json "
                                 "approved-ids.txt proposal.db experiment.db factory-v5.hca merged-v6.hca "
-                                "media-dir selected-ids.txt sample-ids.txt");
+                                "media-dir selected-ids.txt sample-ids.txt [--inventory]");
             return runIncremental(argv[2], argv[3], argv[4], argv[5], argv[6], argv[7],
-                                  argv[8], argv[9], argv[10], argv[11], argv[12]);
+                                  argv[8], argv[9], argv[10], argv[11], argv[12], finalInventory);
         } catch (const std::exception& error) {
             std::cerr << "Factory V6 incremental verification FAIL: " << error.what() << '\n';
             return 1;

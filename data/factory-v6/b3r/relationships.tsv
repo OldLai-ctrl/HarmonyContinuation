@@ -1,0 +1,3 @@
+scope	candidate	sourceSet	source	relations	exactComplete	rhythmless	sameCoreFamily	extensionOnly	nearRoot	rootMatches	rootDifferences	bassContourSame	finalGrade	adoptionStatus
+against_baseline	V6_B3_02_086	V6-existing	V6_B1_029	low_confidence_core_family;extension_only	False	False	True	True	False	9	[]	True	C	pending/not adopted
+against_baseline	V6_B3_03_035	V6-existing	V6_B1_041	low_confidence_core_family;extension_only	False	False	True	True	False	6	[]	True	C	pending/not adopted
