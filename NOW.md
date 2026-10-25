@@ -2,6 +2,12 @@
 
 ## 本轮工作与下一步
 
+### G5 集中整合（2026-10-25）
+
+独立分支 `development/g5-integration-20261025`，将 A 线源码 `f147aaf3` 合入 B/Locrian `655fcbb`；原工作树及既存未提交协作文档不动。目标 **0.11.0-dev.5 / Factory6 / 1016 / Schema2 / Session5 / Snapshot3**。清空卡池、替换/保留历史、共享循环试听与 V6 外置 HCA 全部保留；古典旋小仍无已审核归属。实际数量来自查询，不降低硬约束。
+
+只对已知且受管理、哈希匹配的 dev.4 V6 DB/HCA 开放同版本系列增量升级，替换前将旧对保留到 Factory/history/6-<旧DB SHA>；其他未知冲突仍拒绝，恢复事务保留。V5 与旧 dev.3/dev.4 Setup 不变。源码冻结后一次 Release 构建，执行5个核心、1个原生UI、1个隔离升级/模块加载、1个新增升级路径故障恢复场景；不运行历史矩阵或完整SDK Validator。构建、交付身份及最终结果待完成后更新。
+
 ### Factory V6 空调式卡池专项（2026-10-25）
 
 独立分支 `development/factory-v6-empty-modes-20261025`，接手 `11dda7d`；dev.4 / `5ae1b5a` 和 1014 条数据库不变。[独立两条 Locrian 候选、音乐审查与实际结果](data/factory-v6/increments/20261025-empty-modes/review.md)。旧 Locrian 059/060、古典旋小057均未审核且未进入实际DB；加载正常。古典另外缺少严格旋律方向校验，不用静态音集代替，归属/严格池维持0。UI显示真实0及原因，加载失败显示未知，修正“爵士旋小为空”的过期提示。

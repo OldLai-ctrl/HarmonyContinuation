@@ -392,6 +392,27 @@ std::string Controller::deleteUserProgression(const std::string& id) noexcept {
     } catch (const std::exception& e) { return std::string("Delete failed: ")+e.what(); }
 }
 
+void Controller::clearPreview() noexcept {
+    // Drop the musical reference immediately and send an identity-free stop.
+    // The usual stop acknowledgement still guards backend ownership.
+    preparedPreviewValid_=false;preparedPreview_={};
+    previewTarget_.reset();previewCandidateId_.clear();
+    ++previewClipId_;if(!previewClipId_)++previewClipId_;
+    stopPreview();
+}
+
+void Controller::setPreviewRepeat(bool enabled) noexcept {
+    if(previewRepeat_==enabled)return;
+    if(previewPending_){updatePreviewUi();return;}
+    previewRepeat_=enabled;
+    if(activePreviewBackendValid_&&preparedPreviewValid_&&
+       !submitPreviewState(activePreviewBackend_,previewPlaybackState_,currentPreviewPosition(),false)){
+        previewRepeat_=!enabled;
+        if(view_)view_->setActionStatus("循环试听设置失败");
+    }
+    updatePreviewUi();
+}
+
 void Controller::stopPreview() noexcept {
     try {
         if (activePreviewBackendValid_) {
@@ -435,7 +456,7 @@ PreviewStatus Controller::previewStatus() const noexcept {
     return {previewTempoMode_,customPreviewBPM_,preparedPreviewValid_&&previewPlaybackState_!=harmony::preview::PlaybackState::Stopped
                 ?previewBPMAtStart_:effectivePreviewBPM(),
             hostTempoValid_,previewScope_,active,previewPlaybackState_,
-            previewBackend_==harmony::preview::AudioBackend::Host,hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_};
+            previewBackend_==harmony::preview::AudioBackend::Host,hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_,previewRepeat_};
 }
 
 bool Controller::ensureWindowsPreview() noexcept {
@@ -456,6 +477,7 @@ bool Controller::submitPreviewState(harmony::preview::AudioBackend backend,
         request.clipId=preparedPreviewValid_?previewClipId_:0;
         request.seekId=seek?++previewSeekId_:previewSeekId_;
         request.state=state;
+        request.repeat=previewRepeat_;
         request.positionQN=std::isfinite(positionQN)?positionQN:previewPositionQN_;
         if (preparedPreviewValid_) request.clip=preparedPreview_;
         if (!harmony::preview::validTransportRequest(request)) return false;
@@ -502,6 +524,7 @@ void Controller::updatePreviewUi() noexcept {
     previewAvailable_=available;
     view_->setPreviewTransport(previewPlaybackState_,previewBackend_==harmony::preview::AudioBackend::Host,
                                hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_);
+    view_->setPreviewRepeat(previewRepeat_);
 }
 
 void Controller::setPreviewSettings(harmony::preview::PreviewTempoMode mode,double customBPM,
@@ -539,6 +562,8 @@ void Controller::playPreview(const PreviewTarget& target,const harmony::preview:
         preparedPreviewValid_=true;previewBPMAtStart_=built.sequence.tempoBPM;
         previewStartQN_=range.startQN;previewTotalQN_=range.endQN;
         previewPositionQN_=std::clamp(requestedQN.value_or(previewStartQN_),previewStartQN_,previewTotalQN_);
+        if(previewRepeat_&&state!=harmony::preview::PlaybackState::Stopped&&previewPositionQN_>=previewTotalQN_)
+            previewPositionQN_=previewStartQN_;
         ++previewClipId_;if(!previewClipId_)++previewClipId_;++previewSeekId_;
         previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
         if(!previewBackendManual_&&!activePreviewBackendValid_)
@@ -709,6 +734,7 @@ void Controller::seekPreview(const std::string& candidateId,double positionQN) n
         const auto state=previewPlaybackState_==harmony::preview::PlaybackState::Stopped?
             harmony::preview::PlaybackState::Paused:previewPlaybackState_;
         previewPositionQN_=std::clamp(positionQN,previewStartQN_,previewTotalQN_);
+        if(previewRepeat_&&previewPositionQN_>=previewTotalQN_)previewPositionQN_=previewStartQN_;
         previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
         if(!activePreviewBackendValid_){activePreviewBackend_=previewBackend_;activePreviewBackendValid_=true;}
         if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,true)){

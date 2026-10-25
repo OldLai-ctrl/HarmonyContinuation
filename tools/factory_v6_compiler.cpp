@@ -199,6 +199,67 @@ wish::AnnotationCatalog readCandidateAnnotations(
     return result;
 }
 
+wish::AnnotationCatalog readFrozenIncrementAnnotations(
+    const std::filesystem::path& metadataPath,
+    const std::vector<ProgressionTemplate>& candidates) {
+    const auto root = benchmark::json::parse(readText(metadataPath));
+    require(root.at("version").integer(6, 6) == 6, "increment metadata version must be 6");
+    const auto candidateById = toMap(candidates);
+    wish::AnnotationCatalog result;
+    std::set<std::string> metadataIds;
+    for (const auto& metadata : root.at("candidates").items()) {
+        const auto& id = jsonText(metadata, "id");
+        require(metadataIds.insert(id).second, "duplicate increment metadata ID: " + id);
+        const auto candidate = candidateById.find(id);
+        require(candidate != candidateById.end(), "increment metadata ID is absent from candidates: " + id);
+        require(jsonText(metadata, "status") == "independent-reviewed-candidate",
+                "unexpected increment admission status for " + id);
+        require(jsonText(metadata, "source") == "Original primary-agent composition; not a transcription",
+                "increment provenance must remain original composition for " + id);
+        require(jsonText(metadata, "auditionStatus") == "pending-human",
+                "increment human audition must remain pending for " + id);
+        const auto& frozenFingerprint = jsonText(metadata, "sourceFingerprint");
+        require(frozenFingerprint == wish::sourceFingerprint(candidate->second),
+                "frozen increment source fingerprint mismatch: " + id);
+
+        wish::ModeAnnotation entry;
+        entry.templateId = id;
+        entry.sourceFingerprint = frozenFingerprint;
+        const auto& memberships = metadata.at("memberships").items();
+        require(memberships.size() == 1, "increment must have exactly one reviewed membership: " + id);
+        const auto& rawMembership = memberships.front();
+        wish::ModeMembership membership;
+        membership.tonicOffset = rawMembership.at("tonicOffset").integer(0, 11);
+        require(membership.tonicOffset == 0, "increment Locrian tonic offset must remain 0: " + id);
+        const auto mode = wish::parseMode(jsonText(rawMembership, "mode"));
+        require(mode && *mode == wish::MusicalMode::Locrian,
+                "increment membership must remain Locrian: " + id);
+        membership.mode = *mode;
+        membership.usage = readUsage(jsonText(rawMembership, "usage"));
+        require(membership.usage == wish::EditorialUsage::Unrated,
+                "increment usage must remain unrated: " + id);
+        membership.usageBasis = jsonText(rawMembership, "usageBasis");
+        membership.musicalEvidence = jsonText(rawMembership, "musicalEvidence");
+        membership.review = readReview(jsonText(rawMembership, "review"));
+        require(membership.review == wish::ReviewStatus::Reviewed,
+                "increment Locrian membership must remain reviewed: " + id);
+        membership.reviewer = jsonText(rawMembership, "reviewer");
+        membership.melodicContext = jsonText(rawMembership, "melodicContext");
+        std::string validationError;
+        require(wish::validMembership(membership, validationError),
+                "invalid increment membership for " + id + ": " + validationError);
+        entry.memberships.push_back(std::move(membership));
+        result.entries.push_back(std::move(entry));
+    }
+    require(candidates.size() == 2, "empty-modes increment must contain exactly two candidates");
+    require(metadataIds.size() == candidates.size(), "increment metadata/candidate set size mismatch");
+    for (const auto& [id, item] : candidateById) {
+        (void)item;
+        require(metadataIds.contains(id), "increment candidate is absent from metadata: " + id);
+    }
+    return result;
+}
+
 std::set<std::string> readApprovedIds(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary);
     require(static_cast<bool>(file), "cannot read " + path.string());
@@ -241,8 +302,10 @@ void checkDistinctOutputs(const std::filesystem::path& baseline,
                           const std::filesystem::path& experiment,
                           const std::filesystem::path& annotations,
                           const std::filesystem::path& baseAnnotations,
-                          const std::filesystem::path& summary) {
-    const std::array sources{baseline, baseAnnotations};
+                          const std::filesystem::path& summary,
+                          const std::vector<std::filesystem::path>& additionalSources = {}) {
+    std::vector<std::filesystem::path> sources{baseline, baseAnnotations};
+    sources.insert(sources.end(), additionalSources.begin(), additionalSources.end());
     std::vector<std::filesystem::path> outputs{proposal, experiment, annotations};
     if (!summary.empty()) outputs.push_back(summary);
     for (std::size_t sourceIndex = 0; sourceIndex < sources.size(); ++sourceIndex)
@@ -383,9 +446,10 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
 } // namespace
 
 int main(int argc, char** argv) {
-    if (argc != 9 && argc != 10) {
+    if (argc != 9 && argc != 10 && argc != 12) {
         std::cerr << "usage: factory_v6_compiler factory-v5.db candidates.json metadata.json approved-ids.txt "
-                     "proposal.db experiment.db factory-v5.hca merged-v6.hca [summary.txt]\n";
+                     "proposal.db experiment.db factory-v5.hca merged-v6.hca [summary.txt "
+                     "increment-candidates.json increment-metadata.json]\n";
         return 2;
     }
     try {
@@ -397,9 +461,17 @@ int main(int argc, char** argv) {
         const std::filesystem::path experimentPath = argv[6];
         const std::filesystem::path baseAnnotationsPath = argv[7];
         const std::filesystem::path annotationsPath = argv[8];
-        const std::filesystem::path summaryPath = argc == 10 ? argv[9] : std::filesystem::path{};
+        const std::filesystem::path summaryPath = argc >= 10 ? argv[9] : std::filesystem::path{};
+        const bool hasIncrement = argc == 12;
+        const std::filesystem::path incrementCandidatesPath = hasIncrement ? argv[10] : std::filesystem::path{};
+        const std::filesystem::path incrementMetadataPath = hasIncrement ? argv[11] : std::filesystem::path{};
+        std::vector<std::filesystem::path> additionalSources{candidatesPath, metadataPath, approvedPath};
+        if (hasIncrement) {
+            additionalSources.push_back(incrementCandidatesPath);
+            additionalSources.push_back(incrementMetadataPath);
+        }
         checkDistinctOutputs(baselinePath, proposalPath, experimentPath, annotationsPath,
-                            baseAnnotationsPath, summaryPath);
+                            baseAnnotationsPath, summaryPath, additionalSources);
 
         const auto baseline = library::loadFactory(baselinePath);
         require(static_cast<bool>(baseline), "cannot load V5 baseline: " + baseline.error);
@@ -408,8 +480,20 @@ int main(int argc, char** argv) {
                 "expected Factory V5 / Schema 2 / 658-entry baseline");
 
         auto candidates = readCandidates(candidatesPath);
-        const auto approved = readApprovedIds(approvedPath);
-        const auto annotations = readCandidateAnnotations(metadataPath, candidates, approved);
+        auto approved = readApprovedIds(approvedPath);
+        auto annotations = readCandidateAnnotations(metadataPath, candidates, approved);
+        if (hasIncrement) {
+            auto incrementCandidates = readCandidates(incrementCandidatesPath);
+            auto incrementAnnotations = readFrozenIncrementAnnotations(incrementMetadataPath, incrementCandidates);
+            for (const auto& item : incrementCandidates) {
+                require(!approved.contains(item.id),
+                        "increment ID collides with an existing approved candidate: " + item.id);
+                candidates.push_back(item);
+                approved.insert(item.id);
+            }
+            annotations.entries.insert(annotations.entries.end(), incrementAnnotations.entries.begin(),
+                                       incrementAnnotations.entries.end());
+        }
         EntriesById allIds = toMap(baseline.templates);
         std::set<std::string> namesZh, namesEn, musicalFingerprints;
         for (const auto& item : baseline.templates) {

@@ -34,7 +34,7 @@ struct PreviewStatus {
     bool active{};
     harmony::preview::PlaybackState state{harmony::preview::PlaybackState::Stopped};
     bool hostBackend{true};
-    bool hostAvailable{},pending{};
+    bool hostAvailable{},pending{},repeat{};
 };
 class Controller final : public Steinberg::Vst::EditController {
 public:
@@ -57,6 +57,8 @@ public:
     void auditionEnrichment(const harmony::enrichment::EnrichmentCandidate&) noexcept;
     void pollPreview() noexcept;
     void stopPreview() noexcept;
+    void clearPreview() noexcept;
+    void setPreviewRepeat(bool) noexcept;
     void pausePreview() noexcept;
     void resumePreview() noexcept;
     void setPreviewBackend(bool host) noexcept;
@@ -121,6 +123,7 @@ private:
     harmony::preview::PreviewTempoMode previewTempoMode_{harmony::preview::PreviewTempoMode::FollowHost};
     double customPreviewBPM_{harmony::preview::defaultTempoBPM};
     harmony::preview::PreviewScope previewScope_{harmony::preview::PreviewScope::Full};
+    bool previewRepeat_{};
     std::optional<int> lastTimeSigNumerator_;
     std::optional<int> lastTimeSigDenominator_;
     bool lastPlaying_{};

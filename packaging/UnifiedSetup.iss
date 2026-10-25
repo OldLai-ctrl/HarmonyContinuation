@@ -650,6 +650,36 @@ begin
   if RemovePlugin then Result:=Result+NewLine+'REMOVE: VST3';
   if RemoveLibrary then Result:=Result+NewLine+'REMOVE: Factory Library';
 end;
+function KnownV6Increment: Boolean;
+begin
+  { Only the verified dev.4 pair may be superseded under the same content series.
+    Unknown or modified Factory content still fails the normal ownership gates. }
+  Result:=False;
+#if LibraryVersion == "6"
+  Result:=OwnLibrary and (ManagedHash='3f6a17bb4e696a47462b0ffb8535ab76af3ec0ece5f6a88db855cbcc53707bf9') and
+    (ManagedAnnotationHash='d3c3db46eed083d74065a526d4c2f5f45175b3f473a3b3dc1a432b1d1389c90a') and
+    (CompareText(ManagedLibraryDatabase,LibraryDatabase)=0) and
+    FileExists(LibraryDatabase) and FileExists(StoreFolder+'\6\factory.hca');
+  if Result then Result:=(CompareText(GetSHA256OfFile(LibraryDatabase),ManagedHash)=0) and
+    (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),ManagedAnnotationHash)=0);
+#endif
+end;
+procedure PreserveV6IncrementBase;
+var Folder, Db, Hca: String;
+begin
+  if not KnownV6Increment then Exit;
+  Folder:=StoreFolder+'\history\6-'+ManagedHash;
+  if not SafePath(Folder) then RaiseException('Unsafe Factory archive path; preserved');
+  Db:=Folder+'\factory.db'; Hca:=Folder+'\factory.hca';
+  if not ForceDirectories(Folder) then RaiseException('Cannot preserve previous Factory V6');
+  if not FileExists(Db) then
+    if not FileCopy(LibraryDatabase,Db,True) then RaiseException('Cannot archive previous Factory V6 DB');
+  if not FileExists(Hca) then
+    if not FileCopy(StoreFolder+'\6\factory.hca',Hca,True) then RaiseException('Cannot archive previous Factory V6 annotation');
+  if (CompareText(GetSHA256OfFile(Db),ManagedHash)<>0) or
+     (CompareText(GetSHA256OfFile(Hca),ManagedAnnotationHash)<>0) then
+    RaiseException('Previous Factory V6 archive identity differs; no replacement');
+end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var Code, Active: Integer; Path, Hash: String;
 begin
@@ -685,12 +715,13 @@ begin
   if (Selection('plugin') or RemoveLibrary) and not KnownBundledFactory then begin Result:=UnknownBundledFactoryMessage; Log(Result); Exit; end;
   if Selection('library') and not SkipLibrary and FileExists(LibraryDatabase) then begin
     Hash:=GetSHA256OfFile(LibraryDatabase);
-    if (CompareText(Hash,'{#FactoryHash}')<>0) and not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedHash,'{#FactoryHash}')=0)) then begin
+    if (CompareText(Hash,'{#FactoryHash}')<>0) and not KnownV6Increment and not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedHash,'{#FactoryHash}')=0)) then begin
       Result:='Same library version has different content; no overwrite. Repair a known managed component or retain it.'; Exit;
     end;
   end;
   if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') and FileExists(StoreFolder+'\6\factory.hca') and
       (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),'{#AnnotationHash}')<>0) and
+      not KnownV6Increment and
       not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedAnnotationHash,'{#AnnotationHash}')=0)) then begin
     Result:='Same library version has different annotation content; no overwrite. Repair a known managed component or retain it.'; Exit;
   end;
@@ -785,6 +816,7 @@ begin
           if not DeleteFile(Path) then RaiseException('Cannot remove known legacy bundled Factory copy');
         end;
       if Selection('library') and not SkipLibrary then begin
+        PreserveV6IncrementBase;
         if FileExists(LibraryDatabase) and (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
           if not DeleteFile(LibraryDatabase) then RaiseException('Cannot replace damaged managed Factory');
         if '{#LibraryVersion}'='6' then begin

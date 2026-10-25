@@ -39,7 +39,7 @@ public:
         wish::WishInput wishInput;
         std::optional<wish::AnnotationLoadResult> wishAnnotations;
         std::string wishFactoryIdentity,wishAnnotationIdentity;
-        bool wishMode{},wishAdvanced{},wishRequested{};
+        bool wishMode{},wishAdvanced{},wishRequested{},wishKeepHistory{};
         std::size_t wishPage{};
         std::string wishSelected,wishExpanded;
         double wishScroll{};
@@ -69,8 +69,10 @@ public:
         std::function<std::string(const std::string&)> deleteUser;
         std::function<void(const ContinuationCandidate&)> audition;
         std::function<void()> stopAudition;
+        std::function<void()> clearAudition;
         std::function<void()> pauseAudition,resumeAudition;
         std::function<void(bool)> previewBackend;
+        std::function<void(bool)> previewRepeat;
         std::function<void(const std::string&,double)> seekAudition;
         std::function<void(bool,double,bool)> previewSettings; // custom tempo, BPM, suffix only
         std::function<std::string(const ContinuationCandidate&)> exportMidi;
@@ -109,12 +111,14 @@ public:
     void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setPreviewTransport(preview::PlaybackState,bool hostBackend,bool hostAvailable,bool pending=false);
+    void setPreviewRepeat(bool enabled) { if(auditionRepeat_!=enabled){auditionRepeat_=enabled;invalid();} }
     void setSnapshotMode(bool enabled);
     preview::SourceRouteResult continuationRoute(const ContinuationCandidate&) const;
     const wish::WishItem* wishItem(const std::string&) const;
     bool currentWishCandidate(const ContinuationCandidate&) const;
     void pollWish();
     bool runEmptyModeUiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>&);
+    bool runG5UiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>&);
     bool runWishSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
@@ -151,9 +155,9 @@ public:
 private:
     enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
         Wish, WishPreset, WishAdvanced, WishInput, WishClear, WishTonic, WishMode, WishStrict, WishStyle, WishColor,
-        WishOne, WishTen, WishAgain, WishSnapshot, WishCopy,
+        WishOne, WishTen, WishAgain, WishSnapshot, WishCopy, WishHistory,
         OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
-        Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Backend, TempoMode, Tempo, Scope };
+        Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Repeat, Backend, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
         std::optional<VSTGUI::CRect> clip;
@@ -172,7 +176,8 @@ private:
     wish::WishInput wishInput_;
     std::optional<wish::AnnotationLoadResult> wishAnnotations_;
     std::string wishFactoryIdentity_, wishAnnotationIdentity_;
-    bool wishMode_{},wishAdvanced_{},wishRequested_{};
+    bool wishMode_{},wishAdvanced_{},wishRequested_{},wishKeepHistory_{};
+    bool auditionRepeat_{};
     std::size_t wishPage_{};
     std::string wishSelected_,wishExpanded_;
     double wishScroll_{};

@@ -120,6 +120,7 @@ bool validPreparedPreview(const PreparedPreview& clip) noexcept {
 }
 
 void PreviewTransport::prepare(double rate) noexcept {
+    repeat_ = false;
     ratePrepared_ = std::isfinite(rate) && rate >= 8000.0 && rate <= 192000.0;
     sampleRate_ = ratePrepared_ ? rate : previewReferenceRate;
     for (std::size_t note = 0; note < phaseSteps_.size(); ++note) {
@@ -210,6 +211,8 @@ void PreviewTransport::seekQN(double qn) noexcept {
     const auto limit = static_cast<long double>(std::numeric_limits<std::int64_t>::max());
     auto target = requested > limit - 0.5L ? endSample_ : static_cast<std::int64_t>(std::llround(requested));
     target = std::clamp(target, startSample_, endSample_);
+    if (target >= endSample_ && repeat_ && state_ != PlaybackState::Stopped)
+        target = startSample_;
     if (target >= endSample_) {
         samplePosition_ = endSample_;
         nextStart_ = nextEnd_ = count_;
@@ -237,14 +240,18 @@ void PreviewTransport::process(float* left, float* right, int samples) noexcept 
 
     const double attackStep = 1.0 / (attackSeconds * sampleRate_);
     const double releaseStep = 1.0 / (releaseSeconds * sampleRate_);
+    const double fadeSamples = std::min(0.005 * sampleRate_, double(endSample_ - startSample_));
     for (int frame = 0; frame < samples; ++frame) {
         if (samplePosition_ >= endSample_) {
-            samplePosition_ = endSample_;
-            clearVoices();
-            state_ = PlaybackState::Stopped;
-            std::fill(left + frame, left + samples, 0.0f);
-            std::fill(right + frame, right + samples, 0.0f);
-            return;
+            if (repeat_) resetAtStart();
+            else {
+                samplePosition_ = endSample_;
+                clearVoices();
+                state_ = PlaybackState::Stopped;
+                std::fill(left + frame, left + samples, 0.0f);
+                std::fill(right + frame, right + samples, 0.0f);
+                return;
+            }
         }
 
         applyEventsAt(samplePosition_);
@@ -267,14 +274,18 @@ void PreviewTransport::process(float* left, float* right, int samples) noexcept 
             if (voice.phase >= 2.0 * std::numbers::pi) voice.phase -= 2.0 * std::numbers::pi;
             ++active;
         }
+        // A bounded 5 ms fade joins the existing attack at the range start.
+        // No voices or dynamic work escape the audio owner's fixed storage.
+        const double loopGain = repeat_ ? std::min(1.0, double(endSample_ - samplePosition_ - 1) / fadeSamples) : 1.0;
         const auto sample = static_cast<float>(std::clamp(
-            mix * voiceGain / std::sqrt(static_cast<double>(std::max(1, active))), -0.95, 0.95));
+            mix * voiceGain * loopGain / std::sqrt(static_cast<double>(std::max(1, active))), -0.95, 0.95));
         left[frame] = sample;
         right[frame] = sample;
         ++samplePosition_;
     }
 
     if (samplePosition_ >= endSample_) {
+        if (repeat_) { resetAtStart(); return; }
         samplePosition_ = endSample_;
         clearVoices();
         state_ = PlaybackState::Stopped;

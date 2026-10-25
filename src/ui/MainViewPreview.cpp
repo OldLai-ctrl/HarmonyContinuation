@@ -32,7 +32,7 @@ bool MainView::beginPreviewSeek(CPoint point){
     const auto begin=[&](const SeekHit& hit,bool cursor){
         if(!previewCandidateId_.empty()&&previewCandidateId_!=hit.id&&actions_.stopAudition)actions_.stopAudition();
         compactSelected_=hit.id;previewSeekHoverId_=hit.id;previewSeekCursorHover_=cursor;
-        seekGesture_=SeekGesture{hit,wishMode_?wishView_->revision:generation_,0};movePreviewSeek(point);return true;
+        seekGesture_=SeekGesture{hit,wishMode_?wishView_->displayGeneration:generation_,0};movePreviewSeek(point);return true;
     };
     for(const auto& hit:seekHits_)if(hit.cursorRect.getWidth()>0&&hit.cursorRect.pointInside(point))return begin(hit,true);
     for(const auto& hit:seekHits_)if(hit.rect.pointInside(point))return begin(hit,false);

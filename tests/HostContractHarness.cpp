@@ -94,8 +94,19 @@ struct Instance {
     bool restore(std::string& bytes){MemoryStream stream(bytes.data(),bytes.size());return ok(controller->setState(&stream));}
     session::PluginSessionState state(){auto bytes=save();require(bytes.size()>4);auto decoded=session::deserialize(bytes.substr(4));require(static_cast<bool>(decoded));return decoded.state;}
 };
-void previewAudioContract(Instance& instance){
-    FUnknownPtr<IAudioProcessor> processor(instance.component);FUnknownPtr<IConnectionPoint> messages(instance.component);
+struct ProcessorOnlyComponent {
+    IPtr<IComponent> component;
+    bool initialized{};
+    ~ProcessorOnlyComponent(){
+        if(!initialized||!component)return;
+        FUnknownPtr<IAudioProcessor> processor(component);
+        if(processor)processor->setProcessing(false);
+        component->setActive(false);
+        component->terminate();
+    }
+};
+void previewAudioContract(IComponent* component,bool stress){
+    FUnknownPtr<IAudioProcessor> processor(component);FUnknownPtr<IConnectionPoint> messages(component);
     require(processor&&messages,"actual processor interfaces exist");
     preview::Sequence sequence;sequence.tempoBPM=120;sequence.totalQN=4;
     sequence.events.push_back({chordPitches("Cmaj7"),0,4,preview::Segment::Existing,{}});
@@ -110,7 +121,7 @@ void previewAudioContract(Instance& instance){
         SpeakerArrangement arrangement=channels==1?SpeakerArr::kMono:SpeakerArr::kStereo;
         require(ok(processor->setBusArrangements(&arrangement,1,&arrangement,1)),"existing mono/stereo bus arrangement");
         ProcessSetup setup{};setup.processMode=kRealtime;setup.symbolicSampleSize=sampleSize;setup.maxSamplesPerBlock=256;setup.sampleRate=48000;
-        require(ok(processor->setupProcessing(setup))&&ok(instance.component->setActive(true))&&ok(processor->setProcessing(true)),"preview setup");
+        require(ok(processor->setupProcessing(setup))&&ok(component->setActive(true))&&ok(processor->setProcessing(true)),"preview setup");
         preview::TransportRequest request;request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=prepared.clip;request.state=preview::PlaybackState::Playing;
         send(request);
         std::array<std::array<float,256>,2> in32{},out32{};std::array<std::array<double,256>,2> in64{},out64{};
@@ -129,18 +140,64 @@ void previewAudioContract(Instance& instance){
         request.serial=++serial;request.state=preview::PlaybackState::Paused;send(request);require(render()<1e-7,"pause preserves passthrough and silences preview");
         request.serial=++serial;request.state=preview::PlaybackState::Playing;send(request);require(render()>.01,"resume emits actual preview audio");
         request.serial=++serial;++request.seekId;request.positionQN=2;send(request);require(render()>.01,"mid-chord seek immediately restores sounding notes");
-        double maximumMs{},totalMs{};constexpr int stressBlocks=4000;
-        for(int block=0;block<stressBlocks;++block){
-            if(block%32==0){request.serial=++serial;++request.seekId;request.positionQN=double(block%4)*.75;send(request);}
-            const auto started=std::chrono::steady_clock::now();require(ok(processor->process(data)),"sustained actual process");
-            const double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
-            maximumMs=std::max(maximumMs,elapsed);totalMs+=elapsed;
-            for(int c=0;c<channels;++c)for(int n=0;n<256;++n)require(std::isfinite(sampleSize==kSample32?double(out32[c][n]):out64[c][n]),"stress finite output");
+        if(stress){
+            double maximumMs{},totalMs{};constexpr int stressBlocks=4000;
+            for(int block=0;block<stressBlocks;++block){
+                if(block%32==0){request.serial=++serial;++request.seekId;request.positionQN=double(block%4)*.75;send(request);}
+                const auto started=std::chrono::steady_clock::now();require(ok(processor->process(data)),"sustained actual process");
+                const double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
+                maximumMs=std::max(maximumMs,elapsed);totalMs+=elapsed;
+                for(int c=0;c<channels;++c)for(int n=0;n<256;++n)require(std::isfinite(sampleSize==kSample32?double(out32[c][n]):out64[c][n]),"stress finite output");
+            }
+            std::cout<<"Host process stress channels="<<channels<<" bits="<<(sampleSize==kSample32?32:64)<<" blocks="<<stressBlocks<<" averageMs="<<totalMs/stressBlocks<<" maximumMs="<<maximumMs<<" budgetMs="<<256./48.<<'\n';
+        }else{
+            const double blockQN=256.0*400.0/(60.0*48000.0);
+            preview::Sequence route;route.tempoBPM=400;route.totalQN=2*blockQN;route.recommendationBoundary=1;
+            route.events.push_back({chordPitches("Cmaj7"),0,blockQN,preview::Segment::Existing,{}});
+            route.events.push_back({chordPitches("G7"),blockQN,blockQN,preview::Segment::Recommended,{}});
+            const auto full=preview::preparePreview(route,preview::PreviewScope::Full);
+            const auto suffix=preview::preparePreview(route,preview::PreviewScope::Suffix);
+            require(bool(full)&&bool(suffix),"short complete and suffix fixtures prepare");
+            require(full.clip.startSample==0&&full.clip.endSample==512&&
+                suffix.clip.startSample==256&&suffix.clip.endSample==512,
+                "suffix fixture begins at a non-zero sample boundary");
+
+            request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=full.clip;
+            request.state=preview::PlaybackState::Playing;request.positionQN=0;request.repeat=false;send(request);
+            require(render()>.01&&render()>.01,"repeat=false plays a multi-block full route");
+            require(render()<1e-7,"repeat=false naturally terminates and preserves passthrough");
+
+            request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=full.clip;
+            request.state=preview::PlaybackState::Playing;request.positionQN=0;request.repeat=true;send(request);
+            for(int block=0;block<6;++block)
+                require(render()>.01,"repeat=true crosses complete-route boundaries over multiple blocks");
+
+            request.serial=++serial;request.state=preview::PlaybackState::Paused;send(request);
+            require(render()<1e-7,"repeat pause preserves passthrough");
+            request.serial=++serial;request.state=preview::PlaybackState::Playing;send(request);
+            require(render()>.01,"repeat resume continues preview output");
+            request.serial=++serial;++request.seekId;request.positionQN=1.5*blockQN;send(request);
+            require(render()>.01,"seek into the second chord resumes sounding audio");
+
+            request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=suffix.clip;
+            request.state=preview::PlaybackState::Playing;request.positionQN=blockQN;request.repeat=true;send(request);
+            require(render()>.01&&render()>.01,"repeat=true crosses the non-zero suffix boundary");
+            request.serial=++serial;++request.seekId;request.positionQN=2*blockQN;send(request);
+            require(render()>.01,"seek to repeated suffix end wraps to its non-zero start");
+            request.serial=++serial;request.repeat=false;send(request);
+            require(render()>.01&&render()<1e-7,"turning repeat off naturally ends the suffix");
+
+            request.serial=++serial;request.clipId=serial;request.seekId=1;request.clip=suffix.clip;
+            request.state=preview::PlaybackState::Playing;request.positionQN=blockQN;request.repeat=true;send(request);
+            require(render()>.01,"suffix preview starts for stop check");
+            request.serial=++serial;request.state=preview::PlaybackState::Stopped;send(request);
+            require(render()<1e-7,"stop preserves passthrough while repeat is enabled");
+            std::cout<<"Processor-only repeat contract channels="<<channels<<" bits="<<(sampleSize==kSample32?32:64)
+                <<" full-and-suffix multi-block transitions PASS\n";
         }
-        std::cout<<"Host process stress channels="<<channels<<" bits="<<(sampleSize==kSample32?32:64)<<" blocks="<<stressBlocks<<" averageMs="<<totalMs/stressBlocks<<" maximumMs="<<maximumMs<<" budgetMs="<<256./48.<<'\n';
         request.serial=++serial;request.state=preview::PlaybackState::Stopped;send(request);require(render()<1e-7,"stop preserves original audio exactly");
         auto malformed=request;malformed.serial=++serial;malformed.clip.count=preview::maximumPreviewChords+1;send(malformed,false);require(render()<1e-7,"invalid clip cannot change output");
-        require(ok(processor->setProcessing(false))&&ok(instance.component->setActive(false)),"preview deactivation");
+        require(ok(processor->setProcessing(false))&&ok(component->setActive(false)),"preview deactivation");
     }
 }
 std::string streamState(const session::PluginSessionState& state){
@@ -207,7 +264,8 @@ private:
 };
 }
 int main(int argc,char** argv){
-    if(argc==4&&std::string(argv[1])=="--empty-modes-ui") {
+    if(argc==4&&(std::string(argv[1])=="--empty-modes-ui"||std::string(argv[1])=="--g5-ui")) {
+        const bool g5Ui=std::string(argv[1])=="--g5-ui";
         const auto com=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
         VSTGUI::init(GetModuleHandleW(nullptr));
         auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
@@ -232,12 +290,43 @@ int main(int argc,char** argv){
                 std::ofstream file(out/name,std::ios::binary);file.write(reinterpret_cast<const char*>(png.data()),static_cast<std::streamsize>(png.size()));
                 require(file.good()&&!png.empty(),"empty-mode PNG capture");
             };
-            require(view->runEmptyModeUiSmoke(context.get(),capture),"two empty-mode labels/controls");
+            require(g5Ui?view->runG5UiSmoke(context.get(),capture):view->runEmptyModeUiSmoke(context.get(),capture),
+                g5Ui?"integrated G5 six-entry/repeat/advanced UI smoke":"two empty-mode labels/controls");
             frame->close();frame=nullptr;opened=false;passed=true;
-            std::cout<<"Empty-mode UI only PASS at 100/150 percent\n";
+            std::cout<<(g5Ui?"G5 integrated UI only PASS\n":"Empty-mode UI only PASS at 100/150 percent\n");
         } catch(const std::exception& error) {std::cerr<<"Empty-mode UI FAIL: "<<error.what()<<'\n';}
         if(frame){if(opened)frame->close();else frame->forget();}
         VSTGUI::exit();if(SUCCEEDED(com))CoUninitialize();return passed?0:1;
+    }
+    if(argc==3&&std::string(argv[1])=="--preview-audio-only") {
+        std::cout<<std::unitbuf;
+        const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+        bool passed{};
+        try {
+            std::string error;auto module=VST3::Hosting::Module::create(argv[2],error);
+            require(static_cast<bool>(module),"VST3 module could not be loaded: "+error);
+            auto host=owned(new NamedHost("HarmonyContinuation processor-only preview probe"));
+            auto factory=module->getFactory();factory.setHostContext(host);
+            std::optional<VST3::Hosting::ClassInfo> info;
+            for(const auto& item:factory.classInfos())if(item.category()==kVstAudioEffectClass){info=item;break;}
+            require(info.has_value(),"VST3 audio effect class is absent");
+            ProcessorOnlyComponent instance;
+            instance.component=factory.createInstance<IComponent>(info->ID());
+            require(static_cast<bool>(instance.component),"module factory could not create IComponent directly");
+            require(ok(instance.component->initialize(host)),"processor-only IComponent initialization");
+            instance.initialized=true;
+            FUnknownPtr<IAudioProcessor> processor(instance.component);
+            FUnknownPtr<IConnectionPoint> messages(instance.component);
+            require(processor&&messages,"direct component exposes IAudioProcessor and IConnectionPoint");
+            previewAudioContract(instance.component,false);
+            require(ok(instance.component->terminate()),"processor-only component termination");
+            instance.initialized=false;passed=true;
+            std::cout<<"VST3 processor-only preview contract PASS (no DAW test)\n";
+        } catch(const std::exception& e) {
+            std::cerr<<"Processor-only preview contract FAIL: "<<e.what()<<'\n';
+        }
+        if(SUCCEEDED(comResult))CoUninitialize();
+        return passed?0:1;
     }
     if(argc==3&&std::string(argv[1])=="--wish-ui") {
         const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
@@ -576,7 +665,7 @@ int main(int argc,char** argv){
     for(const auto& item:factory.classInfos())if(item.category()==kVstAudioEffectClass){info=item;break;}require(info.has_value());
     std::unique_ptr<Instance> instance;Window window,other;require(window.handle&&other.handle);
     test("24 actual SDK initialize state without view",[&]{instance=std::make_unique<Instance>(factory,*info);require(instance->restore(initial));require(instance->state().uiZoomPercent==125&&instance->state().imported.events.size()==4);});
-    test("24a existing bus host preview mono/stereo float/double pause resume seek",[&]{previewAudioContract(*instance);});
+    test("24a existing bus host preview mono/stereo float/double pause resume seek",[&]{previewAudioContract(instance->component,true);});
     test("24b actual SDK editor mouse transport gates host audio",[&]{
         Window uiHost;require(uiHost.handle,"isolated native host window created");
         require(SetWindowPos(uiHost.handle,HWND_TOP,0,0,860,850,SWP_NOACTIVATE)!=FALSE,"isolated native host window sized");

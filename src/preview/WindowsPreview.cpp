@@ -49,18 +49,28 @@ struct WindowsPreview::Impl {
             if(time.wType==TIME_SAMPLES)samples=time.u.sample;
             else if(time.wType==TIME_BYTES)samples=double(time.u.cb)/4.;
             else {status.error=AudioError::DeviceUnavailable;return status.positionQN;}
-            return std::clamp(originQN+samples/48000*receiver.transport.tempoBPM()/60.,receiver.transport.startQN(),receiver.transport.endQN());
+            const auto start=receiver.transport.startQN(),end=receiver.transport.endQN();
+            const auto position=originQN+samples/48000*receiver.transport.tempoBPM()/60.;
+            if(receiver.transport.repeat()&&end>start)return start+std::fmod((std::max)(0.,position-start),end-start);
+            return std::clamp(position,start,end);
         };
         while(!quit.load(std::memory_order_acquire)){
             if(commands.take(request)&&request.serial>receiver.serial){
-                const bool changed=request.clipId!=previousClip||request.seekId!=previousSeek;
+                const bool repeatChanged=request.repeat!=receiver.transport.repeat();
+                const bool moved=request.clipId!=previousClip||request.seekId!=previousSeek;
+                const bool changed=moved||repeatChanged;
                 if(request.state==PlaybackState::Stopped){
                     if(close()){receiver.apply(request);status.error=AudioError::None;}
                     else status.error=AudioError::DeviceUnavailable;
                 }
                 else if(changed){
+                    // Flush queued audio on a repeat toggle and rebase the device
+                    // clock at the heard position, using the old loop policy.
+                    const auto position=moved?request.positionQN:heardQN();
                     if(!close()){status.error=AudioError::DeviceUnavailable;published.publish(status);continue;}
-                    if(!receiver.apply(request)){status.error=AudioError::InvalidClip;continue;}originQN=receiver.transport.positionQN();status.positionQN=originQN;
+                    if(!receiver.apply(request)){status.error=AudioError::InvalidClip;continue;}
+                    if(!moved)receiver.transport.seekQN(position);
+                    originQN=receiver.transport.positionQN();status.positionQN=originQN;
                     if(!open()){receiver.transport.stop();status.error=AudioError::DeviceUnavailable;}
                     else {status.error=AudioError::None;if(request.state==PlaybackState::Paused&&waveOutPause(device)!=MMSYSERR_NOERROR)status.error=AudioError::DeviceUnavailable;}
                 } else if(request.state==PlaybackState::Paused){

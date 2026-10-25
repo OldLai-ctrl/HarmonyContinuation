@@ -12,6 +12,7 @@
 #include "midi/MidiWorkflow.h"
 #include "preview/PreviewSequence.h"
 #include "preview/PreviewSynth.h"
+#include "preview/PreviewTransport.h"
 #include "preview/OfflinePreviewRenderer.h"
 #include "session/PluginSessionState.h"
 #include "snapshot/RecommendationSnapshot.h"
@@ -1801,6 +1802,135 @@ void verifyWishItemRoundTrip(const wish::WishItem& item, const library::LoadResu
         "installed Wish Snapshot/MIDI byte identity");
 }
 
+int runG5Smoke(const std::filesystem::path& factoryPath,
+               const std::filesystem::path& fixtureDirectory) {
+    const auto factory = library::loadFactory(factoryPath);
+    require(static_cast<bool>(factory), "G5 Factory load: " + factory.error);
+    require(factory.libraryVersion == 6 && factory.storageSchemaVersion == 2 &&
+        factory.templates.size() == 1016, "G5 Factory V6/Schema2/1016 identity");
+    const auto annotations = wish::annotationsForFactory(factoryPath, factory.libraryVersion);
+    require(static_cast<bool>(annotations), "G5 HCA load: " + annotations.error);
+    const auto hcaPath = factoryPath.parent_path() / "factory.hca";
+    require(std::filesystem::file_size(hcaPath) > 1024u * 1024u &&
+        std::filesystem::file_size(hcaPath) <= 2u * 1024u * 1024u,
+        "G5 HCA is outside the supported 2 MiB contract");
+    require(annotations.catalog.entries.size() == factory.templates.size() &&
+        wish::reviewedSourceCount(annotations.catalog, wish::MusicalMode::Locrian) == 2 &&
+        wish::reviewedSourceCount(annotations.catalog, wish::MusicalMode::ClassicalMelodicMinor) == 0,
+        "G5 HCA source binding or Locrian/classical membership counts");
+
+    const auto& inputSource = find(factory, "V6_B3_01_056");
+    const KeySignature inputKey{PitchClass::C, inputSource.mode};
+    wish::WishInput input;
+    require(inputSource.full.size() > 7 && input.imported.replace(makePrefix(inputSource, inputKey, 7),
+        TimelineCoordinateMode::RelativeToSelection), "G5 input Wish fixture");
+    input.analysis.forcedKey = inputKey;
+    auto inputPool = wish::makeInputPool(factory.templates, annotations.catalog, input);
+    require(static_cast<bool>(inputPool), "G5 input Wish pool: " + inputPool.error);
+    require(std::any_of(inputPool.items.begin(), inputPool.items.end(), [&](const auto& item) {
+        return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == inputSource.id; });
+    }), "G5 input Wish lost the representative V6 source");
+
+    auto userSource = inputSource;
+    userSource.id = "USER_G5_SMOKE_SOURCE";
+    userSource.name = userSource.nameEn = userSource.nameZh = userSource.id;
+    userSource.aliases.clear();
+    userSource.sourceType = "user";
+    std::filesystem::create_directories(fixtureDirectory);
+    const auto userPath = fixtureDirectory / "g5-smoke-user.db";
+    std::error_code ignored;
+    std::filesystem::remove(userPath, ignored);
+    std::string userError;
+    require(library::UserLibrary(userPath).addProgression(userSource, userError),
+        "G5 User fixture save: " + userError);
+    const auto loadedUser = library::UserLibrary(userPath).loadAll();
+    require(static_cast<bool>(loadedUser) && loadedUser.templates.size() == 1 &&
+        loadedUser.templates.front().id == userSource.id, "G5 User complete retrieval");
+    auto mergedSources = factory.templates;
+    mergedSources.insert(mergedSources.end(), loadedUser.templates.begin(), loadedUser.templates.end());
+    const CandidateIndex mergedIndex(std::move(mergedSources));
+    const auto userQuery = queryFor(userSource, inputKey, 7);
+    const auto userMatches = matchProgression(userQuery, mergedIndex, MatchWeights{},
+        mergedIndex.templates().size());
+    require(std::any_of(userMatches.begin(), userMatches.end(), [&](const auto& match) {
+        return match.templateId == userSource.id;
+    }), "G5 complete Factory plus User lookup lost the User source");
+
+    wish::WishFilter strictFilter;
+    strictFilter.fixedTonic = PitchClass::C;
+    strictFilter.modes = {wish::MusicalMode::Locrian};
+    strictFilter.strict = true;
+    auto strictPool = wish::makeFreePool(factory.templates, annotations.catalog, strictFilter);
+    require(static_cast<bool>(strictPool) && strictPool.items.size() == 2,
+        "G5 strict fixed-C Locrian pool must contain two cards");
+    wish::WishRound strictRound(std::move(strictPool), 5601);
+    auto strictItems = strictRound.draw(10);
+    require(strictItems.size() == 2 && strictRound.remaining() == 0 && strictRound.draw(1).empty() &&
+        strictItems[0].musicIdentity != strictItems[1].musicIdentity,
+        "G5 strict fixed-C Locrian draw must return two unique cards then exhaust");
+    auto looseFilter = strictFilter;
+    looseFilter.strict = false;
+    const auto loosePool = wish::makeFreePool(factory.templates, annotations.catalog, looseFilter);
+    require(static_cast<bool>(loosePool) && loosePool.items.size() == 2,
+        "G5 loose fixed-C Locrian pool must contain two cards");
+
+    const auto& routeItem = inputPool.items.front();
+    const auto routeSequence = preview::buildSequence(routeItem.route.imported,
+        &routeItem.route.candidate, 120.0);
+    require(static_cast<bool>(routeSequence), "G5 representative input route build: " + routeSequence.error);
+    const auto fullClip = preview::preparePreview(routeSequence.sequence, preview::PreviewScope::Full);
+    const auto suffixClip = preview::preparePreview(routeSequence.sequence, preview::PreviewScope::Suffix);
+    require(static_cast<bool>(fullClip) && static_cast<bool>(suffixClip),
+        "G5 representative Full/Suffix preview preparation");
+    preview::PreviewTransport transport;
+    transport.prepare(preview::previewReferenceRate);
+    std::array<float, 64> left{}, right{};
+    const auto exerciseScope = [&](const preview::PreparedPreview& clip, const char* name) {
+        require(transport.load(clip), std::string("G5 ") + name + " transport load");
+        transport.setRepeat(true);
+        transport.play();
+        transport.seekQN(transport.endQN() - 0.001);
+        const auto startQN = transport.startQN();
+        const auto endQN = transport.endQN();
+        const auto qnPerSample = transport.tempoBPM() / 60.0 / preview::previewReferenceRate;
+        transport.process(left.data(), right.data(), static_cast<int>(left.size()));
+        require(transport.state() == preview::PlaybackState::Playing &&
+            std::abs(transport.positionQN() - (startQN + 40.0 * qnPerSample)) < 1e-8,
+            std::string("G5 ") + name + " repeated boundary wraps to scope start");
+        transport.pause();
+        const auto pausedPosition = transport.positionQN();
+        transport.process(left.data(), right.data(), static_cast<int>(left.size()));
+        require(transport.state() == preview::PlaybackState::Paused &&
+            transport.positionQN() == pausedPosition, std::string("G5 ") + name + " pause holds position");
+        transport.play();
+        transport.process(left.data(), right.data(), static_cast<int>(left.size()));
+        require(transport.state() == preview::PlaybackState::Playing &&
+            std::abs(transport.positionQN() - (startQN + 104.0 * qnPerSample)) < 1e-8,
+            std::string("G5 ") + name + " resume continues after wrap");
+        transport.stop();
+        require(transport.state() == preview::PlaybackState::Stopped &&
+            std::abs(transport.positionQN() - startQN) < 1e-8,
+            std::string("G5 ") + name + " stop resets to scope start");
+        transport.setRepeat(false);
+        transport.play();
+        transport.seekQN(endQN - 0.001);
+        transport.process(left.data(), right.data(), static_cast<int>(left.size()));
+        require(transport.state() == preview::PlaybackState::Stopped &&
+            std::abs(transport.positionQN() - endQN) < 1e-8,
+            std::string("G5 ") + name + " nonrepeat stops at scope end");
+    };
+    exerciseScope(fullClip.clip, "Full");
+    exerciseScope(suffixClip.clip, "Suffix");
+
+    verifyWishItemRoundTrip(strictItems.front(), factory);
+    std::cout << "Factory G5 smoke PASS scenarios=5 factory=V6/Schema2/1016"
+              << " hca_bound=1016 locrian=2 classical_reviewed=0"
+              << " input_wish=1 user_full_lookup=1 strict_locrian_draw=2/exhausted"
+              << " loose_locrian=2 preview_midi_snapshot=1 loop_scopes=2/block_samples=64\n";
+    return 0;
+}
+
 int pitchClassOffset(int value) {
     return (value % 12 + 12) % 12;
 }
@@ -2293,6 +2423,15 @@ int main(int argc, char** argv) {
             return runInstalledSmoke(argv[2], argv[3]);
         } catch (const std::exception& error) {
             std::cerr << "Factory V6 installed smoke FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g5-smoke") {
+        try {
+            require(argc == 3, "usage: FactoryV6Tests --g5-smoke factory.db");
+            return runG5Smoke(argv[2], std::filesystem::path(argv[2]).parent_path() / "g5-smoke-fixtures");
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G5 smoke FAIL: " << error.what() << '\n';
             return 1;
         }
     }

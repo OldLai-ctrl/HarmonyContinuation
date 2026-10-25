@@ -110,6 +110,8 @@ bool PLUGIN_API PluginView::open(void* parent) {
         actions.audition=[pluginController](const harmony::ContinuationCandidate& candidate) {
             pluginController->audition(candidate); };
         actions.stopAudition=[pluginController] { pluginController->stopPreview(); };
+        actions.clearAudition=[pluginController] { pluginController->clearPreview(); };
+        actions.previewRepeat=[pluginController](bool enabled) { pluginController->setPreviewRepeat(enabled); };
         actions.pauseAudition=[pluginController] { pluginController->pausePreview(); };
         actions.resumeAudition=[pluginController] { pluginController->resumePreview(); };
         actions.previewBackend=[pluginController](bool host) { pluginController->setPreviewBackend(host); };
@@ -283,7 +285,8 @@ VSTGUI::CMessageResult PluginView::notify(VSTGUI::CBaseObject* sender, const cha
             if(impl_->main){const auto s=impl_->controller->previewStatus();
                 impl_->main->setAuditionState(s.bpmMode==preview::PreviewTempoMode::Custom,s.customBPM,
                     s.scope==preview::PreviewScope::Suffix,s.hostValid,s.effectiveBPM);
-                impl_->main->setPreviewTransport(s.state,s.hostBackend,s.hostAvailable,s.pending);}
+                impl_->main->setPreviewTransport(s.state,s.hostBackend,s.hostAvailable,s.pending);
+                impl_->main->setPreviewRepeat(s.repeat);}
         }
         return result;
     }

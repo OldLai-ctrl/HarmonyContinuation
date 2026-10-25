@@ -98,7 +98,7 @@ int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>& sourc
     require(freeDone->error.empty() && freeDone->items.size() == 1,
             "free workflow draws from its own Factory pool", checks);
 
-    // One round is retained across 1 + 10 + 10 and old published snapshots never mutate.
+    // The sampler round survives replacement; the display can independently retain history.
     WishWorkflow roundWorkflow(batchSources, annotations);
     roundWorkflow.reset(tonicC, {}, 20261023);
     require(roundWorkflow.draw(1), "round accepts draw(1)", checks);
@@ -107,26 +107,106 @@ int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>& sourc
     require(first->items.size() == 1 && first->poolSize >= 2,
             "real short fixture has multiple fixed-tonic candidates", checks);
     const auto firstIdentity = first->items.front()->musicIdentity;
-    require(roundWorkflow.draw(10), "round accepts draw(10)", checks);
+    require(roundWorkflow.draw(10, true), "round accepts an appended draw(10)", checks);
     const auto second = waitFor(roundWorkflow, [](const auto& view) { return !view.busy; },
                                 "second round draw timed out");
     require(second->lastDraw > 0 && second->lastDraw < 10,
             "draw(10) reports the actual short remainder", checks);
+    require(second->items.size() == first->items.size() + second->lastDraw &&
+            second->lastDrawAppended && second->batchSerial == first->batchSerial + 1,
+            "append keeps prior results and identifies its completed batch", checks);
     require(first->items.size() == 1 && first->items.front()->musicIdentity == firstIdentity,
             "an earlier immutable view remains unchanged after append", checks);
-    require(roundWorkflow.draw(10), "exhausted round accepts a final draw request", checks);
+    require(roundWorkflow.draw(10, true), "exhausted round accepts a final appended draw", checks);
     const auto third = waitFor(roundWorkflow, [](const auto& view) { return !view.busy; },
                                "third round draw timed out");
     require(third->lastDraw == 0 && third->remaining == 0 &&
             third->diagnostic.find("exhausted=1") != std::string::npos,
             "exhausted pool is reported without refill", checks);
-    require(third->items.size() == third->poolSize, "all available candidates were retained", checks);
+    require(third->items.size() == second->items.size(), "an empty append preserves visible history", checks);
     std::set<std::string> identities;
     for (const auto& item : third->items)
         require(identities.insert(item->musicIdentity).second,
                 "one no-replacement round never repeats a music identity", checks);
     require(first->items.size() == 1 && first->items.front()->musicIdentity == firstIdentity,
             "the original view stays immutable after later draws", checks);
+
+    // Equal-length replacement is a new visible generation even though its row count is unchanged.
+    WishWorkflow replacementWorkflow(batchSources, annotations);
+    replacementWorkflow.reset(tonicC, {}, 1212);
+    require(replacementWorkflow.draw(1), "replacement workflow accepts its first draw", checks);
+    const auto replacementFirst = waitFor(replacementWorkflow,
+        [](const auto& view) { return !view.busy; }, "first replacement draw timed out");
+    require(replacementWorkflow.draw(1), "replacement workflow accepts a second default draw", checks);
+    const auto replacementSecond = waitFor(replacementWorkflow,
+        [](const auto& view) { return !view.busy; }, "second replacement draw timed out");
+    require(replacementSecond->items.size() == replacementFirst->items.size() &&
+            replacementSecond->displayGeneration > replacementFirst->displayGeneration &&
+            replacementSecond->batchSerial == replacementFirst->batchSerial + 1 &&
+            !replacementSecond->lastDrawAppended,
+            "default draw replaces an equal-size list with a detectable batch", checks);
+    require(replacementSecond->items.front()->musicIdentity !=
+            replacementFirst->items.front()->musicIdentity,
+            "display replacement continues the same no-replacement round", checks);
+
+    // Clearing visible cards preserves the query and round, including consumed samples.
+    WishWorkflow clearWorkflow(batchSources, annotations);
+    clearWorkflow.reset(tonicC, {}, 1313);
+    require(clearWorkflow.draw(1), "clear workflow accepts its first draw", checks);
+    const auto beforeClear = waitFor(clearWorkflow, [](const auto& view) { return !view.busy; },
+                                     "pre-clear draw timed out");
+    require(beforeClear->remaining > 0, "clear fixture leaves the round nonempty", checks);
+    const auto consumedIdentity = beforeClear->items.front()->musicIdentity;
+    const auto clearRevision = beforeClear->revision;
+    const auto oldGeneration = beforeClear->displayGeneration;
+    const auto oldRemaining = beforeClear->remaining;
+    const auto clearGeneration = clearWorkflow.clearDisplay();
+    const auto cleared = clearWorkflow.view();
+    require(cleared->items.empty() && cleared->revision == clearRevision &&
+            cleared->displayGeneration == clearGeneration && clearGeneration > oldGeneration &&
+            cleared->remaining == oldRemaining && !cleared->usesInput,
+            "clear removes only visible results and keeps the free round", checks);
+    require(beforeClear->items.size() == 1 &&
+            beforeClear->items.front()->musicIdentity == consumedIdentity,
+            "clearing does not mutate an earlier immutable view", checks);
+    require(clearWorkflow.draw(1), "the cleared round accepts another draw", checks);
+    const auto afterClearDraw = waitFor(clearWorkflow, [](const auto& view) { return !view.busy; },
+                                        "post-clear draw timed out");
+    require(afterClearDraw->items.size() == 1 &&
+            afterClearDraw->items.front()->musicIdentity != consumedIdentity &&
+            afterClearDraw->remaining + 1 == oldRemaining,
+            "cleared samples stay consumed and the original round continues", checks);
+
+    // Input association and query identity also survive a display-only clear.
+    WishSettings inputSettings;
+    inputSettings.useInput = true;
+    inputSettings.filter.fixedTonic = PitchClass::C;
+    WishInput preservedInput;
+    const auto inputRoute = preview::templateRoute(batchSources.front(),
+        {PitchClass::C, batchSources.front().mode});
+    require(bool(inputRoute) && inputRoute.imported.events.size() >= 3,
+            "input-preservation fixture has a source prefix", checks);
+    Progression inputPrefix(inputRoute.imported.events.begin(), inputRoute.imported.events.begin() + 2);
+    inputPrefix.back().durationQN.reset();
+    inputPrefix.back().openEnded = true;
+    require(preservedInput.imported.replace(std::move(inputPrefix),
+                TimelineCoordinateMode::RelativeToSelection),
+            "input-preservation fixture imports a valid prefix", checks);
+    preservedInput.analysis.forcedKey = KeySignature{PitchClass::C, batchSources.front().mode};
+    WishWorkflow inputClearWorkflow(batchSources, annotations);
+    inputClearWorkflow.reset(inputSettings, preservedInput, 1414);
+    const auto inputBeforeClear = inputClearWorkflow.view();
+    const auto inputDisplayGeneration = inputClearWorkflow.clearDisplay();
+    const auto inputAfterClear = inputClearWorkflow.view();
+    require(inputAfterClear->usesInput && inputAfterClear->revision == inputBeforeClear->revision &&
+            inputAfterClear->displayGeneration == inputDisplayGeneration &&
+            inputAfterClear->error.empty(),
+            "display clear preserves input mode, query revision, and valid input", checks);
+    require(inputClearWorkflow.draw(1), "preserved input query accepts another draw", checks);
+    const auto inputAfterDraw = waitFor(inputClearWorkflow,
+        [](const auto& view) { return !view.busy; }, "post-clear input draw timed out");
+    require(inputAfterDraw->usesInput && inputAfterDraw->error.empty(),
+            "input data remains available to the existing round after clear", checks);
 
     // Equal seeds and parameters produce the same order from the same real source subset.
     const auto drawSeeded = [&](std::uint64_t seed) {
@@ -287,6 +367,32 @@ int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>& sourc
     // Reset during a pending worker revision clears its result and the retained object can draw again.
     const auto asyncCount = std::min<std::size_t>(64, sources.size());
     std::vector<ProgressionTemplate> asyncSources(sources.begin(), sources.begin() + asyncCount);
+    WishWorkflow clearAsyncWorkflow(asyncSources, annotations);
+    clearAsyncWorkflow.reset(WishSettings{}, {}, 818);
+    WishWorkflow controlWorkflow(asyncSources, annotations);
+    controlWorkflow.reset(WishSettings{}, {}, 818);
+    require(controlWorkflow.draw(10), "clear race control accepts its first batch", checks);
+    const auto controlFirst = waitFor(controlWorkflow, [](const auto& view) { return !view.busy; },
+                                      "clear race control first draw timed out");
+    require(clearAsyncWorkflow.draw(10), "async clear workflow accepts a batch", checks);
+    const auto asyncDisplayGeneration = clearAsyncWorkflow.clearDisplay();
+    const auto asyncCleared = waitFor(clearAsyncWorkflow,
+        [](const auto& view) { return !view.busy; }, "async clear workflow did not settle");
+    require(asyncCleared->items.empty() &&
+            asyncCleared->displayGeneration == asyncDisplayGeneration &&
+            asyncCleared->poolSize == controlFirst->poolSize &&
+            asyncCleared->remaining == controlFirst->remaining,
+            "a pre-clear asynchronous batch stays hidden but remains consumed", checks);
+    require(clearAsyncWorkflow.draw(1) && controlWorkflow.draw(1),
+            "both retained rounds accept the next sample after clear", checks);
+    const auto asyncNext = waitFor(clearAsyncWorkflow, [](const auto& view) { return !view.busy; },
+                                   "post-clear async draw timed out");
+    const auto controlNext = waitFor(controlWorkflow, [](const auto& view) { return !view.busy; },
+                                     "control next draw timed out");
+    require(asyncNext->items.size() == 1 && controlNext->items.size() == 1 &&
+            asyncNext->items.front()->musicIdentity == controlNext->items.front()->musicIdentity,
+            "clearing never returns hidden samples to the no-replacement round", checks);
+
     WishWorkflow asyncWorkflow(std::move(asyncSources), annotations);
     const auto oldRevision = asyncWorkflow.reset(WishSettings{}, {}, 808);
     require(asyncWorkflow.draw(10), "async invalidation starts a draw", checks);
@@ -317,7 +423,7 @@ int runWishWorkflowChecks(const std::vector<harmony::ProgressionTemplate>& sourc
     const auto editorFirstIdentity = editorFirst->items.front()->musicIdentity;
     editor.reset();
     editor = workspace;
-    require(editor->draw(1), "reopened editor continues the retained round", checks);
+    require(editor->draw(1, true), "reopened editor continues the retained round", checks);
     const auto editorSecond = waitFor(*editor, [](const auto& view) { return !view.busy; },
                                       "reopened editor draw timed out");
     require(editorSecond->items.size() >= 2 &&

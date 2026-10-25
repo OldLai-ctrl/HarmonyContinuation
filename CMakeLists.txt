@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.11.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.4" CACHE STRING "Product prerelease suffix (empty for an approved release)")
+set(HC_PRERELEASE "dev.5" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 6 CACHE STRING "Versioned Factory content; published V5 remains frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
@@ -342,6 +342,7 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AN
     set(HC_FACTORY_V6_CANDIDATES "${HC_FACTORY_V6_SOURCE_DIR}/candidates.json")
     set(HC_FACTORY_V6_METADATA "${HC_FACTORY_V6_SOURCE_DIR}/metadata.json")
     set(HC_FACTORY_V6_APPROVED_IDS "${HC_FACTORY_V6_SOURCE_DIR}/approved-ids.txt")
+    set(HC_FACTORY_V6_INCREMENT_DIR "${HC_FACTORY_V6_SOURCE_DIR}/increments/20261025-empty-modes")
     set(HC_FACTORY_V6_BASE_HCA "${CMAKE_CURRENT_SOURCE_DIR}/data/mode-annotations/v2/factory-v5.hca")
     set(HC_FACTORY_V6_PROPOSAL_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-proposal.db")
     set(HC_FACTORY_V6_EXPERIMENT_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-experiment.db")
@@ -363,9 +364,11 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AN
         COMMAND $<TARGET_FILE:factory_v6_compiler> "${HC_FACTORY_V6_BASE_DB}" "${HC_FACTORY_V6_CANDIDATES}"
             "${HC_FACTORY_V6_METADATA}" "${HC_FACTORY_V6_APPROVED_IDS}" "${HC_FACTORY_V6_PROPOSAL_DB}"
             "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_BASE_HCA}" "${HC_FACTORY_V6_HCA}"
-            "${HC_FACTORY_V6_SUMMARY}"
+            "${HC_FACTORY_V6_SUMMARY}" "${HC_FACTORY_V6_INCREMENT_DIR}/candidates.json"
+            "${HC_FACTORY_V6_INCREMENT_DIR}/metadata.json"
         DEPENDS factory_v6_compiler "${HC_FACTORY_V6_BASE_DB}" "${HC_FACTORY_V6_CANDIDATES}"
             "${HC_FACTORY_V6_METADATA}" "${HC_FACTORY_V6_APPROVED_IDS}" "${HC_FACTORY_V6_BASE_HCA}"
+            "${HC_FACTORY_V6_INCREMENT_DIR}/candidates.json" "${HC_FACTORY_V6_INCREMENT_DIR}/metadata.json"
         COMMENT "Compile reviewed Factory V6 database and matching annotations"
         VERBATIM)
     if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6")
