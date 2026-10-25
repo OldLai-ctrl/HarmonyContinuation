@@ -17,6 +17,7 @@
 #include "color/ColorPreferenceReranker.h"
 #include "midi/MidiWorkflow.h"
 #include "wish/WishWorkflow.h"
+#include "wish/WishCatalog.h"
 #include "preview/PreviewSequence.h"
 #include "preview/PreviewTransport.h"
 #include "vstgui/lib/ccolor.h"
@@ -36,6 +37,8 @@ public:
         std::shared_ptr<wish::WishWorkflow> wishWorkspace;
         wish::WishSettings wishSettings;
         wish::WishInput wishInput;
+        std::optional<wish::AnnotationLoadResult> wishAnnotations;
+        std::string wishFactoryIdentity,wishAnnotationIdentity;
         bool wishMode{},wishAdvanced{},wishRequested{};
         std::size_t wishPage{};
         std::string wishSelected,wishExpanded;
@@ -115,6 +118,7 @@ public:
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
     void setDropReport(std::string, std::string outcome, bool inputAttempt = true);
+    void setWishAnnotations(wish::AnnotationLoadResult);
     void setLibrary(std::vector<ProgressionTemplate> factory, std::vector<ProgressionTemplate> user,
                     std::string error = {});
     void setWorkerStatus(std::uint64_t generation, double ms, bool busy, std::size_t factoryCount,
@@ -165,11 +169,14 @@ private:
     std::shared_ptr<const wish::WishView> wishView_;
     wish::WishSettings wishSettings_;
     wish::WishInput wishInput_;
+    std::optional<wish::AnnotationLoadResult> wishAnnotations_;
+    std::string wishFactoryIdentity_, wishAnnotationIdentity_;
     bool wishMode_{},wishAdvanced_{},wishRequested_{};
     std::size_t wishPage_{};
     std::string wishSelected_,wishExpanded_;
     double wishScroll_{};
     void ensureWish();
+    void invalidateWishWorkspace();
     void resetWish();
     void drawPrimaryTabs(VSTGUI::CDrawContext*,const CompactLayoutResult&);
     void drawWish(VSTGUI::CDrawContext*,const CompactLayoutResult&);

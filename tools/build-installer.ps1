@@ -51,6 +51,15 @@ $stage = Join-Path $outputPath ('stage-' + $libraryVersion)
 New-Item -ItemType Directory -Force -Path $stage,(Join-Path $stage 'runtime') | Out-Null
 Copy-Item -LiteralPath $manager -Destination (Join-Path $stage 'library_manager.exe')
 Copy-Item -LiteralPath $FactoryDatabase -Destination (Join-Path $stage 'factory.db')
+$annotationHash = ''
+if ([int]$libraryVersion -eq 6) {
+    $annotationFile = Join-Path $buildPath 'factory.hca'
+    if (!(Test-Path -LiteralPath $annotationFile)) { throw 'Factory V6 requires factory.hca.' }
+    $annotationItem = Get-Item -LiteralPath $annotationFile
+    if ($annotationItem.Length -gt 2MB) { throw 'Factory V6 annotation exceeds the 2 MiB installer limit.' }
+    Copy-Item -LiteralPath $annotationFile -Destination (Join-Path $stage 'factory.hca')
+    $annotationHash = (Get-FileHash -LiteralPath $annotationFile -Algorithm SHA256).Hash.ToLowerInvariant()
+}
 Get-ChildItem -LiteralPath $RuntimeDirectory -Filter '*.dll' -File | Copy-Item -Destination (Join-Path $stage 'runtime')
 if (!$LibraryOnly) {
     $bundle = Join-Path $buildPath 'VST3/Release/HarmonyContinuation.vst3'
@@ -68,6 +77,8 @@ if (!$LibraryOnly) {
 # inside the VST3 component. Only the newly staged copy is changed here.
 $bundledFactory = Join-Path $stageBundle 'Contents/Resources/factory.db'
 if (Test-Path -LiteralPath $bundledFactory) { Remove-Item -LiteralPath $bundledFactory }
+$bundledAnnotation = Join-Path $stageBundle 'Contents/Resources/factory.hca'
+if (Test-Path -LiteralPath $bundledAnnotation) { Remove-Item -LiteralPath $bundledAnnotation }
 $manifest = Get-ChildItem -LiteralPath $stageBundle -Recurse -File | Sort-Object FullName | ForEach-Object {
     $relative = $_.FullName.Substring($stageBundle.Length + 1)
     (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '|' + $relative
@@ -77,6 +88,7 @@ $referenceDir = Join-Path $stage 'official-factory'
 New-Item -ItemType Directory -Force -Path $referenceDir | Out-Null
 $historicalReferences = @('factory-v2.db','factory-v3.db')
 if ([int]$libraryVersion -ge 5) { $historicalReferences += 'factory-v4.db' }
+if ([int]$libraryVersion -ge 6) { $historicalReferences += 'factory-v5.db' }
 foreach ($reference in $historicalReferences) {
     $source = Join-Path $buildPath $reference
     if (!(Test-Path -LiteralPath $source)) { throw "Missing official reference compiled from repository data: $reference" }
@@ -90,6 +102,7 @@ if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -Lite
 $setupFileStem = "HarmonyContinuation-$productVersion-Setup"
 $common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
 $common += '/DFactoryEntryCount='+$factoryEntryCount
+if ([int]$libraryVersion -eq 6) { $common += '/DAnnotationHash='+$annotationHash }
 if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
 & $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }

@@ -354,11 +354,15 @@ void Controller::reloadLibraries() {
     hostEnvironment_.factoryEntries=static_cast<unsigned>(factory.templates.size());
     hostEnvironment_.librarySource=selected.path==factoryDatabasePath()?"bundled":"external";
     if(factory) sessionState_.factoryLibraryVersion=factory.libraryVersion;
+    auto wishAnnotations = factory
+        ? harmony::wish::annotationsForFactory(selected.path, factory.libraryVersion)
+        : harmony::wish::AnnotationLoadResult{{}, "Factory library unavailable; mode annotations cannot be loaded"};
     view_->setSessionState(sessionState_);
     auto user=harmony::library::UserLibrary(harmony::library::userDatabasePath()).loadAll();
     factoryCount_=factory.templates.size(); userCount_=user.templates.size();
     view_->setLibrary(std::move(factory.templates),std::move(user.templates),
         !factory?factory.error:!user?user.error:selected.warning);
+    view_->setWishAnnotations(std::move(wishAnnotations));
 }
 std::string Controller::saveRecommendation(const harmony::ContinuationCandidate& c,const harmony::session::SaveMetadata& m) noexcept {
     try {

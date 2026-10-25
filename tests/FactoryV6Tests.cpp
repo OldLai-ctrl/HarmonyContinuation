@@ -4,10 +4,12 @@
 #include "core/RecommendationPolicy.h"
 #include "enrichment/ProgressionEnrichmentEngine.h"
 #include "library/LegacyFactoryIdResolver.h"
+#include "library/LibraryStore.h"
 #include "library/ProgressionLibrary.h"
 #include "midi/MidiClip.h"
 #include "midi/StandardMidiFileReader.h"
 #include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiWorkflow.h"
 #include "preview/PreviewSequence.h"
 #include "preview/PreviewSynth.h"
 #include "preview/OfflinePreviewRenderer.h"
@@ -16,6 +18,7 @@
 #include "wish/ModeAnnotations.h"
 #include "wish/MusicIdentity.h"
 #include "wish/WishSampler.h"
+#include "wish/WishCatalog.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -1764,11 +1767,201 @@ int runIncremental(const std::filesystem::path& baselinePath,
 }
 } // namespace
 
+namespace {
+void verifyWishItemRoundTrip(const wish::WishItem& item, const library::LoadResult& factory) {
+    const auto previewResult = preview::buildSequence(item.route.imported, &item.route.candidate, 120.0);
+    require(static_cast<bool>(previewResult), "installed Wish preview: " + previewResult.error);
+    require(wish::performanceFingerprint(previewResult.sequence, item.route.meterNumerator,
+        item.route.meterDenominator) == item.musicIdentity, "installed Wish full music identity");
+
+    const std::vector<MatchResult> matches = item.match ? std::vector<MatchResult>{*item.match}
+                                                         : std::vector<MatchResult>{};
+    auto captured = snapshot::capture(item.route.imported, item.route.candidate, matches, 120.0,
+        item.route.meterNumerator, item.route.meterDenominator);
+    captured.factoryLibraryVersion = 6;
+    const auto restored = snapshot::deserialize(snapshot::serialize(captured), &factory);
+    require(static_cast<bool>(restored), "installed Wish Snapshot3 readback: " + restored.error);
+    require(restored.value.candidateAvailable &&
+        restored.value.candidate.primaryTemplate == item.route.candidate.primaryTemplate,
+        "installed Wish Snapshot lost its Factory source reference");
+    const auto restoredPreview = preview::buildSequence(
+        restored.value.imported, &restored.value.candidate, 120.0);
+    require(static_cast<bool>(restoredPreview), "installed Wish restored preview");
+    require(wish::performanceFingerprint(restoredPreview.sequence, item.route.meterNumerator,
+        item.route.meterDenominator) == item.musicIdentity, "installed Wish Snapshot music identity");
+
+    midi::CandidateExportContext context{item.route.imported, 120.0,
+        {item.route.meterNumerator, item.route.meterDenominator}};
+    const auto before = midi::candidatePayload(context, item.route.candidate);
+    const midi::CandidateExportContext restoredContext{restored.value.imported, 120.0,
+        {item.route.meterNumerator, item.route.meterDenominator}};
+    const auto after = midi::candidatePayload(restoredContext, restored.value.candidate);
+    require(before && after && before.payload.smfBytes == after.payload.smfBytes &&
+        before.payload.dawClipBytes == after.payload.dawClipBytes,
+        "installed Wish Snapshot/MIDI byte identity");
+}
+
+int runInstalledSmoke(const std::filesystem::path& factoryPath,
+                      const std::filesystem::path& fixtureDirectory) {
+    std::filesystem::create_directories(fixtureDirectory);
+    const auto factory = library::loadFactory(factoryPath);
+    require(static_cast<bool>(factory), "installed Factory load: " + factory.error);
+    require(factory.libraryVersion == 6 && factory.storageSchemaVersion == 2 && factory.templates.size() == 1014,
+            "installed Factory V6/Schema2/1014 identity");
+    const bool activeSelection = factoryPath.parent_path().filename() == "6";
+    if (activeSelection) {
+        const auto selected = library::loadAvailableFactory({}, factoryPath.parent_path().parent_path());
+        require(selected.library && selected.path == factoryPath && selected.library.libraryVersion == 6 &&
+            selected.library.templates.size() == 1014,
+            "active Factory store did not select the installed V6 package");
+    }
+    const auto annotations = wish::annotationsForFactory(factoryPath, factory.libraryVersion);
+    require(static_cast<bool>(annotations), "installed external HCA: " + annotations.error);
+    const auto hcaBytes = std::filesystem::file_size(factoryPath.parent_path() / "factory.hca");
+    require(annotations.catalog.entries.size() == factory.templates.size(), "installed HCA bound source count");
+
+    require(hcaBytes > 1024u * 1024u && hcaBytes <= 2u * 1024u * 1024u,
+            "installed HCA size is outside the supported 2 MiB contract");
+
+    constexpr std::array modes{wish::MusicalMode::Dorian, wish::MusicalMode::Mixolydian,
+        wish::MusicalMode::Lydian, wish::MusicalMode::Phrygian,
+        wish::MusicalMode::MelodicMinorAscending};
+    std::size_t modeIndex{};
+    for (const auto mode : modes) {
+        wish::WishFilter filter;
+        filter.fixedTonic = PitchClass::C;
+        filter.modes = {mode};
+        filter.strict = true;
+        auto pool = wish::makeFreePool(factory.templates, annotations.catalog, filter);
+        require(static_cast<bool>(pool), "installed strict fixed-C Wish pool: " + pool.error);
+        require(!pool.items.empty(), std::string("installed strict fixed-C pool is empty: ") + wish::modeName(mode));
+        wish::WishRound round(std::move(pool), 6800 + modeIndex++);
+        require(round.draw(1).size() == 1,
+                std::string("installed strict fixed-C Wish draw: ") + wish::modeName(mode));
+    }
+
+    const auto colorSource = std::find_if(factory.templates.begin(), factory.templates.end(),
+        [](const auto& item) { return item.intent == PhraseIntent::Color && item.full.size() >= 3; });
+    require(colorSource != factory.templates.end(), "installed Factory has no Color representative");
+    struct GroupQueryCase { const ProgressionTemplate* item; std::size_t prefix; };
+    const std::array<GroupQueryCase, 4> groupQueries{{
+        {&find(factory, "V6_B3_01_048"), 6}, {&find(factory, "V6_B3_01_056"), 7},
+        {&find(factory, "V6_B3_01_065"), 5}, {&*colorSource, colorSource->full.size() - 2}
+    }};
+    const CandidateIndex recommendationIndex(factory.templates);
+    std::array<std::size_t, 4> groupCoverage{};
+    for (const auto& test : groupQueries) {
+        const auto query = queryFor(*test.item, {PitchClass::C, test.item->mode}, test.prefix);
+        RecommendationRequest request;
+        request.preferredIntent = test.item->intent;
+        const auto recommendations = recommendContinuations(query, recommendationIndex, request);
+        require(recommendations.stats.shortlistSize == 1014,
+                "installed recommendation did not scan the complete Factory");
+        for (std::size_t group = 0; group < recommendations.groups.size(); ++group)
+            groupCoverage[group] += recommendations.groups[group].size();
+    }
+    require(std::all_of(groupCoverage.begin(), groupCoverage.end(),
+        [](const auto count) { return count > 0; }), "installed representative recommendation group is empty");
+
+    const auto& enrichSource = find(factory, "V6_B3_01_065");
+    const KeySignature enrichKey{PitchClass::C, enrichSource.mode};
+    const auto enrichRoute = preview::templateRoute(enrichSource, enrichKey);
+    require(static_cast<bool>(enrichRoute), "installed Enrich source route");
+    AnalysisContext enrichContext;
+    enrichContext.forcedKey = enrichKey;
+    const auto enrichAnalysis = analyzeHarmony(enrichRoute.imported.events, enrichContext);
+    const auto enrichment = enrichment::enrichProgression(enrichRoute.imported.events, enrichAnalysis);
+    require(enrichment.error.empty(), "installed Enrich API: " + enrichment.error);
+    const auto enrichmentCandidates = std::accumulate(enrichment.groups.begin(), enrichment.groups.end(),
+        std::size_t{}, [](std::size_t sum, const auto& group) { return sum + group.size(); });
+    require(enrichmentCandidates > 0, "installed Enrich representative returned no candidates");
+    const auto& freeSource = find(factory, "V6_B3_01_048");
+    wish::WishFilter freeFilter;
+    freeFilter.fixedTonic = PitchClass::C;
+    auto freePool = wish::makeFreePool(factory.templates, annotations.catalog, freeFilter);
+    require(static_cast<bool>(freePool), "installed free Wish pool: " + freePool.error);
+    std::erase_if(freePool.items, [&](const auto& item) {
+        return std::none_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == freeSource.id; });
+    });
+    require(!freePool.items.empty(), "installed free Wish lost the selected V6 source");
+    wish::WishRound freeRound(std::move(freePool), 6848);
+    auto freeItems = freeRound.draw(1);
+    require(freeItems.size() == 1 && !freeItems.front().match &&
+        std::any_of(freeItems.front().sources.begin(), freeItems.front().sources.end(),
+            [&](const auto& source) { return source.id == freeSource.id; }), "installed free Wish source identity");
+
+    const auto& inputSource = find(factory, "V6_B3_01_056");
+    const KeySignature inputKey{PitchClass::C, inputSource.mode};
+    wish::WishInput input;
+    require(inputSource.full.size() > 7, "installed input Wish source is too short for reviewed prefix");
+    require(input.imported.replace(makePrefix(inputSource, inputKey, 7), TimelineCoordinateMode::RelativeToSelection),
+        "installed input Wish prefix");
+    input.analysis.forcedKey = inputKey;
+    auto inputPool = wish::makeInputPool(factory.templates, annotations.catalog, input);
+    require(static_cast<bool>(inputPool), "installed input Wish pool: " + inputPool.error);
+    std::erase_if(inputPool.items, [&](const auto& item) {
+        return std::none_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == inputSource.id; });
+    });
+    require(!inputPool.items.empty(), "installed input Wish lost the exact V6 source in full Factory search");
+    wish::WishRound inputRound(std::move(inputPool), 6856);
+    auto inputItems = inputRound.draw(1);
+    require(inputItems.size() == 1 && inputItems.front().match.has_value(),
+            "installed input Wish draw/match identity");
+
+    verifyWishItemRoundTrip(freeItems.front(), factory);
+    verifyWishItemRoundTrip(inputItems.front(), factory);
+
+    auto isolatedUser = factory.templates.front();
+    isolatedUser.id = "USER_INSTALLED_SMOKE_SOURCE";
+    isolatedUser.name = isolatedUser.nameEn = isolatedUser.nameZh = isolatedUser.id;
+    isolatedUser.aliases.clear();
+    isolatedUser.sourceType = "user";
+    const auto userPath = fixtureDirectory / "installed-smoke-user.db";
+    std::error_code ignored;
+    std::filesystem::remove(userPath, ignored);
+    std::string userError;
+    require(library::UserLibrary(userPath).addProgression(isolatedUser, userError),
+            "installed User fixture save: " + userError);
+    const auto loadedUser = library::UserLibrary(userPath).loadAll();
+    require(static_cast<bool>(loadedUser) && loadedUser.templates.size() == 1 &&
+        loadedUser.templates.front().id == isolatedUser.id,
+        "installed User fixture complete retrieval");
+    auto mergedSources = factory.templates;
+    mergedSources.insert(mergedSources.end(), loadedUser.templates.begin(), loadedUser.templates.end());
+    const CandidateIndex mergedIndex(std::move(mergedSources));
+    const auto userQuery = queryFor(isolatedUser, {PitchClass::C, isolatedUser.mode},
+        isolatedUser.full.size() > 2 ? isolatedUser.full.size() - 1 : 1);
+    const auto userMatches = matchProgression(userQuery, mergedIndex, MatchWeights{},
+        mergedIndex.templates().size());
+    require(std::any_of(userMatches.begin(), userMatches.end(), [&](const auto& match) {
+        return match.templateId == isolatedUser.id;
+    }), "full Factory plus User fixture retrieval lost the User source");
+
+    std::cout << "Factory V6 installed smoke PASS factory=" << factory.templates.size()
+              << " active_selection=" << (activeSelection ? "6" : "build")
+              << " hca_bytes=" << hcaBytes << " bound_sources=" << annotations.catalog.entries.size()
+              << " fixed_c_strict_modes=5 free_wish=1 input_wish=1 user_full_retrieval=1"
+              << " recommendation_queries=4 enrich_candidates=" << enrichmentCandidates
+              << " preview_midi_snapshot_cards=2\n";
+    return 0;
+}
+} // namespace
 int main(int argc, char** argv) {
     static_assert(library::factorySchemaVersion == 2);
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--installed-smoke") {
+        try {
+            require(argc == 4, "usage: FactoryV6Tests --installed-smoke factory.db fixture-dir");
+            return runInstalledSmoke(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V6 installed smoke FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--incremental") {
         try {
             const bool finalInventory = argc == 14 && std::string_view(argv[13]) == "--inventory";

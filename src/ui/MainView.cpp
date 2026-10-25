@@ -472,6 +472,7 @@ bool MainView::onDrop(DragEventData e) {
 MainView::EditorUiState MainView::captureEditorUiState() const {
     EditorUiState out;
     out.wishWorkspace=wishWorkspace_;out.wishSettings=wishSettings_;out.wishInput=wishInput_;
+    out.wishAnnotations=wishAnnotations_;out.wishFactoryIdentity=wishFactoryIdentity_;out.wishAnnotationIdentity=wishAnnotationIdentity_;
     out.wishMode=wishMode_;out.wishAdvanced=wishAdvanced_;out.wishRequested=wishRequested_;out.wishPage=wishPage_;
     out.wishSelected=wishMode_?compactSelected_:wishSelected_;out.wishExpanded=wishExpanded_;
     out.wishScroll=wishMode_?compactScroll_:wishScroll_;
@@ -485,6 +486,7 @@ MainView::EditorUiState MainView::captureEditorUiState() const {
 }
 void MainView::restoreEditorUiState(const EditorUiState& s){
     wishWorkspace_=s.wishWorkspace;wishSettings_=s.wishSettings;wishInput_=s.wishInput;
+    wishAnnotations_=s.wishAnnotations;wishFactoryIdentity_=s.wishFactoryIdentity;wishAnnotationIdentity_=s.wishAnnotationIdentity;
     wishMode_=s.wishMode;wishAdvanced_=s.wishAdvanced;wishRequested_=s.wishRequested;wishPage_=s.wishPage;
     wishSelected_=s.wishSelected;wishExpanded_=s.wishExpanded;wishScroll_=std::isfinite(s.wishScroll)?std::max(0.,s.wishScroll):0.;
     if(wishWorkspace_)wishView_=wishWorkspace_->view();
@@ -983,7 +985,18 @@ void MainView::setDropReport(std::string raw,std::string parsed,bool inputAttemp
     }
 }
 void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<ProgressionTemplate> u,std::string e) {
-    factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e); invalid();
+    std::string identity = "V" + std::to_string(state_.factoryLibraryVersion) + "|";
+    for (const auto& item : f) {
+        identity += std::to_string(item.id.size()) + ":" + item.id + ":" + wish::sourceFingerprint(item) + ":";
+        identity += std::to_string(item.name.size()) + ":" + item.name;
+        identity += std::to_string(item.nameEn.size()) + ":" + item.nameEn;
+        identity += std::to_string(item.nameZh.size()) + ":" + item.nameZh + "\n";
+    }
+    const bool factoryChanged = identity != wishFactoryIdentity_;
+    wishFactoryIdentity_ = std::move(identity);
+    factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e);
+    if (factoryChanged) invalidateWishWorkspace();
+    invalid();
 }
 void MainView::setWorkerStatus(std::uint64_t g,double ms,bool busy,std::size_t fc,std::size_t uc,bool resultReady) {
     if(!wishMode_&&(g!=generation_||busy||!resultReady)){seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;}

@@ -18,12 +18,21 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
- #if LibraryVersion == "5"
+ #if LibraryVersion == "6"
+  #define MinimumPluginVersion "0.11.0-dev.4"
+ #elif LibraryVersion == "5"
   #define MinimumPluginVersion "0.10.0-dev.12"
  #elif LibraryVersion == "4"
   #define MinimumPluginVersion "0.10.0-dev.1"
  #else
   #define MinimumPluginVersion "0.9.0-dev.2"
+ #endif
+#endif
+#ifndef AnnotationHash
+ #if LibraryVersion == "6"
+  #error AnnotationHash required for Factory V6
+ #else
+  #define AnnotationHash ""
  #endif
 #endif
 #ifdef TestRoot
@@ -80,6 +89,9 @@ Source: "{#StageDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\library_manager.exe"; Flags: dontcopy
 Source: "{#StageDir}\runtime\*.dll"; Flags: dontcopy
 Source: "{#StageDir}\factory.db"; Flags: dontcopy
+#if LibraryVersion == "6"
+Source: "{#StageDir}\factory.hca"; Flags: dontcopy
+#endif
 Source: "{#StageDir}\official-factory\*.db"; DestDir: "{tmp}\official-factory"; Flags: dontcopy
 Source: "{#StageDir}\plugin-files.txt"; Flags: dontcopy
 Source: "{#StageDir}\HarmonyContinuation.vst3\*"; DestDir: "{code:PluginFolder}"; Components: plugin; Flags: ignoreversion recursesubdirs createallsubdirs uninsneveruninstall
@@ -166,6 +178,15 @@ begin
   if (Version='') or (IntToStr(StrToIntDef(Version,0))<>Version) or (StrToIntDef(Version,0)<1) then
     Result:=LibraryDatabase else Result:=StoreFolder+'\'+Version+'\factory.db';
 end;
+function ManagedAnnotationFile: String;
+var Version: String; ActiveText: AnsiString;
+begin
+  Version:=GetIniString('Components','LibraryVersion','',StateFile);
+  if (Version='') and LoadStringFromFile(StoreFolder+'\active.txt',ActiveText) then Version:=Trim(String(ActiveText));
+  if Version='6' then Result:=StoreFolder+'\6\factory.hca' else Result:='';
+end;
+function ManagedAnnotationHash: String;
+begin Result:=GetIniString('Components','AnnotationHash','',StateFile); end;
 function CopySetup: Boolean;
 begin Result := CompareText(ExpandConstant('{srcexe}'), AppFolder + '\HarmonyContinuation-Setup.exe') <> 0; end;
 function FileAttributes(Path: String): LongWord;
@@ -227,6 +248,9 @@ procedure ExtractPayload;
 begin
   ExtractTemporaryFile('library_manager.exe'); ExtractTemporaryFiles('{tmp}\*.dll');
   ExtractTemporaryFile('factory.db'); ExtractTemporaryFile('plugin-files.txt');
+#if LibraryVersion == "6"
+  ExtractTemporaryFile('factory.hca');
+#endif
   ExtractTemporaryFiles('{tmp}\official-factory\*.db');
 end;
 function ReadActive: String;
@@ -465,7 +489,14 @@ begin
   end;
 end;
 procedure RemoveManagedLibrary;
+var AnnotationFile: String;
 begin
+  AnnotationFile:=ManagedAnnotationFile;
+  if (AnnotationFile<>'') and FileExists(AnnotationFile) then begin
+    if (ManagedAnnotationHash='') or (CompareText(GetSHA256OfFile(AnnotationFile),ManagedAnnotationHash)<>0) then
+      RaiseException('Factory annotation ownership/content differs; preserved');
+    if not DeleteFile(AnnotationFile) then RaiseException('Cannot remove managed Factory annotation');
+  end;
   if FileExists(LibraryDatabase) and not DeleteFile(ManagedLibraryDatabase) then RaiseException('Cannot remove managed Factory DB');
   if CompareText(StoreFolder+'\'+ReadActive+'\factory.db',ManagedLibraryDatabase)=0 then
     if not DeleteFile(StoreFolder+'\active.txt') then RaiseException('Cannot clear active Factory pointer');
@@ -632,6 +663,8 @@ begin
      not Manager('check-plugin "'+LibraryDatabase+'"',True) then begin Result:=Text('请关闭 Cubase、FL Studio 或其它占用插件/曲库的程序后重试。','Close Cubase, FL Studio or any process using the plugin/library, then retry.'); Exit; end;
   if RemovePlugin and (not OwnPlugin or not ManifestPaths(AppFolder+'\plugin-files.txt',True)) then begin Result:='Plugin ownership cannot be verified. Repair/update the plugin first; no files removed.'; Exit; end;
   if RemoveLibrary and (not OwnLibrary or ((FileExists(ManagedLibraryDatabase)) and (CompareText(GetSHA256OfFile(ManagedLibraryDatabase),ManagedHash)<>0))) then begin Result:='Factory ownership/content differs. Repair the managed library first; no files removed.'; Exit; end;
+  if RemoveLibrary and (ManagedAnnotationFile<>'') and FileExists(ManagedAnnotationFile) and
+      ((ManagedAnnotationHash='') or (CompareText(GetSHA256OfFile(ManagedAnnotationFile),ManagedAnnotationHash)<>0)) then begin Result:='Factory annotation ownership/content differs. Repair the managed library first; no files removed.'; Exit; end;
   if Selection('plugin') and PluginWasPresent then begin
     if VersionOrder(DetectedVersion)<0 then begin Result:='Installed plugin version unknown; preserved.'; Exit; end;
     if VersionOrder(DetectedVersion)>VersionOrder('{#ProductVersion}') then
@@ -656,6 +689,11 @@ begin
       Result:='Same library version has different content; no overwrite. Repair a known managed component or retain it.'; Exit;
     end;
   end;
+  if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') and FileExists(StoreFolder+'\6\factory.hca') and
+      (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),'{#AnnotationHash}')<>0) and
+      not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedAnnotationHash,'{#AnnotationHash}')=0)) then begin
+    Result:='Same library version has different annotation content; no overwrite. Repair a known managed component or retain it.'; Exit;
+  end;
   if LegacyUninstaller<>'' then begin
     if not Exec(LegacyUninstaller,'/VERYSILENT /SUPPRESSMSGBOXES /NORESTART',ExtractFileDir(LegacyUninstaller),SW_HIDE,ewWaitUntilTerminated,Code) or (Code<>0) then begin Result:='Legacy library uninstall failed; no new files installed.'; Exit; end;
     if RegKeyExists(RegistryRoot,LibraryKey) then begin Result:='Legacy record remains; no forced registry cleanup performed.'; Exit; end;
@@ -678,10 +716,17 @@ begin
   if Selection('library') and not SkipLibrary then begin
     if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
        not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
+#if LibraryVersion == "6"
+    if not SetIniString('Components','AnnotationHash','{#AnnotationHash}',StateFile) then RaiseException('Cannot record Factory annotation identity');
+#endif
   end;
   if (GetIniString('Components','Plugin','',StateFile)<>IntToStr(Ord(OwnPlugin))) or
      (GetIniString('Components','Library','',StateFile)<>IntToStr(Ord(OwnLibrary))) then
     RaiseException('Component state verification failed');
+#if LibraryVersion == "6"
+  if Selection('library') and not SkipLibrary and (ManagedAnnotationHash<>'{#AnnotationHash}') then
+    RaiseException('Factory annotation state verification failed');
+#endif
 end;
 procedure VerifyInstalledState;
 var Version: String; Find: TFindRec; Path: String; Lines: TArrayOfString; I: Integer;
@@ -708,6 +753,9 @@ begin
   if Selection('library') and not SkipLibrary then
     if (ReadActive<>'{#LibraryVersion}') or (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
       RaiseException('Installed Factory verification failed');
+  if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') then
+    if not FileExists(StoreFolder+'\6\factory.hca') or (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),'{#AnnotationHash}')<>0) then
+      RaiseException('Installed Factory annotation verification failed');
   if not RegQueryStringValue(RegistryRoot,MainKey,'DisplayVersion',Version) or (Version<>'{#ProductVersion}') then
     RaiseException('Installed registration verification failed');
 end;
@@ -720,7 +768,9 @@ begin
       RememberFile(StoreFolder+'\active.txt');
       RememberFile(StateFile); RememberFile(AppFolder+'\plugin-files.txt');
       if Selection('library') and not SkipLibrary then RememberFile(LibraryDatabase);
+      if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') then RememberFile(StoreFolder+'\6\factory.hca');
       if RemoveLibrary then RememberFile(ManagedLibraryDatabase);
+      if RemoveLibrary and (ManagedAnnotationFile<>'') then RememberFile(ManagedAnnotationFile);
       if Selection('plugin') then RememberManifest(ExpandConstant('{tmp}\plugin-files.txt'));
       if RemovePlugin then RememberManifest(AppFolder+'\plugin-files.txt');
       if Selection('plugin') or RemoveLibrary then RememberFile(BundledFactoryPath);
@@ -737,6 +787,12 @@ begin
       if Selection('library') and not SkipLibrary then begin
         if FileExists(LibraryDatabase) and (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
           if not DeleteFile(LibraryDatabase) then RaiseException('Cannot replace damaged managed Factory');
+        if '{#LibraryVersion}'='6' then begin
+          Path:=StoreFolder+'\6\factory.hca';
+          if not ForceDirectories(ExtractFileDir(Path)) or not FileCopy(ExpandConstant('{tmp}\factory.hca'),Path,False) then
+            RaiseException('Factory annotation install failed; restoring previous data.');
+          if CompareText(GetSHA256OfFile(Path),'{#AnnotationHash}')<>0 then RaiseException('Factory annotation verification failed; restoring previous data.');
+        end;
         if not Manager('install "'+ExpandConstant('{tmp}\factory.db')+'" "'+StoreFolder+'"',True) then RaiseException('Factory install failed; restoring previous data.');
       end;
       TestFailure('after-factory');
@@ -798,6 +854,13 @@ begin
     RememberFile(StoreFolder+'\active.txt');
     if OwnPlugin then RememberManifest(AppFolder+'\plugin-files.txt');
     if OwnLibrary then RememberFile(ManagedLibraryDatabase);
+    if OwnLibrary and (ManagedAnnotationFile<>'') and FileExists(ManagedAnnotationFile) then begin
+      if (ManagedAnnotationHash='') or
+          (CompareText(GetSHA256OfFile(ManagedAnnotationFile),ManagedAnnotationHash)<>0) then begin
+        Rollback; RaiseException('Factory annotation ownership/content differs; no files removed.');
+      end;
+      RememberFile(ManagedAnnotationFile);
+    end;
     try
       if OwnPlugin then RemoveManagedPlugin;
       if OwnLibrary then RemoveManagedLibrary;

@@ -58,10 +58,29 @@ std::string wishInformation(const wish::WishItem& item) {
 
 void MainView::ensureWish() {
     if(wishWorkspace_)return;
-    auto catalog=wish::builtinAnnotations();
+    auto catalog=wishAnnotations_ ? *wishAnnotations_ : wish::annotationsForFactory({}, static_cast<int>(state_.factoryLibraryVersion));
     if(!catalog){actionStatus_="调式标注读取失败："+catalog.error;return;}
     wishWorkspace_=std::make_shared<wish::WishWorkflow>(factory_,std::move(catalog.catalog));
     resetWish();
+}
+void MainView::invalidateWishWorkspace() {
+    const bool stopWishAudition = wishMode_ && !previewCandidateId_.empty() && wishItem(previewCandidateId_);
+    wishWorkspace_.reset();wishView_.reset();wishRequested_=false;wishPage_=0;wishScroll_=0;
+    wishSelected_.clear();wishExpanded_.clear();
+    if (wishMode_) {
+        if (stopWishAudition && actions_.stopAudition) actions_.stopAudition();
+        if (stopWishAudition) { previewCandidateId_.clear();auditionState_=preview::PlaybackState::Stopped; }
+        compactSelected_.clear();compactScroll_=0;compactRibbonScroll_.clear();seekGesture_.reset();
+        previewSeekHoverId_.clear();previewSeekCursorHover_=false;midiPending_.reset();midiClick_={};
+    }
+}
+void MainView::setWishAnnotations(wish::AnnotationLoadResult annotations) {
+    const auto identity = annotations ? wish::serializeAnnotations(annotations.catalog) : "ERROR:" + annotations.error;
+    if (identity == wishAnnotationIdentity_) return;
+    wishAnnotationIdentity_ = identity;
+    wishAnnotations_ = std::move(annotations);
+    invalidateWishWorkspace();
+    if (wishMode_) ensureWish();
 }
 void MainView::resetWish() {
     if(wishSettings_.useInput){
@@ -108,7 +127,7 @@ void MainView::drawPrimaryTabs(CDrawContext* dc,const CompactLayoutResult& g) {
 }
 
 void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
-    pollWish();layout_.content=g.cardsViewport;
+    ensureWish();pollWish();layout_.content=g.cardsViewport;
     const double l=g.input.left+10,r=g.input.right-10,y=g.input.top;
     wishBox(dc,g.input);
     compactButton(dc,{l,y+7,l+100,y+35},"快捷预设",CompactAction::WishPreset);
