@@ -6,7 +6,9 @@
 
 独立分支 `development/g5-integration-20261025`，将 A 线源码 `f147aaf3` 合入 B/Locrian `655fcbb`；原工作树及既存未提交协作文档不动。目标 **0.11.0-dev.5 / Factory6 / 1016 / Schema2 / Session5 / Snapshot3**。清空卡池、替换/保留历史、共享循环试听与 V6 外置 HCA 全部保留；古典旋小仍无已审核归属。实际数量来自查询，不降低硬约束。
 
-只对已知且受管理、哈希匹配的 dev.4 V6 DB/HCA 开放同版本系列增量升级，替换前将旧对保留到 Factory/history/6-<旧DB SHA>；其他未知冲突仍拒绝，恢复事务保留。V5 与旧 dev.3/dev.4 Setup 不变。源码冻结后一次 Release 构建，执行5个核心、1个原生UI、1个隔离升级/模块加载、1个新增升级路径故障恢复场景；不运行历史矩阵或完整SDK Validator。构建、交付身份及最终结果待完成后更新。
+源码/BuildCommit **b3d1fce6225593c76bc98ca0dec083bc469c5e00**；一次 Release 构建成功，5核心+UI+隔离升级/模块加载+新增升级路径故障恢复+清理共9场景通过。[Setup与完整身份](../HarmonyContinuation-g5-delivery-20261025/BUILD_INFO.json)、[实际范围和精简Cubase/FL清单](docs/G01_G4_ACCEPTANCE.md#g5-集中整合交付2026-10-25)。未执行历史矩阵、抽卡大检查或完整SDK Validator。正常包SHA `F5889E80…03642DBC8`，插件/DB/HCA在构建、暂存、正常Setup解包和隔离实装一致。
+
+只对已知且受管理、哈希匹配的 dev.4 V6 DB/HCA 开放同版本系列增量升级，替换前将旧对保留到 Factory/history/6-<旧DB SHA>；其他未知冲突仍拒绝，恢复事务保留。after-factory注入失败退出3，37受管文件和登记恢复；重试升级0、清理0。V5、生产及旧dev.3/dev.4 Setup/DB/HCA保护哈希不变。真实user.db未访问；实际DAW/标准路径UAC/旧工程重开/双实例/硬件音频及人工听评Pending，英文少量旧底部文案仍待完善。不启动RC或发布；仅推送独立开发分支，交付记录提交与BuildCommit分开。
 
 ### Factory V6 空调式卡池专项（2026-10-25）
 

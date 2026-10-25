@@ -1,5 +1,48 @@
 # 和弦祈愿开发版验收
 
+## G5 集中整合交付（2026-10-25）
+
+当前统一验收对象：**0.11.0-dev.5 / Release x64 / BuildCommit `b3d1fce6225593c76bc98ca0dec083bc469c5e00`**。[唯一正常开发 Setup](../../HarmonyContinuation-g5-delivery-20261025/HarmonyContinuation-0.11.0-dev.5-Setup.exe)、[完整身份和证据](../../HarmonyContinuation-g5-delivery-20261025/BUILD_INFO.json)。SHA-256 `F5889E80069D923E9C07D94021D41DC64E47A860D545144E2B91D0703642DBC8`，4,925,184 bytes。下文 G4 对象及 PASS 均为历史记录，不是本轮重跑结果。
+
+A 线 `f147aaf3` 与 B/Locrian `655fcbb` 已在独立整合分支合入：清空卡池保留输入设置、默认替换/可选历史、六入口共享循环，配套 **Factory V6 / 1016 / Schema2 / HCA Format1（上限2MiB）**。Session5/Snapshot3 和原评分/60分资格保持。两条 Locrian 为原创编辑练习，依据及冻结指纹见[结构审查](../data/factory-v6/increments/20261025-empty-modes/review.md)，不伪造传统作品来源。古典旋律小调继续 0，缺少方向证据且严格方向校验未实现；爵士旋律小调独立显示。
+
+本轮一次 Release 构建，9 个有界代表场景实际通过：
+
+| 场景 | 本轮结果及边界 |
+| --- | --- |
+| 1. V6/Schema2/1016 与外置 HCA 绑定 | PASS，1016 源绑定，HCA 1,082,541 bytes；Locrian 已审校2、古典0 |
+| 2. 单个 C 调输入约束 Wish 与用户库完整检索 | PASS，仅一个代表输入；使用独立临时 User SQLite，未访问真实 user.db |
+| 3. 固定 C 的 Locrian 普通/严格池与无放回 | PASS，各2，十抽实际2，再抽0；没有组合或扩库 |
+| 4. 一张新增卡的 Preview/MIDI/Snapshot3 | PASS，完整演奏指纹和来源引用往返一致 |
+| 5. 同一实际输入路线 Full/Suffix 循环 | PASS，共用 transport，每范围固定64 samples；循环边界、暂停/继续、停止、关闭循环；未使用硬件音频 |
+| 6. 原生UI有界交互 | PASS，六入口各切一次，Locrian24对象仅执行1/10/10；替换→历史、分页、清空保留回合、界面内存状态恢复和古典空池；两张截图为中文100%/英文125%，非布局矩阵 |
+| 7. 新同版本V6升级路径失败恢复 | PASS，明确到达 after-factory 注入点，退出3；37受管文件、旧版登记均恢复，日志确认 rollback verified |
+| 8. dev.4→dev.5隔离升级及模块加载 | PASS，退出0；实际模块工厂可加载，实际DB读取1016，活动6、登记dev.5；旧V6归档和个人/V5哨兵保留 |
+| 9. 隔离环境清理及回退材料保留 | PASS，卸载退出0、测试登记移除，个人/V5/旧V6归档保留 |
+
+源码构建→暂存→正常Setup解包→隔离实装的插件、DB、HCA SHA各自一致；实际二进制含完整BuildCommit。正式V5源、生产V5/插件、旧dev.3/dev.4 Setup及dev.4 DB/HCA均保持原哈希。只允许受管理且与已验证 dev.4 哈希匹配的 V6 对升级为本轮内容；替换前保留到 `Factory/history/6-<旧DB SHA>/`，未知内容仍拒绝覆盖。事务及错误传播沿用G4-R，未做持久格式迁移。
+
+复用而未重跑：G4-U的双后端/异步清空/输入关联细项，B4的五项推荐和完整扫描证据，以及此前的广泛音乐和布局检查。完整SDK Validator自动运行已关闭，没有执行12667抽卡检查、146480布局矩阵、全库逐条回归或压力测试。旧快照原源ID和音乐数据保留；本轮只做一张卡Snapshot3往返，旧工程真正重开仍待用户。
+
+### Cubase / FL Studio 用户统一验收清单
+
+不要求现在分阶段验收。以后在获准测试环境安装本页 dev.5，记录宿主完整版本、Windows缩放、音频后端、操作/来源ID、结果PASS/FAIL/Pending。
+
+1. 确认显示dev.5/正确BuildCommit、六入口、Factory6/1016；自由随机默认未关联输入，原五项能推荐。
+2. 导入参考进行，切换使用/不使用当前输入；清空卡池后列表/分页/试听引用清除，原输入与关联选择保留。
+3. 一抽、十抽、再来十抽默认替换；开启历史后追加、每页最多10；翻页后试听/MIDI仍对应同一卡，参数变化不回灌旧结果。
+4. 固定/不固定主音与调式、多选并集、普通/严格筛选：C Locrian两条可用；古典旋小0及原因清晰，不能用爵士旋小代替。
+5. 六入口分别试听；Full/Suffix范围、暂停/恢复、定位、停止与Repeat正确；Host/Windows Audio均核对，切卡不自动播放。
+6. 至少一张新增Locrian卡核对低音、扩展、QN、完整MIDI和快照；人工判断中心与声部听感，记录结构/听感/操作问题的区别。
+7. 保存关闭并重开已有及新工程；检查旧快照、多实例状态及音频所有权。瞬态抽卡回合/历史不承诺写入Session5。
+8. 100/125/150%检查两种语言。已知英文少量旧底部/来源文字仍为中文；实际DAW、标准路径/UAC、音频设备和人工听评全部Pending。
+
+回退：关闭宿主，先通过管理安装卸载dev.5受管插件/库组件（保留个人库、V5与历史目录），再用保留的dev.3或dev.4 Setup安装。dev.4旧V6原始对另存于上述history路径，不直接在运行中覆盖活动DB/HCA或组件登记。若出现202/pending recovery，沿用[恢复说明](INSTALLER_AND_LIBRARY.md)，先保留材料再处理。
+
+工程开发交付完成；不启动RC或正式发布。主代理负责合并、音乐/版本/安装契约与最终门禁；Luna负责局部编译器接入和小场景测试实现。生产安装、真实user.db、main、正式Tag/Release未修改。
+
+## G4 历史交付与验收边界
+
 对象：`0.11.0-dev.2` / Release x64 / BuildCommit `f99dfa1657b04db0af50d76795141ea24b50ae10`。这是开发预发布版，正式稳定版仍为 v0.10.0。唯一新开发包为 `HarmonyContinuation-0.11.0-dev.2-Setup.exe`；精确哈希、安装和自动检查结果见[交付身份](../../HarmonyContinuation-g04r-delivery-20261024/BUILD_INFO.json)。源码构建身份与后续测试、文档提交分别记录。
 
 **G4-R安装恢复技术门禁通过，可进入RC候选评审。** 新装、升级、恢复、修复、回退、卸载及实装模块查询的本轮隔离检查58项通过。旧 `0.11.0-dev.1 / fb68a6e` Setup仍是失败诊断资产，禁止作为正常安装包分发；旧[失败证据](../../HarmonyContinuation-g04-delivery-20261024/isolation-lifecycle/failure-state.txt)保留。真实DAW、标准目录/UAC及听评仍待实际操作者完成。
