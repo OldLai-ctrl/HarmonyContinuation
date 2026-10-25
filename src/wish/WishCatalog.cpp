@@ -5,6 +5,19 @@
 #include <unordered_map>
 #include <unordered_set>
 namespace harmony::wish {
+std::size_t reviewedSourceCount(const AnnotationCatalog& catalog, MusicalMode mode) {
+    return static_cast<std::size_t>(std::count_if(catalog.entries.begin(), catalog.entries.end(), [&](const auto& source) {
+        return std::any_of(source.memberships.begin(), source.memberships.end(), [&](const auto& membership) {
+            return membership.mode == mode && membership.review == ReviewStatus::Reviewed;
+        });
+    }));
+}
+std::string emptyModeReason(MusicalMode mode, bool strict) {
+    if (mode == MusicalMode::Locrian) return "无已审校的洛克里亚中心进行";
+    if (mode == MusicalMode::ClassicalMelodicMinor)
+        return strict ? "严格旋律方向校验尚未实现" : "缺少可验证的旋律上下行归属";
+    return "当前约束下无候选";
+}
 AnnotationLoadResult builtinAnnotations() {
     std::string text;
     for(const auto* line:generated::catalogLines)text+=line;

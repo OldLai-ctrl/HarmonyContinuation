@@ -1801,6 +1801,330 @@ void verifyWishItemRoundTrip(const wish::WishItem& item, const library::LoadResu
         "installed Wish Snapshot/MIDI byte identity");
 }
 
+int pitchClassOffset(int value) {
+    return (value % 12 + 12) % 12;
+}
+
+std::string wishCoreFamilyIdentity(const preview::Sequence& sequence) {
+    require(!sequence.events.empty(), "cannot identify the family of an empty Wish sequence");
+    const int anchor = sequence.events.front().chord.root;
+    std::string identity;
+    for (const auto& event : sequence.events) {
+        auto quality = event.chord.quality;
+        if (quality == ChordQuality::Major7) quality = ChordQuality::Major;
+        if (quality == ChordQuality::Minor7) quality = ChordQuality::Minor;
+        identity += std::to_string(pitchClassOffset(event.chord.root - anchor)) + ":" +
+            std::to_string(pitchClassOffset(event.chord.bass - anchor)) + ":" +
+            std::to_string(static_cast<int>(quality)) + "|";
+    }
+    return identity;
+}
+
+std::size_t boundReviewedSourceCount(const std::vector<ProgressionTemplate>& sources,
+                                    const wish::AnnotationCatalog& catalog,
+                                    wish::MusicalMode mode) {
+    std::set<std::string> ids;
+    for (const auto& source : sources) {
+        const auto resolved = wish::resolveAnnotations(source, catalog);
+        if (resolved.state == wish::AnnotationState::Invalid ||
+            resolved.state == wish::AnnotationState::SourceMismatch) continue;
+        if (std::any_of(resolved.memberships.begin(), resolved.memberships.end(), [&](const auto& membership) {
+                return membership.mode == mode && membership.review == wish::ReviewStatus::Reviewed;
+            })) ids.insert(source.id);
+    }
+    return ids.size();
+}
+
+int runEmptyModeCheck(const std::filesystem::path& baselinePath,
+                      const std::filesystem::path& incrementDirectory,
+                      const std::filesystem::path& outputDirectory) {
+    const auto inputDirectory = std::filesystem::weakly_canonical(incrementDirectory);
+    std::filesystem::create_directories(outputDirectory);
+    const auto outputRoot = std::filesystem::weakly_canonical(outputDirectory);
+    require(inputDirectory != outputRoot,
+            "empty-mode output directory must be separate from candidate inputs");
+    const auto baseline = library::loadFactory(baselinePath);
+    require(static_cast<bool>(baseline), "cannot load empty-mode baseline: " + baseline.error);
+    require(baseline.libraryVersion == 6 && baseline.storageSchemaVersion == 2 &&
+            baseline.templates.size() == 1014, "empty-mode baseline must be dev.4 Factory V6/Schema2/1014");
+
+    const auto parsed = dev::parseTemplateJson(readText(incrementDirectory / "candidates.json"), true);
+    require(static_cast<bool>(parsed), "cannot parse empty-mode candidates.json: " + parsed.error);
+    require(parsed.templates.size() == 2, "empty-mode increment must contain exactly two sources");
+    const auto metadataRoot = benchmark::json::parse(readText(incrementDirectory / "metadata.json"));
+    require(metadataRoot.at("version").integer(6, 6) == 6,
+            "empty-mode metadata must be version 6");
+    const auto& metadataRows = metadataRoot.at("candidates").items();
+    require(metadataRows.size() == parsed.templates.size(),
+            "empty-mode candidate/metadata counts differ");
+    std::set<std::string> metadataIds;
+    for (const auto& row : metadataRows)
+        require(metadataIds.insert(row.at("id").text()).second,
+                "duplicate empty-mode metadata ID: " + row.at("id").text());
+
+    const auto parseUsage = [](std::string_view value) {
+        if (value == "high") return wish::EditorialUsage::High;
+        if (value == "medium") return wish::EditorialUsage::Medium;
+        if (value == "low") return wish::EditorialUsage::Low;
+        if (value == "unrated") return wish::EditorialUsage::Unrated;
+        throw std::runtime_error("unknown empty-mode membership usage: " + std::string(value));
+    };
+    const auto parseReview = [](std::string_view value) {
+        if (value == "pending") return wish::ReviewStatus::Pending;
+        if (value == "reviewed") return wish::ReviewStatus::Reviewed;
+        if (value == "unconfirmed") return wish::ReviewStatus::Unconfirmed;
+        throw std::runtime_error("unknown empty-mode membership review: " + std::string(value));
+    };
+    wish::AnnotationCatalog rawDelta;
+    std::set<std::string> candidateIds;
+    for (const auto& source : parsed.templates) {
+        require(candidateIds.insert(source.id).second, "duplicate empty-mode candidate ID: " + source.id);
+        const auto metadata = std::find_if(metadataRows.begin(), metadataRows.end(), [&](const auto& row) {
+            return row.at("id").text() == source.id;
+        });
+        require(metadata != metadataRows.end(), "empty-mode metadata is missing source: " + source.id);
+        wish::ModeAnnotation entry;
+        entry.templateId = source.id;
+        entry.sourceFingerprint = metadata->at("sourceFingerprint").text();
+        require(entry.sourceFingerprint == wish::sourceFingerprint(source),
+                "empty-mode metadata source fingerprint mismatch: " + source.id);
+        for (const auto& row : metadata->at("memberships").items()) {
+            wish::ModeMembership membership;
+            membership.tonicOffset = row.at("tonicOffset").integer(0, 11);
+            const auto mode = wish::parseMode(row.at("mode").text());
+            require(mode.has_value(), "unknown empty-mode membership mode: " + source.id);
+            membership.mode = *mode;
+            membership.usage = parseUsage(row.at("usage").text());
+            membership.usageBasis = row.at("usageBasis").text();
+            membership.musicalEvidence = row.at("musicalEvidence").text();
+            membership.review = parseReview(row.at("review").text());
+            membership.reviewer = row.at("reviewer").text();
+            if (const auto* context = row.find("melodicContext"))
+                membership.melodicContext = context->text();
+            std::string validationError;
+            require(wish::validMembership(membership, validationError),
+                    "invalid empty-mode membership " + source.id + ": " + validationError);
+            require(membership.mode == wish::MusicalMode::Locrian &&
+                    membership.review == wish::ReviewStatus::Reviewed &&
+                    membership.usage == wish::EditorialUsage::Unrated,
+                    "empty-mode increment must contain reviewed, unrated Locrian memberships");
+            entry.memberships.push_back(std::move(membership));
+        }
+        require(entry.memberships.size() == 1, "each empty-mode source must have one membership");
+        rawDelta.entries.push_back(std::move(entry));
+    }
+    require(metadataRows.size() == candidateIds.size(), "empty-mode metadata has extra candidate rows");
+
+    const auto rawBaseAnnotations = wish::loadAnnotations(baselinePath.parent_path() / "factory.hca");
+    require(static_cast<bool>(rawBaseAnnotations),
+            "cannot load raw baseline HCA: " + rawBaseAnnotations.error);
+    const auto baseAnnotations = wish::annotationsForFactory(baselinePath, baseline.libraryVersion);
+    require(static_cast<bool>(baseAnnotations), "cannot bind baseline Wish annotations: " + baseAnnotations.error);
+    require(rawBaseAnnotations.catalog.entries.size() == 1023 &&
+            baseAnnotations.catalog.entries.size() == baseline.templates.size(),
+            "dev.4 HCA raw-to-bound projection changed from 1023 to 1014 sources");
+    constexpr std::array emptyModes{
+        wish::MusicalMode::Locrian, wish::MusicalMode::ClassicalMelodicMinor
+    };
+    for (const auto mode : emptyModes) {
+        const auto rawReviewed = wish::reviewedSourceCount(rawBaseAnnotations.catalog, mode);
+        const auto boundReviewed = boundReviewedSourceCount(
+            baseline.templates, baseAnnotations.catalog, mode);
+        require(rawReviewed == 0 && boundReviewed == 0,
+                std::string("baseline empty-mode reviewed source count is nonzero: ") + wish::modeName(mode));
+        for (const bool strict : {false, true}) {
+            wish::WishFilter filter;
+            filter.fixedTonic = PitchClass::C;
+            filter.modes = {mode};
+            filter.strict = strict;
+            auto pool = wish::makeFreePool(baseline.templates, baseAnnotations.catalog, filter);
+            require(static_cast<bool>(pool), "baseline empty-mode pool: " + pool.error);
+            require(pool.sourceMismatches == 0 && pool.invalidSources == 0 && pool.invalidAnnotations == 0,
+                    "baseline empty-mode pool reported an annotation or source failure");
+            require(pool.items.empty(), std::string("baseline empty-mode pool is nonempty: ") +
+                wish::modeName(mode) + (strict ? " strict" : " loose"));
+            wish::WishRound round(std::move(pool), 20261025);
+            require(round.draw(10).empty() && round.remaining() == 0,
+                    std::string("baseline empty-mode draw is nonempty: ") + wish::modeName(mode));
+            const auto reason = wish::emptyModeReason(mode, strict);
+            require(!reason.empty(), std::string("baseline empty-mode reason is missing: ") +
+                wish::modeName(mode) + (strict ? " strict" : " loose"));
+            std::cout << "empty_mode_baseline mode=" << wish::modeName(mode)
+                      << " strict=" << (strict ? "yes" : "no")
+                      << " raw_reviewed_sources=" << rawReviewed
+                      << " bound_reviewed_sources=" << boundReviewed
+                      << " pool=0 reason=" << reason << '\n';
+        }
+    }
+
+    require(outputRoot != std::filesystem::weakly_canonical(baselinePath.parent_path()),
+            "empty-mode output must not be written into the dev.4 build directory");
+    // V6's redirect contract requires all canonical targets, so this isolated, non-installable
+    // candidate database carries the untouched baseline plus the two candidate sources.
+    const auto deltaDbPath = outputRoot / "candidate-not-for-install.db";
+    const auto deltaHcaPath = outputRoot / "factory.hca";
+    require(std::filesystem::weakly_canonical(baselinePath) != deltaDbPath,
+            "empty-mode output must not replace the baseline database");
+    auto compileSources = baseline.templates;
+    compileSources.insert(compileSources.end(), parsed.templates.begin(), parsed.templates.end());
+    std::string compileError;
+    require(library::compileFactory(deltaDbPath, compileSources, compileError, 6),
+            "cannot compile isolated empty-mode candidate Factory: " + compileError);
+    const auto combinedFactory = library::loadFactory(deltaDbPath);
+    require(static_cast<bool>(combinedFactory) && combinedFactory.libraryVersion == 6 &&
+            combinedFactory.storageSchemaVersion == 2 && combinedFactory.templates.size() == 1016,
+            "isolated empty-mode candidate Factory reload identity");
+    require(std::filesystem::weakly_canonical(deltaDbPath) != std::filesystem::weakly_canonical(baselinePath),
+            "candidate-not-for-install database aliases the dev.4 baseline");
+
+    auto combinedCatalog = baseAnnotations.catalog;
+    require(combinedCatalog.entries.size() == baseline.templates.size(),
+            "baseline HCA is not fully projected before candidate merge");
+    for (const auto& entry : rawDelta.entries) {
+        require(std::none_of(combinedCatalog.entries.begin(), combinedCatalog.entries.end(),
+            [&](const auto& existing) { return existing.templateId == entry.templateId; }),
+            "empty-mode candidate ID already exists in baseline HCA: " + entry.templateId);
+        combinedCatalog.entries.push_back(entry);
+    }
+    require(combinedCatalog.entries.size() == combinedFactory.templates.size(),
+            "candidate HCA/database source counts differ before serialization");
+    for (const auto& entry : rawDelta.entries) {
+        const auto& source = find(combinedFactory, entry.templateId);
+        require(entry.sourceFingerprint == wish::sourceFingerprint(source),
+                "empty-mode source fingerprint changed after delta compile: " + entry.templateId);
+    }
+    const auto hcaText = wish::serializeAnnotations(combinedCatalog);
+    {
+        std::ofstream hcaOut(deltaHcaPath, std::ios::binary | std::ios::trunc);
+        require(static_cast<bool>(hcaOut), "cannot create isolated empty-mode HCA");
+        hcaOut.write(hcaText.data(), static_cast<std::streamsize>(hcaText.size()));
+        require(static_cast<bool>(hcaOut), "cannot write isolated empty-mode HCA");
+    }
+    const auto parsedHca = wish::loadAnnotations(deltaHcaPath);
+    require(static_cast<bool>(parsedHca) && parsedHca.catalog.entries.size() == 1016,
+            "cannot reload isolated empty-mode HCA: " + parsedHca.error);
+    const auto combinedAnnotations = wish::annotationsForFactory(deltaDbPath, 6);
+    require(static_cast<bool>(combinedAnnotations) && combinedAnnotations.catalog.entries.size() == 1016,
+            "isolated candidate HCA did not bind all baseline and delta sources: " + combinedAnnotations.error);
+    wish::AnnotationCatalog deltaAnnotations;
+    for (const auto& entry : combinedAnnotations.catalog.entries) {
+        if (candidateIds.contains(entry.templateId)) {
+            const auto expected = std::find_if(rawDelta.entries.begin(), rawDelta.entries.end(),
+                [&](const auto& candidate) { return candidate.templateId == entry.templateId; });
+            require(expected != rawDelta.entries.end() &&
+                    wish::serializeAnnotations({1, {*expected}}) == wish::serializeAnnotations({1, {entry}}),
+                    "reloaded candidate HCA membership differs from source metadata: " + entry.templateId);
+            deltaAnnotations.entries.push_back(entry);
+        }
+    }
+    require(deltaAnnotations.entries.size() == 2,
+            "reloaded candidate HCA did not project exactly two increment annotations");
+    require(wish::reviewedSourceCount(deltaAnnotations, wish::MusicalMode::Locrian) == 2 &&
+            boundReviewedSourceCount(parsed.templates, deltaAnnotations,
+                                     wish::MusicalMode::Locrian) == 2,
+            "delta Locrian reviewed source count is not two");
+    require(wish::reviewedSourceCount(deltaAnnotations,
+                wish::MusicalMode::ClassicalMelodicMinor) == 0,
+            "delta unexpectedly contains classical melodic-minor membership");
+
+    wish::WishFilter fixedStrict;
+    fixedStrict.fixedTonic = PitchClass::C;
+    fixedStrict.modes = {wish::MusicalMode::Locrian};
+    fixedStrict.strict = true;
+    auto fixedPool = wish::makeFreePool(parsed.templates, deltaAnnotations, fixedStrict);
+    require(static_cast<bool>(fixedPool) && fixedPool.items.size() == 2,
+            "strict fixed-C Locrian delta pool must contain both sources");
+    auto fixedLoose = fixedStrict;
+    fixedLoose.strict = false;
+    const auto loosePool = wish::makeFreePool(parsed.templates, deltaAnnotations, fixedLoose);
+    require(static_cast<bool>(loosePool) && loosePool.items.size() == 2,
+            "loose fixed-C Locrian delta pool must contain both sources");
+    wish::WishRound round(std::move(fixedPool), 20261025);
+    const auto drawn = round.draw(10);
+    require(drawn.size() == 2 && round.remaining() == 0 && round.draw(10).empty(),
+            "strict fixed-C Locrian draw must return two unique cards and exhaust the round");
+    std::set<std::string> drawnIdentities;
+    std::set<std::string> drawnSources;
+    for (const auto& item : drawn) {
+        require(drawnIdentities.insert(item.musicIdentity).second,
+                "Locrian round returned a repeated music identity");
+        require(item.sources.size() == 1 && drawnSources.insert(item.sources.front().id).second,
+                "Locrian round repeated or merged an increment source");
+    }
+    require(drawnIdentities.size() == 2 && drawnSources.size() == 2,
+            "Locrian cards do not have distinct source and music identities");
+
+    wish::WishFilter allTonicsStrict;
+    allTonicsStrict.modes = {wish::MusicalMode::Locrian};
+    allTonicsStrict.strict = true;
+    const auto allTonicsPool = wish::makeFreePool(parsed.templates, deltaAnnotations, allTonicsStrict);
+    require(static_cast<bool>(allTonicsPool) && allTonicsPool.items.size() == 24,
+            "unfixed strict Locrian pool must contain 24 unique performances");
+
+    std::set<std::string> baselineFullIdentities;
+    std::set<std::string> baselineCoreFamilies;
+    for (const auto& source : baseline.templates) {
+        const auto route = preview::buildTemplateSequence(source,
+            {PitchClass::C, source.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot realize baseline identity source: " + source.id);
+        baselineFullIdentities.insert(library::canonicalMusicalFingerprint(source));
+        baselineCoreFamilies.insert(wishCoreFamilyIdentity(route.sequence));
+    }
+    std::set<std::string> deltaFullIdentities;
+    std::set<std::string> deltaCoreFamilies;
+    for (const auto& source : parsed.templates) {
+        const auto route = preview::buildTemplateSequence(source,
+            {PitchClass::C, source.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "cannot realize delta identity source: " + source.id);
+        const auto fullIdentity = library::canonicalMusicalFingerprint(source);
+        const auto coreFamily = wishCoreFamilyIdentity(route.sequence);
+        require(deltaFullIdentities.insert(fullIdentity).second,
+                "two Locrian candidates share a normalized complete music identity");
+        require(deltaCoreFamilies.insert(coreFamily).second,
+                "two Locrian candidates share a normalized core family");
+        require(!baselineFullIdentities.contains(fullIdentity),
+                "Locrian candidate duplicates a baseline normalized complete identity: " + source.id);
+        require(!baselineCoreFamilies.contains(coreFamily),
+                "Locrian candidate duplicates a baseline normalized core family: " + source.id);
+    }
+
+    for (const auto& item : drawn) verifyWishItemRoundTrip(item, combinedFactory);
+
+    wish::ModeMembership classical;
+    classical.mode = wish::MusicalMode::ClassicalMelodicMinor;
+    classical.usage = wish::EditorialUsage::Unrated;
+    classical.musicalEvidence = "test-only validator edge case";
+    classical.review = wish::ReviewStatus::Reviewed;
+    classical.reviewer = "test-only";
+    std::string classicalError;
+    require(!wish::validMembership(classical, classicalError) &&
+            classicalError.find("melodic context") != std::string::npos,
+            "reviewed classical melodic-minor membership without melodicContext was accepted");
+    classical.melodicContext = "test-only directional phrase context";
+    require(wish::validMembership(classical, classicalError),
+            "reviewed classical membership with context was rejected: " + classicalError);
+    const auto classicalSequence = preview::buildTemplateSequence(
+        find(combinedFactory, drawn.front().route.candidate.primaryTemplate),
+        {PitchClass::C, Mode::Minor}, preview::defaultTempoBPM);
+    require(static_cast<bool>(classicalSequence), "cannot realize sequence for classical strict-mask check");
+    require(!wish::strictlyCompatible(classicalSequence.sequence,
+                wish::MusicalMode::ClassicalMelodicMinor, 0),
+            "classical melodic-minor strict filter accepted a zero-static-mask mode");
+
+    wish::WishFilter classicalStrict;
+    classicalStrict.fixedTonic = PitchClass::C;
+    classicalStrict.modes = {wish::MusicalMode::ClassicalMelodicMinor};
+    classicalStrict.strict = true;
+    const auto classicalPool = wish::makeFreePool(parsed.templates, deltaAnnotations, classicalStrict);
+    require(static_cast<bool>(classicalPool) && classicalPool.items.empty(),
+            "classical melodic-minor pool should remain empty without reviewed membership");
+    std::cout << "empty_mode_delta locrian_reviewed_sources=2 fixed_c_loose=2 fixed_c_strict=2"
+              << " fixed_c_draw=2 remaining=0 unrestricted_strict=24"
+              << " classical_reviewed_sources=0 classical_strict=0"
+              << " delta_sources=2 hca_bound=2 roundtrip_cards=2 identity_and_family_unique=PASS\n";
+    return 0;
+}
+
 int runInstalledSmoke(const std::filesystem::path& factoryPath,
                       const std::filesystem::path& fixtureDirectory) {
     std::filesystem::create_directories(fixtureDirectory);
@@ -1953,6 +2277,16 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--empty-mode-check") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --empty-mode-check baseline.db increment-dir output-dir");
+            return runEmptyModeCheck(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V6 empty-mode check FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--installed-smoke") {
         try {
             require(argc == 4, "usage: FactoryV6Tests --installed-smoke factory.db fixture-dir");

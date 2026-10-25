@@ -114,6 +114,7 @@ public:
     const wish::WishItem* wishItem(const std::string&) const;
     bool currentWishCandidate(const ContinuationCandidate&) const;
     void pollWish();
+    bool runEmptyModeUiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>&);
     bool runWishSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);

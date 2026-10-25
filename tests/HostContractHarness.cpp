@@ -1,3 +1,4 @@
+#include "wish/WishCatalog.h"
 #include "vstgui/lib/vstguiinit.h"
 #include "host/HostEnvironment.h"
 #include "plugin/HostContextAdapter.h"
@@ -206,6 +207,38 @@ private:
 };
 }
 int main(int argc,char** argv){
+    if(argc==4&&std::string(argv[1])=="--empty-modes-ui") {
+        const auto com=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+        VSTGUI::init(GetModuleHandleW(nullptr));
+        auto* platform=VSTGUI::getPlatformFactory().asWin32Factory();
+        platform->disableDirectComposition();platform->useD2DHardwareRenderer(false);
+        Window window;VSTGUI::CFrame* frame{};bool opened{},passed{};
+        try {
+            const auto db=std::filesystem::absolute(argv[2]);const auto out=std::filesystem::absolute(argv[3]);
+            std::filesystem::create_directories(out);
+            auto factory=library::loadFactory(db);require(bool(factory),"empty-mode UI Factory load");
+            auto annotations=wish::annotationsForFactory(db,factory.libraryVersion);
+            require(bool(annotations),"empty-mode UI annotation load");
+            frame=new VSTGUI::CFrame({0,0,800,780},nullptr);
+            auto* view=new ui::MainView({0,0,800,780},{});frame->addView(view);
+            opened=frame->open(window.handle,VSTGUI::PlatformType::kHWND);require(opened,"empty-mode VSTGUI frame");
+            session::PluginSessionState state;state.factoryLibraryVersion=factory.libraryVersion;
+            state.editorWidth=800;state.editorHeight=780;view->setSessionState(state);
+            view->setLibrary(std::move(factory.templates),{});view->setWishAnnotations(std::move(annotations));
+            const auto context=VSTGUI::COffscreenContext::create({800,780});require(bool(context),"empty-mode draw context");
+            const auto capture=[&](const std::string& name) {
+                context->beginDraw();view->drawRect(context,{0,0,800,780});context->endDraw();
+                const auto png=VSTGUI::getPlatformFactory().createBitmapMemoryPNGRepresentation(context->getBitmap()->getPlatformBitmap());
+                std::ofstream file(out/name,std::ios::binary);file.write(reinterpret_cast<const char*>(png.data()),static_cast<std::streamsize>(png.size()));
+                require(file.good()&&!png.empty(),"empty-mode PNG capture");
+            };
+            require(view->runEmptyModeUiSmoke(context.get(),capture),"two empty-mode labels/controls");
+            frame->close();frame=nullptr;opened=false;passed=true;
+            std::cout<<"Empty-mode UI only PASS at 100/150 percent\n";
+        } catch(const std::exception& error) {std::cerr<<"Empty-mode UI FAIL: "<<error.what()<<'\n';}
+        if(frame){if(opened)frame->close();else frame->forget();}
+        VSTGUI::exit();if(SUCCEEDED(com))CoUninitialize();return passed?0:1;
+    }
     if(argc==3&&std::string(argv[1])=="--wish-ui") {
         const auto comResult=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
         VSTGUI::init(GetModuleHandleW(nullptr));

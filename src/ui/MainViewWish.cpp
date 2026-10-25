@@ -157,9 +157,18 @@ void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
     {
         ConcatClip clip(*dc,{g.cardsViewport.left,g.cardsViewport.top,g.cardsViewport.right,g.cardsViewport.bottom});compactInCards_=true;
         if(page.total==0){
-            wishText(dc,wishRequested_?"实际候选 0 条；保持当前筛选。未审核归属不参与调式卡池。":"选择参数后点击一抽或十抽；抽取不会自动播放。",
+            wishText(dc,(!wishAnnotations_||!*wishAnnotations_)?"标注未加载；候选数量未知。":wishRequested_?"实际候选 0 条；保持当前筛选。未审核归属不参与调式卡池。":"选择参数后点击一抽或十抽；抽取不会自动播放。",
                 {g.cardsViewport.left+10,cy+12,g.cardsViewport.right-10,cy+42},11,wishMuted);
-            if(!modes.empty())wishText(dc,"Locrian、旋律小调↑及古典旋律小调目前无已审核候选。",{g.cardsViewport.left+10,cy+46,g.cardsViewport.right-10,cy+72},10,wishMuted);
+            std::string reason;
+            if (!wishAnnotations_ || !*wishAnnotations_) reason="标注未就绪，候选数量未知；请查看加载错误。";
+            else for(const auto mode:wishSettings_.filter.modes) {
+                if(mode!=wish::MusicalMode::Locrian&&mode!=wish::MusicalMode::ClassicalMelodicMinor)continue;
+                if(mode==wish::MusicalMode::ClassicalMelodicMinor&&wishSettings_.filter.strict)
+                    reason+="古典旋小："+wish::emptyModeReason(mode,true)+"；";
+                else if(wish::reviewedSourceCount(wishAnnotations_->catalog,mode)==0)
+                    reason+=wishModeName(mode)+" 0："+wish::emptyModeReason(mode,false)+"；";
+            }
+            if(!reason.empty())wishText(dc,reason,{g.cardsViewport.left+10,cy+46,g.cardsViewport.right-10,cy+82},10,wishMuted);
         }
         for(std::size_t i=page.begin;i<page.end;++i){
             const auto& item=*wishView_->items[i];const auto& c=item.route.candidate;auto cg=compactCandidateGeometry(g.cardsViewport,cy,detailedCards_);
@@ -222,12 +231,20 @@ void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {
         const double width=(right-left-24)/5;
         for(std::size_t i=0;i<std::size(wishModes);++i){const double x=left+10+(i%5)*width,yy=top+116+(i/5)*34;
             const bool chosen=std::find(wishSettings_.filter.modes.begin(),wishSettings_.filter.modes.end(),wishModes[i])!=wishSettings_.filter.modes.end();
-            compactButton(dc,{x,yy,x+width-4,yy+29},wishModeLabels[i],CompactAction::WishMode,{},i,chosen);}
+            const bool focused=wishModes[i]==wish::MusicalMode::Locrian||wishModes[i]==wish::MusicalMode::ClassicalMelodicMinor;
+            std::string label=wishModeLabels[i];
+            if(focused)label+=wishAnnotations_&&*wishAnnotations_?
+                (wish::reviewedSourceCount(wishAnnotations_->catalog,wishModes[i])==0?" 0":""):" ?";
+            compactButton(dc,{x,yy,x+width-4,yy+29},label,CompactAction::WishMode,{},i,chosen);}
         compactButton(dc,{left+10,top+190,mid-4,top+220},wishSettings_.filter.strict?"严格匹配 ✓":"严格匹配：关",CompactAction::WishStrict,{},0,wishSettings_.filter.strict,!wishSettings_.filter.modes.empty());
         constexpr const char* colors[]{"不限制","升温","降温","张力上升","张力释放"};
         compactButton(dc,{mid+4,top+190,right-10,top+220},"色彩："+std::string(colors[int(wishSettings_.color)]),CompactAction::WishColor);
         wishText(dc,"主音指所选归属的中心；未选调式时指模板参考主音。",{left+10,top+229,right-10,top+250},10,wishMuted);
-        wishText(dc,"古典旋小需旋律上下文；无审核标签显示零候选。",{left+10,top+251,right-10,top+272},10,wishMuted);
+        const bool catalogReady=wishAnnotations_&&*wishAnnotations_;
+        const auto locrianEmpty=catalogReady&&wish::reviewedSourceCount(wishAnnotations_->catalog,wish::MusicalMode::Locrian)==0;
+        const auto classicalEmpty=catalogReady&&wish::reviewedSourceCount(wishAnnotations_->catalog,wish::MusicalMode::ClassicalMelodicMinor)==0;
+        wishText(dc,!catalogReady?"标注未就绪，数量未知":locrianEmpty?"Locrian 0：无已审校中心证据":"Locrian：以已审校归属筛选",{left+10,top+251,mid-4,top+272},10,wishMuted);
+        wishText(dc,!catalogReady?"请查看加载错误":wishSettings_.filter.strict?"古典旋小0：严格方向校验未实现":classicalEmpty?"古典旋小0：缺旋律上下行证据":"古典旋小：按已确认归属筛选",{mid+4,top+251,right-10,top+272},10,wishMuted);
         wishText(dc,"升温 / 张力使用现有结构色彩分析；不代表情绪或质量。",{left+10,top+273,right-10,top+294},10,wishMuted);
     }
 }
@@ -261,6 +278,20 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
     }
 }
 
+bool MainView::runEmptyModeUiSmoke(CDrawContext* dc,const std::function<void(const std::string&)>& capture) {
+    if(!dc||!wishAnnotations_||!*wishAnnotations_)return false;
+    if(wish::reviewedSourceCount(wishAnnotations_->catalog,wish::MusicalMode::Locrian)!=0||
+       wish::reviewedSourceCount(wishAnnotations_->catalog,wish::MusicalMode::ClassicalMelodicMinor)!=0)return false;
+    changeBrowseCategory(5);wishAdvanced_=true;wishSettings_.filter.strict=true;
+    for(const auto zoom:{100u,150u}) {
+        setUserZoom(zoom);dc->beginDraw();drawRect(dc,getViewSize());dc->endDraw();
+        for(const auto index:{4u,9u})if(std::none_of(compactHits_.begin(),compactHits_.end(),[&](const auto& h){
+            return h.action==CompactAction::WishMode&&h.index==index&&h.enabled&&h.rect.getWidth()>70;
+        }))return false;
+        if(capture)capture("empty-modes-"+std::to_string(zoom)+".png");
+    }
+    return true;
+}
 bool MainView::runWishSmoke(CDrawContext* dc,const std::function<void(const std::string&)>& capture) {
     const auto require=[](bool pass,const char* text){if(!pass)throw std::runtime_error(text);};
     require(factory_.size()==658,"wish UI requires current real Factory V5");

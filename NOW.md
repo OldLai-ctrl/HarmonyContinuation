@@ -2,6 +2,14 @@
 
 ## 本轮工作与下一步
 
+### Factory V6 空调式卡池专项（2026-10-25）
+
+独立分支 `development/factory-v6-empty-modes-20261025`，接手 `11dda7d`；dev.4 / `5ae1b5a` 和 1014 条数据库不变。[独立两条 Locrian 候选、音乐审查与实际结果](data/factory-v6/increments/20261025-empty-modes/review.md)。旧 Locrian 059/060、古典旋小057均未审核且未进入实际DB；加载正常。古典另外缺少严格旋律方向校验，不用静态音集代替，归属/严格池维持0。UI显示真实0及原因，加载失败显示未知，修正“爵士旋小为空”的过期提示。
+
+本轮 Release 窄测试及原生UI离屏渲染通过：Locrian增量固定C普通/严格各2，十抽2后耗尽，不固定主音单池24；两条完整音乐身份及核心家族独立，DB/HCA指纹、Preview/MIDI/Snapshot3往返通过。100%/150%截图已检查。独立输出 `../HarmonyContinuation-v6-empty-modes-20261025/` 的1016条测试库明确禁止安装，不替换dev.4。首轮新数据非法内建标签已修正后复跑，未降低校验。主代理负责中心与古典语义、UI及门禁；Luna负责既有标注核查、窄测试实现与独立哈希核对。
+
+dev.4 DB/HCA/Setup SHA分别保持 `3F6A17BB…53707BF9` / `D3C3DB46…1389C90A` / `C61B0766…77C4928A`，匹配其BUILD_INFO；V5源DB保持 `F989A83E…A6B48CB3C`。不访问真实user.db，不改变评分/Schema2/Session5/Snapshot3/安装器，不重跑其他调式或全量回归。建议进入下一独立开发构建的整合审查，先建立新内容身份；Locrian人工中心听评、实际DAW与安装验收仍Pending。本轮无新插件包/Setup，无推送、合并main、Tag或Release。
+
 ### 工作包B / Factory V6 B4 集成交付（2026-10-25）
 
 独立分支 `development/factory-v6-b4-20261025`，接手`aa42b56`；冻结源码 **5ae1b5ab4294e2e0d51b02372639579a35ead7e5**，Release x64 **0.11.0-dev.4**。[开发Setup与完整身份](../HarmonyContinuation-v6-b4-delivery-20261025/BUILD_INFO.json)、[集中验收与实机清单](docs/FACTORY_V6_REVIEW.md)。Factory6/1014及HCA与B3-R原产物逐字节一致；V5及旧包保留。工作包A UI未合入。
