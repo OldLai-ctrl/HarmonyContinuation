@@ -46,6 +46,17 @@ ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGen
 
 其他阶段按任务授权选择 MIDI、状态或 UI 的定向入口；未改音乐算法时不因文档或名称变化重跑音乐基线。完整 CTest、Validator、42 例续写、30 例升级及其他全量回归统一留到 v1.0 正式发布前，不作为 v0.9 的关口。续写基准原有 3 处结构提示可能导致非零退出，不能自动调权重消除它们。命令参数搜索对应 CLI 的 usage。
 
+### Factory V7 隔离内容编译与窄验证
+
+仅用于独立V7内容工作树。当前已执行的工具配置为`HC_BUILD_PLUGIN=OFF`、`HC_BUILD_FACTORY_V6_EXPERIMENT=ON`，既有工具目标名仍为`factory_v6_compiler`/`FactoryV6Tests`；不因此切换插件或活动库版本。构建目录须对应当前checkout，冻结输入采用已核实的G5 Factory6/1016 DB/HCA。
+
+```text
+factory_v6_compiler --v7-incremental <g5.db> data/factory-v7/candidates.json data/factory-v7/metadata.json data/factory-v7/approved-ids.txt <proposal.db> <experiment.db> <g5.hca> <v7.hca> <summary.txt>
+FactoryV6Tests --v7-incremental <g5.db> data/factory-v7/candidates.json data/factory-v7/metadata.json data/factory-v7/approved-ids.txt <proposal.db> <experiment.db> <g5.hca> <v7.hca> <media-dir>
+```
+
+所有输出使用独立路径；第二条会执行新内容身份、6代表查询、4媒体、Wish正负例、Enrich与一次计时，不运行默认V6全量分支。已通过证据在输入、相关代码未变时继续有效，只有具体失败或新增改动才重跑受影响部分。[本轮范围、发现性限制与哈希](docs/FACTORY_V7_REVIEW.md)。安装与DAW留待后续集成授权。
+
 ## 真机验收
 
 Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [修复报告](docs/PHASE4D_CUBASE_FEEDBACK_FIX_20261012.md)。工程拍号可变，XML输入不以当前宿主拍号覆盖Session；时值比例由对齐输入duration/onset估计，拍号meta不等于实际时间适配。ON/OFF是独立编译包，高级分析显示实际结果模式，宿主诊断显示编译状态；两包Phase3A均OFF。R01/R02需主动导出本地输入与推荐诊断，再与模拟证据比较。该轮完整OFF/ON回归已获用户授权并完成，历史“留到v1.0”范围不限制本轮已授权门禁。
