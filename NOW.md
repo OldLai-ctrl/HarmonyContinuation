@@ -2,7 +2,17 @@
 
 ## 本轮工作与下一步
 
-### 工作包B / Factory V6 B3-R（2026-10-25）
+### 工作包B / Factory V6 B4 集成交付（2026-10-25）
+
+独立分支 `development/factory-v6-b4-20261025`，接手`aa42b56`；冻结源码 **5ae1b5ab4294e2e0d51b02372639579a35ead7e5**，Release x64 **0.11.0-dev.4**。[开发Setup与完整身份](../HarmonyContinuation-v6-b4-delivery-20261025/BUILD_INFO.json)、[集中验收与实机清单](docs/FACTORY_V6_REVIEW.md)。Factory6/1014及HCA与B3-R原产物逐字节一致；V5及旧包保留。工作包A UI未合入。
+
+本轮接入开发构建、外置HCA绑定及V6安装组件，Factory+User沿用完整扫描，评分/60分/排序/展示规则不变。原HCA含1023来源/1092归属，读取时仅投影并逐源绑定当前库1014来源；未采纳9源不进池，磁盘数据和审校状态不改。Format1/2MiB、Schema2、Session5、Snapshot3不变。
+
+B4技术门禁通过：Release构建、SDK47/47；四个代表输入覆盖四续写组、升级4候选；free/inputWish、固定C五调式严格筛选、两卡Preview/MIDI/Snapshot身份及隔离User完整检索通过。dev.2/V5→dev.4/V6隔离升级退出0，实际模块加载、活动V6/1014和1080025字节HCA加载通过；卸载退出0并保留V5历史和个人哨兵。首轮HCA来源计数断言在投影前失败，已修正并通过；没有重跑B3内容矩阵、G4-R58或新增故障注入。
+
+生产插件、V5、正式与旧开发Setup未变，真实user.db未访问。标准路径/UAC、真实Cubase/FL、工程重载、多实例和人工听评仍Pending；主代理负责版本/事务契约与最终门禁，Luna完成局部工程及窄检查实现，主代理接手最终构建/安装。停在B4技术门禁，未推送、合并main、Tag或Release。
+
+### 工作包B / Factory V6 B3-R（历史，2026-10-25）
 
 分支 `development/factory-v6-20261024`，接手`25d3308`；完整扫描R1提交`1f0e428`、恢复810基线`047d160`。[本轮集中报告、来源与产物](docs/FACTORY_V6_REVIEW.md)。最终隔离V6 **1014条 / 1005个跨移调完整音乐身份 / 965核心家族桶**，374候选中356A采纳，1B/17C隔离。恢复20A；新两批204采纳202A，2C为仅扩展/节奏近亲；025/052去不可靠genre标签后B→A，音符不变。
 

@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`；完整主线历史保留 |
 | 原开发 checkout | `HarmonyContinuation-release/`，本轮读取时为 `development/g01-g4u-experience-20261024` | 本轮不写入；已有协作文档及其他工作保留。实时分支以Git为准；正式发布来源仍为 `v0.10.0` / `c8d8dc3` |
-| Factory V6 工作包B | `HarmonyContinuation-factory-v6/` → `development/factory-v6-20261024`，父基线 `2421c6f` | 仅本地内容线；[集中评审](docs/FACTORY_V6_REVIEW.md)，独立proposal/experiment输出，不改生产V5 |
-| V6 数据/验证/听评产物 | 同级 `HarmonyContinuation-v6-b3r-evidence/engineering/r3/`；790与810旧产物保留 | Library6/Schema2，proposal1032/experiment1014；HCA格式1配套2MiB读取器。哈希及4组MIDI/WAV见[集中评审](docs/FACTORY_V6_REVIEW.md)，未安装激活 |
+| Factory V6 工作包B | `HarmonyContinuation-factory-v6/` → `development/factory-v6-b4-20261025`；B3基线分支保留在`aa42b56` | dev.4/5ae1b5a与V6配套；[验收](docs/FACTORY_V6_REVIEW.md)，未改生产V5或合入A UI |
+| V6 数据/验证/听评产物 | 同级 `HarmonyContinuation-v6-b3r-evidence/engineering/r3/`；790与810旧产物保留 | Library6/Schema2，proposal1032/experiment1014；HCA格式1配套2MiB读取器；B3历史内容证据保留，B4开发包与隔离安装证据在同级`HarmonyContinuation-v6-b4-delivery-20261025/`，生产未激活V6 |
 | 当前验证与测试包 | 同级 `HarmonyContinuation-v010-validation-20261023/`、`HarmonyContinuation-v010-delivery-20261023/` | 正式 v0.10.0 构建、门禁日志与唯一Setup；RC1/dev.15目录保留 |
 | Phase 7 UI | `design/phase7/` 与正式 `src/ui/` | 已集成至main；原型和正式UI临时工作树已撤除，来源历史仍可追溯 |
 | 仓库精简恢复资料 | 同级 `_archive/HarmonyContinuation-repo-cleanup-20261023-180326/` | 全部原引用的Git bundle、原工作区文档ZIP及补丁；仅用于恢复，不在备份内开发 |
