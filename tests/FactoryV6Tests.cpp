@@ -14,6 +14,7 @@
 #include "preview/PreviewSynth.h"
 #include "preview/PreviewTransport.h"
 #include "preview/OfflinePreviewRenderer.h"
+#include "product/ProductVersion.h"
 #include "session/PluginSessionState.h"
 #include "snapshot/RecommendationSnapshot.h"
 #include "wish/ModeAnnotations.h"
@@ -3137,6 +3138,264 @@ int runInstalledSmoke(const std::filesystem::path& factoryPath,
               << " preview_midi_snapshot_cards=2\n";
     return 0;
 }
+
+std::string continuationLabels(const ContinuationCandidate& candidate) {
+    std::string result;
+    for (const auto& chord : candidate.continuation) {
+        if (!result.empty()) result += ' ';
+        result += chord.label;
+    }
+    return result;
+}
+
+int runV7IntegrationSmoke(const std::filesystem::path& factoryPath,
+                          const std::filesystem::path& v6FactoryPath,
+                          const std::filesystem::path& fixtureDirectory) {
+    std::filesystem::create_directories(fixtureDirectory);
+    require(product::factoryLibraryVersion == 7, "V7 integration test was not compiled for Factory 7");
+    const auto factory = library::loadFactory(factoryPath);
+    require(static_cast<bool>(factory), "V7 Factory load: " + factory.error);
+    require(factory.libraryVersion == 7 && factory.storageSchemaVersion == 2 &&
+            factory.templates.size() == 1272, "V7 Factory 7 / Schema 2 / 1272 identity");
+
+    const auto v6Factory = library::loadFactory(v6FactoryPath);
+    require(static_cast<bool>(v6Factory), "V6 baseline load: " + v6Factory.error);
+    require(v6Factory.libraryVersion == 6 && v6Factory.storageSchemaVersion == 2 &&
+            v6Factory.templates.size() == 1016, "V6 baseline Factory 6 / Schema 2 / 1016 identity");
+
+    const bool activeSelection = factoryPath.parent_path().filename() == "7";
+    if (activeSelection) {
+        const auto selected = library::loadAvailableFactory({}, factoryPath.parent_path().parent_path());
+        require(selected.library && selected.path == factoryPath && selected.library.libraryVersion == 7 &&
+                selected.library.templates.size() == 1272,
+                "active Factory store did not select the installed V7 package");
+    }
+
+    auto v6HcaPath = v6FactoryPath;
+    v6HcaPath.replace_extension(".hca");
+    const auto v7HcaPath = factoryPath.parent_path() / "factory.hca";
+    const auto v6HcaText = readText(v6HcaPath);
+    const auto v7HcaText = readText(v7HcaPath);
+    require(v7HcaText.starts_with(v6HcaText), "V7 HCA did not preserve the complete V6 source prefix");
+    const auto v6RawAnnotations = wish::loadAnnotations(v6HcaPath);
+    const auto v7RawAnnotations = wish::loadAnnotations(v7HcaPath);
+    require(static_cast<bool>(v6RawAnnotations), "V6 baseline HCA: " + v6RawAnnotations.error);
+    require(static_cast<bool>(v7RawAnnotations), "V7 HCA: " + v7RawAnnotations.error);
+    require(v6RawAnnotations.catalog.entries.size() == 1025,
+            "V6 baseline HCA must retain its 1025 source records");
+    require(v7RawAnnotations.catalog.entries.size() == 1363,
+            "V7 HCA must load 1363 source records");
+    const auto orphanCount = [](const wish::AnnotationCatalog& catalog,
+                                const std::vector<ProgressionTemplate>& sources) {
+        std::set<std::string> sourceIds;
+        for (const auto& source : sources) sourceIds.insert(source.id);
+        return static_cast<std::size_t>(std::count_if(catalog.entries.begin(), catalog.entries.end(),
+            [&](const auto& entry) { return !sourceIds.contains(entry.templateId); }));
+    };
+    const auto v6Orphans = orphanCount(v6RawAnnotations.catalog, v6Factory.templates);
+    const auto v7Orphans = orphanCount(v7RawAnnotations.catalog, factory.templates);
+    require(v6Orphans == 9 && v7Orphans == 91, "V7 HCA did not retain historical orphan records");
+    const auto v6Annotations = wish::annotationsForFactory(v6FactoryPath, 6);
+    const auto annotations = wish::annotationsForFactory(factoryPath, 7);
+    require(static_cast<bool>(v6Annotations), "V6 baseline HCA binding: " + v6Annotations.error);
+    require(static_cast<bool>(annotations), "V7 active HCA binding: " + annotations.error);
+    require(v6Annotations.catalog.entries.size() == 1016 && annotations.catalog.entries.size() == 1272,
+            "V6/V7 active HCA source counts");
+    const auto hcaBytes = std::filesystem::file_size(v7HcaPath);
+    require(hcaBytes <= 2u * 1024u * 1024u, "V7 HCA exceeds the supported 2 MiB installer limit");
+
+    const CandidateIndex index(factory.templates);
+    const CandidateIndex v6Index(v6Factory.templates);
+    const std::array<std::pair<std::string_view, std::size_t>, 4> querySpecs{{
+        {"V7_01_001", 4}, {"V7_01_003", 2}, {"V7_04_023", 4}, {"V7_03_008", 8}
+    }};
+    RecommendationSet colorV7Results;
+    for (const auto& [id, prefix] : querySpecs) {
+        const auto& source = find(factory.templates, std::string(id));
+        require(prefix > 0 && prefix < source.full.size(), "V7 smoke prefix is not legal: " + source.id);
+        const auto query = queryFor(source, {PitchClass::C, source.mode}, prefix);
+        RecommendationRequest request;
+        request.preferredIntent = source.intent;
+        auto weights = recommendationWeights();
+        weights.perGroup = 0;
+        auto results = recommendContinuations(query, index, request, weights);
+        require(results.stats.shortlistSize == factory.templates.size(),
+                "V7 smoke recommendation did not scan the complete Factory: " + source.id);
+        const auto* own = findCandidate(results, source.id);
+        const auto ownRank = own ? groupRank(results, own->id) : std::nullopt;
+        const bool saveColorResults = source.id == "V7_04_023";
+        if (saveColorResults) {
+            require(ownRank && ownRank->first == 3 && ownRank->second == 1,
+                    "V7_04_023 prefix 4 is no longer Color rank 1");
+        } else if (source.id == "V7_03_008") {
+            require(ownRank && ownRank->first == 1 && ownRank->second == 1,
+                    "V7_03_008 prefix 8 is no longer Develop rank 1");
+        }
+        std::cout << "v7_query id=" << source.id << " prefix=" << prefix << " full_scan=yes";
+        if (ownRank) std::cout << " source_rank=" << groupName(ownRank->first) << ':' << ownRank->second;
+        else std::cout << " source_rank=not-qualified";
+        for (std::size_t group = 0; group < results.groups.size(); ++group)
+            std::cout << ' ' << groupName(group) << '=' << results.groups[group].size();
+        std::cout << '\n';
+        if (saveColorResults) colorV7Results = std::move(results);
+    }
+
+    const auto& colorSource = find(factory.templates, "V7_04_023");
+    const auto* colorCandidateResult = findCandidate(colorV7Results, colorSource.id);
+    require(colorCandidateResult != nullptr, "V7_04_023 color candidate disappeared from its prefix results");
+    const auto& colorCandidate = *colorCandidateResult;
+    require(!colorCandidate.continuation.empty(), "V7_04_023 ranked result has no new chord route");
+    const auto colorPrefix = queryFor(colorSource, {PitchClass::C, colorSource.mode}, 4);
+    RecommendationRequest colorRequest;
+    colorRequest.preferredIntent = colorSource.intent;
+    auto colorWeights = recommendationWeights();
+    colorWeights.perGroup = 0;
+    const auto colorV6Results = recommendContinuations(colorPrefix, v6Index, colorRequest, colorWeights);
+    require(colorV6Results.stats.shortlistSize == v6Factory.templates.size(),
+            "V6 comparison did not scan the complete frozen baseline");
+    const auto oldColorRoute = colorV6Results.groups[3].empty()
+        ? std::string("none")
+        : colorV6Results.groups[3].front().primaryTemplate + ":" +
+            continuationLabels(colorV6Results.groups[3].front());
+    std::cout << "v7_same_prefix_comparison id=V7_04_023 prefix=4 v6_color=" << oldColorRoute
+              << " v7_color=" << colorCandidate.primaryTemplate << ':' << continuationLabels(colorCandidate)
+              << '\n';
+
+    const auto& openDevelopment = find(factory.templates, "V7_01_001");
+    wish::WishFilter freeFilter;
+    freeFilter.fixedTonic = PitchClass::C;
+    auto freePool = wish::makeFreePool(factory.templates, annotations.catalog, freeFilter);
+    require(static_cast<bool>(freePool), "V7 free Wish pool: " + freePool.error);
+    require(freePool.sourceMismatches == 0 && freePool.invalidSources == 0 && freePool.invalidAnnotations == 0,
+            "V7 free Wish reported source or annotation integrity errors");
+    std::erase_if(freePool.items, [&](const auto& item) {
+        return item.match.has_value() || std::none_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == openDevelopment.id; });
+    });
+    require(!freePool.items.empty(), "V7_01_001 is unavailable in free Wish");
+    wish::WishRound freeRound(std::move(freePool), 8701);
+    const auto freeItems = freeRound.draw(1);
+    require(freeItems.size() == 1 && !freeItems.front().match &&
+            std::any_of(freeItems.front().sources.begin(), freeItems.front().sources.end(),
+                [&](const auto& source) { return source.id == openDevelopment.id; }),
+            "V7_01_001 free Wish draw did not preserve its source identity");
+
+    const auto& positiveWishSource = colorSource;
+    const KeySignature positiveKey{PitchClass::C, positiveWishSource.mode};
+    wish::WishInput positiveWish;
+    require(positiveWish.imported.replace(makePrefix(positiveWishSource, positiveKey, 4),
+            TimelineCoordinateMode::RelativeToSelection), "V7 positive Wish prefix");
+    positiveWish.analysis.forcedKey = positiveKey;
+    auto positivePool = wish::makeInputPool(factory.templates, annotations.catalog, positiveWish);
+    require(static_cast<bool>(positivePool), "V7 positive Input Wish: " + positivePool.error);
+    require(positivePool.sourceMismatches == 0 && positivePool.invalidSources == 0 &&
+            positivePool.invalidAnnotations == 0, "V7 positive Input Wish source integrity");
+    require(std::any_of(positivePool.items.begin(), positivePool.items.end(), [&](const auto& item) {
+        return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == positiveWishSource.id; });
+    }), "V7_04_023 prefix 4 is missing from positive Input Wish");
+
+    const auto& negativeWishSource = find(factory.templates, "V7_01_022");
+    const KeySignature negativeKey{PitchClass::C, negativeWishSource.mode};
+    wish::WishInput negativeWish;
+    require(negativeWish.imported.replace(makePrefix(negativeWishSource, negativeKey, 8),
+            TimelineCoordinateMode::RelativeToSelection), "V7 negative Wish prefix");
+    negativeWish.analysis.forcedKey = negativeKey;
+    auto negativePool = wish::makeInputPool(factory.templates, annotations.catalog, negativeWish);
+    require(static_cast<bool>(negativePool), "V7 negative Input Wish: " + negativePool.error);
+    require(negativePool.sourceMismatches == 0 && negativePool.invalidSources == 0 &&
+            negativePool.invalidAnnotations == 0, "V7 negative Input Wish source integrity");
+    const auto negativeQuery = makeMatchQuery(negativeWish.imported.events,
+        recommendationContext(negativeWish.analysis));
+    const auto negativeSourceResults = recommendContinuations(
+        negativeQuery, CandidateIndex({negativeWishSource}), negativeWish.request, recommendationWeights());
+    const auto negativeMatch = std::find_if(negativeSourceResults.matches.begin(), negativeSourceResults.matches.end(),
+        [&](const auto& match) {
+            return match.templateId == negativeWishSource.id &&
+                   std::isfinite(match.candidateEligibilityScore) && match.candidateEligibilityScore >= 0.f;
+        });
+    const auto wishWeights = recommendationWeights();
+    require(negativeMatch != negativeSourceResults.matches.end() &&
+            negativeMatch->disposition == "minimum_score" &&
+            negativeMatch->candidateEligibilityScore < wishWeights.minimumScore,
+            "V7_01_022 negative Input Wish no longer exposes its actual below-threshold result");
+    require(negativeWish.request.constraints.melody.empty(),
+            "V7_01_022 negative Wish unexpectedly requests melody constraints");
+    require(std::none_of(negativePool.items.begin(), negativePool.items.end(), [&](const auto& item) {
+        return item.match.has_value() && std::any_of(item.sources.begin(), item.sources.end(),
+            [&](const auto& source) { return source.id == negativeWishSource.id; });
+    }), "V7_01_022 below-threshold source leaked into Input Wish");
+    std::cout << "v7_wish free=PASS input_positive=V7_04_023/prefix4 input_negative=V7_01_022/prefix8"
+              << " disposition=" << negativeMatch->disposition
+              << " eligibility=" << negativeMatch->candidateEligibilityScore
+              << " threshold=" << wishWeights.minimumScore << '\n';
+
+    const auto& enrichSource = find(factory.templates, "V6_B3_01_065");
+    const KeySignature enrichKey{PitchClass::C, enrichSource.mode};
+    const auto enrichRoute = preview::templateRoute(enrichSource, enrichKey);
+    require(static_cast<bool>(enrichRoute), "V7 Enrich representative route");
+    AnalysisContext enrichContext;
+    enrichContext.forcedKey = enrichKey;
+    const auto enrichAnalysis = analyzeHarmony(enrichRoute.imported.events, enrichContext);
+    const auto enrichment = enrichment::enrichProgression(enrichRoute.imported.events, enrichAnalysis);
+    require(enrichment.error.empty(), "V7 Enrich API: " + enrichment.error);
+    const auto enrichmentCandidates = std::accumulate(enrichment.groups.begin(), enrichment.groups.end(),
+        std::size_t{}, [](std::size_t sum, const auto& group) { return sum + group.size(); });
+    require(enrichmentCandidates > 0, "V7 Enrich representative returned no candidates");
+
+    const auto mediaDirectory = fixtureDirectory / "media";
+    std::filesystem::create_directories(mediaDirectory);
+    std::ofstream mediaIndex(mediaDirectory / "v7-integration-media-index.tsv", std::ios::binary);
+    require(static_cast<bool>(mediaIndex), "cannot write V7 smoke media index");
+    mediaIndex << "id\tfull_midi\tfull_preview_wav\n";
+    constexpr std::array<std::string_view, 4> mediaIds{
+        "V7_01_001", "V7_01_003", "V7_04_023", "V7_03_008"
+    };
+    for (const auto id : mediaIds) {
+        const std::string idString{id};
+        const auto& source = find(factory.templates, idString);
+        if (idString == "V7_01_003")
+            require(source.loopable, "V7_01_003 loop boundary was not retained in the Factory row");
+        const auto route = preview::buildTemplateSequence(
+            source, {PitchClass::C, source.mode}, preview::defaultTempoBPM);
+        require(static_cast<bool>(route), "V7 smoke route build: " + idString);
+        verifyMidiRoundTrip(route.sequence);
+        const auto clip = midi::buildClip(route.sequence, midi::ArrangementMode::VoiceLed,
+                                          midi::ExportScope::FullPhrase, {});
+        require(static_cast<bool>(clip), "V7 smoke full MIDI build: " + idString);
+        const auto midiBytes = midi::writeToMemory(clip.sequence);
+        require(midiBytes && midiBytes.bytes.size() > 14, "V7 smoke MIDI serialization: " + idString);
+        const auto midiPath = mediaDirectory / (idString + "-complete.mid");
+        std::ofstream midiOut(midiPath, std::ios::binary);
+        require(static_cast<bool>(midiOut), "cannot write V7 smoke MIDI: " + idString);
+        midiOut.write(reinterpret_cast<const char*>(midiBytes.bytes.data()),
+                      static_cast<std::streamsize>(midiBytes.bytes.size()));
+        require(static_cast<bool>(midiOut), "cannot finish V7 smoke MIDI: " + idString);
+        const auto audio = preview::renderOffline(route.sequence, 48000.0);
+        require(!audio.left.empty() && audio.left.size() == audio.right.size() && audio.rms > 0,
+                "V7 smoke Preview is silent: " + idString);
+        std::string wavError;
+        const auto wavPath = mediaDirectory / (idString + "-preview.wav");
+        require(preview::writeWav16(audio, wavPath, wavError),
+                "cannot write V7 smoke Preview: " + wavError);
+        mediaIndex << idString << '\t' << midiPath.filename().string() << '\t'
+                   << wavPath.filename().string() << '\n';
+        std::cout << "v7_media id=" << idString << " midi=" << midiPath.filename().string()
+                  << " preview=" << wavPath.filename().string() << " rms=" << audio.rms;
+        if (idString == "V7_01_003")
+            std::cout << " loopable=" << (source.loopable ? "yes" : "no");
+        std::cout << '\n';
+    }
+    require(static_cast<bool>(mediaIndex), "cannot finish V7 smoke media index");
+
+    std::cout << "Factory V7 integration smoke PASS active_selection=" << (activeSelection ? "7" : "build")
+              << " factory=7/Schema2/1272 v6_baseline=6/Schema2/1016 hca_bytes=" << hcaBytes
+              << " hca_records=1363 active_sources=1272 unbound=91 preserved_v6_records=1025"
+              << " preserved_v6_orphans=" << v6Orphans
+              << " free_wish=1 positive_input_wish=1 negative_input_wish=1 enrich_candidates="
+              << enrichmentCandidates << " recommendation_queries=4+v6_comparison=1 full_media=4\n";
+    return 0;
+}
 } // namespace
 int main(int argc, char** argv) {
     static_assert(library::factorySchemaVersion == 2);
@@ -3181,6 +3440,16 @@ int main(int argc, char** argv) {
             return runInstalledSmoke(argv[2], argv[3]);
         } catch (const std::exception& error) {
             std::cerr << "Factory V6 installed smoke FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--v7-integration-smoke") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --v7-integration-smoke factory-v7.db factory-v6.db fixture-dir");
+            return runV7IntegrationSmoke(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory V7 integration smoke FAIL: " << error.what() << '\n';
             return 1;
         }
     }

@@ -5,6 +5,7 @@ param(
     [string]$RuntimeDirectory = '',
     [string]$FactoryDatabase = '',
     [string]$TestRoot = '',
+    [string]$TestSuffix = '-IsolatedTest',
     [switch]$LibraryOnly
 )
 $ErrorActionPreference = 'Stop'
@@ -41,6 +42,7 @@ if (!(Test-Path -LiteralPath $manager)) {
 $info = & $manager inspect $FactoryDatabase
 if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw '进行库检查失败。' }
 $libraryVersion = $Matches[1]
+if ([int]$libraryVersion -eq 7 -and $info -notmatch '\bschema=2\b') { throw 'Factory V7 requires Schema 2.' }
 if ($info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
 $factoryEntryCount = $Matches[1]
 if ($header -notmatch 'HC_PRODUCT_VERSION\s+"([^"]+)"') { throw '无法读取产品版本。' }
@@ -52,11 +54,11 @@ New-Item -ItemType Directory -Force -Path $stage,(Join-Path $stage 'runtime') | 
 Copy-Item -LiteralPath $manager -Destination (Join-Path $stage 'library_manager.exe')
 Copy-Item -LiteralPath $FactoryDatabase -Destination (Join-Path $stage 'factory.db')
 $annotationHash = ''
-if ([int]$libraryVersion -eq 6) {
+if ([int]$libraryVersion -ge 6) {
     $annotationFile = Join-Path $buildPath 'factory.hca'
-    if (!(Test-Path -LiteralPath $annotationFile)) { throw 'Factory V6 requires factory.hca.' }
+    if (!(Test-Path -LiteralPath $annotationFile)) { throw "Factory V$libraryVersion requires factory.hca." }
     $annotationItem = Get-Item -LiteralPath $annotationFile
-    if ($annotationItem.Length -gt 2MB) { throw 'Factory V6 annotation exceeds the 2 MiB installer limit.' }
+    if ($annotationItem.Length -gt 2MB) { throw "Factory V$libraryVersion annotation exceeds the 2 MiB installer limit." }
     Copy-Item -LiteralPath $annotationFile -Destination (Join-Path $stage 'factory.hca')
     $annotationHash = (Get-FileHash -LiteralPath $annotationFile -Algorithm SHA256).Hash.ToLowerInvariant()
 }
@@ -89,6 +91,7 @@ New-Item -ItemType Directory -Force -Path $referenceDir | Out-Null
 $historicalReferences = @('factory-v2.db','factory-v3.db')
 if ([int]$libraryVersion -ge 5) { $historicalReferences += 'factory-v4.db' }
 if ([int]$libraryVersion -ge 6) { $historicalReferences += 'factory-v5.db' }
+if ([int]$libraryVersion -ge 7) { $historicalReferences += 'factory-v6.db' }
 foreach ($reference in $historicalReferences) {
     $source = Join-Path $buildPath $reference
     if (!(Test-Path -LiteralPath $source)) { throw "Missing official reference compiled from repository data: $reference" }
@@ -102,11 +105,14 @@ if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -Lite
 $setupFileStem = "HarmonyContinuation-$productVersion-Setup"
 $common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
 $common += '/DFactoryEntryCount='+$factoryEntryCount
-if ([int]$libraryVersion -eq 6) { $common += '/DAnnotationHash='+$annotationHash }
-if ($TestRoot) { $common += '/DTestRoot='+(Absolute $TestRoot) }
+if ([int]$libraryVersion -ge 6) { $common += '/DAnnotationHash='+$annotationHash }
+if ($TestRoot) {
+    $common += '/DTestRoot='+(Absolute $TestRoot)
+    $common += '/DTestSuffix='+$TestSuffix
+}
 & $compilerPath @common (Join-Path $repo 'packaging/UnifiedSetup.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Unified Setup compilation failed.' }
-$suffix = if ($TestRoot) {'-IsolatedTest'} else {''}
+$suffix = if ($TestRoot) {$TestSuffix} else {''}
 $setups = @(Join-Path $outputPath "$setupFileStem$suffix.exe")
 $checksums = @()
 foreach ($setup in $setups) {

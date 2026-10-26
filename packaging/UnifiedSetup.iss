@@ -18,7 +18,9 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
- #if LibraryVersion == "6"
+  #if LibraryVersion == "7"
+   #define MinimumPluginVersion "0.11.0-dev.6"
+  #elif LibraryVersion == "6"
   #define MinimumPluginVersion "0.11.0-dev.4"
  #elif LibraryVersion == "5"
   #define MinimumPluginVersion "0.10.0-dev.12"
@@ -29,8 +31,8 @@
  #endif
 #endif
 #ifndef AnnotationHash
- #if LibraryVersion == "6"
-  #error AnnotationHash required for Factory V6
+ #if LibraryVersion == "6" || LibraryVersion == "7"
+  #error AnnotationHash required for Factory V6/V7
  #else
   #define AnnotationHash ""
  #endif
@@ -89,7 +91,7 @@ Source: "{#StageDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\library_manager.exe"; Flags: dontcopy
 Source: "{#StageDir}\runtime\*.dll"; Flags: dontcopy
 Source: "{#StageDir}\factory.db"; Flags: dontcopy
-#if LibraryVersion == "6"
+#if LibraryVersion == "6" || LibraryVersion == "7"
 Source: "{#StageDir}\factory.hca"; Flags: dontcopy
 #endif
 Source: "{#StageDir}\official-factory\*.db"; DestDir: "{tmp}\official-factory"; Flags: dontcopy
@@ -183,7 +185,8 @@ var Version: String; ActiveText: AnsiString;
 begin
   Version:=GetIniString('Components','LibraryVersion','',StateFile);
   if (Version='') and LoadStringFromFile(StoreFolder+'\active.txt',ActiveText) then Version:=Trim(String(ActiveText));
-  if Version='6' then Result:=StoreFolder+'\6\factory.hca' else Result:='';
+  if (IntToStr(StrToIntDef(Version,0))=Version) and (StrToIntDef(Version,0)>=6) then
+    Result:=StoreFolder+'\'+Version+'\factory.hca' else Result:='';
 end;
 function ManagedAnnotationHash: String;
 begin Result:=GetIniString('Components','AnnotationHash','',StateFile); end;
@@ -248,7 +251,7 @@ procedure ExtractPayload;
 begin
   ExtractTemporaryFile('library_manager.exe'); ExtractTemporaryFiles('{tmp}\*.dll');
   ExtractTemporaryFile('factory.db'); ExtractTemporaryFile('plugin-files.txt');
-#if LibraryVersion == "6"
+#if LibraryVersion == "6" || LibraryVersion == "7"
   ExtractTemporaryFile('factory.hca');
 #endif
   ExtractTemporaryFiles('{tmp}\official-factory\*.db');
@@ -719,8 +722,9 @@ begin
       Result:='Same library version has different content; no overwrite. Repair a known managed component or retain it.'; Exit;
     end;
   end;
-  if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') and FileExists(StoreFolder+'\6\factory.hca') and
-      (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),'{#AnnotationHash}')<>0) and
+  Path:=StoreFolder+'\{#LibraryVersion}\factory.hca';
+  if Selection('library') and not SkipLibrary and (StrToIntDef('{#LibraryVersion}',0)>=6) and FileExists(Path) and
+      (CompareText(GetSHA256OfFile(Path),'{#AnnotationHash}')<>0) and
       not KnownV6Increment and
       not ((OperationPage.SelectedValueIndex=1) and OwnLibrary and (CompareText(ManagedAnnotationHash,'{#AnnotationHash}')=0)) then begin
     Result:='Same library version has different annotation content; no overwrite. Repair a known managed component or retain it.'; Exit;
@@ -747,14 +751,14 @@ begin
   if Selection('library') and not SkipLibrary then begin
     if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
        not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
-#if LibraryVersion == "6"
+#if LibraryVersion == "6" || LibraryVersion == "7"
     if not SetIniString('Components','AnnotationHash','{#AnnotationHash}',StateFile) then RaiseException('Cannot record Factory annotation identity');
 #endif
   end;
   if (GetIniString('Components','Plugin','',StateFile)<>IntToStr(Ord(OwnPlugin))) or
      (GetIniString('Components','Library','',StateFile)<>IntToStr(Ord(OwnLibrary))) then
     RaiseException('Component state verification failed');
-#if LibraryVersion == "6"
+#if LibraryVersion == "6" || LibraryVersion == "7"
   if Selection('library') and not SkipLibrary and (ManagedAnnotationHash<>'{#AnnotationHash}') then
     RaiseException('Factory annotation state verification failed');
 #endif
@@ -784,9 +788,11 @@ begin
   if Selection('library') and not SkipLibrary then
     if (ReadActive<>'{#LibraryVersion}') or (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
       RaiseException('Installed Factory verification failed');
-  if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') then
-    if not FileExists(StoreFolder+'\6\factory.hca') or (CompareText(GetSHA256OfFile(StoreFolder+'\6\factory.hca'),'{#AnnotationHash}')<>0) then
+  if Selection('library') and not SkipLibrary and (StrToIntDef('{#LibraryVersion}',0)>=6) then begin
+    Path:=StoreFolder+'\{#LibraryVersion}\factory.hca';
+    if not FileExists(Path) or (CompareText(GetSHA256OfFile(Path),'{#AnnotationHash}')<>0) then
       RaiseException('Installed Factory annotation verification failed');
+  end;
   if not RegQueryStringValue(RegistryRoot,MainKey,'DisplayVersion',Version) or (Version<>'{#ProductVersion}') then
     RaiseException('Installed registration verification failed');
 end;
@@ -799,7 +805,8 @@ begin
       RememberFile(StoreFolder+'\active.txt');
       RememberFile(StateFile); RememberFile(AppFolder+'\plugin-files.txt');
       if Selection('library') and not SkipLibrary then RememberFile(LibraryDatabase);
-      if Selection('library') and not SkipLibrary and ('{#LibraryVersion}'='6') then RememberFile(StoreFolder+'\6\factory.hca');
+      if Selection('library') and not SkipLibrary and (StrToIntDef('{#LibraryVersion}',0)>=6) then
+        RememberFile(StoreFolder+'\{#LibraryVersion}\factory.hca');
       if RemoveLibrary then RememberFile(ManagedLibraryDatabase);
       if RemoveLibrary and (ManagedAnnotationFile<>'') then RememberFile(ManagedAnnotationFile);
       if Selection('plugin') then RememberManifest(ExpandConstant('{tmp}\plugin-files.txt'));
@@ -819,8 +826,8 @@ begin
         PreserveV6IncrementBase;
         if FileExists(LibraryDatabase) and (CompareText(GetSHA256OfFile(LibraryDatabase),'{#FactoryHash}')<>0) then
           if not DeleteFile(LibraryDatabase) then RaiseException('Cannot replace damaged managed Factory');
-        if '{#LibraryVersion}'='6' then begin
-          Path:=StoreFolder+'\6\factory.hca';
+        if StrToIntDef('{#LibraryVersion}',0)>=6 then begin
+          Path:=StoreFolder+'\{#LibraryVersion}\factory.hca';
           if not ForceDirectories(ExtractFileDir(Path)) or not FileCopy(ExpandConstant('{tmp}\factory.hca'),Path,False) then
             RaiseException('Factory annotation install failed; restoring previous data.');
           if CompareText(GetSHA256OfFile(Path),'{#AnnotationHash}')<>0 then RaiseException('Factory annotation verification failed; restoring previous data.');
