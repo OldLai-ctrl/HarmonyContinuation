@@ -2,11 +2,13 @@
 
 ## 本轮工作与下一步
 
-### Factory V7 / J-Pop 与 ACG 内容门禁（2026-10-26）
+### Factory V7-I 独立集成交付（2026-10-26）
 
-独立分支 `development/factory-v7-20261025`，基线为 G5 交付 HEAD `24bdc239`；保留 dev.5 / `b3d1fce`、Factory6/1016 及用户现有验收。用户报告G5实际使用暂未发现重大问题。本轮339稿经主代理音乐与来源边界审查，256A采纳、45B/38C隔离；隔离Factory7为1272条、1263个完整音乐身份，Schema2/HCA1，Session5/Snapshot3保持。[集中报告、覆盖、原始输入及证据](docs/FACTORY_V7_REVIEW.md)。
+独立分支 `development/factory-v7-integration-20261026`，从内容冻结`8cc16c1`建立；唯一Release插件为 **0.11.0-dev.6 / BuildCommit `40210d37c3fce517429fbf39f7a4c20c8709d5fa` / Factory7**。V7为1272条、1263个完整音乐身份，新增256A，83条B/C继续隔离。V7 DB/HCA与内容冻结哈希完全一致，旧V6中间产物与dev.5一致；Session5/Snapshot3/User Schema2、原评分与60分门槛、完整扫描和G5 UI/试听逻辑保持。[集中报告与Setup身份](docs/FACTORY_V7_REVIEW.md#v7-i-独立集成与开发交付2026-10-26)。
 
-新增包含70条审核循环、明确的开放/借用/转调路线及缺失丸サ本体；256A无完整或去节奏整句重复。内容/工具本地提交`310ff6e`；最终V7专项通过，6短查询、4媒体、Wish正负例、Enrich5候选及单次1272源扫描8.3158ms；旧1016个payload与HCA前缀字节保持。默认完整扫描与60分资格不变。三条短前缀被相似度或资格门槛排除，真实Color/Phrygian Loop/跨调Develop可见；后续最小投影核查集中裁决，不把内容统计等同全部前缀可见。具备隔离工程集成条件，保留发现性与作品级证据缺口。未制作V7插件包、安装、激活、推送、合并main或发布；真实user.db未访问。
+一次Release构建、一次独立fresh install、已装1272/HCA读取、代表推荐/Wish/Enrich、四组MIDI/Preview及模块版本检查通过。测试保留V6历史文件和个人哨兵；旧active夹具误写，未证明有效active6升级迁移，未补跑生命周期。Color新路线第1、跨段Develop第1、非传统Loop在完整列表第21；开放发展样本可经Free Wish抽到，短前缀仍受资格限制。三条已知限制保留，已证实Unknown功能惩罚成分；最小语义提案交决策端，未改算法。
+
+[dev.6 Setup](../HarmonyContinuation-v7i-delivery-20261026/HarmonyContinuation-0.11.0-dev.6-Setup.exe)及[四条创作样本/MIDI/WAV](../HarmonyContinuation-v7i-delivery-20261026/CREATIVE_SAMPLES.md)可进入实机体验。dev.5 Setup/V6保留可回退。工程与隔离安装已验证；正常Setup未执行，生产插件和真实user.db未操作，DAW及用户体验待验收。仅本地提交，未推送、合并main、建Tag或发布；本轮不继续扩库。
 
 ### G5 集中整合（2026-10-25）
 

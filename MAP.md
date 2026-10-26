@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| Factory V7-I集成线 | `HarmonyContinuation-factory-v7-integration/` → `development/factory-v7-integration-20261026`；内容父提交`8cc16c1`，BuildCommit`40210d3` | dev.6/Factory7；[集成交付](docs/FACTORY_V7_REVIEW.md#v7-i-独立集成与开发交付2026-10-26)，不改原dev.5/V6工作树 |
+| V7-I开发包与验证 | 同级`HarmonyContinuation-v7i-delivery-20261026/`；原始证据`HarmonyContinuation-v7i-validation-20261026/` | 正常Setup未执行；独立TestRoot安装验证；四组媒体与SHA保留，真实DAW待验收 |
 | Factory V7 内容线 | `HarmonyContinuation-factory-v7/` → `development/factory-v7-20261025`；从G5交付`24bdc239`建立 | [V7门禁](docs/FACTORY_V7_REVIEW.md)；独立内容与工具，不安装/激活 |
 | V7冻结基线与产物 | G5输入为同级`HarmonyContinuation-g5-delivery-20261025/stage-6/`；V7输出为同级`HarmonyContinuation-v7-evidence/engineering/` | G5/dev.5/Factory6保留；V7实验DB与配套HCA只供隔离集成 |
 | 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`；完整主线历史保留 |

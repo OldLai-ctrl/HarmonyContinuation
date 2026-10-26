@@ -4,7 +4,7 @@
 
 独立分支 `development/factory-v7-20261025`，从 G5 交付 HEAD `24bdc239b2f81895f93300f39e769d8210f5f79b` 建立。保留 `0.11.0-dev.5` / BuildCommit `b3d1fce6225593c76bc98ca0dec083bc469c5e00`、Factory6/1016 及原工作树。
 
-2026-10-26内容与窄工程门禁完成：339稿，**256 A采纳、45 B待审、38 C排除**。隔离Factory7 **1272条**，Schema2 / HCA Format1；Session5、Snapshot3、User Schema2不变。内容与工具提交 `310ff6e`，实际测试源文件/输入/工具二进制哈希见证据清单；没有新插件BuildCommit或安装包。短前缀发现性限制保留为下一轮集中裁决项。
+2026-10-26内容门禁及V7-I独立集成完成：339稿，**256 A采纳、45 B待审、38 C排除**。Factory7 **1272条 / 1263个完整音乐身份**，Schema2 / HCA Format1；Session5、Snapshot3、User Schema2不变。内容冻结于 `8cc16c1`；开发包 `0.11.0-dev.6` 与隔离安装证据见下节。真实DAW体验待验收。
 
 原始固定乐句：[batch01–06及编码器](../data/factory-v7/)；最终音乐与逐条资料：[candidates](../data/factory-v7/candidates.json)、[metadata](../data/factory-v7/metadata.json)。[主代理裁决](../data/factory-v7/primary-decisions.json) 是采纳依据，[初审](../data/factory-v7/review-decisions.json) 保留第三组筛稿过程；[allowlist](../data/factory-v7/approved-ids.txt) 由前者生成。每条都有音集、低音、QN、拍号、用途、结尾、边界、调中心、独立归属证据、来源范围及审校记录。
 
@@ -128,10 +128,55 @@ Enrich以01_022的9个输入事件返回5个候选。最后一次推荐计时为
 
 输出与输入路径必须分离。proposal含全部稿，experiment只含256A；HCA保留原始G5前缀并追加候选归属，消费时仍逐源绑定当前DB。B/C音乐不得因出现在proposal或HCA中进入活动卡池。
 
-## 后续门禁
+## V7-I 独立集成与开发交付（2026-10-26）
 
-本轮停在V7内容门禁。当前可准备隔离工程集成；短前缀发现性限制与来源缺口需保留为集中裁决项。先只核对上面三条前缀的导入/模板功能、结构投影与匹配成本，判断是可据音乐证据修正的标注，还是需要局部算法提案；暂不降低.60/60或提高V7分数。多数条目仍为明确目的的原创示范，作品级风格典型性不能由本轮通过的工程检查推出。
+### 身份与实现
 
-尚无V7安装、DAW或新的用户听评；未改生产安装、真实user.db、dev.5二进制、Unified资格/评分、main、正式Tag或Release。下一阶段优先补Vocaloid、日系摇滚与游戏音乐的作品/段落证据和授权素材；不把1,500–1,700作为本轮强制行数。
+集成分支 `development/factory-v7-integration-20261026`，父提交为内容冻结 `8cc16c18e446d8a26f0961e61dad3b3fabee47a7`；与已验证G5的共同基线为 `b3d1fce6225593c76bc98ca0dec083bc469c5e00`。唯一Release构建身份：**`0.11.0-dev.6` / BuildCommit `40210d37c3fce517429fbf39f7a4c20c8709d5fa` / Factory7**。后续文档提交不改变此BuildCommit。
 
-主代理负责来源边界、逐句音乐/用途/中心裁决、近亲排除和最终门禁；Luna负责来源索引、定向统计、独立音集/身份核对、既有工具扩展及窄验证。
+构建链由固定V5生成V6/1016，再叠加已审校256条生成V7/1272。V7 DB/HCA与上表冻结产物哈希完全一致，V6中间产物也与dev.5一致。HCA为1,506,306 bytes，低于既有2MiB容量限制；未改存储格式。1363条原始注释中1272条绑定当前源，91条未绑定；其中9条是保留的V6历史孤儿，其余来自未采纳候选，均不进入活动卡池。
+
+仅改构建配置、版本化HCA打包及现有测试目标的专用smoke入口。运行时核心、Unified评分、60/.60门槛、排序权重、Factory+User完整扫描、六入口循环试听与持久化格式均保持G5实现。原dev.5/V6工作树和交付包保留。
+
+### 实际可发现性
+
+以下是已安装V7数据的合法前缀实测；序号为完整类别列表中的来源排名，不等于默认首屏。
+
+| 用途 / 来源 | 输入前缀 | 实际入口 |
+|---|---|---|
+| 开放发展 `V7_01_001` | C(8)–Em/B(4)–Am7(4)–Fmaj7(4) | 自身路线未满足资格；固定C、不限调式的Free Wish可抽到完整来源 |
+| 非传统循环 `V7_01_003` | C(4)–F/C(4) | Loop第21，可在完整列表/More查看 |
+| 高色彩流行 `V7_04_023` | Cmaj9–Dm9–Db7–C/E，各4QN | Color第1，输入Wish正例 |
+| 跨段落 `V7_03_008` | C(4)–G7(2)–C(2)–C/E(2)–F(2)–Dm7(4)–G7(4)–C(4) | Develop第1，续接G7–Eb及新调确认段 |
+
+相同 `04_023` 前缀在V6无Color路线；V7返回真实新增 **Fmaj7–G7#9b13–Am9**。原Resolve、Develop、Loop、Color均有代表返回，Enrich返回4个候选；Wish正例通过，`01_022/p8`仍以58.643＜60拒绝。开放发展来源可消费，但本轮不声称短前缀发现性已全部解决。
+
+[四条创作样本、完整和弦/QN及MIDI/WAV](../../HarmonyContinuation-v7i-delivery-20261026/CREATIVE_SAMPLES.md)供实机体验。它们是已采纳原创示范；机制资料不能作为作品级风格典型性证据。
+
+### 三条短前缀复核与裁决
+
+复用内容冻结时的[定向诊断](../../HarmonyContinuation-v7-evidence/engineering/diagnostics.log)，当前DB/HCA哈希及运行时核心未变。`01_001/p3`相似度.652681、资格59.3159；`01_010/p3`相似度.591884；`01_091/p5`相似度.599296，分别受既有60或.60资格限制。三者均完成扫描、精确对齐输入窗口，未见预算截断或已合格来源的排序异常。
+
+源码核对确认一个具体成本来源：`HarmonyAnalysis::baseFunction`把固定C大调输入推断为已知功能，而原创模板保留中性Unknown。前三例模板功能分别为[1,0,0]、[0,0,1]、[1,0,0,0,0]，输入推断分别为[1,2,2]、[3,4,1]、[1,3,4,2,2]；`ProgressionMatcher::pairCost`对已知/Unknown仍计算完整功能差异成本.48，结构权重和骨架表示也不同。这是已证实的惩罚成分；本轮未做消融，不将其称为全部数值差异的唯一原因。
+
+主代理复核认为，开放vi结尾、Am→F回接和G7→长C分别具有合理Develop/Loop/Resolve用途，未证实需纠正用途标签。保留中性模板和当前限制，不为过门槛强加传统功能标签。
+
+**提交决策端的最小提案，未实施：**单独审查Unknown是否应表示功能证据缺失，而非与已知功能冲突；保留已知功能间差异以及音级、性质、低音、音集和间隔约束。该调整涉及Unified匹配/资格语义，须另行裁决，不阻断本次集成。
+
+### 必要验证与证据范围
+
+一次Release开发构建通过；一次专用 `--v7-integration-smoke` 使用已安装DB/HCA通过1272条实际选择、HCA读取绑定、四条查询、V6同输入对照、Wish正负例、Enrich及四组完整MIDI往返/非静音Preview。已安装VST3的SDK moduleinfotool create/validate均exit0，类版本为dev.6，二进制包含完整BuildCommit。没有执行默认FactoryV6Focused、G5九项、完整安装生命周期、十二调或压力测试；未出现需要扩大性能检查的异常。
+
+一次独立TestRoot/HKCU测试安装exit0，日志确认事务commit/verified。build、正常包stage、隔离包stage的插件二进制一致（SHA-256 `75D35A23BD1024DBCD382CF8DAC6D382D256752A9E56AAB29DA7E10721BEF412`），正常/隔离stage完整bundle一致，落盘16文件清单通过。打包沿用外置Factory并附带CRT的既有合同，原始build bundle与安装bundle的文件集合不同；DB/HCA分别核验四处哈希一致。活动库选择7；V6历史DB/HCA及隔离个人库/收藏哨兵哈希保留。**范围限制：**测试夹具的旧active.txt误写为字面`6`加反引号n，不能证明有效active6状态的升级迁移；本次证明带V6历史文件的fresh install及保护，不重跑安装。验证脚本最初假定存在独立FactoryLibrary卸载键，核对源码和日志后确认合同只创建主应用键；此假设已纠正。完成后只清理该TestRoot安装，卸载exit0，隔离注册和托管V7/插件移除，V6历史与个人哨兵保持。
+
+完整命令、安装/模块/哈希证据及隔离清理状态见[交付RESULTS](../../HarmonyContinuation-v7i-delivery-20261026/RESULTS.md)、[BUILD_INFO](../../HarmonyContinuation-v7i-delivery-20261026/BUILD_INFO.json)和[SHA清单](../../HarmonyContinuation-v7i-delivery-20261026/SHA256SUMS.txt)；原始构建与smoke保存在同级 `HarmonyContinuation-v7i-validation-20261026/`。正常Setup没有被本任务执行，真实user.db及生产插件未访问或覆盖。
+
+### 安装入口、回退与验收
+
+[dev.6 Setup](../../HarmonyContinuation-v7i-delivery-20261026/HarmonyContinuation-0.11.0-dev.6-Setup.exe) SHA-256：`FE10815F0E02B413AC5DEDE94F52DBFE5E8BFA71987D49C7D845DE9EE6C11BC6`。
+
+关闭DAW后，由用户运行Setup并选择插件和Factory组件；About核对dev.6 / `40210d3` / Factory7。随后用上表输入及四条样本体验现代和声、循环试听和MIDI。工程及隔离安装验证通过，可进入真实DAW体验；本轮没有新的用户听评或真实宿主验收。
+
+回退入口保留：[dev.5 Setup](../../HarmonyContinuation-g5-delivery-20261025/HarmonyContinuation-0.11.0-dev.5-Setup.exe)，实测SHA-256为 `F5889E80069D923E9C07D94021D41DC64E47A860D545144E2B91D0703642DBC8`。需要回退时关闭DAW，使用受管理卸载保留用户/历史库，再安装dev.5插件及Factory6，About核对dev.5 / `b3d1fce`。此处为既有机制的操作说明，本轮未重跑降级生命周期。
+
+停止于开发包交付，不继续扩库。主代理负责集成、音乐语义及失败性质裁决；Luna执行明确实现、打包和必要测试。所有源码/数据/文档仅本地提交，未推送、合并main、建正式Tag或发布Release。
