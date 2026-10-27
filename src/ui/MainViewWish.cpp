@@ -157,12 +157,14 @@ bool MainView::currentWishCandidate(const ContinuationCandidate& candidate) cons
         session::continuationFingerprint(item->route.candidate)==session::continuationFingerprint(candidate);
 }
 void MainView::drawPrimaryTabs(CDrawContext* dc,const CompactLayoutResult& g) {
-    constexpr PhraseIntent intents[]{PhraseIntent::Resolve,PhraseIntent::Develop,PhraseIntent::Loop,PhraseIntent::Color};
-    for(std::size_t i=0;i<4;++i)compactButton(dc,compactIntentTabGeometry(g.intentToolbar,i),tIntent(intents[i]),CompactAction::Intent,{},i,
-        !wishMode_&&state_.productMode==session::ProductMode::Continue&&compactGroup_==i);
-    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,4),state_.locale==session::Locale::ZhCN?"升级进行":"Enrich",CompactAction::Enrichment,{},0,
+    const bool zh=state_.locale==session::Locale::ZhCN;
+    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,0,4),zh?"匹配优先":"Match first",CompactAction::Match,{},0,
+        !wishMode_&&state_.productMode==session::ProductMode::Continue&&!state_.inspirationPriority);
+    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,1,4),zh?"灵感优先":"Inspiration first",CompactAction::Inspiration,{},0,
+        !wishMode_&&state_.productMode==session::ProductMode::Continue&&state_.inspirationPriority);
+    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,2,4),zh?"升级进行":"Upgrade",CompactAction::Enrichment,{},0,
         !wishMode_&&state_.productMode==session::ProductMode::Enrich);
-    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,5),state_.locale==session::Locale::ZhCN?"和弦祈愿":"Chord Wish",CompactAction::Wish,{},0,wishMode_);
+    compactButton(dc,compactIntentTabGeometry(g.intentToolbar,3,4),zh?"和声祈愿":"Harmony Wish",CompactAction::Wish,{},0,wishMode_);
 }
 
 void MainView::drawWish(CDrawContext* dc,const CompactLayoutResult& g) {

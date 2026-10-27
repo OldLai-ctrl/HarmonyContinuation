@@ -133,7 +133,7 @@ public:
         auto loaded=demo::loadScenario(path);
         if (!loaded) { if (main_) main_->setDropReport("Scenario error",loaded.error); return false; }
         scenario_=std::move(loaded.scenario);
-        recommendations_={};enrichments_={};recommendationReady_=false;
+        recommendations_={};exactRecommendations_={};enrichments_={};recommendationReady_=false;
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_={};state_.editorWidth=width;state_.editorHeight=height;
         state_.forcedKey=scenario_.forcedKey; state_.style=scenario_.style; state_.intent=scenario_.intent;
@@ -154,7 +154,7 @@ public:
             benchmarkDescription_=item.name+"\n"+item.notes+"\n";
             if(main_)main_->setSnapshotMode(false);
             scenario_=item.scenario;
-            recommendations_={};enrichments_={};recommendationReady_=false;
+            recommendations_={};exactRecommendations_={};enrichments_={};recommendationReady_=false;
             const auto width=state_.editorWidth,height=state_.editorHeight;
             state_={};state_.editorWidth=width;state_.editorHeight=height;
             state_.forcedKey=scenario_.forcedKey;state_.style=scenario_.style;state_.intent=scenario_.intent;
@@ -206,12 +206,14 @@ public:
         pollMidiImport();
         if (frame_) frame_->idle();
         if (auto result=worker_.takeLatest()) {
-            if (!snapshotLoaded_) {
+            if (!snapshotLoaded_&&result->generation==recommendationGeneration_&&
+                (!main_||main_->acceptsRecommendationGeneration(result->generation))) {
             ratingCandidate_.reset();
             analysis_=std::move(result->analysis); recommendations_=std::move(result->recommendations);
+            exactRecommendations_=std::move(result->exactRecommendations);
             enrichments_=std::move(result->enrichments);recommendationReady_=true;
-            if (main_) { main_->setAnalysis(analysis_); main_->setMatches(recommendations_.matches,
-                result->error.empty()?"Ready":result->error); main_->setRecommendations(recommendations_);
+            if (main_) { main_->setAnalysis(analysis_); main_->setMatches(activeRecommendations().matches,
+                result->error.empty()?"Ready":result->error); main_->setRecommendations(activeRecommendations());
                 main_->setEnrichments(enrichments_);
                 main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
             if(main_&&!midiImportSummary_.empty()){main_->setActionStatus(midiImportSummary_+" · "+std::string(localization::text(state_.locale,"midi.key"))+" "+
@@ -259,7 +261,7 @@ public:
         scenario_.meterNumerator=snap.meterNumerator; scenario_.meterDenominator=snap.meterDenominator;
         projectQN_=0;
         analysis_=analyzeHarmony(state_.imported.events,state_.analysisContext());
-        recommendations_={};
+        recommendations_={};exactRecommendations_={};
         const auto group=snap.candidate.intent==PhraseIntent::Develop?1:snap.candidate.intent==PhraseIntent::Loop?2:
             snap.candidate.intent==PhraseIntent::Color?3:0;
         if(snap.candidateAvailable)recommendations_.groups[group].push_back(snap.candidate);
@@ -298,6 +300,11 @@ private:
     demo::Scenario scenario_;
     HarmonicAnalysisResult analysis_;
     RecommendationSet recommendations_;
+    RecommendationSet exactRecommendations_;
+    std::uint64_t recommendationGeneration_{};
+    const RecommendationSet& activeRecommendations() const noexcept {
+        return snapshotLoaded_||state_.inspirationPriority?recommendations_:exactRecommendations_;
+    }
     enrichment::EnrichmentResult enrichments_;
     bool recommendationReady_{};
     bool playing_{};
@@ -311,6 +318,7 @@ private:
     enum class AuditionKind { None, Continuation, Enrichment };
     AuditionKind auditionKind_{AuditionKind::None};
     preview::PreparedPreview auditionClip_{};
+    std::optional<ContinuationCandidate> auditionRecommendation_;
     preview::PlaybackState auditionState_{preview::PlaybackState::Stopped};
     preview::PlaybackState latestRequestedState_{preview::PlaybackState::Stopped};
     std::uint64_t transportSerial_{},latestTransportSerial_{},nextClipId_{},auditionClipId_{},auditionSeekId_{};
@@ -344,7 +352,7 @@ private:
             if(main_){main_->setPreviewPosition({},0,0);main_->setPreviewTransport(preview::PlaybackState::Stopped,false,false,transportPending_);}
             return;
         }
-        auditionId_.clear();auditionKind_=AuditionKind::None;auditionState_=preview::PlaybackState::Stopped;
+        auditionId_.clear();auditionKind_=AuditionKind::None;auditionState_=preview::PlaybackState::Stopped;auditionRecommendation_.reset();
         auditionClipId_=auditionSeekId_=0;auditionPositionQN_=auditionTotalQN_=0;auditionClip_={};
         const bool queued=queueTransport(preview::PlaybackState::Stopped,0,0,0);
         if(main_){main_->setPreviewPosition({},0,0);main_->setPreviewTransport(preview::PlaybackState::Stopped,false,false,transportPending_);}
@@ -383,7 +391,9 @@ private:
         }
     }
     const ContinuationCandidate* findRecommendation(const std::string& id) const {
-        for(const auto& group:recommendations_.groups)for(const auto& candidate:group)if(candidate.id==id)return &candidate;
+        if(auditionId_==id&&auditionRecommendation_)return &*auditionRecommendation_;
+        for(const auto* bank:{&activeRecommendations(),state_.inspirationPriority?&exactRecommendations_:&recommendations_})
+            for(const auto& group:bank->groups)for(const auto& candidate:group)if(candidate.id==id)return &candidate;
         return nullptr;
     }
     const enrichment::EnrichmentCandidate* findEnrichment(const std::string& id) const {
@@ -411,10 +421,11 @@ private:
     void previewContinuation(const ContinuationCandidate& candidate,preview::PlaybackState state,
                              std::optional<double> requestedQN={}) {
         if(!main_)return;
+        const auto frozen=candidate;
         const auto route=main_->continuationRoute(candidate);
         const auto built=route?preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
             preview::BuildResult{{},route.error};
-        installPreview(candidate.id,built,AuditionKind::Continuation,state,requestedQN);
+        if(installPreview(frozen.id,built,AuditionKind::Continuation,state,requestedQN))auditionRecommendation_=frozen;
     }
     void previewEnrichment(const enrichment::EnrichmentCandidate& candidate,preview::PlaybackState state,
                            std::optional<double> requestedQN={}) {
@@ -485,16 +496,21 @@ private:
         recommendationReady_=false;
         RecommendationRequest request{state_.style,state_.intent,state_.constraints,state_.tendency};
         request.inspirationPriority=state_.inspirationPriority;
+        request.prepareBothViews=true;
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
             rankingOnly,state_.imported.revision);
+        recommendationGeneration_=generation;
         if (main_) main_->setWorkerStatus(generation,0,true,0,0);
     }
     void applyState(const session::PluginSessionState& next) {
         const auto recompute=session::recomputeScope(state_,next);
+        const bool bankChanged=state_.inspirationPriority!=next.inspirationPriority;
         if(recompute!=session::RecomputeScope::None&&!auditionId_.empty())stopAudition();
         const auto width=state_.editorWidth,height=state_.editorHeight;
         state_=next;state_.editorWidth=width;state_.editorHeight=height;
-        if (main_) main_->setSessionState(state_);
+        if (main_) {main_->setSessionState(state_);if(bankChanged&&!snapshotLoaded_) {
+            main_->setMatches(activeRecommendations().matches,"Ready");main_->setRecommendations(activeRecommendations(),true);
+        }}
         if (!snapshotLoaded_ && recompute!=session::RecomputeScope::None) submit(recompute==session::RecomputeScope::Ranking);
     }
     std::string exportSequence(const preview::Sequence& sequence,const ContinuationCandidate* candidate,

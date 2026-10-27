@@ -14,6 +14,7 @@ struct WorkerResult {
     std::uint64_t generation{};
     HarmonicAnalysisResult analysis;
     RecommendationSet recommendations;
+    RecommendationSet exactRecommendations;
     enrichment::EnrichmentResult enrichments;
     std::string error;
     double computationMs{};

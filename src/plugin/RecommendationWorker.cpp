@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "core/ContextualContinuation.h"
 #include "core/RecommendationPolicy.h"
 #include "library/LibraryStore.h"
 #include <memory>
@@ -258,7 +259,14 @@ void RecommendationWorker::run() {
                     if (!index) result.error=loadError;
                 } else if (index && cachedQuery) {
                     const auto weights=recommendationWeights();
-                    result.recommendations = recommendContinuations(*cachedQuery, *index, task.request, weights);
+                    if(task.request.prepareBothViews) {
+                        auto exactRequest=task.request;exactRequest.inspirationPriority=false;
+                        result.exactRecommendations=recommendContinuations(*cachedQuery,*index,exactRequest,weights);
+                        auto inspirationRequest=task.request;inspirationRequest.inspirationPriority=true;
+                        inspirationRequest.preferredIntent.reset();
+                        result.recommendations=recommendContinuations(*cachedQuery,*index,inspirationRequest,weights);
+                        result.recommendations.inspirationOrder=mixedInspirationOrder(result.recommendations);
+                    } else result.recommendations=recommendContinuations(*cachedQuery,*index,task.request,weights);
                 } else result.error = index ? "推荐查询不可用。" : loadError;
             } else result.error = "超过 64 个和弦；推荐暂不计算。";
         } catch (const std::exception& e) { result.error = e.what(); }

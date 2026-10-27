@@ -123,7 +123,7 @@ std::string Controller::exportHostDiagnostics(void* owner) noexcept {
         file<<"\nLast input route: "<<hostEnvironment_.lastDropType<<"\nGeneration="<<recommendationGeneration_
             <<" importedRevision="<<importedProgression_.revision<<" status="<<matchStatus_<<"\n"<<lastInputDiagnostic_;
         if(recommendationResultReady_)
-            file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,recommendations_);
+            file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,activeRecommendations());
         else file<<"\nRECOMMENDATION_DIAGNOSTICS=PENDING\n";
         if(view_)file<<view_->recommendationUiDiagnostics();
         file.flush();return file?"Local input and recommendation diagnostics exported":"Export failed";
@@ -188,11 +188,11 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         recommendationRequest_.constraints=sessionState_.constraints;
         recommendationRequest_.tendency=sessionState_.tendency;
         recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
-        analysis_={}; matches_.clear(); recommendations_={}; recommendationResultReady_=false;
+        analysis_={}; matches_.clear(); recommendations_={};exactRecommendations_={}; recommendationResultReady_=false;
         if (view_) {
             view_->setSessionState(sessionState_);
             view_->clearSessionDirty();
-            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
+            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_);
             view_->setHostText(hostDiagnostics());
         }
         if (resizeRequest_) resizeRequest_(static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight));
@@ -241,7 +241,7 @@ void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> t
             view_->clearSessionDirty();
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
-            view_->setRecommendations(recommendations_);
+            view_->setRecommendations(activeRecommendations());
             view_->setEnrichments(enrichments_);
             if(editorUiState_)view_->restoreEditorUiState(*editorUiState_);
             view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
@@ -262,10 +262,12 @@ void Controller::pollRecommendation() noexcept {
         pollMidiImport();
         if (!recommendationWorker_) return;
         auto latest = recommendationWorker_->takeLatest();
-        if (!latest || latest->generation!=recommendationGeneration_) return;
+        if (!latest || latest->generation!=recommendationGeneration_||
+            (view_&&!view_->acceptsRecommendationGeneration(latest->generation))) return;
         stopPreview(); // A new representative can change the complete authored route.
         analysis_ = std::move(latest->analysis);
         recommendations_ = std::move(latest->recommendations);
+        exactRecommendations_=std::move(latest->exactRecommendations);
         recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
         enrichmentResultReady_=!analysis_.full.empty();
         enrichments_=std::move(latest->enrichments);
@@ -275,14 +277,14 @@ void Controller::pollRecommendation() noexcept {
         userCount_=latest->userCount;
         if(latest->factoryVersion>0)sessionState_.factoryLibraryVersion=static_cast<std::uint32_t>(latest->factoryVersion);
         factorySha256_=latest->factorySha256.empty()?"unavailable":latest->factorySha256;
-        matches_ = recommendations_.matches;
+        matches_ = activeRecommendations().matches;
         matchStatus_ = latest->error.empty()
             ? "RECOMMEND：" + std::to_string(matches_.size()) + " 条匹配已计算"
             : "RECOMMEND：" + latest->error;
         if (view_) {
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
-            view_->setRecommendations(recommendations_);
+            view_->setRecommendations(activeRecommendations());
             view_->setEnrichments(enrichments_);
             view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
             view_->setHostText(hostDiagnostics());
@@ -300,6 +302,7 @@ void Controller::submitRecommendation(bool rankingOnly) {
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     auto analysisContext=sessionState_.analysisContext();
     recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
+    recommendationRequest_.prepareBothViews=true;
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
@@ -309,7 +312,7 @@ bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidat
     if(candidate.id.starts_with("wish-v1:"))return view_&&view_->currentWishCandidate(candidate);
     if(!recommendationResultReady_)return false;
     const auto fingerprint=session::continuationFingerprint(candidate);
-    for(const auto& group:recommendations_.groups)for(const auto& current:group)
+    for(const auto* bank:{&recommendations_,&exactRecommendations_})for(const auto& group:bank->groups)for(const auto& current:group)
         if(current.id==candidate.id&&current.rankingScore==candidate.rankingScore&&
             current.primaryTemplate==candidate.primaryTemplate&&current.key.tonic==candidate.key.tonic&&
             current.key.mode==candidate.key.mode&&current.matchStart==candidate.matchStart&&
@@ -335,10 +338,14 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
         recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
         recommendationRequest_.inspirationPriority=next.inspirationPriority;
-        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset(); }
+        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};exactRecommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset(); }
         if (view_) {
             view_->setSessionState(sessionState_);
-            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_); }
+            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_); }
+            else if(old.inspirationPriority!=next.inspirationPriority) {
+                matches_=activeRecommendations().matches;
+                view_->setMatches(matches_,matchStatus_);view_->setRecommendations(activeRecommendations(),true);
+            }
         }
         if (recompute!=harmony::session::RecomputeScope::None)
             submitRecommendation(recompute==harmony::session::RecomputeScope::Ranking);
@@ -606,15 +613,18 @@ bool Controller::buildPreviewTarget(const std::string& id,PreviewTarget& target,
                                     harmony::preview::BuildResult& built) const {
     if(view_)if(const auto* wish=view_->wishItem(id)){
         const auto& candidate=wish->route.candidate;if(!currentCandidate(candidate))return false;
-        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore};
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate};
         built=harmony::preview::buildSequence(wish->route.imported,&candidate,effectivePreviewBPM());return bool(built);
     }
-    if (recommendationResultReady_&&view_) for(const auto& group:recommendations_.groups) for(const auto& candidate:group) {
+    if (recommendationResultReady_&&view_) for(const auto* bank:{&activeRecommendations(),
+        sessionState_.inspirationPriority?&exactRecommendations_:&recommendations_})for(const auto& group:bank->groups) for(const auto& candidate:group) {
         if(candidate.id!=id)continue;
+        if(previewTarget_&&previewTarget_->id==id&&previewTarget_->kind==PreviewTargetKind::Continuation&&
+            (previewTarget_->rankingScore!=candidate.rankingScore||previewTarget_->sourceId!=candidate.primaryTemplate))continue;
         if(!currentCandidate(candidate))return false;
         const auto route=view_->continuationRoute(candidate);
         if(!route){built={{},route.error};return false;}
-        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore};
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate};
         built=harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM());return bool(built);
     }
     if (enrichmentResultReady_) for(const auto& group:enrichments_.groups) for(const auto& candidate:group) {
@@ -632,7 +642,7 @@ void Controller::replayPreview(const PreviewTarget& target,harmony::preview::Pla
     try {
         PreviewTarget current;harmony::preview::BuildResult built;
         if(!buildPreviewTarget(target.id,current,built)||current.kind!=target.kind||current.fingerprint!=target.fingerprint||
-           current.rankingScore!=target.rankingScore) {
+           current.rankingScore!=target.rankingScore||current.sourceId!=target.sourceId) {
             if(view_)view_->setActionStatus("试听目标已变化，请重新选择");stopPreview();return;
         }
         playPreview(current,built,state,positionQN);
@@ -646,7 +656,7 @@ void Controller::audition(const harmony::ContinuationCandidate& candidate) noexc
            previewPlaybackState_!=harmony::preview::PlaybackState::Stopped){stopPreview();return;}
         if(!view_)return;
         const auto route=view_->continuationRoute(candidate);
-        playPreview({candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore},
+        playPreview({candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate},
             route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
                   harmony::preview::BuildResult{{},route.error},harmony::preview::PlaybackState::Playing,std::nullopt);
     } catch (...) { if(view_)view_->setActionStatus("试听失败"); }
@@ -1070,14 +1080,14 @@ void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
                 sessionState_.meterNumerator.reset();sessionState_.meterDenominator.reset();
                 analysis_ = {};
                 matches_.clear();
-                recommendations_ = {};recommendationResultReady_=false;enrichments_={};editorUiState_.reset();
+                recommendations_ = {};exactRecommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset();
                 matchStatus_ = "RECOMMEND：后台分析中…";
                 submitRecommendation();
                 if (view_) {
                     view_->setSessionState(sessionState_);
                     view_->setAnalysis(analysis_);
                     view_->setMatches(matches_, matchStatus_);
-                    view_->setRecommendations(recommendations_);view_->setEnrichments(enrichments_);
+                    view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_);
                 }
             } else {
                 parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";

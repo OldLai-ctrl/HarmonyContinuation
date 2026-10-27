@@ -15,6 +15,7 @@
 #include "library/LibraryStore.h"
 #include "session/PluginSessionState.h"
 #include "core/RecommendationPolicy.h"
+#include "core/ContextualContinuation.h"
 #include "preview/PreviewExchange.h"
 #include "pluginterfaces/vst/ivstmessage.h"
 #include "preview/OfflinePreviewRenderer.h"
@@ -49,6 +50,7 @@
 #include <limits>
 #include <set>
 #include <functional>
+#include <utility>
 using namespace harmony;
 using namespace Steinberg;
 using namespace Steinberg::Vst;
@@ -263,7 +265,9 @@ private:
     AudioBusBuffers input_{},output_{};ProcessData data_{};
 };
 }
+#include "G7UiFocused.h"
 int main(int argc,char** argv){
+    if(argc==4&&std::string(argv[1])=="--g7-ui") return runG7UiHarness(argv[2],argv[3]);
     if(argc==4&&(std::string(argv[1])=="--empty-modes-ui"||std::string(argv[1])=="--g5-ui")) {
         const bool g5Ui=std::string(argv[1])=="--g5-ui";
         const auto com=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);

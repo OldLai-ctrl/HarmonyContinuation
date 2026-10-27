@@ -107,6 +107,10 @@ private:
     harmony::HarmonicAnalysisResult analysis_;
     std::vector<harmony::MatchResult> matches_;
     harmony::RecommendationSet recommendations_;
+    harmony::RecommendationSet exactRecommendations_;
+    const harmony::RecommendationSet& activeRecommendations() const noexcept {
+        return sessionState_.inspirationPriority?recommendations_:exactRecommendations_;
+    }
     bool recommendationResultReady_{};
     bool enrichmentResultReady_{};
     std::string factorySha256_{"PENDING"};
@@ -138,6 +142,7 @@ private:
         PreviewTargetKind kind{};
         std::string fingerprint;
         float rankingScore{};
+        std::string sourceId;
     };
     std::string previewCandidateId_;
     std::optional<PreviewTarget> previewTarget_;

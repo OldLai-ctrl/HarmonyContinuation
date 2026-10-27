@@ -491,7 +491,18 @@ void MainView::restoreEditorUiState(const EditorUiState& s){
     wishSelected_=s.wishSelected;wishExpanded_=s.wishExpanded;wishScroll_=std::isfinite(s.wishScroll)?std::max(0.,s.wishScroll):0.;
     if(wishWorkspace_)wishView_=wishWorkspace_->view();
     browsePages_=s.browsePages;browseScroll_=s.browseScroll;browseSelected_=s.browseSelected;
-    if(s.browseCategory<4)compactGroup_=s.browseCategory;
+    if(!wishMode_){
+        if(s.browseCategory<4){
+            compactGroup_=s.browseCategory;
+            state_.productMode=session::ProductMode::Continue;
+            state_.inspirationPriority=false;
+        }else if(s.browseCategory==4){
+            state_.productMode=session::ProductMode::Enrich;
+        }else if(s.browseCategory==6){
+            state_.productMode=session::ProductMode::Continue;
+            state_.inspirationPriority=true;
+        }
+    }
     compactSelected_=browseSelected_[browseCategory()];
     compactScroll_=std::isfinite(browseScroll_[browseCategory()])?std::max(0.,browseScroll_[browseCategory()]):0.;
     overviewOpen_=false;browseDirty_=true;
@@ -579,9 +590,10 @@ bool MainView::runStructureSmoke() {
     return analyzeHarmony(phrase,input.analysisContext()).skeletonIndices.size()==phrase.size();
 }
 void MainView::setMatches(const std::vector<MatchResult>& m, std::string status) { matches_=m; matchStatus_=std::move(status); invalid(); }
-void MainView::setRecommendations(const RecommendationSet& r) {
+void MainView::setRecommendations(const RecommendationSet& r,bool navigationOnly) {
     const auto oldSelected=selectedCandidate()?selectedCandidate()->id:std::string{};
     const auto oldFingerprint=selectedCandidate()?session::continuationFingerprint(*selectedCandidate()):std::string{};
+    const auto oldPins=state_.pinnedCandidateIds;
     seekGesture_.reset();previewSeekHoverId_.clear();previewSeekCursorHover_=false;recommendations_=r;compactRibbonScroll_.clear();if(!findCandidate(compactSelected_))compactSelected_.clear();
     colorPaths_.clear();colorRankDirty_=true;enrichmentColorRankDirty_=true;browseDirty_=true;
     continuationScroll_.fill(0.);
@@ -589,15 +601,14 @@ void MainView::setRecommendations(const RecommendationSet& r) {
         session::continuationFingerprint(*selectedCandidate())!=oldFingerprint)) selectedCandidate_.reset();
     const bool resolved=std::any_of(recommendations_.groups.begin(),recommendations_.groups.end(),
         [](const auto& group){return !group.empty();});
-    const auto oldPins=state_.pinnedCandidateIds;
-    if (resolved) state_.resolvePins(recommendations_);
-    pinnedSnapshots_.clear();
+    if (resolved&&!navigationOnly) state_.resolvePins(recommendations_);
+    if(!navigationOnly)pinnedSnapshots_.clear();
     for (const auto& id:state_.pinnedCandidateIds) {
         const auto found=std::find_if(pinnedSnapshots_.begin(),pinnedSnapshots_.end(),[&](const auto& c){return c.id==id;});
         if (found==pinnedSnapshots_.end()) for (const auto& group:recommendations_.groups)
             for (const auto& candidate:group) if (candidate.id==id) { pinnedSnapshots_.push_back(candidate); break; }
     }
-    if (resolved && oldPins!=state_.pinnedCandidateIds && actions_.stateChanged) actions_.stateChanged(state_);
+    if (!navigationOnly&&resolved&&oldPins!=state_.pinnedCandidateIds&&actions_.stateChanged)actions_.stateChanged(state_);
     invalid();
 }
 void MainView::setEnrichments(const enrichment::EnrichmentResult& value) {
@@ -2219,7 +2230,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         }
         const auto completion=c.channel==RecommendationChannel::Exact?evaluateIntentCompletion(c,phraseStart,current):c.completion;
         const auto hint=candidateHint(c);std::optional<color::RankReason> reason;bool promoted=false;
-        if(colorPreference_!=color::Preference::Off) {
+        const bool mixedInspiration=state_.productMode==session::ProductMode::Continue&&state_.inspirationPriority;
+        if(!mixedInspiration&&colorPreference_!=color::Preference::Off) {
             refreshColorRanking();const auto [group,index]=*selectedCandidate_;
             const auto& rank=colorRanks_[group];reason=rank.decisions[index].reason;
             promoted=static_cast<std::size_t>(std::find(rank.order.begin(),rank.order.end(),index)-rank.order.begin())<index;
@@ -2235,7 +2247,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             if(c.originCenter&&c.targetCenter)add(formatKey(*c.originCenter)+" → "+formatKey(*c.targetCenter),muted);
             if(state_.debugExpanded)paragraph(c.connectionReason);
         } else if(c.id.starts_with("g6:"))paragraph(state_.locale==session::Locale::ZhCN?
-            "Snapshot3 已冻结实际演奏和后句来源 ID；语境接缝元数据未持久保存。":"Snapshot3 preserves the actual performance and suffix source ID; seam metadata was not persisted.");
+            "Snapshot3 已冻结实际演奏和后句来源 ID；来源通道与接缝元数据未持久保存。":"Snapshot3 preserves the actual performance and suffix source ID; source channel and seam metadata were not persisted.");
         std::vector<std::string> otherKeys;
         for(const auto& source:c.evidence) {
             const auto key=formatKey(source.key);
@@ -2247,12 +2259,26 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 std::string("Exploratory continuation: passes basic matching; musical intent evidence is insufficient.")):
             functionalWhy(completion,state_.locale);
         if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
-        const auto explanation=explainWhy(functional,hint,state_.locale,colorPreference_,reason,promoted);
+        const auto explanation=explainWhy(functional,hint,state_.locale,
+            mixedInspiration?color::Preference::Off:colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
         if(state_.debugExpanded) {
             add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);
             addMelody(c.melodyCompatibility);
-            add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+(c.channel==RecommendationChannel::Exact?t("inspector.score"):
+            if(state_.tab==session::Tab::Recommend&&browseCategory()==6){
+                const bool frozenSnapshot=c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact;
+                if(frozenSnapshot)add(state_.locale==session::Locale::ZhCN?
+                    "冻结演奏 · 来源通道/接缝元数据未保存":"Frozen performance · source channel/seam metadata not saved",muted);
+                else {
+                    const auto direction=c.direction==CreativeDirection::Stable?(state_.locale==session::Locale::ZhCN?"稳定":"Stable"):
+                        c.direction==CreativeDirection::Rich?(state_.locale==session::Locale::ZhCN?"丰富":"Rich"):
+                        (state_.locale==session::Locale::ZhCN?"大胆":"Bold");
+                    const auto channel=c.channel==RecommendationChannel::Exact?(state_.locale==session::Locale::ZhCN?"直接续写":"Direct continuation"):
+                        c.channel==RecommendationChannel::PhraseTransition?(state_.locale==session::Locale::ZhCN?"跨段转接":"Cross-segment transition"):
+                        (state_.locale==session::Locale::ZhCN?"局部语境续写":"Local contextual continuation");
+                    add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+direction+" · "+channel,muted);
+                }
+            }else add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+(c.channel==RecommendationChannel::Exact?t("inspector.score"):
                 (state_.locale==session::Locale::ZhCN?std::string("通道内排序分"):std::string("Within-channel rank")))+" "+fixed(c.rankingScore,1),muted);
             add(t("inspector.completion")+" "+fixed(completion.score,2),muted);
             Progression voiced=state_.imported.events;

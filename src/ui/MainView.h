@@ -50,9 +50,9 @@ public:
         std::vector<std::string> pinnedEnrichmentIds;
         bool showColorHints{true};
         bool detailedCards{};
-        std::array<std::size_t,5> browsePages{};
-        std::array<double,5> browseScroll{};
-        std::array<std::string,5> browseSelected{};
+        std::array<std::size_t,7> browsePages{};
+        std::array<double,7> browseScroll{};
+        std::array<std::string,7> browseSelected{};
         std::size_t browseCategory{};
         color::Preference colorPreference{color::Preference::Off};
     };
@@ -107,7 +107,7 @@ public:
     void setProgressionSession(const ImportedProgressionSession&);
     void setAnalysis(const HarmonicAnalysisResult&);
     void setMatches(const std::vector<MatchResult>&, std::string status);
-    void setRecommendations(const RecommendationSet&);
+    void setRecommendations(const RecommendationSet&,bool navigationOnly=false);
     void setEnrichments(const enrichment::EnrichmentResult& value);
     void setPreviewPosition(std::string candidateId,double positionQN,double totalQN);
     void setPreviewTransport(preview::PlaybackState,bool hostBackend,bool hostAvailable,bool pending=false);
@@ -119,6 +119,7 @@ public:
     void pollWish();
     bool runEmptyModeUiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>&);
     bool runG5UiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>&);
+    bool runG7UiSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     bool runWishSmoke(VSTGUI::CDrawContext*,const std::function<void(const std::string&)>& capture = {});
     void setActionStatus(std::string status) { actionStatus_=std::move(status); invalid(); }
     void setPlaybackPosition(std::optional<double> projectQN, bool playing);
@@ -128,6 +129,7 @@ public:
                     std::string error = {});
     void setWorkerStatus(std::uint64_t generation, double ms, bool busy, std::size_t factoryCount,
                          std::size_t userCount, bool recommendationResultReady = false);
+    bool acceptsRecommendationGeneration(std::uint64_t generation) const noexcept { return generation==generation_; }
     void drawRect(VSTGUI::CDrawContext*, const VSTGUI::CRect&) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint&, const VSTGUI::CButtonState&) override;
     VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint&,const VSTGUI::CButtonState&) override;
@@ -156,11 +158,12 @@ private:
     enum class CompactAction { Select, Audition, Midi, Details, Density, Overview, PagePrevious, PageNext,
         Wish, WishPreset, WishAdvanced, WishInput, WishClear, WishTonic, WishMode, WishStrict, WishStyle, WishColor,
         WishOne, WishTen, WishAgain, WishSnapshot, WishCopy, WishHistory,
-        OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
+        OverviewClose, OverviewCopy, OverviewSelect, Match, Intent, Enrichment, Key, Style,
         Advanced, Inspiration, Library, Import, FullView, InputChord, Play, Pause, Stop, Repeat, Backend, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
         std::optional<VSTGUI::CRect> clip;
+        std::size_t group{};
         bool contains(VSTGUI::CPoint p) const {
             if(clip&&!clip->pointInside(p))return false;
             if(!rect.pointInside(p))return false;
@@ -190,17 +193,20 @@ private:
     bool compactInCards_{};
     std::string compactSelected_;
     std::size_t compactGroup_{};
-    std::array<std::vector<BrowseEntry>,5> browseRows_;
-    std::array<std::size_t,5> browsePages_{};
-    std::array<double,5> browseScroll_{};
-    std::array<std::string,5> browseSelected_{};
+    std::array<std::vector<BrowseEntry>,7> browseRows_;
+    std::array<std::size_t,7> browsePages_{};
+    std::array<double,7> browseScroll_{};
+    std::array<std::string,7> browseSelected_{};
     bool browseDirty_{true},overviewOpen_{};
     double overviewScroll_{},overviewScrollMax_{};
     UiRect overviewRect_,overviewBody_;
-    std::size_t browseCategory() const {return state_.productMode==session::ProductMode::Enrich?4:compactGroup_;}
+    std::size_t browseCategory() const {
+        return wishMode_?5:state_.productMode==session::ProductMode::Enrich?4:
+            state_.inspirationPriority?6:compactGroup_;
+    }
     void refreshBrowse();
     const std::vector<BrowseEntry>& browseRows();
-    void changeBrowseCategory(std::size_t);
+    void changeBrowseCategory(std::size_t,bool updateMatchIntent=true);
     void focusBrowseEntry(std::size_t);
     void drawBrowseControls(VSTGUI::CDrawContext*,const CompactLayoutResult&);
     void drawRecommendationOverview(VSTGUI::CDrawContext*);
@@ -220,7 +226,7 @@ private:
     void drawCompactTransport(VSTGUI::CDrawContext*);
     bool onCompactMouseDown(VSTGUI::CPoint&);
     void compactButton(VSTGUI::CDrawContext*,UiRect,const std::string&,CompactAction,
-        std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false);
+        std::string id={},std::size_t index=0,bool selected=false,bool enabled=true,bool circular=false,std::size_t group=0);
     void drawCompactRibbon(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,UiRect);
     void drawRelativeColorCurve(VSTGUI::CDrawContext*,const preview::SourceRouteResult&,std::optional<KeySignature>,UiRect);
     static VSTGUI::CColor enrichmentProvenanceColor(enrichment::EnrichmentProvenanceKind,bool accent=false) noexcept;

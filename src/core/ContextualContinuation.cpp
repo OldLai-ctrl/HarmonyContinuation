@@ -376,4 +376,55 @@ const char* recommendationChannelName(RecommendationChannel c) noexcept {
     }
 }
 int recommendationQualityTier(const ContinuationCandidate& c) noexcept { return qualityTier(c); }
+std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSet& set) {
+    if(!set.inspirationOrder.empty())return set.inspirationOrder;
+    struct Item { RecommendationPosition position; std::array<std::string,7> features; };
+    std::vector<Item> pool;
+    std::set<std::string> identities;
+    for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
+        const auto& c=set.groups[g][i];
+        if(!c.baseQualified||!c.hardConstraintsPassed||!std::isfinite(c.rankingScore)||c.continuation.empty())continue;
+        if(identities.insert(continuationMusicFingerprint(c)).second)pool.push_back({{g,i},features(c)});
+    }
+    const auto candidate=[&](std::size_t i)->const ContinuationCandidate& {const auto p=pool[i].position;return set.groups[p.group][p.index];};
+    const auto sourceClass=[](const ContinuationCandidate& c) {
+        return c.channel==RecommendationChannel::Exact?0:c.channel==RecommendationChannel::PhraseTransition?2:1;
+    };
+    const auto qualityBand=[](const ContinuationCandidate& c) {
+        if(c.exploratory)return 0;
+        if(c.channel==RecommendationChannel::Exact)return c.eligibilityScore>=70?2:1;
+        // A reviewed phrase does not confer an independently reviewed seam.
+        return c.provenance==ConnectionProvenance::AlgorithmAssessed?1:c.creativeQuality.tier;
+    };
+    std::array<std::size_t,3> directions{},sources{};
+    std::array<std::map<std::string,int>,7> seen;
+    std::vector<bool> used(pool.size());
+    std::vector<RecommendationPosition> order;order.reserve(pool.size());
+    constexpr float directionTargets[]{.2f,.5f,.3f},sourceTargets[]{.25f,.4f,.35f};
+    constexpr float diversityWeights[]{6,5,8,4,3,2,2};
+    for(std::size_t slot=0;slot<pool.size();++slot) {
+        std::size_t best=pool.size();float bestUtility=-1e9f;
+        for(std::size_t i=0;i<pool.size();++i)if(!used[i]) {
+            const auto& c=candidate(i);
+            const auto d=std::size_t(c.direction),s=std::size_t(sourceClass(c));
+            float penalty{};
+            for(std::size_t f=0;f<7;++f) {
+                const auto found=seen[f].find(pool[i].features[f]);
+                if(found!=seen[f].end())penalty+=diversityWeights[f]*float(found->second);
+            }
+            const float directionDeficit=directionTargets[d]*float(slot+1)-float(directions[d]);
+            const float sourceDeficit=sourceTargets[s]*float(slot+1)-float(sources[s]);
+            const float utility=qualityBand(c)*6.f+8.f*(directionDeficit+sourceDeficit)-penalty;
+            const bool better=best==pool.size()||(!c.exploratory&&candidate(best).exploratory)||
+                (c.exploratory==candidate(best).exploratory&&(utility>bestUtility+.001f||
+                    (std::abs(utility-bestUtility)<.001f&&c.channel==candidate(best).channel&&c.rankingScore>candidate(best).rankingScore)));
+            if(better){best=i;bestUtility=utility;}
+        }
+        used[best]=true;const auto& c=candidate(best);
+        ++directions[std::size_t(c.direction)];++sources[std::size_t(sourceClass(c))];
+        for(std::size_t f=0;f<7;++f)++seen[f][pool[best].features[f]];
+        order.push_back(pool[best].position);
+    }
+    return order;
+}
 }

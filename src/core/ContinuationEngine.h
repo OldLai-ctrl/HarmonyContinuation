@@ -101,6 +101,7 @@ struct RecommendationRequest {
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
     bool inspirationPriority{}; // runtime only; Session5 remains unchanged
+    bool prepareBothViews{}; // worker request only; navigation reuses two immutable result banks
 };
 // Output identity shared by ranking and presentation; omits explanatory key/intent.
 std::string continuationMusicFingerprint(const ContinuationCandidate&);
@@ -111,6 +112,7 @@ struct DiminishedInsertionDiagnostic {
     bool eligible{};
     float totalInsertionPenalty{}, originalPenalty{}, refund{}, scoreBefore{}, scoreAfter{};
 };
+struct RecommendationPosition { std::size_t group{}, index{}; };
 struct RecommendationSet {
     RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
     bool phase3aEnabled{}; // actual invocation, diagnostic only; never persisted
@@ -121,6 +123,7 @@ struct RecommendationSet {
     bool abstractChordCompatibility{}; // actual invocation, diagnostic only; never persisted
     std::size_t contextualExamined{}, contextualQualified{}, transitionExamined{}, transitionQualified{};
     double contextualMs{};
+    std::vector<RecommendationPosition> inspirationOrder; // prepared by the worker, actual candidate references
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     const MatchQuery&, const MatchResult&, const ProgressionTemplate&);
