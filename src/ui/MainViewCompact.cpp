@@ -1284,6 +1284,7 @@ bool MainView::runG7UiSmoke(CDrawContext* dc,const std::function<void(const std:
     try{
         state_.tab=session::Tab::Recommend;state_.uiZoomPercent=100;state_.locale=session::Locale::ZhCN;
         resizeLayout(800,780);setSnapshotMode(false);paint();
+        if(capture)capture("g7-home-zh.png");
         require(primaryCount()==4,"four primary entrances");
         require(!initialPlayingId.empty(),"G7 playback preservation requires a current candidate");
         require(state_.productMode==session::ProductMode::Continue&&state_.inspirationPriority&&!state_.intent,
@@ -1411,10 +1412,19 @@ bool MainView::runG7UiSmoke(CDrawContext* dc,const std::function<void(const std:
 
         click(CompactAction::Details,{},targetId);
         require(selectedCandidate()&&selectedCandidate()->id==targetId,"mixed details retain the selected source position");
-        paint();const auto detail=layout_.inspector;
+        paint();
+        const auto viewport=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom()).cardsViewport;
+        // A real source alignment adds vertical space. Scroll the details'
+        // action row into the visible card viewport before clicking Snapshot.
+        if(layout_.inspector.bottom>viewport.bottom) {
+            compactScroll_=std::min(compactScrollMax_,compactScroll_+layout_.inspector.bottom-viewport.bottom+4.);
+            paint();
+        }
+        const auto detail=layout_.inspector;
         require(detail.height()>0,"mixed details open");
         const double columnWidth=(detail.width()-28.)/4.;
         CPoint snapshotPoint{detail.left+14.+2.5*columnWidth,detail.bottom-20.};
+        require(viewport.contains(snapshotPoint.x,snapshotPoint.y),"Snapshot action is visible before the click");
         onMouseDown(snapshotPoint,CButtonState{kLButton});
         require(snapshotId==targetId&&snapshotFingerprint==targetFingerprint,"Snapshot callback receives the selected mixed object");
         require(inputSignature()==inputBefore,"all four entrances preserve input");
