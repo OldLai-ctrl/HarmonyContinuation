@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G6算法线 | `HarmonyContinuation-g6/` → `development/g6-harmony-engine-v2-20261027`；实现/BuildCommit `03fad728…` | dev.7/Factory7；[算法与音乐门禁](docs/G6_ENGINE_V2_REVIEW.md)，独立源码与构建，不安装 |
+| G6代表媒体及必要证据 | 同级 `HarmonyContinuation-g6-evidence/final-check/`；身份 `HarmonyContinuation-g6-evidence/identity.json` | 三输入、13组样本；原dev.6产物及真实用户库保持 |
 | Factory V7-I集成线 | `HarmonyContinuation-factory-v7-integration/` → `development/factory-v7-integration-20261026`；内容父提交`8cc16c1`，BuildCommit`40210d3` | dev.6/Factory7；[集成交付](docs/FACTORY_V7_REVIEW.md#v7-i-独立集成与开发交付2026-10-26)，不改原dev.5/V6工作树 |
 | V7-I开发包与验证 | 同级`HarmonyContinuation-v7i-delivery-20261026/`；原始证据`HarmonyContinuation-v7i-validation-20261026/` | 正常Setup未执行；独立TestRoot安装验证；四组媒体与SHA保留，真实DAW待验收 |
 | Factory V7 内容线 | `HarmonyContinuation-factory-v7/` → `development/factory-v7-20261025`；从G5交付`24bdc239`建立 | [V7门禁](docs/FACTORY_V7_REVIEW.md)；独立内容与工具，不安装/激活 |

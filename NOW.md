@@ -2,6 +2,14 @@
 
 ## 本轮工作与下一步
 
+### G6 / Harmony Engine V2（2026-10-27）
+
+独立分支 `development/g6-harmony-engine-v2-20261027`，实现/插件BuildCommit **`03fad728769de139d5016abb02db2a7f0e151cb9` / 0.11.0-dev.7 / Factory7 / 1272**，接手最新V7集成文档头`4a0402f`；原dev.6安装包及工作树保留。[集中交付与试听](docs/G6_ENGINE_V2_REVIEW.md)维护算法、音乐判断、三输入及兼容边界；[架构](docs/CONTINUATION_ENGINE.md#g6--harmony-engine-v2)维护实现语义。
+
+完整/尾三/尾二语境与算法跨段已接入，独立资格和质量层级后作多样化排序，新增运行期“灵感优先”。F–G–Em–Am由旧30条（发展可见0）变为294条（发展可见122）：Exact30、语境39、跨段225；旧30条指纹与分数保持。三输入最终约563/430/367ms，13组来源/Preview/MIDI/Snapshot3一致性通过，Release插件编译和二进制身份通过。首批和声结构已有明显不同路线，实际听感与真实UI/DAW仍待用户验收。
+
+Factory DB/HCA字节未变，Session5/Snapshot3/User Schema2未改；Snapshot冻结演奏与来源ID，新通道/中心/接缝元数据暂只在运行期，重开有明确提示。收束与祈愿旧语义保持。**停在算法与音乐结构门禁**，未制作Setup、未安装、未操作真实user.db、未推送/合并main/建Tag/Release；下一步先听评代表路线，再决定独立开发包。
+
 ### Factory V7-I 独立集成交付（2026-10-26）
 
 独立分支 `development/factory-v7-integration-20261026`，从内容冻结`8cc16c1`建立；唯一Release插件为 **0.11.0-dev.6 / BuildCommit `40210d37c3fce517429fbf39f7a4c20c8709d5fa` / Factory7**。V7为1272条、1263个完整音乐身份，新增256A，83条B/C继续隔离。V7 DB/HCA与内容冻结哈希完全一致，旧V6中间产物与dev.5一致；Session5/Snapshot3/User Schema2、原评分与60分门槛、完整扫描和G5 UI/试听逻辑保持。[集中报告与Setup身份](docs/FACTORY_V7_REVIEW.md#v7-i-独立集成与开发交付2026-10-26)。

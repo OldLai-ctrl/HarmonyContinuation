@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为独立Factory V7-I集成线，已交付dev.6 / `40210d3` / Factory7（1272条）开发包；[V7集中报告](docs/FACTORY_V7_REVIEW.md)维护内容、发现性、短前缀裁决、安装证据及回退入口，[NOW](NOW.md)维护当前门禁。一次隔离安装通过，可进入真实DAW体验；生产未安装，dev.5与V6基线保持。[Locrian结构审校](data/factory-v6/increments/20261025-empty-modes/review.md)、[V6历史证据](docs/FACTORY_V6_REVIEW.md)保留；本轮未重复G1–G5全量验收。
+本工作树为独立G6 / Harmony Engine V2算法线，dev.7 / `03fad728…` / Factory7（1272条）；[G6集中交付与试听](docs/G6_ENGINE_V2_REVIEW.md)维护三输入门禁及来源边界，[引擎架构](docs/CONTINUATION_ENGINE.md)维护语境、资格和排序，[NOW](NOW.md)维护当前状态。保留dev.6 / `40210d3` / V7已交付基线及[V7报告](docs/FACTORY_V7_REVIEW.md)。G6没有安装包或真实DAW验收，不重复G1–G5全量检查。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 
