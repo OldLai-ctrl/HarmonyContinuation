@@ -33,6 +33,7 @@ struct PluginSessionState {
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
     std::uint32_t uiZoomPercent{100};
+    bool inspirationPriority{true}; // runtime UI preference; not serialized in Session5
 
     bool pin(const std::string& id, const std::string& fingerprint = {});
     bool unpin(const std::string& id);

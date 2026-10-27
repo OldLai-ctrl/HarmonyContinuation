@@ -6,6 +6,7 @@
 #include "vstgui/lib/cfont.h"
 #include "vstgui/lib/cclipboard.h"
 #include "RecommendationAlignment.h"
+#include "core/ContextualContinuation.h"
 #include "enrichment/EnrichmentProvenance.h"
 #include <algorithm>
 #include <chrono>
@@ -141,7 +142,8 @@ std::string MainView::recommendationListText(){
             for(const auto& m:matches_)if(representativeMatch(c,m))for(const auto& step:m.alignmentTrace){ins+=step.operation==AlignmentOp::QueryInsertion;skip+=step.operation==AlignmentOp::TemplateDeletion;}
             out<<" | "<<tIntent(c.intent)<<" | score="<<c.rankingScore<<" | base="<<c.eligibilityScore<<" | id="<<c.id<<" | source="<<c.primaryTemplate
                <<" | key="<<formatKey(c.key)<<" | match="<<c.matchStart+1<<'-'<<c.matchEnd+1<<" | inputInsertions="<<ins<<" | templateSkips="<<skip
-               <<" | intentEvidence="<<completionReasonKey(c.completion.reason)<<" | fingerprint="<<continuationMusicFingerprint(c);}
+               <<" | channel="<<recommendationChannelName(c.channel)<<" | provenance="<<int(c.provenance)
+               <<" | reason="<<c.connectionReason<<" | intentEvidence="<<completionReasonKey(c.completion.reason)<<" | fingerprint="<<continuationMusicFingerprint(c);}
         out<<'\n';
     }return out.str();
 }
@@ -203,7 +205,8 @@ void MainView::drawRecommendationOverview(CDrawContext* dc){
         text(dc,browseName(row),{l+94,top+2,r-104,top+24},11);
         const auto score=browseCategory()==4?enrichments_.groups[row.group][row.index].score:recommendations_.groups[row.group][row.index].rankingScore;
         const auto intent=browseCategory()==4?(zh?std::string("升级"):std::string("Enrich")):tIntent(recommendations_.groups[row.group][row.index].intent);
-        text(dc,intent+" · "+number(std::round(double(score)*10.)/10.),{r-104,top+2,r-4,top+24},10,secondary,kRightText);
+        const bool creative=browseCategory()!=4&&recommendations_.groups[row.group][row.index].channel!=RecommendationChannel::Exact;
+        text(dc,intent+" · "+(creative?(zh?std::string("创意合格"):std::string("Creative")):number(std::round(double(score)*10.)/10.)),{r-104,top+2,r-4,top+24},10,secondary,kRightText);
         text(dc,browsePath(row),{l+8,top+23,r-8,top+height-3},11);
         auto hit=rect({l,top,r,top+height-2});hit.bound(rect(overviewBody_));if(hit.getHeight()>0)compactHits_.push_back({hit,CompactAction::OverviewSelect,{},i,true,{}});
     }}
@@ -378,7 +381,9 @@ void MainView::drawCompact(CDrawContext* dc){
     compactButton(dc,{l,y+100,l+170,y+130},(state_.forcedKey?(zh?"固定 ":"Fixed "):(zh?"Auto 首选 ":"Auto preferred "))+key,CompactAction::Key);
     compactButton(dc,{l+176,y+100,l+278,y+130},t("label.style")+": "+(state_.style?compactStyleName(*state_.style):t("label.auto")),CompactAction::Style);
     compactButton(dc,{r-96,y+100,r,y+130},state_.skeletonView?"SKELETON":"FULL",CompactAction::FullView);
-    text(dc,state_.meterNumerator&&state_.meterDenominator?std::to_string(*state_.meterNumerator)+"/"+std::to_string(*state_.meterDenominator):"—",{l+284,y+100,r-100,y+130},11,secondary);
+    const bool inspirationAvailable=state_.productMode==session::ProductMode::Continue&&compactGroup_!=0;
+    if(inspirationAvailable)compactButton(dc,{l+284,y+100,l+390,y+130},zh?"灵感优先":"Inspiration",CompactAction::Inspiration,{},0,state_.inspirationPriority,!snapshotMode_);
+    text(dc,state_.meterNumerator&&state_.meterDenominator?std::to_string(*state_.meterNumerator)+"/"+std::to_string(*state_.meterDenominator):"—",{l+(inspirationAvailable?396:284),y+100,r-100,y+130},11,secondary);
     text(dc,state_.productMode==session::ProductMode::Enrich?(zh?"升级进行":"ENRICHMENTS"):(zh?"推荐续写":"CONTINUATIONS"),g.recommendationHeading,14);
     drawPrimaryTabs(dc,g);
     if(state_.productMode==session::ProductMode::Enrich){
@@ -422,8 +427,15 @@ void MainView::drawCompact(CDrawContext* dc){
             text(dc,route?(zh?"续写 ":"Next ")+number(bar>0?qn/bar:qn)+(bar>0?(zh?" 小节 · ":" bars · "):" QN · ")+std::to_string(route.candidate.continuation.size())+(zh?" 和弦":" chords"):
                 (zh?"来源不可用":"Source unavailable"),cg.facts,10,secondary,kRightText);
             const auto sourceCount=libraryItem?libraryItem->full.size():match!=matches_.end()?match->templateLabels.size():0;
-            text(dc,(zh?"输入位置 ":"Input position ")+std::to_string(c.matchStart+1)+"–"+std::to_string(c.matchEnd+1)+"/"+(sourceCount?std::to_string(sourceCount):"?"),cg.location,10,secondary);
-            if(sourceCount&&sourceCount<=24){const auto start=cg.location.left+(zh?114.:132.);const double unit=std::min(7.,(cg.location.right-start)/sourceCount);
+            const auto channelLabel=c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact?(zh?"冻结演奏":"Frozen route"):
+                c.channel==RecommendationChannel::Exact?(zh?"精确延续":"Exact continuation"):
+                c.channel==RecommendationChannel::PhraseTransition?(zh?"跨段转接":"Phrase transition"):(zh?"语境发展":"Contextual continuation");
+            const auto location=c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact?
+                (zh?std::string(" · 后句来源已保存"):std::string(" · Suffix source saved")):
+                c.channel==RecommendationChannel::PhraseTransition?(zh?std::string(" · 算法评估"):std::string(" · Assessed seam")):
+                " · "+std::to_string(c.matchStart+1)+"–"+std::to_string(c.matchEnd+1)+"/"+(sourceCount?std::to_string(sourceCount):"?");
+            text(dc,channelLabel+location,cg.location,10,secondary);
+            if(c.channel==RecommendationChannel::Exact&&sourceCount&&sourceCount<=24){const auto start=cg.location.left+(zh?114.:132.);const double unit=std::min(7.,(cg.location.right-start)/sourceCount);
                 if(unit>=3)for(std::size_t i=0;i<sourceCount;++i)fill(dc,{start+i*unit,cg.location.top+6,start+i*unit+unit-2,cg.location.top+11},i>=c.matchStart&&i<=c.matchEnd?blue:edge);}
             std::size_t substitutions=0,gaps=0,insertions=0;
             if(match!=matches_.end())for(const auto& step:match->alignmentTrace){substitutions+=step.operation==AlignmentOp::Substitute;gaps+=step.operation==AlignmentOp::TemplateDeletion;insertions+=step.operation==AlignmentOp::QueryInsertion;}
@@ -431,6 +443,13 @@ void MainView::drawCompact(CDrawContext* dc){
             const auto append=[&](std::size_t count,const char* chinese,const char* english){if(!count)return;if(!difference.empty())difference+=" · ";difference+=std::to_string(count)+(zh?chinese:english);};
             append(substitutions,"处替代"," substitutions");append(insertions,"处输入插入"," input insertions");append(gaps,"处模板跳过"," template skips");
             if(difference.empty())difference=match==matches_.end()?(zh?"匹配明细待取":"Match details pending"):(zh?"逐项对齐":"Aligned");
+            if(c.channel!=RecommendationChannel::Exact)difference=c.originCenter&&c.targetCenter&&
+                (c.originCenter->tonic!=c.targetCenter->tonic||c.originCenter->mode!=c.targetCenter->mode)?
+                (c.centerRelation==CenterRelation::Relative?(zh?"大小调双中心 ":"Relative centers "):(zh?"调中心变化 ":"Center change "))+formatKey(*c.originCenter)+" → "+formatKey(*c.targetCenter):
+                (zh?"来源片段 · 保留实际和弦":"Source phrase · actual harmony");
+            if(c.channel!=RecommendationChannel::Exact)difference=(c.direction==CreativeDirection::Bold?
+                (zh?std::string("大胆转向 · "):std::string("Bold · ")):
+                (zh?std::string("丰富变化 · "):std::string("Rich · ")))+difference;
             if(c.exploratory)difference=(zh?std::string("探索 · "):std::string("Explore · "))+difference;
             text(dc,difference,cg.match,10,secondary,kRightText);
             compactButton(dc,cg.audition,previewCandidateId_==c.id&&auditionState_==preview::PlaybackState::Paused?(zh?"▶ 继续":"Resume"):previewCandidateId_==c.id&&auditionState_==preview::PlaybackState::Playing?(zh?"■ 停止":"Stop"):zh?"▶ 试听":"▶ Play",CompactAction::Audition,c.id,index,false,
@@ -637,6 +656,7 @@ bool MainView::onCompactMouseDown(CPoint& where){
         case CompactAction::Scope:auditionSuffix_=!auditionSuffix_;settings();break;
         case CompactAction::Tempo:beginForm(Form::Tempo,number(auditionCustom_?auditionBpm_:auditionEffectiveBpm_));break;
         case CompactAction::FullView:state_.skeletonView=!state_.skeletonView;notifyState();break;
+        case CompactAction::Inspiration:state_.inspirationPriority=!state_.inspirationPriority;notifyState();break;
         case CompactAction::InputChord:if(index<analysis_.full.size()){selectedChord_=index;selectedCandidate_.reset();selectedEnrichment_.reset();inspectorScroll_=0;compactScroll_=0;}break;
         case CompactAction::Import:if(actions_.importMidi){const auto n=popup({t("midi.complete"),t("midi.open")},where);if(n>=0)actions_.importMidi(n==1,{});}break;
         case CompactAction::Key:{std::vector<std::string> keys{t("label.auto")};for(int i=0;i<12;++i){keys.push_back(formatKey({static_cast<PitchClass>(i),Mode::Major}));keys.push_back(formatKey({static_cast<PitchClass>(i),Mode::Minor}));}

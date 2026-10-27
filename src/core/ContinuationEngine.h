@@ -30,6 +30,15 @@ struct ContinuationEvidence {
     KeySignature key;
     std::size_t matchStart{}, matchEnd{}, continuationStart{};
 };
+enum class RecommendationChannel { Exact, ContextFull, ContextThree, ContextTwo, PhraseTransition };
+enum class ConnectionProvenance { DirectSource, AlgorithmAssessed, EditorialReviewed };
+enum class CreativeDirection { Stable, Rich, Bold };
+enum class CenterRelation { Same, Relative, Modulation };
+struct CreativeQuality {
+    float boundary{}, context{}, center{}, source{}, playability{}, phrase{};
+    bool qualified{};
+    int tier{}; // comparable quality band; raw scores remain channel-specific
+};
 struct ContinuationCandidate {
     std::string id;
     TemplateID primaryTemplate;
@@ -60,9 +69,17 @@ struct ContinuationCandidate {
     HarmonyConstraintSet constraints;
     double sourceAnchorQN{}; // normalize realization constraints for music identity and snapshots
     MelodyCompatibility melodyCompatibility;
+    RecommendationChannel channel{RecommendationChannel::Exact};
+    ConnectionProvenance provenance{ConnectionProvenance::DirectSource};
+    CreativeDirection direction{CreativeDirection::Stable};
+    CenterRelation centerRelation{CenterRelation::Same};
+    CreativeQuality creativeQuality;
+    std::optional<KeySignature> originCenter, targetCenter, sourceCoordinateCenter;
+    std::string connectionReason, family;
+    std::size_t contextLength{};
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
-    return c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
+    return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
         c.matchStart==m.templateMatchStart && c.matchEnd==m.templateMatchEnd && c.continuationStart==m.continuationStartIndex;
 }
 struct RecommendationWeights {
@@ -83,6 +100,7 @@ struct RecommendationRequest {
     std::optional<PhraseIntent> preferredIntent;
     HarmonyConstraintSet constraints;
     HarmonicTendency tendency{HarmonicTendency::Balanced};
+    bool inspirationPriority{}; // runtime only; Session5 remains unchanged
 };
 // Output identity shared by ranking and presentation; omits explanatory key/intent.
 std::string continuationMusicFingerprint(const ContinuationCandidate&);
@@ -101,6 +119,8 @@ struct RecommendationSet {
     MatchRunStats stats;
     std::vector<DiminishedInsertionDiagnostic> insertionDiagnostics; // enabled experiment only
     bool abstractChordCompatibility{}; // actual invocation, diagnostic only; never persisted
+    std::size_t contextualExamined{}, contextualQualified{}, transitionExamined{}, transitionQualified{};
+    double contextualMs{};
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     const MatchQuery&, const MatchResult&, const ProgressionTemplate&);

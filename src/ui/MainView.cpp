@@ -523,7 +523,7 @@ void MainView::setSessionState(const session::PluginSessionState& s) {
         state_.forcedKey.has_value()!=s.forcedKey.has_value()||(state_.forcedKey&&s.forcedKey&&
             (state_.forcedKey->tonic!=s.forcedKey->tonic||state_.forcedKey->mode!=s.forcedKey->mode));
     const bool zoomChanged=state_.uiZoomPercent!=s.uiZoomPercent;
-    if(state_.productMode!=s.productMode||state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints){enrichmentColorRankDirty_=true;browseDirty_=true;}
+    if(state_.productMode!=s.productMode||state_.intent!=s.intent||state_.style!=s.style||state_.tendency!=s.tendency||state_.constraints!=s.constraints||state_.inspirationPriority!=s.inspirationPriority){enrichmentColorRankDirty_=true;browseDirty_=true;}
     state_=s;
     if(wishContextChanged&&wishSettings_.useInput)resetWish();
     switch(s.intent.value_or(PhraseIntent::Neutral)){case PhraseIntent::Resolve:compactGroup_=0;break;case PhraseIntent::Develop:compactGroup_=1;break;
@@ -2217,7 +2217,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
            analysis_.selectedKey->key.mode==c.key.mode&&!analysis_.full.empty()) {
             phraseStart=analysis_.full.front().degree;current=analysis_.full.back().degree;
         }
-        const auto completion=evaluateIntentCompletion(c,phraseStart,current);
+        const auto completion=c.channel==RecommendationChannel::Exact?evaluateIntentCompletion(c,phraseStart,current):c.completion;
         const auto hint=candidateHint(c);std::optional<color::RankReason> reason;bool promoted=false;
         if(colorPreference_!=color::Preference::Off) {
             refreshColorRanking();const auto [group,index]=*selectedCandidate_;
@@ -2228,6 +2228,14 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         add(state_.locale==session::Locale::ZhCN?"色彩曲线见主卡片详细模式":"Color curve is in the detailed result card",muted);
         paragraph(state_.forcedKey?t("key.searchFixed")+" "+formatKey(*state_.forcedKey):t("key.searchAuto"));
         add(t("key.match")+" "+formatKey(c.key),muted);
+        if(c.channel!=RecommendationChannel::Exact) {
+            paragraph(c.provenance==ConnectionProvenance::AlgorithmAssessed?
+                (state_.locale==session::Locale::ZhCN?"跨段转接：后句为已审校原创库内乐句；接缝经算法评估，尚无独立编辑审核。":"Phrase transition: reviewed original catalogue phrase; algorithm-assessed seam, no separate editorial seam review."):
+                (state_.locale==session::Locale::ZhCN?"语境发展：保留输入末端连续和弦，续接库内同一来源的真实后段。":"Contextual continuation: contiguous terminal context followed by its actual source suffix."));
+            if(c.originCenter&&c.targetCenter)add(formatKey(*c.originCenter)+" → "+formatKey(*c.targetCenter),muted);
+            if(state_.debugExpanded)paragraph(c.connectionReason);
+        } else if(c.id.starts_with("g6:"))paragraph(state_.locale==session::Locale::ZhCN?
+            "Snapshot3 已冻结实际演奏和后句来源 ID；语境接缝元数据未持久保存。":"Snapshot3 preserves the actual performance and suffix source ID; seam metadata was not persisted.");
         std::vector<std::string> otherKeys;
         for(const auto& source:c.evidence) {
             const auto key=formatKey(source.key);
@@ -2244,7 +2252,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         if(state_.debugExpanded) {
             add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);
             addMelody(c.melodyCompatibility);
-            add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+t("inspector.score")+" "+fixed(c.rankingScore,1),muted);
+            add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+(c.channel==RecommendationChannel::Exact?t("inspector.score"):
+                (state_.locale==session::Locale::ZhCN?std::string("通道内排序分"):std::string("Within-channel rank")))+" "+fixed(c.rankingScore,1),muted);
             add(t("inspector.completion")+" "+fixed(completion.score,2),muted);
             Progression voiced=state_.imported.events;
             for(const auto& event:c.continuation) {
@@ -2266,7 +2275,8 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
 
             add(t("inspector.source")+"  "+c.primaryTemplate,muted);
-            add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
+            if(c.channel==RecommendationChannel::Exact)add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
+            else add((state_.locale==session::Locale::ZhCN?std::string("连续语境和弦数 "):std::string("Contiguous context chords "))+std::to_string(c.contextLength),muted);
             add(t("inspector.cadence")+"  "+std::string(cadenceName(c.cadence)),muted);
             add(t("label.style")+"  "+styleFlags(c.styles),muted);
             add(t("inspector.rhythm")+"  "+fixed(c.subscores.rhythm,2)+"   "+t("label.style")+"  "+fixed(c.subscores.style,2),muted);

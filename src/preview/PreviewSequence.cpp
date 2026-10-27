@@ -103,6 +103,17 @@ SourceRouteResult sourceRoute(const ImportedProgressionSession& input,const Cont
     const ProgressionTemplate& item) {
     SourceRouteResult result;result.candidate=candidate;
     result.meterNumerator=item.meterNumerator;result.meterDenominator=item.meterDenominator;
+    if(candidate.channel!=RecommendationChannel::Exact) {
+        if(item.id!=candidate.primaryTemplate||candidate.continuation.empty()) {
+            result.error="contextual source representative no longer matches";return result;
+        }
+        // The actual query plus frozen authored suffix is the complete route.
+        // Never rebuild the entire source phrase across an algorithmic seam.
+        result.imported=input;
+        const auto checked=buildSequence(result.imported,&result.candidate,defaultTempoBPM);
+        if(!checked)result.error=checked.error;
+        return result;
+    }
     const auto boundary=candidate.continuationStart;
     if(item.id!=candidate.primaryTemplate||boundary==0||boundary>item.full.size()||
        candidate.matchStart>candidate.matchEnd||candidate.matchEnd+1!=boundary) {

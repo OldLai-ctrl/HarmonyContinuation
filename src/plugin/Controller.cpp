@@ -187,6 +187,7 @@ tresult PLUGIN_API Controller::setState(IBStream* stream) {
         recommendationRequest_.preferredIntent=sessionState_.intent;
         recommendationRequest_.constraints=sessionState_.constraints;
         recommendationRequest_.tendency=sessionState_.tendency;
+        recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
         analysis_={}; matches_.clear(); recommendations_={}; recommendationResultReady_=false;
         if (view_) {
             view_->setSessionState(sessionState_);
@@ -298,6 +299,7 @@ void Controller::submitRecommendation(bool rankingOnly) {
     enrichmentResultReady_=false;
     if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
     auto analysisContext=sessionState_.analysisContext();
+    recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
     recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
         recommendationRequest_,rankingOnly,sessionState_.imported.revision);
     matchStatus_="Analyzing…";
@@ -332,6 +334,7 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         sessionState_.editorHeight=old.editorHeight;
         recommendationRequest_.style=next.style; recommendationRequest_.preferredIntent=next.intent;
         recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
+        recommendationRequest_.inspirationPriority=next.inspirationPriority;
         if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset(); }
         if (view_) {
             view_->setSessionState(sessionState_);

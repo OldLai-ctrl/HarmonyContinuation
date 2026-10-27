@@ -157,7 +157,7 @@ private:
         Wish, WishPreset, WishAdvanced, WishInput, WishClear, WishTonic, WishMode, WishStrict, WishStyle, WishColor,
         WishOne, WishTen, WishAgain, WishSnapshot, WishCopy, WishHistory,
         OverviewClose, OverviewCopy, OverviewSelect, Intent, Enrichment, Key, Style,
-        Advanced, Library, Import, FullView, InputChord, Play, Pause, Stop, Repeat, Backend, TempoMode, Tempo, Scope };
+        Advanced, Inspiration, Library, Import, FullView, InputChord, Play, Pause, Stop, Repeat, Backend, TempoMode, Tempo, Scope };
     struct CompactHit {
         VSTGUI::CRect rect; CompactAction action; std::string id; std::size_t index{}; bool enabled{true};
         std::optional<VSTGUI::CRect> clip;

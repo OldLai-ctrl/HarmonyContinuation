@@ -1,4 +1,5 @@
 #include "ContinuationEngine.h"
+#include "ContextualContinuation.h"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -393,6 +394,8 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         match.timingSource=rhythm.source;
         ContinuationCandidate candidate;
         candidate.primaryTemplate = item.id;
+        if(item.version==7&&!item.tags.empty())candidate.family=item.tags.front();
+        else for(const auto& e:item.full)if(e.degree)candidate.family+=std::to_string(e.degree->degree)+":"+std::to_string(e.degree->alteration)+",";
         candidate.sourceAnchorQN = query.source.empty()?0.:query.source.front().startQN;
         candidate.key = match.key;
         candidate.keyOffsetFromInput=positiveMod(int(match.key.tonic)-inputRoot,12);
@@ -575,12 +578,16 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         ++result.stats.scorePassed;
         result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
     }
-    for (auto& group:result.groups) {
+    const bool creative=request.inspirationPriority&&request.preferredIntent!=PhraseIntent::Resolve;
+    if(creative)appendContextualContinuations(query,index,request,result);
+    for (std::size_t groupNumber=0;groupNumber<result.groups.size();++groupNumber) {
+        auto& group=result.groups[groupNumber];
         // Supported routes retain priority over exploration in the complete list.
         std::sort(group.begin(),group.end(),[](const auto& a,const auto& b) {
             if (a.exploratory!=b.exploratory) return !a.exploratory;
             return higherRank(a,b);
         });
+        if(creative&&groupNumber!=0)rankCreativeContinuations(group);
         if (w.perGroup>0) {
             for (std::size_t i=w.perGroup;i<group.size();++i) mark(group[i],"retained_limit");
             if (group.size()>w.perGroup) group.resize(w.perGroup);

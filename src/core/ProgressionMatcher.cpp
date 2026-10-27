@@ -457,6 +457,7 @@ void prepareTemplate(ProgressionTemplate& value) {
 }
 CandidateIndex::CandidateIndex(std::vector<ProgressionTemplate> templates) : templates_(std::move(templates)) {
     for (auto& item : templates_) prepareTemplate(item);
+    contextAnchors_=buildContextAnchors(templates_);
 }
 std::vector<std::size_t> CandidateIndex::shortlist(const MatchQuery& query, const MatchWeights& w) const {
     std::vector<std::size_t> result;

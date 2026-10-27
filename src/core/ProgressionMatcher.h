@@ -204,13 +204,23 @@ ProgressionFingerprint makeFingerprint(Mode, const std::vector<MatchEvent>&,
                                        const std::vector<std::size_t>&, CadenceType);
 void prepareTemplate(ProgressionTemplate&);
 
+// Offline-capable source index. One record per internal anchor or admitted phrase
+// entry/terminal prototype, never a Cartesian product of catalogue phrases.
+struct ContextAnchor {
+    std::size_t templateIndex{}, continuationStart{};
+    std::optional<MatchEvent> terminalPrototype; // phrase seam only; relative to target center
+    std::string basis;
+};
+std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>&);
 class CandidateIndex {
 public:
     explicit CandidateIndex(std::vector<ProgressionTemplate> templates = {});
     const std::vector<ProgressionTemplate>& templates() const noexcept { return templates_; }
+    const std::vector<ContextAnchor>& contextAnchors() const noexcept { return contextAnchors_; }
     std::vector<std::size_t> shortlist(const MatchQuery&, const MatchWeights& = {}) const;
 private:
     std::vector<ProgressionTemplate> templates_;
+    std::vector<ContextAnchor> contextAnchors_;
 };
 
 std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,

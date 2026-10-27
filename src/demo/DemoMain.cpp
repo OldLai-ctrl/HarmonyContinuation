@@ -484,6 +484,7 @@ private:
         if (state_.imported.events.empty()) return;
         recommendationReady_=false;
         RecommendationRequest request{state_.style,state_.intent,state_.constraints,state_.tendency};
+        request.inspirationPriority=state_.inspirationPriority;
         const auto generation=worker_.submit(state_.imported.events,state_.analysisContext(),request,
             rankingOnly,state_.imported.revision);
         if (main_) main_->setWorkerStatus(generation,0,true,0,0);

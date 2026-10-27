@@ -56,7 +56,7 @@ RecomputeScope recomputeScope(const PluginSessionState& old,const PluginSessionS
     if (key || old.imported.revision!=next.imported.revision ||
         old.meterNumerator!=next.meterNumerator || old.meterDenominator!=next.meterDenominator) return RecomputeScope::Analysis;
     if (old.style!=next.style || old.intent!=next.intent || old.constraints!=next.constraints ||
-        old.tendency!=next.tendency) return RecomputeScope::Ranking;
+        old.tendency!=next.tendency || old.inspirationPriority!=next.inspirationPriority) return RecomputeScope::Ranking;
     return RecomputeScope::None;
 }
 namespace {

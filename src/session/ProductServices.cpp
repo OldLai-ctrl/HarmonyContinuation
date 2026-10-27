@@ -1,5 +1,6 @@
 #include "ProductServices.h"
 #include "persistence/ChordData.h"
+#include "core/ContextualContinuation.h"
 #include <algorithm>
 #include <atomic>
 #include <bit>
@@ -39,7 +40,8 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
             <<(std::find(analysis.skeletonIndices.begin(),analysis.skeletonIndices.end(),i)!=analysis.skeletonIndices.end())<<'\n';
     }
     out<<"Key="<<(ctx.forcedKey?formatKey(*ctx.forcedKey):"AUTO")<<" Style="<<(request.style?std::to_string(int(*request.style)):"AUTO")
-        <<" Intent="<<(request.preferredIntent?std::to_string(int(*request.preferredIntent)):"AUTO")<<" Tendency="<<int(request.tendency)<<'\n';
+        <<" Intent="<<(request.preferredIntent?std::to_string(int(*request.preferredIntent)):"AUTO")<<" Tendency="<<int(request.tendency)
+        <<" Inspiration="<<request.inspirationPriority<<'\n';
     for(std::size_t i=0;i<p.size();++i) {
         const auto& e=p[i];const auto n=normalizeChord(e);
         out<<"INPUT "<<i<<" source="<<int(e.source)<<" name="<<std::quoted(e.name)<<" rawName="<<std::quoted(e.rawName.value_or(""))
@@ -71,6 +73,8 @@ std::string recommendationDiagnostics(const Progression& p,const AnalysisContext
     for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
         const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
           <<" key="<<formatKey(c.key)<<" score="<<c.rankingScore<<" eligibility="<<c.eligibilityScore
+          <<" channel="<<recommendationChannelName(c.channel)<<" provenance="<<int(c.provenance)
+          <<" direction="<<int(c.direction)<<" qualityTier="<<c.creativeQuality.tier<<" connection="<<std::quoted(c.connectionReason)
           <<" hard="<<c.hardConstraintsPassed<<" qualified="<<c.baseQualified<<" exploratory="<<c.exploratory
           <<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
           <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
@@ -183,12 +187,12 @@ float pathDistance(const ContinuationCandidate& a,const ContinuationCandidate& b
 std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const std::vector<ContinuationCandidate>& group) const {
     std::vector<std::size_t> visible;
     if (group.empty() || maxPerGroup==0) return visible;
-    float best=group.front().rankingScore;
-    for (const auto& candidate:group) best=std::max(best,candidate.rankingScore);
+    std::array<float,5> best{};
+    for (const auto& candidate:group)best[std::size_t(candidate.channel)]=std::max(best[std::size_t(candidate.channel)],candidate.rankingScore);
     for (std::size_t i=0;i<group.size() && visible.size()<maxPerGroup;++i) {
         const auto& c=group[i];
         if (!c.hardConstraintsPassed || !c.baseQualified || (c.exploratory&&!includeExploratory) || !std::isfinite(c.rankingScore) ||
-            (relativeToGroupBest>0 && c.rankingScore<best-relativeToGroupBest)) continue;
+            (relativeToGroupBest>0 && c.rankingScore<best[std::size_t(c.channel)]-relativeToGroupBest)) continue;
         if (minimumDiversityDistance>0 && std::any_of(visible.begin(),visible.end(),[&](std::size_t chosen){
             return pathDistance(c,group[chosen])<minimumDiversityDistance; })) continue;
         visible.push_back(i);
@@ -204,7 +208,14 @@ RecommendationPresentation presentationIndices(const RecommendationSet& set,
     const RecommendationVisibilityPolicy& policy) {
     RecommendationPresentation shown;
     std::array<std::size_t,4> order{0,1,2,3};
+    const bool creative=std::any_of(set.groups.begin(),set.groups.end(),[](const auto& group) {
+        return std::any_of(group.begin(),group.end(),[](const auto& c){return c.channel!=RecommendationChannel::Exact;});
+    });
     std::stable_sort(order.begin(),order.end(),[&](std::size_t a,std::size_t b) {
+        if(creative) {
+            const auto tier=[&](auto g){return set.groups[g].empty()?-1:recommendationQualityTier(set.groups[g].front());};
+            return tier(a)>tier(b);
+        }
         const auto score=[&](std::size_t group) {
             return set.groups[group].empty()?-1.f:set.groups[group].front().rankingScore;
         };

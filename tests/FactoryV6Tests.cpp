@@ -21,6 +21,7 @@
 #include "wish/MusicIdentity.h"
 #include "wish/WishSampler.h"
 #include "wish/WishCatalog.h"
+#include "G6Focused.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -3402,6 +3403,15 @@ int main(int argc, char** argv) {
     static_assert(library::userSchemaVersion == 2);
     static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
+    if (argc > 1 && std::string_view(argv[1]) == "--g6-focused") {
+        try {
+            require(argc == 4, "usage: FactoryV6Tests --g6-focused factory-v7.db output-dir");
+            return runG6Focused(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "G6 focused diagnostics FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--v7-match-diagnostics") {
         try {
             require(argc == 4,
