@@ -1283,7 +1283,7 @@ bool MainView::runG7UiSmoke(CDrawContext* dc,const std::function<void(const std:
     }
     try{
         state_.tab=session::Tab::Recommend;state_.uiZoomPercent=100;state_.locale=session::Locale::ZhCN;
-        resizeLayout(800,780);setSnapshotMode(true);paint();
+        resizeLayout(800,780);setSnapshotMode(false);paint();
         require(primaryCount()==4,"four primary entrances");
         require(!initialPlayingId.empty(),"G7 playback preservation requires a current candidate");
         require(state_.productMode==session::ProductMode::Continue&&state_.inspirationPriority&&!state_.intent,

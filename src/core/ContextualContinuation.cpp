@@ -405,6 +405,7 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
     const auto qualityBand=[](const ContinuationCandidate& c) {
         if(c.exploratory)return 0;
         if(c.channel==RecommendationChannel::Exact)return c.eligibilityScore>=70?2:1;
+        if(c.continuation.size()<2)return 0; // a color fragment remains pageable; prefer independent multi-chord routes on the homepage
         // A reviewed phrase does not confer an independently reviewed seam.
         return c.provenance==ConnectionProvenance::AlgorithmAssessed?1:c.creativeQuality.tier;
     };
