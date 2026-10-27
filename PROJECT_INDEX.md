@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为独立G6 / Harmony Engine V2算法线，dev.7 / `03fad728…` / Factory7（1272条）；[G6集中交付与试听](docs/G6_ENGINE_V2_REVIEW.md)维护三输入门禁及来源边界，[引擎架构](docs/CONTINUATION_ENGINE.md)维护语境、资格和排序，[NOW](NOW.md)维护当前状态。保留dev.6 / `40210d3` / V7已交付基线及[V7报告](docs/FACTORY_V7_REVIEW.md)。G6没有安装包或真实DAW验收，不重复G1–G5全量检查。
+本工作树为独立G7四入口整合线，dev.8 / `58dfce0f…` / Factory7（1272条）；[G7集中交付、实际首页与五条试听](docs/G7_FOUR_ENTRY_REVIEW.md)维护本轮工程和待人工音乐验收，[引擎架构](docs/CONTINUATION_ENGINE.md)与[D13](DECISIONS.md#d13-g7-四入口与双推荐视图)维护双视图和导航语义，[NOW](NOW.md)维护当前状态。保留[G6基线](docs/G6_ENGINE_V2_REVIEW.md)、dev.6/V7和[V7报告](docs/FACTORY_V7_REVIEW.md)。未制作G7安装包、未做真实DAW验收，不重复旧全量检查。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 

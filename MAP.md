@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G7四入口整合 | `HarmonyContinuation-g7/` → `development/g7-four-entry-20261027`；实现/BuildCommit `58dfce0f…` | dev.8/Factory7；[集中验收](docs/G7_FOUR_ENTRY_REVIEW.md)，保留G6工作树与产物 |
+| G7工程与UI证据 | 同级 `HarmonyContinuation-g7-evidence/`；首页/截图在`ui/`，身份`identity.json` | 固定一输入/一尺寸的原生UI及真实worker；工程通过、人工音乐待验收，未制作Setup |
 | G6算法线 | `HarmonyContinuation-g6/` → `development/g6-harmony-engine-v2-20261027`；实现/BuildCommit `03fad728…` | dev.7/Factory7；[算法与音乐门禁](docs/G6_ENGINE_V2_REVIEW.md)，独立源码与构建，不安装 |
 | G6代表媒体及必要证据 | 同级 `HarmonyContinuation-g6-evidence/final-check/`；身份 `HarmonyContinuation-g6-evidence/identity.json` | 三输入、13组样本；原dev.6产物及真实用户库保持 |
 | Factory V7-I集成线 | `HarmonyContinuation-factory-v7-integration/` → `development/factory-v7-integration-20261026`；内容父提交`8cc16c1`，BuildCommit`40210d3` | dev.6/Factory7；[集成交付](docs/FACTORY_V7_REVIEW.md#v7-i-独立集成与开发交付2026-10-26)，不改原dev.5/V6工作树 |

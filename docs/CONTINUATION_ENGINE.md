@@ -1,8 +1,18 @@
 # Continuation Engine
 
+## G7 product views
+
+The four primary entries are Match first, Inspiration first, Upgrade and Harmony Wish ([D13](../DECISIONS.md#d13-g7-四入口与双推荐视图)). Match retains the four original intent subviews and the exact Unified policy. Inspiration presents one cross-intent list with Stable/Rich/Bold route labels and separate source-channel labels. A source phrase's editorial review never becomes a cross-phrase seam review.
+
+The worker's explicit `prepareBothViews` request computes an Exact bank using the saved Match intent and a neutral G6 inspiration bank. Existing worker clients without that flag keep their original contract. Both results are immutable until input/preferences actually change. Runtime primary navigation selects the bank, keeps the input and current audition, and does not request recomputation. The selected Match subfunction remains a ranking preference; changing it retains the original scoring semantics. Navigation-only bank updates preserve the other entry's selection, page and pinned music object. Playback resolves representatives in both banks and keeps the active source identity when a common music ID has different explanations.
+
+`mixedInspirationOrder` produces group/index references to the original candidates off the UI thread. It retains all legal music identities, uses soft 20/50/30 direction and 25/40/35 Exact/context/seam exposure targets, and compares raw scores only within a channel. Quality, first harmony, bass contour, family, destination, use and actual subsequent route distinguish candidates. A single-chord creative fragment stays accessible but receives lower homepage priority. Exact source type no longer implies Stable: the inspiration-only direction projection checks the realized harmony, including ordinary minor dominant usage. Match scores, qualification, actual chords and source evidence are untouched.
+
+The view accepts only its current request generation. A fixed-size native UI test uses two real worker results, delays the first past the second request, rejects it through the production view gate, and accepts the current result while pumping Win32 UI events. This is native UI evidence, not DAW or human audition acceptance. Session5/Snapshot3 remain unchanged; navigation is runtime state and G6 snapshots without seam metadata remain labeled as frozen performance. Five music materials and their pending human-review status live in [G7 review](G7_FOUR_ENTRY_REVIEW.md).
+
 ## G6 / Harmony Engine V2
 
-V2 adds an opt-in core request (`inspirationPriority`), enabled by default by the runtime UI for Develop/Loop/Color. Turning off the lightweight Inspiration button selects the unchanged Unified/60 path. Resolve remains Unified-only. Wish's random sampler and input qualification do not opt into V2. The UI preference is instance-owned and intentionally omitted from Session5 serialization.
+V2 adds an opt-in core request (`inspirationPriority`). G6 initially exposed it as a lightweight control for Develop/Loop/Color; G7 uses the product views above. Resolve qualification remains Unified-only. Wish's random sampler and input qualification do not opt into V2. The UI preference is instance-owned and intentionally omitted from Session5 serialization.
 
 `CandidateIndex` precomputes internal source anchors plus diatonic terminal-class entry records for admitted V7 editorial phrases. These are source-relative records, not all pairs of catalogue phrases. The immutable source template supplies its complete ID, exact realization, source coordinate and authored rhythm. Internal anchors retrieve an exact contiguous complete input, tail three, or tail two; explicit quality, bass and performed tone requirements remain binding. No DP similarity cutoff is reused for the creative channel.
 

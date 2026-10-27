@@ -2,6 +2,14 @@
 
 ## 本轮工作与下一步
 
+### G7 四入口与灵感首页（2026-10-27）
+
+独立分支 `development/g7-four-entry-20261027`；实现/插件BuildCommit **`58dfce0fb78c712def4902d81b8103747b746ea2` / 0.11.0-dev.8 / Factory7 / 1272**。从G6交付头`8da40f7`建立，dev.6/V7及dev.7产物保留。[集中交付、五条音乐与听评状态](docs/G7_FOUR_ENTRY_REVIEW.md)，长期架构见[D13](DECISIONS.md#d13-g7-四入口与双推荐视图)。
+
+四入口为匹配优先（四子项）、灵感优先（混合）、升级进行、和声祈愿。双结果集支持一级导航复用，保留输入、试听和固定对象；原Exact分数/60分资格、升级和祈愿算法不改。实际灵感首页为Exact2/语境5/算法跨段3，稳定2/丰富4/大胆4；全量合法对象分页可访问，未按比例凑数。
+
+工程通过：Release插件/Demo、单输入固定尺寸原生UI专项通过；旧Exact30条原始分数/来源/音乐身份对照保持，真实G1/G2约476/201ms，延迟G1拒收、G2显示。Factory DB/HCA字节与dev.7相同，Session5/Snapshot3未迁移；G6的13组演奏身份检查未重复。**G6人工音乐听评仍待完成，真实DAW未验收**。具备下一开发Setup的工程条件，本轮不制作/安装；未操作生产或真实user.db，未推送/合并main/建Tag/Release。
+
 ### G6 / Harmony Engine V2（2026-10-27）
 
 独立分支 `development/g6-harmony-engine-v2-20261027`，实现/插件BuildCommit **`03fad728769de139d5016abb02db2a7f0e151cb9` / 0.11.0-dev.7 / Factory7 / 1272**，接手最新V7集成文档头`4a0402f`；原dev.6安装包及工作树保留。[集中交付与试听](docs/G6_ENGINE_V2_REVIEW.md)维护算法、音乐判断、三输入及兼容边界；[架构](docs/CONTINUATION_ENGINE.md#g6--harmony-engine-v2)维护实现语义。
