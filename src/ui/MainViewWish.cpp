@@ -326,6 +326,7 @@ bool MainView::onWishAction(const CompactHit& hit,CPoint& where) {
         case CompactAction::WishSnapshot:if(item&&actions_.saveSnapshot)actionStatus_=actions_.saveSnapshot(item->route.candidate);return true;
         case CompactAction::WishCopy:if(item)CClipboard::setString(wishInformation(*item).c_str());return true;
         case CompactAction::PagePrevious:case CompactAction::PageNext:if(action==CompactAction::PagePrevious){if(wishPage_)--wishPage_;}else ++wishPage_;compactScroll_=0;wishScroll_=0;wishExpanded_.clear();midiPending_.reset();midiClick_={};return true;
+        case CompactAction::Match:case CompactAction::Inspiration:
         case CompactAction::Intent:case CompactAction::Enrichment:case CompactAction::Density:case CompactAction::Advanced:
         case CompactAction::Library:case CompactAction::Pause:case CompactAction::Stop:case CompactAction::Backend:
         case CompactAction::Repeat:case CompactAction::TempoMode:case CompactAction::Tempo:case CompactAction::Scope:return false;

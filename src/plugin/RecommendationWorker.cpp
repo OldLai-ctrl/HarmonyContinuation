@@ -265,6 +265,8 @@ void RecommendationWorker::run() {
                         auto inspirationRequest=task.request;inspirationRequest.inspirationPriority=true;
                         inspirationRequest.preferredIntent.reset();
                         result.recommendations=recommendContinuations(*cachedQuery,*index,inspirationRequest,weights);
+                        for(auto& group:result.recommendations.groups)for(auto& candidate:group)
+                            candidate.direction=inspirationDirection(candidate);
                         result.recommendations.inspirationOrder=mixedInspirationOrder(result.recommendations);
                     } else result.recommendations=recommendContinuations(*cachedQuery,*index,task.request,weights);
                 } else result.error = index ? "推荐查询不可用。" : loadError;

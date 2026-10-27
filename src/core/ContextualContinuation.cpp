@@ -376,6 +376,18 @@ const char* recommendationChannelName(RecommendationChannel c) noexcept {
     }
 }
 int recommendationQualityTier(const ContinuationCandidate& c) noexcept { return qualityTier(c); }
+CreativeDirection inspirationDirection(const ContinuationCandidate& c) {
+    if(c.channel!=RecommendationChannel::Exact)return c.direction;
+    auto allowed=scaleMask(c.key);
+    if(c.key.mode==Mode::Minor)allowed|=1u<<mod(int(c.key.tonic)+11); // ordinary minor dominant is not a bold modulation
+    bool rich=c.continuation.size()>8;
+    for(const auto& e:c.continuation) {
+        const auto p=pitches(e);
+        if((absoluteMask(p)&~allowed)!=0)return CreativeDirection::Bold;
+        rich|=p.bass!=p.root||(p.intervals&((1u<<2)|(1u<<5)|(1u<<9)))!=0;
+    }
+    return rich?CreativeDirection::Rich:CreativeDirection::Stable;
+}
 std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSet& set) {
     if(!set.inspirationOrder.empty())return set.inspirationOrder;
     struct Item { RecommendationPosition position; std::array<std::string,7> features; };
