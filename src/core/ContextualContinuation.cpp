@@ -119,7 +119,7 @@ int qualityTier(const ContinuationCandidate& c) {
 }
 std::array<std::string,7> features(const ContinuationCandidate& c) {
     const auto first=pitches(c.continuation.front());
-    const auto destination=c.targetCenter.value_or(c.key);
+    const auto destination=c.targetCenter.value_or(c.originCenter.value_or(c.key));
     std::string bass,melody,color;
     int previous=first.bass,top=-1;
     for(const auto& e:c.continuation) {
@@ -376,10 +376,11 @@ const char* recommendationChannelName(RecommendationChannel c) noexcept {
     }
 }
 int recommendationQualityTier(const ContinuationCandidate& c) noexcept { return qualityTier(c); }
-CreativeDirection inspirationDirection(const ContinuationCandidate& c) {
+CreativeDirection inspirationDirection(const ContinuationCandidate& c,std::optional<KeySignature> inputCenter) {
     if(c.channel!=RecommendationChannel::Exact)return c.direction;
-    auto allowed=scaleMask(c.key);
-    if(c.key.mode==Mode::Minor)allowed|=1u<<mod(int(c.key.tonic)+11); // ordinary minor dominant is not a bold modulation
+    const auto context=inputCenter.value_or(c.key);
+    auto allowed=scaleMask(context);
+    if(context.mode==Mode::Minor)allowed|=1u<<mod(int(context.tonic)+11); // ordinary minor dominant is not a bold modulation
     bool rich=c.continuation.size()>8;
     for(const auto& e:c.continuation) {
         const auto p=pitches(e);

@@ -187,7 +187,7 @@ inline int runG7UiHarness(const char* factoryArg,const char* outputArg) {
 
             std::ofstream homepage(output/"g7-homepage.tsv",std::ios::binary);
             require(static_cast<bool>(homepage),"G7 homepage TSV output open");
-            homepage<<"rank\tsource\tchannel\tprovenance\tdirection\tfollowup\tfingerprint\torigin\ttarget\n";
+            homepage<<"rank\tsource\tchannel\tprovenance\tdirection\tfollowup\tfingerprint\torigin\ttarget\tmatch_key\n";
             const auto provenanceName=[](ConnectionProvenance value)->const char* {
                 switch(value) {
                     case ConnectionProvenance::DirectSource:return "direct-source";
@@ -222,7 +222,8 @@ inline int runG7UiHarness(const char* factoryArg,const char* outputArg) {
                     <<directionName(candidate.direction)<<'\t'<<cleanCell(followup)<<'\t'
                     <<cleanCell(session::continuationFingerprint(candidate))<<'\t'
                     <<cleanCell(formatKey(candidate.originCenter.value_or(candidate.key)))<<'\t'
-                    <<cleanCell(formatKey(candidate.targetCenter.value_or(candidate.key)))<<'\n';
+                    <<cleanCell(candidate.targetCenter?formatKey(*candidate.targetCenter):"not inferred")<<'\t'
+                    <<cleanCell(formatKey(candidate.key))<<'\n';
             }
             homepage.close();
             require(homepage.good(),"G7 homepage TSV output write");
