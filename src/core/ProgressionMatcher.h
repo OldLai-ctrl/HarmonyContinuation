@@ -211,16 +211,24 @@ struct ContextAnchor {
     std::optional<MatchEvent> terminalPrototype; // phrase seam only; relative to target center
     std::string basis;
 };
+struct PhraseLink {
+    std::size_t sourceTemplate{}, nextTemplate{};
+    float boundaryScore{};
+    std::string basis;
+};
 std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>&);
+std::vector<PhraseLink> buildDevelopmentLinks(const std::vector<ProgressionTemplate>&);
 class CandidateIndex {
 public:
     explicit CandidateIndex(std::vector<ProgressionTemplate> templates = {});
     const std::vector<ProgressionTemplate>& templates() const noexcept { return templates_; }
     const std::vector<ContextAnchor>& contextAnchors() const noexcept { return contextAnchors_; }
+    const std::vector<PhraseLink>& developmentLinks() const noexcept { return developmentLinks_; }
     std::vector<std::size_t> shortlist(const MatchQuery&, const MatchWeights& = {}) const;
 private:
     std::vector<ProgressionTemplate> templates_;
     std::vector<ContextAnchor> contextAnchors_;
+    std::vector<PhraseLink> developmentLinks_;
 };
 
 std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,

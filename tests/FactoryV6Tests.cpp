@@ -22,6 +22,7 @@
 #include "wish/WishSampler.h"
 #include "wish/WishCatalog.h"
 #include "G6Focused.h"
+#include "G8Focused.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -3409,6 +3410,24 @@ int main(int argc, char** argv) {
             return runG6Focused(argv[2], argv[3]);
         } catch (const std::exception& error) {
             std::cerr << "G6 focused diagnostics FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g8-focused") {
+        try {
+            require(argc == 4, "usage: FactoryV6Tests --g8-focused factory-v8.db output-dir");
+            return runG8Focused(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G8 RCR acceptance FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g8-checks") {
+        try {
+            require(argc == 4, "usage: FactoryV6Tests --g8-checks factory-v8.db output-dir");
+            return runG8Checks(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G8 focused checks FAIL: " << error.what() << '\n';
             return 1;
         }
     }

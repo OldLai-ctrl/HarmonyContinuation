@@ -1,5 +1,21 @@
 # Continuation Engine
 
+## G8 complete open phrases and recursive continuation
+
+G8 retains source endings. An internal context anchor yields the contiguous suffix through the original source end; a phrase transition yields one whole reviewed source phrase. Inspiration excludes legacy Exact wraps that stop inside a source; the Match bank retains its original wrap/scoring contract. A complete next cycle remains admissible. No chord is removed to manufacture openness.
+
+Factory V8 is a Schema2 increment over frozen V7: 16 new complete editorial phrases, including 15 open/unterminated phrases across 12 families and one conservatively classified interim pause. Existing Factory rows and HCA bytes are preserved. The new compositions are original editorial designs; primary references support mechanisms rather than whole-work transcriptions. The isolated source, exact raw events and review evidence are in [the increment](../data/factory-v8/metadata.json). No unreviewed mode membership is invented for Wish.
+
+Ending behavior is separate from purpose and source evidence: closed, modulated closure, interim pause, open unresolved, suspended, loop return, modal development and center transition (plus unknown). Cadential evidence overrides an open tag. Center-transition phrases do not claim an established destination key. Runtime ending annotations are not serialized into Snapshot3; a reopened snapshot retains its frozen performed music and source identity under the existing fallback.
+
+Inspiration analyzes a bounded recent-phrase context (at most eight events) and retrieves contiguous 4/3/2-event tail anchors. Earlier key hypotheses are supplementary and cannot veto a valid recent interpretation. Actual input events, bass, extensions, durations and OPEN remain intact; the full path is still used for hard melody checks. The normal worker computes the legacy Match bank once and passes its match evidence to Inspiration, avoiding a second full-history DP pass. Standalone long-input Inspiration does not add a growing-history exact DP. New suffixes keep authored rhythm, and OPEN hold inference uses recent rhythm.
+
+The candidate index evaluates only the reviewed complete open subset for next-phrase opportunities, with at most four different family/entry choices per endpoint. Actual bass/tones are checked again on realization. These are algorithm-assessed seams, not independently edited connections or guarantees under a future melody constraint. Mixed exposure prefers reviewed intact development with concrete indexed next entries; novelty never repairs a failed musical gate. Every legal route remains pageable.
+
+The normal imported/combined audition path is bounded to 128 chord events; individual library phrases/candidate suffixes remain bounded to 64. Session5's existing u8 count and Snapshot3 format are unchanged. New code reads existing sessions/snapshots; dev.8 readers still reject inputs longer than their old 64-event limit. Upgrade/Wish and saved library-phrase limits retain their existing contracts.
+
+The scoped content, long-tail, identity and single-batch RCR-3 evidence lives in [G8 review](G8_OPEN_RECURSIVE_REVIEW.md). RCR uses normal mixed recommendations and production MIDI reimport, without backtracking, special qualification thresholds or audio-thread search. Engineering evidence and human music acceptance are separate gates.
+
 ## G7 product views
 
 The four primary entries are Match first, Inspiration first, Upgrade and Harmony Wish ([D13](../DECISIONS.md#d13-g7-四入口与双推荐视图)). Match retains the four original intent subviews and the exact Unified policy. Inspiration presents one cross-intent list with Stable/Rich/Bold route labels and separate source-channel labels. A source phrase's editorial review never becomes a cross-phrase seam review.

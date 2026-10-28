@@ -139,7 +139,7 @@ KeySignature keyIn(const Value& value) {
 void validate(const RecommendationSnapshot& s) {
     if (s.schemaVersion<1 || s.schemaVersion>RecommendationSnapshot::currentSchemaVersion)
         throw std::runtime_error("UnsupportedVersion");
-    if (s.imported.events.empty()||s.imported.events.size()>64||s.candidate.continuation.size()>64||
+    if (s.imported.events.empty()||s.imported.events.size()>maxImportedChordEvents||s.candidate.continuation.size()>64||
         s.candidate.id.empty()||s.imported.events.front().startQN!=0||
         s.meterNumerator<1||s.meterNumerator>32||s.meterDenominator<1||s.meterDenominator>32||
         !std::isfinite(s.tempoBPM)||s.tempoBPM<20||s.tempoBPM>400||

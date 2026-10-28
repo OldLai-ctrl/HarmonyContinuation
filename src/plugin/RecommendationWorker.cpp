@@ -196,7 +196,7 @@ void RecommendationWorker::run() {
                 cachedContext.reset();
             } else {
                 const auto& effectiveContext = task.context;
-                result.analysisReused=task.rankingOnly && task.progression.size()<=64 && cachedQuery && task.phraseRevision!=0 &&
+                result.analysisReused=task.rankingOnly && task.progression.size()<=maxImportedChordEvents && cachedQuery && task.phraseRevision!=0 &&
                     task.phraseRevision==cachedPhraseRevision && cachedContext &&
                     cachedContext->forcedKey.has_value()==effectiveContext.forcedKey.has_value() &&
                     (!cachedContext->forcedKey || (cachedContext->forcedKey->tonic==effectiveContext.forcedKey->tonic &&
@@ -208,7 +208,7 @@ void RecommendationWorker::run() {
                 else {
                     cachedQuery.reset();
                     result.analysis=analyzeHarmony(task.progression,effectiveContext);
-                    if (task.progression.size()<=64) {
+                    if (task.progression.size()<=maxImportedChordEvents) {
                         cachedQuery=makeMatchQuery(task.progression,effectiveContext);
                         cachedAnalysis=result.analysis;
                         cachedPhraseRevision=task.phraseRevision;
@@ -221,7 +221,7 @@ void RecommendationWorker::run() {
                 config.constraints=task.request.constraints;config.tendency=task.request.tendency;
                 result.enrichments=enrichment::enrichProgression(task.progression,result.analysis,task.request.style,config);
             }
-            if (task.progression.size() <= 64) {
+            if (task.progression.size() <= maxImportedChordEvents) {
                 if (!index && loadError.empty()) {
                     auto selectedFactory = library::loadAvailableFactory(
                         factoryPath_, factoryStore_.value_or(library::factoryStoreDirectory()));
@@ -264,7 +264,7 @@ void RecommendationWorker::run() {
                         result.exactRecommendations=recommendContinuations(*cachedQuery,*index,exactRequest,weights);
                         auto inspirationRequest=task.request;inspirationRequest.inspirationPriority=true;
                         inspirationRequest.preferredIntent.reset();
-                        result.recommendations=recommendContinuations(*cachedQuery,*index,inspirationRequest,weights);
+                        result.recommendations=recommendContinuations(*cachedQuery,*index,inspirationRequest,weights,&result.exactRecommendations);
                         const auto inputCenter=result.analysis.selectedKey?
                             std::optional(result.analysis.selectedKey->key):std::nullopt;
                         for(auto& group:result.recommendations.groups)for(auto& candidate:group) {
@@ -274,7 +274,7 @@ void RecommendationWorker::run() {
                         result.recommendations.inspirationOrder=mixedInspirationOrder(result.recommendations);
                     } else result.recommendations=recommendContinuations(*cachedQuery,*index,task.request,weights);
                 } else result.error = index ? "推荐查询不可用。" : loadError;
-            } else result.error = "超过 64 个和弦；推荐暂不计算。";
+            } else result.error = "超过 128 个和弦；推荐暂不计算。";
         } catch (const std::exception& e) { result.error = e.what(); }
         catch (...) { result.error = "推荐计算异常"; }
         result.computationMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();

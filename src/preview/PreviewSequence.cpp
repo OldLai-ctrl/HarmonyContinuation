@@ -179,7 +179,11 @@ BuildResult buildSequence(const ImportedProgressionSession& imported,const Conti
     if (candidate) out.sourceRecommendation=candidate->id;
     const auto& source=imported.events;
     if (source.empty()) { result.error="empty progression"; return result; }
-    if (source.size()>64 || (candidate && candidate->continuation.size()>64)) { result.error="too many chords"; return result; }
+    if (source.size()>maxImportedChordEvents ||
+        (candidate && (candidate->continuation.size()>64 ||
+                       candidate->continuation.size()>maxImportedChordEvents-source.size()))) {
+        result.error="too many chords"; return result;
+    }
     const auto anchor=source.front().startQN;
     if (!std::isfinite(anchor)) { result.error="invalid start"; return result; }
     std::vector<double> known, structural;

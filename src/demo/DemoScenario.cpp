@@ -37,7 +37,7 @@ ScenarioResult loadScenario(const std::filesystem::path& path) {
         auto parsed=dev::parseProgressionJson(std::string_view(data).substr(begin,end-begin+1));
         if (!parsed) throw std::runtime_error(parsed.error);
         result.scenario.chords=std::move(parsed.events);
-        if (result.scenario.chords.size()>64 || !sortAndInferDurations(result.scenario.chords)) throw std::runtime_error("invalid demo chords");
+        if (result.scenario.chords.size()>maxImportedChordEvents || !sortAndInferDurations(result.scenario.chords)) throw std::runtime_error("invalid demo chords");
         if (auto value=field("forcedKey")) {
             constexpr const char* names[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
             bool found{};

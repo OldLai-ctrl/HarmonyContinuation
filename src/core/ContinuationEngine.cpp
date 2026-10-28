@@ -307,7 +307,8 @@ DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
 }
 
 RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
-                                         const RecommendationRequest& request, const RecommendationWeights& w) {
+                                         const RecommendationRequest& request, const RecommendationWeights& w,
+                                         const RecommendationSet* exactBase) {
     RecommendationSet result;
     result.retrievalTimingMode=query.retrievalTimingMode;
     result.phase3aEnabled=w.diminishedPassingInsertionException;
@@ -316,7 +317,17 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     MatchWeights matchWeights;
     matchWeights.abstractChordCompatibility=result.abstractChordCompatibility;
     if(unified) matchWeights.keyPriorWeight=0.f;
-    result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats, true);
+    const bool creative=request.inspirationPriority&&request.preferredIntent!=PhraseIntent::Resolve;
+    // The ordinary Match bank keeps its full-history contract. Inspiration
+    // reuses that work when supplied, and never adds a growing-history DP pass.
+    if(creative&&exactBase) {
+        result.matches=exactBase->matches;result.stats=exactBase->stats;
+        // Reuse retrieval timing, not the previous bank's qualification counts.
+        result.stats.similarityPassed=result.stats.tailPassed=result.stats.realizationPassed=0;
+        result.stats.pathPassed=result.stats.distinct=result.stats.scorePassed=result.stats.output=0;
+    }
+    else if(!creative||query.source.size()<=8)
+        result.matches = matchProgression(query, index, matchWeights, index.templates().size(), &result.stats, true);
     std::map<std::string, ContinuationCandidate> distinct;
     std::unordered_map<TemplateID, const ProgressionTemplate*> byId;
     byId.reserve(index.templates().size());
@@ -389,12 +400,18 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             for (std::size_t i = 0; i < std::min(wrapEnd, item.full.size()); ++i) suffix.push_back(item.full[i]);
         }
         if (suffix.empty()) { match.disposition="empty_suffix"; continue; }
+        if(creative&&suffix.size()!=item.full.size()-match.continuationStartIndex&&
+            !(match.continuationStartIndex==item.full.size()&&suffix.size()==item.full.size())) {
+            // Match retains the legacy wrap contract. Inspiration only admits
+            // a source suffix ending at its original boundary or one whole cycle.
+            match.disposition="wrapped_before_source_end";continue;
+        }
         ++result.stats.pathPassed;
         auto rhythm = estimateRhythmScale(match, query, item);
         match.timingSource=rhythm.source;
         ContinuationCandidate candidate;
         candidate.primaryTemplate = item.id;
-        if(item.version==7&&!item.tags.empty())candidate.family=item.tags.front();
+        if(item.version>=7&&!item.tags.empty())candidate.family=item.tags.front();
         else for(const auto& e:item.full)if(e.degree)candidate.family+=std::to_string(e.degree->degree)+":"+std::to_string(e.degree->alteration)+",";
         candidate.sourceAnchorQN = query.source.empty()?0.:query.source.front().startQN;
         candidate.key = match.key;
@@ -541,6 +558,8 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         if (!candidate.constraints.melody.empty())
             candidate.rankingScore -= melodySoftPenaltyPoints*(1.f-candidate.melodyCompatibility.score);
         candidate.evidence.push_back({item.id,match.key,match.templateMatchStart,match.templateMatchEnd,match.continuationStartIndex});
+        if(creative&&!query.interpretations.empty())
+            annotatePhraseDevelopment(candidate,item,index,query.interpretations.front().key.key);
         const auto identity = continuationMusicFingerprint(candidate);
         candidate.id = "music-v1:" + identity;
         match.disposition="candidate_generated";match.candidateRankingScore=candidate.rankingScore;
@@ -578,7 +597,6 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         ++result.stats.scorePassed;
         result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
     }
-    const bool creative=request.inspirationPriority&&request.preferredIntent!=PhraseIntent::Resolve;
     if(creative)appendContextualContinuations(query,index,request,result);
     for (std::size_t groupNumber=0;groupNumber<result.groups.size();++groupNumber) {
         auto& group=result.groups[groupNumber];

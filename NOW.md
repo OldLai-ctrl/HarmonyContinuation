@@ -2,6 +2,12 @@
 
 ## 本轮工作与下一步
 
+### G8 完整开放乐句与递归续写（实施中）
+
+独立分支 `development/g8-open-recursive-20261027` 从G7交付`7a7021e`建立，开发版本dev.9；源码/BuildCommit待冻结。[G8内容、检索与验收](docs/G8_OPEN_RECURSIVE_REVIEW.md)维护唯一专题记录。V8为V7/1272加16条完整编辑句，其中15条开放、12个开放家族；一条局部小调到达保留为阶段性停顿。V7基础DB/HCA与G7冻结文件hash相同，原工作树和产物保持。
+
+尾部8/4/3/2检索、结束分类、有限下一段索引与128事件回导路径已实现，正在定向检查；RCR-3固定seed的一批50起点尚未运行。Session5/Snapshot3不迁移，超过64事件的新对象需新读者。未制作Setup，真实DAW和新音乐听评未完成；不操作生产或真实user.db，不自动推送/main/Tag/Release。
+
 ### G7 四入口与灵感首页（2026-10-27）
 
 独立分支 `development/g7-four-entry-20261027`；实现/插件BuildCommit **`58dfce0fb78c712def4902d81b8103747b746ea2` / 0.11.0-dev.8 / Factory7 / 1272**。从G6交付头`8da40f7`建立，dev.6/V7及dev.7产物保留。[集中交付、五条音乐与听评状态](docs/G7_FOUR_ENTRY_REVIEW.md)，长期架构见[D13](DECISIONS.md#d13-g7-四入口与双推荐视图)。

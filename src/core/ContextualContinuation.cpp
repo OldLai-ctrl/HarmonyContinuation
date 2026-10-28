@@ -43,7 +43,9 @@ ConcreteChordEvent sourceEvent(const ProgressionTemplate& item,std::size_t i,Key
 }
 unsigned absoluteMask(const ChordPitchSet& c) {
     unsigned mask{};
-    for(int i=0;i<12;++i)if(c.intervals&(1u<<i))mask|=1u<<mod(c.root+i);
+    for(int i=0;i<12;++i)if((c.intervals|c.colorMask)&(1u<<i))mask|=1u<<mod(c.root+i);
+    // A slash pedal is an actual sounding tone even outside the upper chord.
+    if(c.bass>=0)mask|=1u<<c.bass;
     return mask;
 }
 int common(const ChordPitchSet& a,const ChordPitchSet& b) {
@@ -70,7 +72,7 @@ bool compatible(const ChordEvent& input,const ConcreteChordEvent& expected) {
 struct Boundary { bool passed{}; float score{}; std::string reason; };
 Boundary boundary(const ChordPitchSet& a,const ChordPitchSet& b) {
     if(a.root<0||a.bass<0||b.root<0||b.bass<0||!a.intervals||!b.intervals)return {};
-    if(a.root==b.root&&a.bass==b.bass&&a.intervals==b.intervals)return {};
+    if(a.root==b.root&&a.bass==b.bass&&(a.intervals|a.colorMask)==(b.intervals|b.colorMask))return {};
     const int bass=distance(a.bass,b.bass),shared=common(a,b),root=mod(b.root-a.root);
     const bool dominant=(a.quality==ChordQuality::Dominant7||core(a.quality)==ChordQuality::Major)&&root==5;
     // The seam needs audible continuity or a functional fifth. Novelty never
@@ -91,8 +93,20 @@ Boundary boundary(const ChordPitchSet& a,const ChordPitchSet& b) {
         "common-tone/stepwise seam; actual bass and extended tones checked"};
 }
 bool reviewed(const ProgressionTemplate& t) {
-    return t.sourceType=="factory"&&t.version==7&&t.id.starts_with("V7_")&&
-        std::find(t.tags.begin(),t.tags.end(),"V7-editorial")!=t.tags.end();
+    return t.sourceType=="factory"&&
+        ((t.version==7&&t.id.starts_with("V7_")&&std::find(t.tags.begin(),t.tags.end(),"V7-editorial")!=t.tags.end())||
+         (t.version==8&&t.id.starts_with("V8_")&&std::find(t.tags.begin(),t.tags.end(),"G8-editorial")!=t.tags.end()));
+}
+PhraseEnding editorialEnding(const ProgressionTemplate& t) {
+    if(!reviewed(t)||std::find(t.tags.begin(),t.tags.end(),"G8-complete")==t.tags.end())return PhraseEnding::Unknown;
+    constexpr std::pair<const char*,PhraseEnding> values[]{
+        {"closed",PhraseEnding::Closed},{"modulated_closure",PhraseEnding::ModulatedClosure},
+        {"interim_pause",PhraseEnding::InterimPause},{"open_unresolved",PhraseEnding::OpenUnresolved},
+        {"suspended",PhraseEnding::Suspended},{"loop_return",PhraseEnding::LoopReturn},
+        {"modal_development",PhraseEnding::ModalDevelopment},{"center_transition",PhraseEnding::CenterTransition}};
+    for(const auto& [name,value]:values)
+        if(std::find(t.tags.begin(),t.tags.end(),std::string("G8-ending-")+name)!=t.tags.end())return value;
+    return PhraseEnding::Unknown;
 }
 std::optional<KeySignature> authoredDestination(const ContinuationCandidate& c) {
     if(c.continuation.size()<3)return {};
@@ -157,6 +171,16 @@ std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemp
             terminal.quality=(t.mode==Mode::Major?major:minor)[degree-1];
             const auto seam=boundary(pitches(realizeContinuation(terminal,k,4)),start);
             if(seam.passed)result.push_back({i,0,terminal,seam.reason});
+            else {
+                // A seventh can supply the common tone missing from a triad
+                // prototype. Admission still rechecks the user's actual bass/tones.
+                auto extended=terminal;
+                extended.quality=terminal.quality==ChordQuality::Minor?ChordQuality::Minor7:
+                    terminal.quality==ChordQuality::Diminished?ChordQuality::HalfDiminished7:
+                    degree==5?ChordQuality::Dominant7:ChordQuality::Major7;
+                const auto richer=boundary(pitches(realizeContinuation(extended,k,4)),start);
+                if(richer.passed)result.push_back({i,0,terminal,"seventh-prototype entry; "+richer.reason});
+            }
             if(degree==5)for(const auto quality:{ChordQuality::Sus4,ChordQuality::Dominant7}) {
                 terminal.quality=quality;
                 const auto suspended=boundary(pitches(realizeContinuation(terminal,k,4)),start);
@@ -167,19 +191,120 @@ std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemp
     return result;
 }
 
+std::vector<PhraseLink> buildDevelopmentLinks(const std::vector<ProgressionTemplate>& templates) {
+    // Only explicitly reviewed complete open phrases participate. At most four
+    // different entry/family choices per endpoint; never combine the full catalogue.
+    std::vector<std::size_t> eligible;
+    for(std::size_t i=0;i<templates.size();++i)
+        if(unterminatedEnding(editorialEnding(templates[i]))&&templates[i].full.size()>=4)eligible.push_back(i);
+    std::vector<PhraseLink> result;
+    for(const auto from:eligible) {
+        const auto& a=templates[from];const KeySignature center{PitchClass::C,a.mode};
+        const auto terminal=pitches(sourceEvent(a,a.full.size()-1,center));
+        std::vector<PhraseLink> choices;
+        for(const auto to:eligible) {
+            const auto& b=templates[to];
+            if(from==to||a.mode!=b.mode||familyFor(a)==familyFor(b)||
+                a.meterNumerator!=b.meterNumerator||a.meterDenominator!=b.meterDenominator)continue;
+            const auto seam=boundary(terminal,pitches(sourceEvent(b,0,center)));
+            if(seam.passed)choices.push_back({from,to,seam.score,seam.reason});
+        }
+        std::sort(choices.begin(),choices.end(),[&](const auto& a,const auto& b){
+            return a.boundaryScore!=b.boundaryScore?a.boundaryScore>b.boundaryScore:
+                templates[a.nextTemplate].id<templates[b.nextTemplate].id;
+        });
+        std::set<std::string> entries;std::size_t admitted{};
+        for(const auto& link:choices) {
+            const auto& b=templates[link.nextTemplate];const auto first=pitches(sourceEvent(b,0,center));
+            const auto signature=std::to_string(first.root)+":"+std::to_string(first.bass)+":"+familyFor(b);
+            if(entries.insert(signature).second) {result.push_back(link);if(++admitted==4)break;}
+        }
+    }
+    return result;
+}
+
+bool unterminatedEnding(PhraseEnding e) noexcept {
+    return e==PhraseEnding::OpenUnresolved||e==PhraseEnding::Suspended||e==PhraseEnding::LoopReturn||
+        e==PhraseEnding::ModalDevelopment||e==PhraseEnding::CenterTransition;
+}
+const char* phraseEndingName(PhraseEnding e) noexcept {
+    switch(e) {
+        case PhraseEnding::Closed:return "closed";
+        case PhraseEnding::ModulatedClosure:return "modulated-closure";
+        case PhraseEnding::InterimPause:return "interim-pause";
+        case PhraseEnding::OpenUnresolved:return "open-unresolved";
+        case PhraseEnding::Suspended:return "suspended";
+        case PhraseEnding::LoopReturn:return "loop-return";
+        case PhraseEnding::ModalDevelopment:return "modal-development";
+        case PhraseEnding::CenterTransition:return "center-transition";
+        default:return "unknown";
+    }
+}
+void annotatePhraseDevelopment(ContinuationCandidate& c,const ProgressionTemplate& item,
+    const CandidateIndex& index,KeySignature inputCenter) {
+    if(c.continuation.empty())return;
+    const bool wholeCycle=c.channel==RecommendationChannel::Exact&&item.loopable&&
+        c.continuationStart==item.full.size()&&c.continuation.size()==item.full.size();
+    c.sourceEndPreserved=c.continuationStart+c.continuation.size()==item.full.size()||wholeCycle;
+    c.completeSourcePhrase=c.sourceEndPreserved&&(c.continuationStart==0||wholeCycle);
+    const auto editorial=c.sourceEndPreserved?editorialEnding(item):PhraseEnding::Unknown;
+    const auto last=pitches(c.continuation.back());
+    const auto authored=authoredDestination(c);
+    const auto center=authored.value_or(c.targetCenter.value_or(inputCenter));
+    bool cadence{};
+    if(c.continuation.size()>=2) {
+        const auto before=pitches(c.continuation[c.continuation.size()-2]);
+        cadence=last.root==int(center.tonic)&&last.bass==last.root&&
+            (core(last.quality)==ChordQuality::Major||core(last.quality)==ChordQuality::Minor)&&
+            (mod(before.root-last.root)==7||mod(before.root-last.root)==5);
+    }
+    // Actual cadential evidence takes precedence over an editorial open tag.
+    if(cadence)c.ending=sameCenter(inputCenter,center)?PhraseEnding::Closed:PhraseEnding::ModulatedClosure;
+    else if(editorial!=PhraseEnding::Unknown){c.ending=editorial;c.reviewedEnding=true;}
+    else if(core(last.quality)==ChordQuality::Sus2||core(last.quality)==ChordQuality::Sus4||last.quality==ChordQuality::Dominant7)
+        c.ending=PhraseEnding::Suspended;
+    else if(last.root==int(center.tonic))c.ending=PhraseEnding::InterimPause;
+    else c.ending=PhraseEnding::Unknown; // no final I does not certify development
+    c.endingEvidence=c.reviewedEnding?"complete phrase editorial review; no user audition claim":"observed ending; development unverified";
+    if(c.ending==PhraseEnding::CenterTransition) {
+        c.targetCenter.reset();c.centerRelation=CenterRelation::Undetermined;
+        c.endingEvidence+="; center in transition, no established destination claimed";
+    }
+    if(!c.sourceEndPreserved||!unterminatedEnding(c.ending))return;
+    const auto from=std::find_if(index.templates().begin(),index.templates().end(),[&](const auto& t){return t.id==item.id;});
+    if(from==index.templates().end())return;
+    const auto fromIndex=std::size_t(from-index.templates().begin());
+    for(const auto& link:index.developmentLinks())if(link.sourceTemplate==fromIndex) {
+        const auto& next=index.templates()[link.nextTemplate];
+        if(boundary(last,pitches(sourceEvent(next,0,c.key))).passed)c.nextPhraseSources.push_back(next.id);
+    }
+}
+
 void appendContextualContinuations(const MatchQuery& query,const CandidateIndex& index,
     const RecommendationRequest& request,RecommendationSet& output) {
     const auto begin=std::chrono::steady_clock::now();
-    if(query.source.size()<2||query.source.size()>64||query.interpretations.empty())return;
-    const auto origin=query.interpretations.front().key.key;
+    if(query.source.size()<2||query.source.size()>maxImportedChordEvents||query.interpretations.empty())return;
+    // Bounded recent phrase (up to eight events) plus 4/3/2-event anchors.
+    // Historical source remains untouched for playback, durations and hard constraints.
+    const auto recentSize=std::min<std::size_t>(8,query.source.size());
+    AnalysisContext recentContext;recentContext.timeSigNumerator=query.timeSigNumerator;
+    recentContext.timeSigDenominator=query.timeSigDenominator;
+    if(query.forcedKey)recentContext.forcedKey=query.interpretations.front().key.key;
+    const Progression recent(query.source.end()-recentSize,query.source.end());
+    const auto local=makeMatchQuery(recent,recentContext);
+    if(local.interpretations.empty())return;
+    const auto origin=local.interpretations.front().key.key;
     std::vector<KeySignature> centers;
     const auto addCenter=[&](KeySignature k) {
         if(std::none_of(centers.begin(),centers.end(),[&](auto x){return sameCenter(x,k);}))centers.push_back(k);
     };
-    for(std::size_t i=0;i<std::min<std::size_t>(3,query.interpretations.size());++i) {
-        const auto k=query.interpretations[i].key.key;addCenter(k);
+    for(std::size_t i=0;i<std::min<std::size_t>(3,local.interpretations.size());++i) {
+        const auto k=local.interpretations[i].key.key;addCenter(k);
         addCenter({PitchClass(mod(int(k.tonic)+(k.mode==Mode::Major?9:3))),k.mode==Mode::Major?Mode::Minor:Mode::Major});
     }
+    // Earlier context is an additional explanation, never a prerequisite.
+    if(!query.forcedKey)for(std::size_t i=0;i<std::min<std::size_t>(2,query.interpretations.size());++i)
+        addCenter(query.interpretations[i].key.key);
     const auto current=chordPitches(query.source.back());
     // A new center must share the actual pivot chord with the current center.
     // Its catalogue phrase must then establish that destination (checked below).
@@ -194,6 +319,8 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
     for(const auto& g:output.groups)for(const auto& c:g)exact.insert(continuationMusicFingerprint(c));
     for(const auto& anchor:index.contextAnchors()) {
         const auto& item=index.templates()[anchor.templateIndex];
+        if(query.timeSigNumerator&&query.timeSigDenominator&&
+            (*query.timeSigNumerator!=item.meterNumerator||*query.timeSigDenominator!=item.meterDenominator))continue;
         const bool transition=anchor.terminalPrototype.has_value();
         if(transition)++output.transitionExamined;else ++output.contextualExamined;
         for(const auto target:centers) {
@@ -209,7 +336,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 // for the query's voicing. Its actual bass/tones are checked below.
                 if(current.root!=terminal.root||core(current.quality)!=core(terminal.quality))continue;
             } else {
-                for(const auto n:{query.source.size(),std::size_t(3),std::size_t(2)}) {
+                for(const auto n:{recentSize,std::size_t(4),std::size_t(3),std::size_t(2)}) {
                     if(n<2||n>query.source.size()||n>anchor.continuationStart)continue;
                     bool match=true;
                     for(std::size_t j=0;j<n&&match;++j)
@@ -221,7 +348,8 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
             }
             ContinuationCandidate c;
             c.channel=transition?RecommendationChannel::PhraseTransition:length==query.source.size()?
-                RecommendationChannel::ContextFull:length==3?RecommendationChannel::ContextThree:RecommendationChannel::ContextTwo;
+                RecommendationChannel::ContextFull:length>4?RecommendationChannel::ContextPhrase:length==4?
+                RecommendationChannel::ContextFour:length==3?RecommendationChannel::ContextThree:RecommendationChannel::ContextTwo;
             c.provenance=transition?ConnectionProvenance::AlgorithmAssessed:ConnectionProvenance::DirectSource;
             c.primaryTemplate=item.id;c.supportingTemplates={item.id};c.key=target;c.originCenter=origin;c.targetCenter=target;
             c.centerRelation=modulation?CenterRelation::Modulation:relativeCenter(origin,target)?CenterRelation::Relative:CenterRelation::Same;
@@ -233,7 +361,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
             // also the one consumed by playback/MIDI/Snapshot; no later rebuilding.
             for(std::size_t j=anchor.continuationStart;j<item.full.size();++j)
                 c.continuation.push_back(sourceEvent(item,j,target));
-            if(c.continuation.empty()||c.continuation.size()+query.source.size()>64)continue;
+            if(c.continuation.empty()||c.continuation.size()+query.source.size()>maxImportedChordEvents)continue;
             bool authoredCenterEstablished{};
             if(reviewed(item))if(const auto destination=authoredDestination(c);destination&&!sameCenter(*destination,target)) {
                 c.targetCenter=*destination;
@@ -259,7 +387,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 colors+=e.degree.alteration!=0||std::popcount(unsigned(p.intervals))>3||p.bass!=p.root;
             }
             if(!playable)continue;
-            c.suggestedCurrentChordDurationQN=progressionOpenDuration(query.source);
+            c.suggestedCurrentChordDurationQN=progressionOpenDuration(recent);
             c.constraints=request.constraints;
             c.melodyCompatibility=evaluateMelody(continuationProgression(query.source,c),request.constraints);
             c.hardConstraintsPassed=c.melodyCompatibility.hardSatisfied;
@@ -284,9 +412,11 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 const auto previous=c.continuation.size()>1?pitches(c.continuation[c.continuation.size()-2]):current;
                 const bool finalCadence=last.root==int(endCenter.tonic)&&
                     (mod(previous.root-last.root)==7||mod(previous.root-last.root)==5);
-                if(finalCadence&&!centerShift)continue;
-                if(!open&&!centerShift)continue;
-                c.completion={.8f,centerShift?CompletionReason::FunctionalPivot:CompletionReason::DevelopedPath};
+                // Retain a sourced modulating cadence as a completed route, not
+                // as evidence of open development. Ending drives inspiration exposure.
+                if(finalCadence)c.completion={.8f,CompletionReason::DominantTonic};
+                else if(!open)c.completion={.6f,CompletionReason::StableTonic};
+                else c.completion={.8f,centerShift?CompletionReason::FunctionalPivot:CompletionReason::DevelopedPath};
             }
             if(c.intent==PhraseIntent::Loop)c.completion={.8f,CompletionReason::LoopClosure};
             if(c.intent==PhraseIntent::Color&&colors)c.completion={.8f,CompletionReason::AudibleColor};
@@ -308,11 +438,14 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 return e.degree.alteration!=0||(absoluteMask(pitches(e))&~scaleMask(target))!=0;
             });
             c.direction=centerShift||borrowed?CreativeDirection::Bold:CreativeDirection::Rich;
-            c.connectionReason=(transition?"algorithm-assessed seam; V7 editorial phrase, no independent seam review; ":
+            annotatePhraseDevelopment(c,item,index,origin);
+            c.connectionReason=(transition?"algorithm-assessed seam; complete editorial phrase, no independent seam review; ":
                 "direct-source suffix; contiguous "+std::to_string(length)+"-chord context; ")+seam.reason;
             if(modulation)c.connectionReason+="; shared diatonic pivot and destination V-I";
             else if(relativeCenter(origin,target))c.connectionReason+="; relative major/minor interpretation";
             if(authoredCenterEstablished)c.connectionReason+="; source-authored predominant/V7/I establishes "+formatKey(*c.targetCenter);
+            c.connectionReason+="; ending="+std::string(phraseEndingName(c.ending));
+            if(!c.nextPhraseSources.empty())c.connectionReason+="; "+std::to_string(c.nextPhraseSources.size())+" indexed next-phrase seams (constraints rechecked on next import)";
             if(transition)++output.transitionQualified;else ++output.contextualQualified;
             const auto identity=continuationMusicFingerprint(c);
             if(exact.contains(identity))continue;
@@ -371,6 +504,8 @@ const char* recommendationChannelName(RecommendationChannel c) noexcept {
         case RecommendationChannel::ContextFull:return "context-full";
         case RecommendationChannel::ContextThree:return "context-three";
         case RecommendationChannel::ContextTwo:return "context-two";
+        case RecommendationChannel::ContextFour:return "context-four";
+        case RecommendationChannel::ContextPhrase:return "context-phrase";
         case RecommendationChannel::PhraseTransition:return "phrase-transition";
         default:return "exact";
     }
@@ -411,6 +546,7 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
         return c.provenance==ConnectionProvenance::AlgorithmAssessed?1:c.creativeQuality.tier;
     };
     std::array<std::size_t,3> directions{},sources{};
+    std::map<int,std::size_t> endings;
     std::array<std::map<std::string,int>,7> seen;
     std::vector<bool> used(pool.size());
     std::vector<RecommendationPosition> order;order.reserve(pool.size());
@@ -428,7 +564,14 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
             }
             const float directionDeficit=directionTargets[d]*float(slot+1)-float(directions[d]);
             const float sourceDeficit=sourceTargets[s]*float(slot+1)-float(sources[s]);
-            const float utility=qualityBand(c)*6.f+8.f*(directionDeficit+sourceDeficit)-penalty;
+            // Reviewed full phrases with actual next-entry edges get exposure;
+            // a new key or a non-tonic last chord alone earns no such benefit.
+            const bool developing=c.sourceEndPreserved&&c.reviewedEnding&&unterminatedEnding(c.ending);
+            const float development=developing?(c.nextPhraseSources.empty()?2.f:
+                c.completeSourcePhrase?7.f:c.continuation.size()>=4?4.f:1.f):0.f;
+            const bool closed=c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure;
+            const float endingPenalty=closed?3.f*float(endings[int(PhraseEnding::Closed)]):0.f;
+            const float utility=qualityBand(c)*6.f+8.f*(directionDeficit+sourceDeficit)+development-penalty-endingPenalty;
             const bool better=best==pool.size()||(!c.exploratory&&candidate(best).exploratory)||
                 (c.exploratory==candidate(best).exploratory&&(utility>bestUtility+.001f||
                     (std::abs(utility-bestUtility)<.001f&&c.channel==candidate(best).channel&&c.rankingScore>candidate(best).rankingScore)));
@@ -436,6 +579,7 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
         }
         used[best]=true;const auto& c=candidate(best);
         ++directions[std::size_t(c.direction)];++sources[std::size_t(sourceClass(c))];
+        if(c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure)++endings[int(PhraseEnding::Closed)];
         for(std::size_t f=0;f<7;++f)++seen[f][pool[best].features[f]];
         order.push_back(pool[best].position);
     }

@@ -1,0 +1,6448 @@
+{
+  "version": 8,
+  "baseline": "58dfce0fb78c712def4902d81b8103747b746ea2",
+  "factoryStorageSchemaVersion": 2,
+  "sources": {
+    "duinker-2019": {
+      "title": "Plateau Loops and Hybrid Tonics in Recent Pop Music",
+      "url": "https://www.mtosmt.org/issues/mto.19.25.4/mto.19.25.4.duinker.html",
+      "scope": "Plateau-loop, hybrid-tonic, and absent-tonic concepts only; not a source for any complete G8 phrase."
+    },
+    "hudson-wang-2025": {
+      "title": "Chord Tone or Harmonic-Bass Divorce? An Enactive Approach to Hearing Pedals in Popular Music",
+      "url": "https://www.mtosmt.org/issues/mto.25.31.4/mto.25.31.4.hudson_wang.html",
+      "scope": "Pedal-sonority mechanisms only; not a source for any complete G8 phrase."
+    },
+    "li-2026": {
+      "title": "Modulation and Chromatic Mediants in Japanese Anime Songs",
+      "url": "https://mtosmt.org/issues/mto.26.32.1/mto.26.32.1.li.php",
+      "scope": "Anime-song chromatic-mediant and sectional-transition mechanisms only; not a source for any complete G8 phrase."
+    }
+  },
+  "runtimeEncodingNotes": [
+    "candidates.json contains only the 16 G8 additions; it does not duplicate V7.",
+    "Runtime sourceType=factory is required by the existing Factory JSON parser; editorial sourceType is original-editorial-design in metadata.json.",
+    "cadence is none for all phrases; editorial ending and boundary.loop are separate fields.",
+    "The required legacy pop/rock style weights are inherited from V7 and make no source-work or genre-frequency claim."
+  ],
+  "candidates": [
+    {
+      "id": "V8_01_001",
+      "musicalIdentity": "PlateauRise",
+      "nameZh": "01悬置抬升",
+      "family": "PlateauLoop",
+      "submechanism": "PlateauRise",
+      "rawChords": "Fmaj7 G6 Am7 C/E Fadd9 Am7/E Dm9 Gsus4",
+      "chords": "Fmaj7 G6 Am7 C/E Fadd9 Am7/E Dm9 Gsus4",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G6",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fadd9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7/E",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gsus4",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "suspended",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is suspended; the supplied final chord Gsus4 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord PlateauRise phrase in the PlateauLoop family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "duinker-2019",
+          "url": "https://www.mtosmt.org/issues/mto.19.25.4/mto.19.25.4.duinker.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "65707d0040db5330c30f4f9d94770c715d265b978b0ea114a2d8b6ed253d5148",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_002",
+      "musicalIdentity": "NeighbourPlateau",
+      "nameZh": "02邻接平台回环",
+      "family": "PlateauLoop",
+      "submechanism": "NeighbourPlateau",
+      "rawChords": "Fmaj9 Am9 G6 C/E Fmaj9 Dm9 Em7 Gsus4",
+      "chords": "Fmaj9 Am9 G6 C/E Fmaj9 Dm9 Em7 Gsus4",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G6",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gsus4",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "loop_return",
+      "boundary": {
+        "loop": true,
+        "basis": "Designed return from Gsus4 to the opening harmony through shared chord tones; loopability is editorial and index availability is untested."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord NeighbourPlateau phrase in the PlateauLoop family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "duinker-2019",
+          "url": "https://www.mtosmt.org/issues/mto.19.25.4/mto.19.25.4.duinker.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "47fba87df295f4bca47bd6f4efdc2bc6392017faa5b2dd4fe4289d27af416bd1",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_003",
+      "musicalIdentity": "AbsentTonic",
+      "nameZh": "03隐主音展开",
+      "family": "AbsentTonic",
+      "submechanism": "AbsentTonic",
+      "rawChords": "Fadd9 G/F Em7 Am9 Fmaj7 Am7/E Dm9 Em7",
+      "chords": "Fadd9 G/F Em7 Am9 Fmaj7 Am7/E Dm9 Em7",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Fadd9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G/F",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7/E",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "open_unresolved",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is open_unresolved; the supplied final chord Em7 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord AbsentTonic phrase in the AbsentTonic family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "duinker-2019",
+          "url": "https://www.mtosmt.org/issues/mto.19.25.4/mto.19.25.4.duinker.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "d50038162e54952d165d66edb9a8a1d059e551cbe042685d4f36a93a3517af1c",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_004",
+      "musicalIdentity": "DorianPedal",
+      "nameZh": "04多利亚持续低音",
+      "family": "ModalPedal",
+      "submechanism": "DorianPedal",
+      "rawChords": "Am9 D/A G/A D/A Am7 Cmaj7/E D9/F# Bm7",
+      "chords": "Am9 D/A G/A D/A Am7 Cmaj7/E D9/F# Bm7",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/A",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G/A",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/A",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cmaj7/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D9/F#",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "F#",
+          "bassPC": 6,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bm7",
+          "rootNote": "B",
+          "rootPC": 11,
+          "bassNote": "B",
+          "bassPC": 11,
+          "pitchClasses": [
+            2,
+            6,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "modal_development",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is modal_development; the supplied final chord Bm7 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord DorianPedal phrase in the ModalPedal family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "hudson-wang-2025",
+          "url": "https://www.mtosmt.org/issues/mto.25.31.4/mto.25.31.4.hudson_wang.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "ede334c20ddec9f97b03e7b5e51ccf42137c084f5230584744f12e261c1c052f",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_005",
+      "musicalIdentity": "MinorLine",
+      "nameZh": "05小调下行低音线",
+      "family": "MinorLine",
+      "submechanism": "MinorLine",
+      "rawChords": "Am9 AmMaj7/G# Am7/G D9/F# Fmaj7 Em7 Dm9 G6",
+      "chords": "Am9 AmMaj7/G# Am7/G D9/F# Fmaj7 Em7 Dm9 G6",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "AmMaj7/G#",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "G#",
+          "bassPC": 8,
+          "pitchClasses": [
+            0,
+            4,
+            8,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7/G",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D9/F#",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "F#",
+          "bassPC": 6,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G6",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "open_unresolved",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is open_unresolved; the supplied final chord G6 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord MinorLine phrase in the MinorLine family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "80147d3a6c88f8f6cac571743c0e8c466899a4d5b4c9134d04866cb55b832744",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_006",
+      "musicalIdentity": "PhrygianPedal",
+      "nameZh": "06弗里吉亚持续低音",
+      "family": "ModalPedal",
+      "submechanism": "PhrygianPedal",
+      "rawChords": "Am7 Bb/A C/A Bb/A Am9 Gm9 Bbmaj7 Gm9",
+      "chords": "Am7 Bb/A C/A Bb/A Am9 Gm9 Bbmaj7 Gm9",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am7",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bb/A",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/A",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bb/A",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bbmaj7",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "modal_development",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is modal_development; the supplied final chord Gm9 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord PhrygianPedal phrase in the ModalPedal family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "hudson-wang-2025",
+          "url": "https://www.mtosmt.org/issues/mto.25.31.4/mto.25.31.4.hudson_wang.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "b8a64c874bf2c305ccf3a717b15fbf02bd9c64200a0398ce599c1a656fa04c46",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_007",
+      "musicalIdentity": "LydianExpansion",
+      "nameZh": "07利底亚展开",
+      "family": "LydianExpansion",
+      "submechanism": "LydianExpansion",
+      "rawChords": "Cmaj9 D/C Em7/D D/C Cmaj7/E D/F# Em9 F#m7b5",
+      "chords": "Cmaj9 D/C Em7/D D/C Cmaj7/E D/F# Em9 F#m7b5",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Cmaj9",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/C",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7/D",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/C",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cmaj7/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/F#",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "F#",
+          "bassPC": 6,
+          "pitchClasses": [
+            2,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em9",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            6,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "F#m7b5",
+          "rootNote": "F#",
+          "rootPC": 6,
+          "bassNote": "F#",
+          "bassPC": 6,
+          "pitchClasses": [
+            0,
+            4,
+            6,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            6,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "modal_development",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is modal_development; the supplied final chord F#m7b5 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord LydianExpansion phrase in the LydianExpansion family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "03e23dee897907bdceabcaed0b7604639951aa0e6538d479280b795fb57d8193",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_008",
+      "musicalIdentity": "SubdominantPlane",
+      "nameZh": "08下属和声流动",
+      "family": "SubdominantPlane",
+      "submechanism": "SubdominantPlane",
+      "rawChords": "Fmaj9 G/F C/E Dm9 Bbmaj7 C/Bb Gm9 Am7",
+      "chords": "Fmaj9 G/F C/E Dm9 Bbmaj7 C/Bb Gm9 Am7",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G/F",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bbmaj7",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/Bb",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am7",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "open_unresolved",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is open_unresolved; the supplied final chord Am7 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord SubdominantPlane phrase in the SubdominantPlane family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "e83de34759ad62f61225ef35d707299bd999849f7e7c3a0bc28ce8314eafbab7",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_009",
+      "musicalIdentity": "ChromaticMediantBridge",
+      "nameZh": "09半音中介跨段",
+      "family": "ChromaticMediantBridge",
+      "submechanism": "ChromaticMediantBridge",
+      "rawChords": "Am9 Fmaj7 Abmaj7 Bb6 Cm9 Ebmaj7 Fm9 Abmaj7",
+      "chords": "Am9 Fmaj7 Abmaj7 Bb6 Cm9 Ebmaj7 Fm9 Abmaj7",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Abmaj7",
+          "rootNote": "Ab",
+          "rootPC": 8,
+          "bassNote": "Ab",
+          "bassPC": 8,
+          "pitchClasses": [
+            0,
+            3,
+            7,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bb6",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cm9",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            3,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Ebmaj7",
+          "rootNote": "Eb",
+          "rootPC": 3,
+          "bassNote": "Eb",
+          "bassPC": 3,
+          "pitchClasses": [
+            2,
+            3,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fm9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            3,
+            5,
+            7,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Abmaj7",
+          "rootNote": "Ab",
+          "rootPC": 8,
+          "bassNote": "Ab",
+          "bassPC": 8,
+          "pitchClasses": [
+            0,
+            3,
+            7,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "center_transition",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is center_transition; the supplied final chord Abmaj7 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord ChromaticMediantBridge phrase in the ChromaticMediantBridge family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "li-2026",
+          "url": "https://mtosmt.org/issues/mto.26.32.1/mto.26.32.1.li.php",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "c64481c68442a503bf7ba1f932aa43d51f1caea584f3f2ce8104348654b37327",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_010",
+      "musicalIdentity": "AscendingBass",
+      "nameZh": "10上行低音展开",
+      "family": "AscendingBass",
+      "submechanism": "AscendingBass",
+      "rawChords": "Dm9 Em7 Fmaj9 G6 Am9 Bm7b5 Cmaj9/E Fmaj9/A",
+      "chords": "Dm9 Em7 Fmaj9 G6 Am9 Bm7b5 Cmaj9/E Fmaj9/A",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G6",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bm7b5",
+          "rootNote": "B",
+          "rootPC": 11,
+          "bassNote": "B",
+          "bassPC": 11,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            6,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cmaj9/E",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9/A",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "open_unresolved",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is open_unresolved; the supplied final chord Fmaj9/A has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord AscendingBass phrase in the AscendingBass family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "cb1ae26a556fb1ebae324c4fe1fdaf2aeff177cfc4b7ebaeeb826e6c307f9635",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_011",
+      "musicalIdentity": "SuspendedSequence",
+      "nameZh": "11悬置和声递进",
+      "family": "SuspendedSequence",
+      "submechanism": "SuspendedSequence",
+      "rawChords": "Dm11 Gsus4 Em11 Asus4 Fmaj9 Bbadd9 C/G Dm9/A",
+      "chords": "Dm11 Gsus4 Em11 Asus4 Fmaj9 Bbadd9 C/G Dm9/A",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Dm11",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2,
+            5
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gsus4",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em11",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            6,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2,
+            5
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Asus4",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            2,
+            4,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bbadd9",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            0,
+            2,
+            5,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/G",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9/A",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "suspended",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is suspended; the supplied final chord Dm9/A has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord SuspendedSequence phrase in the SuspendedSequence family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "81f5b60808569f975b93fdb6c56d4ead55b2018509f5c5c7806161d6268a61b2",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_012",
+      "musicalIdentity": "BorrowedPlagal",
+      "nameZh": "12借用下属转接",
+      "family": "BorrowedPlagal",
+      "submechanism": "BorrowedPlagal",
+      "rawChords": "Am9 Cmaj7/G Fmaj9 Dm9 Fm6 Abmaj7 Gm9 Bbadd9",
+      "chords": "Am9 Cmaj7/G Fmaj9 Dm9 Fm6 Abmaj7 Gm9 Bbadd9",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cmaj7/G",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fm6",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            2,
+            5,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Abmaj7",
+          "rootNote": "Ab",
+          "rootPC": 8,
+          "bassNote": "Ab",
+          "bassPC": 8,
+          "pitchClasses": [
+            0,
+            3,
+            7,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bbadd9",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            0,
+            2,
+            5,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "center_transition",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is center_transition; the supplied final chord Bbadd9 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord BorrowedPlagal phrase in the BorrowedPlagal family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "f6a706bb1a4cd80b74da19a1adf11751f3703c1c432df43f785f843e8defc90a",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_013",
+      "musicalIdentity": "ChangingPedal",
+      "nameZh": "13持续音逐层变化",
+      "family": "ChangingPedal",
+      "submechanism": "ChangingPedal",
+      "rawChords": "Cmaj9/G D/G Em7/G Fmaj7/G Gsus4 F/G Em7/G Dm9/G",
+      "chords": "Cmaj9/G D/G Em7/G Fmaj7/G Gsus4 F/G Em7/G Dm9/G",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Cmaj9/G",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "D/G",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            6,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 6,
+              "canonicalName": "F#"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7/G",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7/G",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gsus4",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "F/G",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7/G",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9/G",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "suspended",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is suspended; the supplied final chord Dm9/G has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord ChangingPedal phrase in the ChangingPedal family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "hudson-wang-2025",
+          "url": "https://www.mtosmt.org/issues/mto.25.31.4/mto.25.31.4.hudson_wang.html",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "56d30e59476cd6bed11a6742f5a91769231bf6729f2838be9a85afa9af6480a3",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_014",
+      "musicalIdentity": "AeolianLift",
+      "nameZh": "14自然小调抬升回环",
+      "family": "AeolianLift",
+      "submechanism": "AeolianLift",
+      "rawChords": "Am9 C/G Fmaj9 G6 Am/E Dm9 Fmaj7 Gsus4",
+      "chords": "Am9 C/G Fmaj9 G6 Am/E Dm9 Fmaj7 Gsus4",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "C/G",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            4,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "G6",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            9
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Am/E",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            0,
+            4,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gsus4",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            0,
+            2,
+            7
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            5,
+            7
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "loop_return",
+      "boundary": {
+        "loop": true,
+        "basis": "Designed return from Gsus4 to the opening Am9 through shared chord tones; loopability is editorial and index availability is untested."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord AeolianLift phrase in the AeolianLift family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "b526c20fc5ee0b648276bdb0000b7e0a69385a5eea3fe04189db56597beefa80",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_015",
+      "musicalIdentity": "MinorMediantMotion",
+      "nameZh": "15小调中介阶段停顿",
+      "family": "MinorMediantMotion",
+      "submechanism": "MinorMediantMotion",
+      "rawChords": "Am9 Fmaj7 Dm9 Bbmaj7 Gm9 Ebmaj7 Cm9 Fm9",
+      "chords": "Am9 Fmaj7 Dm9 Bbmaj7 Gm9 Ebmaj7 Cm9 Fm9",
+      "referenceTonic": "A",
+      "sourceCoordinateMode": "minor",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Am9",
+          "rootNote": "A",
+          "rootPC": 9,
+          "bassNote": "A",
+          "bassPC": 9,
+          "pitchClasses": [
+            0,
+            4,
+            7,
+            9,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj7",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Bbmaj7",
+          "rootNote": "Bb",
+          "rootPC": 10,
+          "bassNote": "Bb",
+          "bassPC": 10,
+          "pitchClasses": [
+            2,
+            5,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Ebmaj7",
+          "rootNote": "Eb",
+          "rootPC": 3,
+          "bassNote": "Eb",
+          "bassPC": 3,
+          "pitchClasses": [
+            2,
+            3,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Cm9",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            3,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fm9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            3,
+            5,
+            7,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete phrase with a local F-minor v-i arrival and an interim pause; later continuation/use is unconfirmed.",
+      "ending": "interim_pause",
+      "boundary": {
+        "loop": false,
+        "basis": "Cm9 to Fm9 has local minor v-i arrival in F minor; classify as an interim pause, not an open ending. Later phrase availability is unconfirmed."
+      },
+      "openIncrementEligible": false,
+      "rcrEligibilityStatus": "excluded-interim-pause",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord MinorMediantMotion phrase in the MinorMediantMotion family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "No external source claim; this complete phrase is original editorial composition.",
+      "sourceReferences": [],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "e75d96318594455a345c6cd881253d5235bde478c6167d1db47a30de4e6f6df3",
+      "knownRelationships": []
+    },
+    {
+      "id": "V8_01_016",
+      "musicalIdentity": "CommonToneSideStep",
+      "nameZh": "16共同音侧向转接",
+      "family": "ChromaticMediantBridge",
+      "submechanism": "CommonToneSideStep",
+      "rawChords": "Cmaj9 Em7 Abmaj9 Gm9 Fmaj9 Dm9 Dbmaj7 Ebadd9",
+      "chords": "Cmaj9 Em7 Abmaj9 Gm9 Fmaj9 Dm9 Dbmaj7 Ebadd9",
+      "referenceTonic": "C",
+      "sourceCoordinateMode": "major",
+      "meter": "4/4",
+      "durationQN": [
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ],
+      "chordEvents": [
+        {
+          "symbol": "Cmaj9",
+          "rootNote": "C",
+          "rootPC": 0,
+          "bassNote": "C",
+          "bassPC": 0,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Em7",
+          "rootNote": "E",
+          "rootPC": 4,
+          "bassNote": "E",
+          "bassPC": 4,
+          "pitchClasses": [
+            2,
+            4,
+            7,
+            11
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 11,
+              "canonicalName": "B"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Abmaj9",
+          "rootNote": "Ab",
+          "rootPC": 8,
+          "bassNote": "Ab",
+          "bassPC": 8,
+          "pitchClasses": [
+            0,
+            3,
+            7,
+            8,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Gm9",
+          "rootNote": "G",
+          "rootPC": 7,
+          "bassNote": "G",
+          "bassPC": 7,
+          "pitchClasses": [
+            2,
+            5,
+            7,
+            9,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Fmaj9",
+          "rootNote": "F",
+          "rootPC": 5,
+          "bassNote": "F",
+          "bassPC": 5,
+          "pitchClasses": [
+            0,
+            4,
+            5,
+            7,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dm9",
+          "rootNote": "D",
+          "rootPC": 2,
+          "bassNote": "D",
+          "bassPC": 2,
+          "pitchClasses": [
+            0,
+            2,
+            4,
+            5,
+            9
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 2,
+              "canonicalName": "D"
+            },
+            {
+              "pitchClass": 4,
+              "canonicalName": "E"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 9,
+              "canonicalName": "A"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            3,
+            7,
+            10
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Dbmaj7",
+          "rootNote": "Db",
+          "rootPC": 1,
+          "bassNote": "Db",
+          "bassPC": 1,
+          "pitchClasses": [
+            0,
+            1,
+            5,
+            8
+          ],
+          "notes": [
+            {
+              "pitchClass": 0,
+              "canonicalName": "C"
+            },
+            {
+              "pitchClass": 1,
+              "canonicalName": "Db"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 8,
+              "canonicalName": "Ab"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7,
+            11
+          ],
+          "colorIntervals": [],
+          "durationQN": 4.0
+        },
+        {
+          "symbol": "Ebadd9",
+          "rootNote": "Eb",
+          "rootPC": 3,
+          "bassNote": "Eb",
+          "bassPC": 3,
+          "pitchClasses": [
+            3,
+            5,
+            7,
+            10
+          ],
+          "notes": [
+            {
+              "pitchClass": 3,
+              "canonicalName": "Eb"
+            },
+            {
+              "pitchClass": 5,
+              "canonicalName": "F"
+            },
+            {
+              "pitchClass": 7,
+              "canonicalName": "G"
+            },
+            {
+              "pitchClass": 10,
+              "canonicalName": "Bb"
+            }
+          ],
+          "baseIntervals": [
+            0,
+            4,
+            7
+          ],
+          "colorIntervals": [
+            2
+          ],
+          "durationQN": 4.0
+        }
+      ],
+      "formUse": [
+        "complete-phrase"
+      ],
+      "purpose": "Complete eight-chord phrase; further index availability and recommendation use have not been tested.",
+      "ending": "center_transition",
+      "boundary": {
+        "loop": false,
+        "basis": "Primary editorial ending label is center_transition; the supplied final chord Ebadd9 has no final tonic-cadential closure. No automatic wraparound."
+      },
+      "openIncrementEligible": true,
+      "rcrEligibilityStatus": "not-assessed",
+      "memberships": [],
+      "modeAnnotationStatus": "not-reviewed; no new HCA membership emitted",
+      "structure": "Original eight-chord CommonToneSideStep phrase in the ChromaticMediantBridge family; all source event durations are 4 QN.",
+      "sourceType": "original-editorial-design",
+      "source": "Original editorial composition from the supplied raw chord sequence; not transcribed from a commercial work, score, recording, or MIDI.",
+      "support": "Referenced source supports only the named family or harmonic mechanism; it does not support this complete phrase.",
+      "sourceReferences": [
+        {
+          "sourceId": "li-2026",
+          "url": "https://mtosmt.org/issues/mto.26.32.1/mto.26.32.1.li.php",
+          "locator": "Family or harmonic mechanism only; no whole-phrase transcription.",
+          "support": "family-mechanism",
+          "wholePhraseDirectSupport": false
+        }
+      ],
+      "applicationCases": [],
+      "styleEvidence": [
+        {
+          "style": "pop/rock runtime defaults",
+          "level": "legacy-schema-default",
+          "basis": "Reuses V7 runtime style weights; not a genre-frequency or source-work claim."
+        }
+      ],
+      "reviewed": true,
+      "editorialReviewStatus": "complete-phrase-structure-reviewed",
+      "grade": "A",
+      "status": "editorial-reviewed",
+      "adoptionStatus": "approved",
+      "auditionStatus": "pending-human",
+      "indexAvailabilityStatus": "not-tested",
+      "reviewRecord": [
+        {
+          "reviewer": "primary-agent",
+          "decision": "Reviewed as an original complete phrase for editorial structure; this is not user listening approval or index-availability validation."
+        }
+      ],
+      "uncertainties": "No melody, voicing, performance, user audition, or index test supplied.",
+      "identityDefinition": "chordEvents + meter + durationQN; pitch classes in fixed C coordinate, referenceTonic names contextual center; no voicing octave is supplied.",
+      "musicalIdentityFingerprint": "6a6914605927818d4960a7b395fede51d768b43dbf1daec8b8012b4062761591",
+      "knownRelationships": []
+    }
+  ]
+}

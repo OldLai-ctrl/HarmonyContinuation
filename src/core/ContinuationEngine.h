@@ -30,10 +30,14 @@ struct ContinuationEvidence {
     KeySignature key;
     std::size_t matchStart{}, matchEnd{}, continuationStart{};
 };
-enum class RecommendationChannel { Exact, ContextFull, ContextThree, ContextTwo, PhraseTransition };
+enum class RecommendationChannel { Exact, ContextFull, ContextThree, ContextTwo, PhraseTransition, ContextFour, ContextPhrase };
+enum class PhraseEnding {
+    Unknown, Closed, ModulatedClosure, InterimPause, OpenUnresolved,
+    Suspended, LoopReturn, ModalDevelopment, CenterTransition
+};
 enum class ConnectionProvenance { DirectSource, AlgorithmAssessed, EditorialReviewed };
 enum class CreativeDirection { Stable, Rich, Bold };
-enum class CenterRelation { Same, Relative, Modulation };
+enum class CenterRelation { Same, Relative, Modulation, Undetermined };
 struct CreativeQuality {
     float boundary{}, context{}, center{}, source{}, playability{}, phrase{};
     bool qualified{};
@@ -77,6 +81,10 @@ struct ContinuationCandidate {
     std::optional<KeySignature> originCenter, targetCenter, sourceCoordinateCenter;
     std::string connectionReason, family;
     std::size_t contextLength{};
+    PhraseEnding ending{PhraseEnding::Unknown};
+    bool reviewedEnding{}, sourceEndPreserved{}, completeSourcePhrase{};
+    std::string endingEvidence;
+    std::vector<TemplateID> nextPhraseSources; // actual bounded index links, not a promise under future constraints
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
     return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
@@ -139,7 +147,8 @@ const char* completionReasonKey(CompletionReason) noexcept;
 Progression continuationProgression(const Progression&,const ContinuationCandidate&);
 RecommendationSet recommendContinuations(const MatchQuery&, const CandidateIndex&,
                                          const RecommendationRequest& = {},
-                                         const RecommendationWeights& = {});
+                                         const RecommendationWeights& = {},
+                                         const RecommendationSet* exactBase = nullptr);
 const char* intentName(PhraseIntent) noexcept;
 const char* cadenceName(CadenceType) noexcept;
 } // namespace harmony

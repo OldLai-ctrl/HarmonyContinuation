@@ -54,12 +54,12 @@ ChordEvent chordIn(const Value& v) {
     return e;
 }
 std::string encodeChords(const Progression& input) {
-    if(input.size()>64)throw std::runtime_error("too many persisted chords");
+    if(input.size()>maxImportedChordEvents)throw std::runtime_error("too many persisted chords");
     auto v=Value::list();for(const auto& e:input){auto one=chordOut(e);(void)chordIn(one);v.array.push_back(std::move(one));}
     return benchmark::json::dump(v);
 }
 Progression decodeChords(std::string_view input) {
-    const auto v=benchmark::json::parse(input);if(v.items().size()>64)throw std::runtime_error("too many persisted chords");
+    const auto v=benchmark::json::parse(input);if(v.items().size()>maxImportedChordEvents)throw std::runtime_error("too many persisted chords");
     Progression out;for(const auto& e:v.items())out.push_back(chordIn(e));return out;
 }
 std::string encodeTemplateData(const ProgressionTemplate& t) {

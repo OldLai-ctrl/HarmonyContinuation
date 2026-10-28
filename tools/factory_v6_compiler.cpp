@@ -568,6 +568,37 @@ void writeMergedAnnotations(const std::filesystem::path& outputPath,
     require(static_cast<bool>(output), "cannot finish writing " + outputPath.string());
 }
 
+int compileV8Increment(int argc,char** argv) {
+    require(argc==7,"usage: factory_v6_compiler --v8-incremental factory-v7.db candidates.json metadata.json approved-ids.txt output.db");
+    const std::filesystem::path basePath=argv[2],candidatePath=argv[3],metadataPath=argv[4],approvedPath=argv[5],outPath=argv[6];
+    require(std::filesystem::weakly_canonical(basePath)!=std::filesystem::weakly_canonical(outPath),"V8 output must be independent of V7 baseline");
+    const auto base=library::loadFactory(basePath);
+    require(bool(base)&&base.libraryVersion==7&&base.storageSchemaVersion==2&&base.templates.size()==1272,
+        "V8 requires frozen Factory V7 / Schema2 / 1272");
+    const auto increment=readCandidates(candidatePath,8);const auto approved=readApprovedIds(approvedPath);
+    const auto metadata=benchmark::json::parse(readText(metadataPath));
+    require(metadata.at("version").integer(8,8)==8,"V8 metadata version required");
+    std::set<std::string> ids,identities,metadataIds,families;
+    for(const auto& item:base.templates){ids.insert(item.id);identities.insert(audibleSignature(item));}
+    for(const auto& record:metadata.at("candidates").items())metadataIds.insert(jsonText(record,"id"));
+    auto merged=base.templates;
+    for(const auto& item:increment) {
+        require(approved.contains(item.id)&&metadataIds.contains(item.id),"V8 increment must be independently approved and documented: "+item.id);
+        require(ids.insert(item.id).second&&identities.insert(audibleSignature(item)).second,"V8 duplicate ID or complete performance: "+item.id);
+        require(std::find(item.tags.begin(),item.tags.end(),"G8-complete")!=item.tags.end()&&
+            std::find(item.tags.begin(),item.tags.end(),"G8-editorial")!=item.tags.end(),"V8 complete editorial review missing: "+item.id);
+        require(item.full.size()>=4&&item.rawChords.size()==item.full.size(),"V8 exact performed phrase required: "+item.id);
+        require(!item.tags.empty(),"V8 family missing");families.insert(item.tags.front());merged.push_back(item);
+    }
+    require(approved.size()==increment.size()&&metadataIds.size()==increment.size(),"V8 candidate/review/metadata sets differ");
+    std::sort(merged.begin(),merged.end(),[](const auto& a,const auto& b){return a.id<b.id;});
+    std::string error;require(library::compileFactory(outPath,merged,error,8),"V8 compile: "+error);
+    verifyRoundTrip(outPath,merged,base.templates,8,"V7","V8");
+    std::cout<<"Factory V8 increment PASS schema=2 baseline="<<base.templates.size()<<" added="<<increment.size()
+        <<" families="<<families.size()<<" total="<<merged.size()<<"; V7 performances preserved; no invented mode membership\n";
+    return 0;
+}
+
 int compileV7Increment(int argc, char** argv) {
     require(argc == 10 || argc == 11,
             "usage: factory_v6_compiler --v7-incremental g5.db candidates.json metadata.json "
@@ -668,6 +699,9 @@ int compileV7Increment(int argc, char** argv) {
 } // namespace
 
 int main(int argc, char** argv) {
+    if(argc>1&&std::string_view(argv[1])=="--v8-incremental") {
+        try{return compileV8Increment(argc,argv);}catch(const std::exception& e){std::cerr<<"Factory V8 FAIL: "<<e.what()<<'\n';return 1;}
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--v7-incremental") {
         try {
             return compileV7Increment(argc, argv);

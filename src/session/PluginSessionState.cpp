@@ -94,7 +94,7 @@ std::string serialize(const PluginSessionState& input) {
                 }else ++j;
             }
     }
-    if (state.imported.events.size()>64 || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
+    if (state.imported.events.size()>maxImportedChordEvents || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
     if (state.editorWidth<800 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
         throw std::runtime_error("invalid editor size");
     Writer w;
@@ -165,7 +165,7 @@ DecodeResult deserialize(std::string_view bytes) {
             if (!s.pin(id,fingerprint)) throw std::runtime_error("invalid pin");
         }
         s.meterNumerator=r.optionalInt(); s.meterDenominator=r.optionalInt();
-        const auto count=r.u8(); if (count>64) throw std::runtime_error("too many chords");
+        const auto count=r.u8(); if (count>maxImportedChordEvents) throw std::runtime_error("too many chords");
         for (int i=0;i<count;++i) {
             ChordEvent c; c.name=r.str(); c.startQN=r.dbl(); if (r.u8()) c.durationQN=r.dbl(); c.openEnded=r.u8()!=0;
             const auto quality=r.u8(), source=r.u8(); if (quality>static_cast<int>(ChordQuality::Augmented) || source>2) throw std::runtime_error("invalid chord enum");

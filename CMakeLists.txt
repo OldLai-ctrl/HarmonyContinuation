@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 project(HarmonyContinuation VERSION 0.11.0 LANGUAGES C CXX)
-set(HC_PRERELEASE "dev.8" CACHE STRING "Product prerelease suffix (empty for an approved release)")
-set(HC_FACTORY_LIBRARY_VERSION 7 CACHE STRING "Versioned Factory content; published V5 remains frozen")
+set(HC_PRERELEASE "dev.9" CACHE STRING "Product prerelease suffix (empty for an approved release)")
+set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "Versioned Factory content; published V5/V7 remain frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
 set(HC_PRODUCT_VERSION "${PROJECT_VERSION}")
 if(HC_PRERELEASE)
@@ -305,7 +305,7 @@ set(HC_FACTORY_ADDITIONS)
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     list(APPEND HC_FACTORY_ADDITIONS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3")
 endif()
-if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
     target_compile_definitions(harmony_library PRIVATE HC_BUNDLED_FACTORY_VERSION=${HC_FACTORY_LIBRARY_VERSION})
     add_executable(factory_v4_compiler tools/factory_v4_compiler.cpp)
     target_link_libraries(factory_v4_compiler PRIVATE harmony_library)
@@ -315,10 +315,10 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUA
     file(GLOB HC_FACTORY_V4_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v4/*.json")
     set(HC_FACTORY_NEXT_ARGS)
     set(HC_FACTORY_COMPILED_DB "${HC_FACTORY_DB}")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_COMPILED_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v5.db")
     endif()
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         file(GLOB HC_FACTORY_V5_JSON CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-proposals/20261019-pop-variants/*.json")
         list(APPEND HC_FACTORY_NEXT_ARGS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-proposals/20261019-pop-variants" 5)
     endif()
@@ -334,10 +334,10 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
 endif()
-if(NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "6" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+if(NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "6" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "7" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
     add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 endif()
-if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AND HC_FACTORY_LIBRARY_VERSION STREQUAL "5"))
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AND HC_FACTORY_LIBRARY_VERSION STREQUAL "5"))
     set(HC_FACTORY_V6_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v6")
     set(HC_FACTORY_V6_CANDIDATES "${HC_FACTORY_V6_SOURCE_DIR}/candidates.json")
     set(HC_FACTORY_V6_METADATA "${HC_FACTORY_V6_SOURCE_DIR}/metadata.json")
@@ -348,14 +348,14 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUA
     set(HC_FACTORY_V6_EXPERIMENT_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-experiment.db")
     set(HC_FACTORY_V6_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory-v6-initial.hca")
     set(HC_FACTORY_V6_BASE_DB "${HC_FACTORY_DB}")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_V6_BASE_DB "${HC_FACTORY_COMPILED_DB}")
     endif()
     if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6")
         set(HC_FACTORY_V6_EXPERIMENT_DB "${HC_FACTORY_DB}")
         set(HC_FACTORY_V6_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory.hca")
         set(HC_FACTORY_RUNTIME_HCA "${HC_FACTORY_V6_HCA}")
-    elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_V6_EXPERIMENT_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v6.db")
         set(HC_FACTORY_V6_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory-v6.hca")
     endif()
@@ -380,27 +380,48 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUA
     add_custom_target(factory_v6_database DEPENDS "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_HCA}")
     if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6")
         add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V6_HCA}")
-    elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_V7_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v7")
         set(HC_FACTORY_V7_CANDIDATES "${HC_FACTORY_V7_SOURCE_DIR}/candidates.json")
         set(HC_FACTORY_V7_METADATA "${HC_FACTORY_V7_SOURCE_DIR}/metadata.json")
         set(HC_FACTORY_V7_APPROVED_IDS "${HC_FACTORY_V7_SOURCE_DIR}/approved-ids.txt")
         set(HC_FACTORY_V7_PROPOSAL_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v7-proposal.db")
         set(HC_FACTORY_V7_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory.hca")
+        set(HC_FACTORY_V7_COMPILED_DB "${HC_FACTORY_DB}")
+        if(HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
+            set(HC_FACTORY_V7_COMPILED_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v7.db")
+            set(HC_FACTORY_V7_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory-v7.hca")
+        endif()
         set(HC_FACTORY_RUNTIME_HCA "${HC_FACTORY_V7_HCA}")
         set(HC_FACTORY_V7_SUMMARY "${CMAKE_CURRENT_BINARY_DIR}/factory-v7-build-summary.txt")
-        add_custom_command(OUTPUT "${HC_FACTORY_DB}" "${HC_FACTORY_V7_PROPOSAL_DB}" "${HC_FACTORY_V7_HCA}" "${HC_FACTORY_V7_SUMMARY}"
+        add_custom_command(OUTPUT "${HC_FACTORY_V7_COMPILED_DB}" "${HC_FACTORY_V7_PROPOSAL_DB}" "${HC_FACTORY_V7_HCA}" "${HC_FACTORY_V7_SUMMARY}"
             COMMAND $<TARGET_FILE:factory_v6_compiler> --v7-incremental
                 "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V7_CANDIDATES}" "${HC_FACTORY_V7_METADATA}"
-                "${HC_FACTORY_V7_APPROVED_IDS}" "${HC_FACTORY_V7_PROPOSAL_DB}" "${HC_FACTORY_DB}"
+                "${HC_FACTORY_V7_APPROVED_IDS}" "${HC_FACTORY_V7_PROPOSAL_DB}" "${HC_FACTORY_V7_COMPILED_DB}"
                 "${HC_FACTORY_V6_HCA}" "${HC_FACTORY_V7_HCA}" "${HC_FACTORY_V7_SUMMARY}"
             DEPENDS factory_v6_compiler "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_HCA}"
                 "${HC_FACTORY_V7_CANDIDATES}" "${HC_FACTORY_V7_METADATA}" "${HC_FACTORY_V7_APPROVED_IDS}"
             COMMENT "Compile reviewed Factory V7 database and matching annotations from the V6 source chain"
             VERBATIM)
-        add_custom_target(factory_v7_database DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V7_PROPOSAL_DB}"
+        add_custom_target(factory_v7_database DEPENDS "${HC_FACTORY_V7_COMPILED_DB}" "${HC_FACTORY_V7_PROPOSAL_DB}"
             "${HC_FACTORY_V7_HCA}" "${HC_FACTORY_V7_SUMMARY}")
-        add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V7_HCA}")
+        if(HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
+            set(HC_FACTORY_V8_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v8")
+            set(HC_FACTORY_RUNTIME_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory.hca")
+            add_custom_command(OUTPUT "${HC_FACTORY_DB}" "${HC_FACTORY_RUNTIME_HCA}"
+                COMMAND $<TARGET_FILE:factory_v6_compiler> --v8-incremental
+                    "${HC_FACTORY_V7_COMPILED_DB}" "${HC_FACTORY_V8_SOURCE_DIR}/candidates.json"
+                    "${HC_FACTORY_V8_SOURCE_DIR}/metadata.json" "${HC_FACTORY_V8_SOURCE_DIR}/approved-ids.txt" "${HC_FACTORY_DB}"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_V7_HCA}" "${HC_FACTORY_RUNTIME_HCA}"
+                DEPENDS factory_v6_compiler "${HC_FACTORY_V7_COMPILED_DB}" "${HC_FACTORY_V7_HCA}"
+                    "${HC_FACTORY_V8_SOURCE_DIR}/candidates.json" "${HC_FACTORY_V8_SOURCE_DIR}/metadata.json"
+                    "${HC_FACTORY_V8_SOURCE_DIR}/approved-ids.txt"
+                COMMENT "Compile complete reviewed open-phrase increment; preserve V7 and existing mode annotations"
+                VERBATIM)
+            add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_RUNTIME_HCA}")
+        else()
+            add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V7_HCA}")
+        endif()
         add_dependencies(factory_database factory_v7_database)
     endif()
     if(BUILD_TESTING)
@@ -423,6 +444,8 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUA
                     --v7-integration-smoke "${HC_FACTORY_DB}" "${HC_FACTORY_V6_EXPERIMENT_DB}"
                     "${CMAKE_CURRENT_BINARY_DIR}/factory-v7-smoke-fixtures")
                 set_tests_properties(FactoryV7IntegrationSmoke PROPERTIES RUN_SERIAL TRUE)
+            elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
+                add_dependencies(FactoryV6Tests factory_database)
             endif()
         endif()
     endif()
@@ -435,7 +458,7 @@ add_custom_command(OUTPUT "${HC_FACTORY_LEGACY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON}
     VERBATIM)
 add_custom_target(factory_legacy_database DEPENDS "${HC_FACTORY_LEGACY_DB}")
-if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
     set(HC_FACTORY_V3_REFERENCE_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v3.db")
     add_custom_command(OUTPUT "${HC_FACTORY_V3_REFERENCE_DB}"
         COMMAND $<TARGET_FILE:db_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
@@ -443,7 +466,7 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUA
         DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
         VERBATIM)
     add_custom_target(factory_reference_databases DEPENDS "${HC_FACTORY_LEGACY_DB}" "${HC_FACTORY_V3_REFERENCE_DB}")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_V4_REFERENCE_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
         add_custom_command(OUTPUT "${HC_FACTORY_V4_REFERENCE_DB}"
             COMMAND $<TARGET_FILE:factory_v4_compiler> "${CMAKE_CURRENT_SOURCE_DIR}/data/factory"
@@ -453,7 +476,7 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "4" OR HC_FACTORY_LIBRARY_VERSION STREQUA
             VERBATIM)
         add_custom_target(factory_v4_reference DEPENDS "${HC_FACTORY_V4_REFERENCE_DB}")
         add_dependencies(factory_reference_databases factory_v4_reference)
-        if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+        if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
             add_custom_target(factory_v5_reference DEPENDS "${HC_FACTORY_COMPILED_DB}")
             add_dependencies(factory_reference_databases factory_v5_reference)
         endif()
@@ -489,7 +512,7 @@ if(HC_BUILD_PLUGIN)
             "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.db"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_ZH_LOCALE}" "${HC_EN_LOCALE}"
             "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         add_custom_command(TARGET HarmonyContinuation POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_RUNTIME_HCA}"
                 "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.hca")
@@ -738,7 +761,7 @@ if(BUILD_TESTING)
  add_executable(RecommendationReliabilityTests tests/RecommendationReliabilityTests.cpp)
  target_link_libraries(RecommendationReliabilityTests PRIVATE harmony_product harmony_midi harmony_snapshot)
  set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${HC_FACTORY_DB}")
- if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7")
+ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "5" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
   set(HC_RELIABILITY_MATRIX_FACTORY_PATH "${CMAKE_CURRENT_BINARY_DIR}/factory-v4.db")
   add_dependencies(RecommendationReliabilityTests factory_v4_reference)
  endif()

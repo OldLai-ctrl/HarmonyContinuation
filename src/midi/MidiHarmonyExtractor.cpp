@@ -104,7 +104,7 @@ ExtractionResult extractHarmony(const MidiFile& file,MidiHarmonyExtractionConfig
         if(!result.chords.empty()&&result.chords.back().name==label&&
            chordPitches(result.chords.back()).intervals==relativeMask&&std::abs(previousEnd-start)<1e-8)result.chords.back().durationQN=end-result.chords.back().startQN;
         else {
-            if(result.chords.size()>=64){result.error="more than 64 extracted chords";result.chords.clear();return result;}
+            if(result.chords.size()>=maxImportedChordEvents){result.error="more than 128 extracted chords";result.chords.clear();return result;}
             ChordEvent chord;chord.name=label;chord.root=static_cast<PitchClass>(match.root);chord.bass=static_cast<PitchClass>(bass);
             chord.quality=match.shape->pitches.quality;chord.startQN=start;chord.durationQN=duration;chord.openEnded=false;
             // Preserve the performed pitch set, including omitted fifths and

@@ -2,10 +2,12 @@
 #include "Chord.h"
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 namespace harmony {
 using Progression = std::vector<ChordEvent>;
+inline constexpr std::size_t maxImportedChordEvents = 128;
 // Duplicate starts are retained as simultaneous events with zero duration.
 inline bool sortAndInferDurations(Progression& events) {
     for (const auto& event : events)
