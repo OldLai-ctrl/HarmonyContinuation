@@ -25,7 +25,9 @@
 #include <random>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -52,6 +54,13 @@ struct G8RoundRecord {
     std::string realizedFingerprint;
     std::size_t flatIndex{}, page{};
     double recommendationMs{}, elapsedMs{};
+};
+
+struct G8RecordedRcrRound {
+    std::size_t sampleOrder{}, round{}, flatIndex{}, page{}, inputLength{}, midiReinterpretationCount{};
+    double recommendationMs{}, elapsedMs{};
+    std::string startId, primarySource, family, channel, ending, nextIds, continuation;
+    std::string queryInputFingerprint, actualImportFingerprint, midiReinterpretations;
 };
 
 std::string g8Tsv(std::string value) {
@@ -182,6 +191,13 @@ struct G8MidiImportSummary {
     std::string reinterpretations;
 };
 
+struct G8RecordedReplayRound {
+    G8RoundRecord media;
+    G8RecordedRcrRound record;
+    G8MidiImportSummary midiSummary;
+    KeySignature key;
+};
+
 G8MidiImportSummary g8CompareMidiToPreview(const preview::Sequence& expected,
                             const midi::ExportSequence& expectedClip, const Progression& actual,
                             const midi::MidiFile& actualMidi, bool openEnded,
@@ -244,6 +260,212 @@ MatchQuery g8MakeQuery(const Progression& input,
         query.timeSigDenominator = meter->second;
     }
     return query;
+}
+
+std::vector<std::string> g8Split(std::string_view value, char separator) {
+    std::vector<std::string> result;
+    std::size_t begin{};
+    while (begin <= value.size()) {
+        const auto end = value.find(separator, begin);
+        result.emplace_back(value.substr(begin, end == std::string_view::npos
+            ? value.size() - begin : end - begin));
+        if (end == std::string_view::npos) break;
+        begin = end + 1;
+    }
+    return result;
+}
+
+std::string g8Trim(std::string value) {
+    const auto begin = value.find_first_not_of(" \t\r\n");
+    if (begin == std::string::npos) return {};
+    const auto end = value.find_last_not_of(" \t\r\n");
+    return value.substr(begin, end - begin + 1);
+}
+
+int g8ParseInt(std::string_view value, std::string_view field) {
+    std::size_t consumed{};
+    const auto parsed = std::stoi(std::string(value), &consumed);
+    require(consumed == value.size(), "invalid integer in recorded " + std::string(field));
+    return parsed;
+}
+
+double g8ParseDouble(std::string_view value, std::string_view field) {
+    std::istringstream parser{std::string(value)};
+    parser.imbue(std::locale::classic());
+    double result{};
+    parser >> result;
+    require(static_cast<bool>(parser) && std::isfinite(result),
+            "invalid number in recorded " + std::string(field));
+    parser >> std::ws;
+    require(parser.eof(), "trailing characters in recorded " + std::string(field));
+    return result;
+}
+
+Progression g8ParseRecordedFingerprint(std::string_view fingerprint) {
+    require(!fingerprint.empty() && fingerprint.front() == '|',
+            "recorded music fingerprint must begin with a delimiter");
+    const auto tokens = g8Split(fingerprint.substr(1), '|');
+    require(!tokens.empty(), "recorded music fingerprint has no events");
+    constexpr const char* pitchNames[]{"C", "Db", "D", "Eb", "E", "F",
+                                       "Gb", "G", "Ab", "A", "Bb", "B"};
+    Progression result;
+    result.reserve(tokens.size());
+    double startQN{};
+    for (std::size_t i = 0; i < tokens.size(); ++i) {
+        const auto at = tokens[i].find('@');
+        require(at != std::string::npos, "recorded music event lacks duration");
+        const auto parts = g8Split(std::string_view(tokens[i]).substr(0, at), ':');
+        require(parts.size() == 4, "recorded music event must contain root, bass, quality, mask");
+        const auto root = g8ParseInt(parts[0], "root");
+        const auto bass = g8ParseInt(parts[1], "bass");
+        const auto quality = g8ParseInt(parts[2], "quality");
+        const auto absoluteMask = g8ParseInt(parts[3], "absolute pitch mask");
+        const auto duration = g8ParseDouble(std::string_view(tokens[i]).substr(at + 1), "duration");
+        require(root >= 0 && root < 12 && bass >= 0 && bass < 12 &&
+                quality >= static_cast<int>(ChordQuality::Unknown) &&
+                quality <= static_cast<int>(ChordQuality::Augmented) &&
+                absoluteMask > 0 && absoluteMask < (1 << 12) && duration >= 0.0,
+                "recorded music event is outside supported bounds");
+        const bool open = duration == 0.0;
+        require(!open || i + 1 == tokens.size(),
+                "only the final recorded query event may be OPEN");
+        std::uint16_t relativeMask{};
+        for (int pitch = 0; pitch < 12; ++pitch)
+            if (absoluteMask & (1 << pitch))
+                relativeMask |= static_cast<std::uint16_t>(1u << ((pitch - root + 12) % 12));
+        std::ostringstream mask;
+        mask << "0x" << std::hex << relativeMask;
+        ChordEvent event;
+        event.name = pitchNames[root];
+        if (bass != root) event.name += "/" + std::string(pitchNames[bass]);
+        event.root = static_cast<PitchClass>(root);
+        event.bass = static_cast<PitchClass>(bass);
+        event.quality = static_cast<ChordQuality>(quality);
+        event.extensions.mask = mask.str();
+        event.startQN = startQN;
+        event.openEnded = open;
+        if (!open) {
+            event.durationQN = duration;
+            startQN += duration;
+        }
+        result.push_back(std::move(event));
+    }
+    require(result.front().startQN == 0.0, "recorded query must start at QN zero");
+    require(result.back().openEnded,
+            "recorded query fingerprint must end with an OPEN event");
+    require(g8EventListFingerprint(result) == fingerprint,
+            "recorded query fingerprint did not round-trip through exact chord fields");
+    return result;
+}
+
+std::vector<ChordPitchSet> g8ParseRecordedChordLabels(std::string_view labels) {
+    std::vector<ChordPitchSet> result;
+    for (auto token : g8Split(labels, '|')) {
+        token = g8Trim(std::move(token));
+        require(!token.empty(), "recorded continuation has an empty chord label");
+        const auto chord = chordPitches(token);
+        require(chord.root >= 0 && chord.bass >= 0 && g8AbsolutePitchMask(chord) != 0,
+                "recorded continuation has an unsupported chord symbol: " + token);
+        result.push_back(chord);
+    }
+    return result;
+}
+
+PhraseEnding g8ParseRecordedEnding(std::string_view ending) {
+    if (ending == "closed") return PhraseEnding::Closed;
+    if (ending == "modulated-closure") return PhraseEnding::ModulatedClosure;
+    if (ending == "interim-pause") return PhraseEnding::InterimPause;
+    if (ending == "open-unresolved") return PhraseEnding::OpenUnresolved;
+    if (ending == "suspended") return PhraseEnding::Suspended;
+    if (ending == "loop-return") return PhraseEnding::LoopReturn;
+    if (ending == "modal-development") return PhraseEnding::ModalDevelopment;
+    if (ending == "center-transition") return PhraseEnding::CenterTransition;
+    if (ending == "unknown") return PhraseEnding::Unknown;
+    throw std::runtime_error("unknown ending in recorded RCR row: " + std::string(ending));
+}
+
+std::vector<G8RecordedRcrRound> g8ReadRecordedRounds(
+    const std::filesystem::path& path, std::string_view startId) {
+    std::ifstream input(path, std::ios::binary);
+    require(static_cast<bool>(input), "cannot open recorded RCR rounds TSV");
+    std::string line;
+    require(static_cast<bool>(std::getline(input, line)), "recorded RCR TSV is empty");
+    if (!line.empty() && line.back() == '\r') line.pop_back();
+    const auto header = g8Split(line, '\t');
+    std::unordered_map<std::string, std::size_t> columns;
+    for (std::size_t i = 0; i < header.size(); ++i)
+        require(columns.emplace(header[i], i).second, "duplicate column in recorded RCR TSV");
+    constexpr std::array<std::string_view, 18> requiredColumns{
+        "sample_order", "start_id", "round", "visible_flat_index_0based", "page_1based",
+        "primary_source", "family", "channel", "ending", "next_phrase_ids", "continuation",
+        "input_length", "query_input_fingerprint", "actual_import_fingerprint",
+        "recommendation_ms", "elapsed_ms", "midi_reinterpretation_count", "midi_reinterpretations"};
+    for (const auto column : requiredColumns)
+        require(columns.contains(std::string(column)),
+                "recorded RCR TSV lacks column " + std::string(column));
+    const auto cell = [&](const std::vector<std::string>& cells, std::string_view name) -> const std::string& {
+        const auto column = columns.at(std::string(name));
+        require(cells.size() == header.size(), "recorded RCR row has an invalid column count");
+        return cells[column];
+    };
+    std::vector<G8RecordedRcrRound> result;
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.empty()) continue;
+        const auto cells = g8Split(line, '\t');
+        if (cell(cells, "start_id") != startId) continue;
+        G8RecordedRcrRound row;
+        row.sampleOrder = static_cast<std::size_t>(g8ParseInt(cell(cells, "sample_order"), "sample order"));
+        row.round = static_cast<std::size_t>(g8ParseInt(cell(cells, "round"), "round number"));
+        row.flatIndex = static_cast<std::size_t>(g8ParseInt(cell(cells, "visible_flat_index_0based"), "flat index"));
+        row.page = static_cast<std::size_t>(g8ParseInt(cell(cells, "page_1based"), "page"));
+        row.inputLength = static_cast<std::size_t>(g8ParseInt(cell(cells, "input_length"), "input length"));
+        row.midiReinterpretationCount = static_cast<std::size_t>(
+            g8ParseInt(cell(cells, "midi_reinterpretation_count"), "MIDI reinterpretation count"));
+        row.recommendationMs = g8ParseDouble(cell(cells, "recommendation_ms"), "recommendation time");
+        row.elapsedMs = g8ParseDouble(cell(cells, "elapsed_ms"), "elapsed time");
+        row.startId = cell(cells, "start_id");
+        row.primarySource = cell(cells, "primary_source");
+        row.family = cell(cells, "family");
+        row.channel = cell(cells, "channel");
+        row.ending = cell(cells, "ending");
+        row.nextIds = cell(cells, "next_phrase_ids");
+        row.continuation = cell(cells, "continuation");
+        row.queryInputFingerprint = cell(cells, "query_input_fingerprint");
+        row.actualImportFingerprint = cell(cells, "actual_import_fingerprint");
+        row.midiReinterpretations = cell(cells, "midi_reinterpretations");
+        result.push_back(std::move(row));
+    }
+    require(result.size() == 3, "recorded RCR start must have exactly three rows");
+    std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.round < b.round; });
+    for (std::size_t i = 0; i < result.size(); ++i) {
+        require(result[i].startId == startId && result[i].round == i + 1 &&
+                result[i].sampleOrder == result.front().sampleOrder &&
+                result[i].channel == "phrase-transition",
+                "recorded start is not one consecutive three-round PhraseTransition chain");
+    }
+    return result;
+}
+
+void g8RequireRecordedCarry(const Progression& previousComplete, const Progression& nextOpen) {
+    require(previousComplete.size() == nextOpen.size() && !previousComplete.empty(),
+            "recorded next input does not carry the previous complete import");
+    for (std::size_t i = 0; i < previousComplete.size(); ++i) {
+        const auto a = chordPitches(previousComplete[i]);
+        const auto b = chordPitches(nextOpen[i]);
+        require(g8SameHarmony(a, b) &&
+                std::abs(previousComplete[i].startQN - nextOpen[i].startQN) <= 1e-9,
+                "recorded next input changed a previous imported chord identity");
+        if (i + 1 == previousComplete.size()) {
+            require(previousComplete[i].durationQN && !previousComplete[i].openEnded &&
+                    !nextOpen[i].durationQN && nextOpen[i].openEnded,
+                    "recorded next input does not reopen only the previous final event");
+        } else {
+            require(previousComplete[i].durationQN == nextOpen[i].durationQN &&
+                    previousComplete[i].openEnded == nextOpen[i].openEnded,
+                    "recorded next input changed a non-tail event duration");
+        }
+    }
 }
 
 RecommendationSet g8NormalRecommendations(const MatchQuery& query, const CandidateIndex& index) {
@@ -379,6 +601,234 @@ void g8WriteRepresentative(const std::filesystem::path& outputDirectory,
         require(preview::writeWav16(audio, wavPath, error),
                 "G8 representative WAV write: " + error);
     }
+}
+
+int runG8ReplayRecorded(const std::filesystem::path& factoryPath,
+                        const std::filesystem::path& roundsPath,
+                        std::string_view startId,
+                        const std::filesystem::path& outputDirectory) {
+    require(startId == "FUNCTIONAL_015",
+            "recorded replay is limited to the frozen sample-24 FUNCTIONAL_015 chain");
+    require(!std::filesystem::exists(outputDirectory),
+            "recorded replay output directory already exists; refusing to overwrite it");
+
+    const auto factory = library::loadFactory(factoryPath);
+    require(static_cast<bool>(factory), "cannot load recorded replay Factory: " + factory.error);
+    require(factory.libraryVersion >= 8, "recorded replay requires Factory version 8 or newer");
+    const auto records = g8ReadRecordedRounds(roundsPath, startId);
+    require(records.front().sampleOrder == 24,
+            "recorded replay source is not the frozen sample-order 24 chain");
+
+    const auto findTemplate = [&](std::string_view id) -> const ProgressionTemplate* {
+        const auto found = std::find_if(factory.templates.begin(), factory.templates.end(),
+            [&](const auto& item) { return item.id == id; });
+        return found == factory.templates.end() ? nullptr : &*found;
+    };
+    const auto* start = findTemplate(startId);
+    require(start != nullptr, "recorded replay start is absent from Factory");
+    const auto startKey = start->rawChordKey.value_or(KeySignature{PitchClass::C, start->mode});
+    const auto startRoute = preview::templateRoute(*start, startKey);
+    require(static_cast<bool>(startRoute), "recorded replay A route failed: " + startRoute.error);
+    const midi::Meter meter{startRoute.meterNumerator, startRoute.meterDenominator};
+
+    const auto nonce = G8Clock::now().time_since_epoch().count();
+    const auto validationDirectory = std::filesystem::temp_directory_path() /
+        ("HarmonyContinuation-G8-recorded-replay-" + std::to_string(nonce));
+    std::filesystem::create_directories(validationDirectory);
+    std::vector<G8RecordedReplayRound> replay;
+    replay.reserve(records.size());
+    Progression previousComplete;
+    std::set<std::string> replayedSources, replayedFamilies, replayedMusic;
+
+    for (std::size_t i = 0; i < records.size(); ++i) {
+        const auto& record = records[i];
+        const auto* source = findTemplate(record.primarySource);
+        require(source != nullptr, "recorded source is absent from Factory: " + record.primarySource);
+        require(source->full.size() == 8 && source->rawChords.size() == 8 && source->rawChordKey,
+                record.primarySource + ": recorded source is not an exact eight-event typed phrase");
+        require(std::find(source->tags.begin(), source->tags.end(), "G8-complete") != source->tags.end(),
+                record.primarySource + ": recorded source is not marked G8-complete");
+        require(!source->tags.empty() && source->tags.front() == record.family,
+                record.primarySource + ": recorded family differs from Factory metadata");
+        require(record.primarySource != startId,
+                "recorded continuation reuses the A source identity");
+        require(replayedSources.insert(record.primarySource).second &&
+                replayedFamilies.insert(record.family).second,
+                "recorded B/C/D chain repeats a source or family");
+
+        auto expectedEndingValue = record.ending;
+        std::replace(expectedEndingValue.begin(), expectedEndingValue.end(), '-', '_');
+        const auto expectedEndingTag = std::string("G8-ending-") + expectedEndingValue;
+        require(std::find(source->tags.begin(), source->tags.end(), expectedEndingTag) != source->tags.end(),
+                record.primarySource + ": recorded ending differs from Factory editorial metadata");
+
+        auto inputEvents = g8ParseRecordedFingerprint(record.queryInputFingerprint);
+        require(inputEvents.size() == record.inputLength,
+                "recorded query input length differs from its complete music fingerprint");
+        ImportedProgressionSession input;
+        require(input.replace(std::move(inputEvents), TimelineCoordinateMode::RelativeToSelection),
+                "recorded query fingerprint is not a valid imported progression");
+        require(g8EventListFingerprint(input.events) == record.queryInputFingerprint,
+                "recorded query input identity changed during reconstruction");
+        if (i > 0) {
+            g8RequireRecordedCarry(previousComplete, input.events);
+            auto reopenedTail = previousComplete;
+            reopenedTail.back().durationQN.reset();
+            reopenedTail.back().openEnded = true;
+            require(g8EventListFingerprint(reopenedTail) == record.queryInputFingerprint,
+                    "recorded round did not reopen the previous actual import exactly");
+        }
+
+        const auto recordedLabels = g8ParseRecordedChordLabels(record.continuation);
+        require(recordedLabels.size() == source->rawChords.size(),
+                "recorded continuation label count differs from the complete Factory source");
+        const auto sourceFirst = chordPitches(source->rawChords.front());
+        const auto actualFirst = recordedLabels.front();
+        require(sourceFirst.root >= 0 && actualFirst.root >= 0,
+                "cannot derive transposition from the first recorded source chord");
+        const int shift = (actualFirst.root - sourceFirst.root + 12) % 12;
+        const KeySignature key{
+            static_cast<PitchClass>((static_cast<int>(source->rawChordKey->tonic) + shift) % 12),
+            source->rawChordKey->mode};
+        const auto route = preview::templateRoute(*source, key);
+        require(static_cast<bool>(route), record.primarySource + " route failed: " + route.error);
+        require(route.meterNumerator == meter.numerator && route.meterDenominator == meter.denominator,
+                record.primarySource + ": recorded source meter differs from the A route meter");
+        require(route.imported.events.size() == recordedLabels.size(),
+                record.primarySource + ": realized route length differs from recorded labels");
+        for (std::size_t event = 0; event < recordedLabels.size(); ++event)
+            require(g8SameHarmony(chordPitches(route.imported.events[event]), recordedLabels[event]),
+                    record.primarySource + ": source route differs from recorded continuation at chord " +
+                        std::to_string(event));
+
+        ContinuationCandidate candidate;
+        candidate.primaryTemplate = source->id;
+        candidate.intent = source->intent;
+        candidate.key = key;
+        candidate.continuation = g8Concrete(route.imported.events);
+        candidate.suggestedCurrentChordDurationQN = progressionOpenDuration(input.events);
+        candidate.channel = RecommendationChannel::PhraseTransition;
+        candidate.provenance = ConnectionProvenance::AlgorithmAssessed;
+        candidate.family = record.family;
+        candidate.ending = g8ParseRecordedEnding(record.ending);
+        candidate.reviewedEnding = true;
+        candidate.sourceEndPreserved = true;
+        candidate.completeSourcePhrase = true;
+        if (!record.nextIds.empty()) {
+            candidate.nextPhraseSources = g8Split(record.nextIds, ';');
+            require(std::all_of(candidate.nextPhraseSources.begin(), candidate.nextPhraseSources.end(),
+                                [](const auto& id) { return !id.empty(); }),
+                    "recorded next-phrase list contains an empty source ID");
+        }
+        candidate.id = "g6:recorded:" + continuationMusicFingerprint(candidate);
+        require(replayedMusic.insert(continuationMusicFingerprint(candidate)).second,
+                "recorded B/C/D chain repeats a complete continuation music identity");
+
+        const auto built = preview::buildSequence(input, &candidate, 120.0);
+        require(static_cast<bool>(built), "recorded Preview failed: " + built.error);
+        const midi::CandidateExportContext context{input, 120.0, meter, key,
+            midi::ArrangementMode::VoiceLed, midi::ExportScope::FullPhrase};
+        const auto payload = midi::candidatePayload(context, candidate);
+        require(static_cast<bool>(payload) && !payload.payload.dawClipBytes.empty(),
+                "recorded production MIDI payload failed: " + payload.error);
+        const auto clip = midi::buildClip(built.sequence, midi::ArrangementMode::VoiceLed,
+            midi::ExportScope::FullPhrase, meter, key, candidate.intent);
+        require(static_cast<bool>(clip), "recorded Preview-derived Clip failed: " + clip.error);
+        const auto annotated = midi::writeToMemory(clip.sequence);
+        require(static_cast<bool>(annotated) && annotated.bytes == payload.payload.smfBytes,
+                "recorded candidate payload differs from Preview-derived MIDI");
+        midi::ExportConfig dawConfig;
+        dawConfig.profile = midi::ExportProfile::DAWClip;
+        const auto dawClip = midi::writeToMemory(clip.sequence, dawConfig);
+        require(static_cast<bool>(dawClip) && dawClip.bytes == payload.payload.dawClipBytes,
+                "recorded candidate payload differs from Preview-derived DAWClip");
+
+        const auto validationPath = validationDirectory / ("round-" + std::to_string(i + 1) + ".mid");
+        std::string midiError;
+        require(midi::writeToFile(payload.payload.dawClipBytes, validationPath, midiError),
+                "recorded DAWClip validation write failed: " + midiError);
+        const auto imported = midi::importFile(validationPath, false);
+        require(static_cast<bool>(imported),
+                "recorded DAWClip import failed: " + imported.extraction.error);
+        ImportedProgressionSession actual;
+        require(midi::applyImport(imported, actual), "recorded normal applyImport failed");
+        const auto actualFingerprint = g8EventListFingerprint(actual.events);
+        require(actualFingerprint == record.actualImportFingerprint,
+                "recorded actual-import fingerprint changed in round " + std::to_string(i + 1));
+        const auto midiSummary = g8CompareMidiToPreview(built.sequence, clip.sequence,
+            actual.events, imported.midi.file, false, "recorded DAWClip import");
+        require(midiSummary.reinterpretationCount == record.midiReinterpretationCount,
+                "recorded MIDI reinterpretation count changed in round " + std::to_string(i + 1));
+        std::error_code removeError;
+        std::filesystem::remove(validationPath, removeError);
+
+        if (i + 1 < records.size()) {
+            const auto nextInput = g8ParseRecordedFingerprint(records[i + 1].queryInputFingerprint);
+            g8RequireRecordedCarry(actual.events, nextInput);
+            auto reopenedTail = actual.events;
+            reopenedTail.back().durationQN.reset();
+            reopenedTail.back().openEnded = true;
+            require(g8EventListFingerprint(reopenedTail) == records[i + 1].queryInputFingerprint,
+                    "next recorded input is not the reopened actual-import progression");
+        }
+
+        replay.push_back({{input, candidate, built.sequence, payload.payload,
+                           record.queryInputFingerprint, actualFingerprint,
+                           record.flatIndex, record.page, record.recommendationMs, record.elapsedMs},
+                          record, midiSummary, key});
+        previousComplete = std::move(actual.events);
+    }
+    std::error_code cleanupError;
+    std::filesystem::remove(validationDirectory, cleanupError);
+
+    const auto replayDirectory = outputDirectory / (std::string(startId) + "-sample-24");
+    require(!std::filesystem::exists(replayDirectory),
+            "recorded replay media directory already exists; refusing to overwrite it");
+    std::filesystem::create_directories(replayDirectory);
+    const auto infoPath = replayDirectory / "replay-info.txt";
+    std::ofstream info(infoPath, std::ios::binary | std::ios::trunc);
+    require(static_cast<bool>(info), "cannot create recorded replay explanation");
+    info << "Recorded G8 replay of sample_order=24, start_id=" << startId << ".\n"
+         << "This replays three frozen rounds from the supplied rounds.tsv. No matching query,\n"
+         << "recommendation, RNG, reranking, or new RCR count is performed. Ranking scores and\n"
+         << "the original matcher trace were not stored and are not reconstructed.\n"
+         << "Each production DAWClip was imported with importFile/applyImport and matched its\n"
+         << "recorded actual_import_fingerprint exactly before media export.\n"
+         << "meter=" << meter.numerator << '/' << meter.denominator << "\n";
+    constexpr const char* pitchNames[]{"C", "Db", "D", "Eb", "E", "F",
+                                       "Gb", "G", "Ab", "A", "Bb", "B"};
+    for (std::size_t i = 0; i < replay.size(); ++i) {
+        const auto& round = replay[i];
+        const auto stem = std::string(startId) + "-sample-24-round-" + std::to_string(i + 1);
+        const auto midiPath = replayDirectory / (stem + ".mid");
+        const auto wavPath = replayDirectory / (stem + ".wav");
+        const auto audio = preview::renderOffline(round.media.preview, 48000.0);
+        require(!audio.left.empty() && audio.left.size() == audio.right.size() && audio.rms > 0.0,
+                "recorded Preview rendered silent or invalid audio");
+        std::string mediaError;
+        require(midi::writeToFile(round.media.payload.dawClipBytes, midiPath, mediaError),
+                "recorded DAWClip media write failed: " + mediaError);
+        require(preview::writeWav16(audio, wavPath, mediaError),
+                "recorded Preview WAV write failed: " + mediaError);
+        info << "round=" << i + 1 << " source=" << g8Tsv(round.record.primarySource)
+             << " family=" << g8Tsv(round.record.family) << " key="
+             << pitchNames[static_cast<int>(round.key.tonic)]
+             << (round.key.mode == Mode::Major ? ":major" : ":minor")
+             << " ending=" << g8Tsv(round.record.ending)
+             << " continuation=" << g8Tsv(round.record.continuation) << "\n"
+             << "query_input_fingerprint=" << g8Tsv(round.record.queryInputFingerprint) << "\n"
+             << "actual_import_fingerprint=" << g8Tsv(round.record.actualImportFingerprint) << "\n"
+             << "recorded_midi_reinterpretation_count=" << round.record.midiReinterpretationCount
+             << " replay_midi_reinterpretation_count=" << round.midiSummary.reinterpretationCount << "\n"
+             << "recorded_midi_reinterpretations=" << g8Tsv(round.record.midiReinterpretations) << "\n"
+             << "midi=" << midiPath.filename().string() << "\nwav=" << wavPath.filename().string()
+             << "\n";
+    }
+    info.flush();
+    require(static_cast<bool>(info), "cannot finish recorded replay explanation");
+    std::cout << "g8_recorded_replay start_id=" << startId << " sample_order=24 rounds=3"
+              << " new_rcr_count=0 ranking_score=not-stored output=" << replayDirectory.string() << '\n';
+    return 0;
 }
 
 int runG8Focused(const std::filesystem::path& factoryPath,

@@ -3422,6 +3422,17 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    if (argc > 1 && std::string_view(argv[1]) == "--g8-replay-recorded") {
+        try {
+            require(argc == 6,
+                    "usage: FactoryV6Tests --g8-replay-recorded factory-v8.db rounds.tsv "
+                    "start-id output-dir");
+            return runG8ReplayRecorded(argv[2], argv[3], argv[4], argv[5]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G8 recorded replay FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--g8-checks") {
         try {
             require(argc == 4, "usage: FactoryV6Tests --g8-checks factory-v8.db output-dir");
