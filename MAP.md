@@ -6,7 +6,9 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
-| G8完整开放与递归续写 | `HarmonyContinuation-g8/` → `development/g8-open-recursive-20261027`，基于G7交付`7a7021e`；产品/RCR BuildCommit `0936a483…` | dev.9/Factory8/1288；[专题与门禁](docs/G8_OPEN_RECURSIVE_REVIEW.md)，RCR46/50，音乐/DAW待验收，G7基线保留 |
+| G9乐句连接与历史多样性 | `HarmonyContinuation-g9/` → `development/g9-phrase-diversity-20261102`，基于G8交付`3fedd827`；产品BuildCommit `f105a0b4…` | dev.10/Factory8/1288；[根因、结构门禁与试听](docs/G9_PHRASE_DIVERSITY_REVIEW.md)，保留G7/G8及生产安装 |
+| G9定向验证与媒体 | 同级 `HarmonyContinuation-g9-evidence/` | 结构反例、原三链、长输入及原冻结50起点复核；音乐与DAW验收单独记录；不制作Setup |
+| G8完整开放与递归续写 | `HarmonyContinuation-g8/` → `development/g8-open-recursive-20261027`，基于G7交付`7a7021e`；产品/RCR BuildCommit `0936a483…` | dev.9/Factory8/1288；[历史专题](docs/G8_OPEN_RECURSIVE_REVIEW.md)，原RCR46/50；用户音乐缺陷反馈与整改见[G9](docs/G9_PHRASE_DIVERSITY_REVIEW.md)，G7基线保留 |
 | G8必要证据与代表媒体 | 同级 `HarmonyContinuation-g8-evidence/` | 定向检查及唯一一批50起点RCR，音乐/DAW与工程结果分别记录；不制作Setup |
 | G7四入口整合 | `HarmonyContinuation-g7/` → `development/g7-four-entry-20261027`；实现/BuildCommit `58dfce0f…` | dev.8/Factory7；[集中验收](docs/G7_FOUR_ENTRY_REVIEW.md)，保留G6工作树与产物 |
 | G7工程与UI证据 | 同级 `HarmonyContinuation-g7-evidence/`；首页/截图在`ui/`，身份`identity.json` | 固定一输入/一尺寸的原生UI及真实worker；工程通过、人工音乐待验收，未制作Setup |

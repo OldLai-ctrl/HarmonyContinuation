@@ -1,5 +1,15 @@
 # Continuation Engine
 
+## G9 phrase integrity and harmonic diversity
+
+Inspiration adds a structural assessment after harmonic qualification. It distinguishes a contiguous source prefix from an unproven local-tail overlap, one complete independent append, and a complete cycle. Catalogue continuity alone does not establish a phrase start inside the user's finished phrase. Unproven or asymmetric joins without reviewed grouping remain accessible after supported routes; no event is removed, duplicated, stretched, or padded to repair a seam. Match keeps its original Exact score, 60-point gate and performance contract.
+
+Full actual-note/bass/timing matches support unknown OPEN holds and historical material comparison; they never recover an original source ID from MIDI symbols. Conflicting source-end durations leave OPEN inference uncertain. A focused, music-bound review of V6_B3_02_054 retains its 40 QN whole structure (two bars of preparation plus 4+4), instead of the old OPEN median shortening it to 36. The 28 QN 4+3 source remains intact without receiving an invented asymmetric seam approval. The V8 complete phrases have reviewed 4+4 grouping; arbitrary new phrase lengths do not inherit that review.
+
+History-aware exposure compares families, transposition-neutral harmonic/bass material and development mechanisms before utility. Similar plateau/relative-minor families share a mechanism bucket. Equally qualified fresh development mechanisms receive a selection opportunity before repeated mechanisms; normal stable routes and all legal pagination remain. Sus2/Sus4 entry prototypes cover supported diatonic contexts beyond degree V; actual boundary, center, melody and structure gates still apply unchanged.
+
+The normal worker and focused checks cross the same `assessInspirationStructure` interface. Assessment and history scans are bounded to the existing 128-event limit and run outside the audio thread. New structural/history fields are runtime annotations; Snapshot3 freezes performance and source identity without fabricating restored metadata. Source grouping review, algorithm-assessed seam, and human audition are separate evidence. See [G9 results and media](G9_PHRASE_DIVERSITY_REVIEW.md).
+
 ## G8 complete open phrases and recursive continuation
 
 G8 retains source endings. An internal context anchor yields the contiguous suffix through the original source end; a phrase transition yields one whole reviewed source phrase. Inspiration excludes legacy Exact wraps that stop inside a source; the Match bank retains its original wrap/scoring contract. A complete next cycle remains admissible. No chord is removed to manufacture openness.
