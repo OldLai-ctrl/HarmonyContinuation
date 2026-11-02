@@ -152,6 +152,95 @@ std::array<std::string,7> features(const ContinuationCandidate& c) {
         bass,c.family,std::to_string(int(destination.tonic))+":"+std::to_string(int(destination.mode)),
         std::to_string(int(c.intent)),color,melody};
 }
+bool near(double a,double b) {return std::abs(a-b)<1e-6;}
+unsigned rotated(unsigned mask,int shift) {
+    unsigned out{};for(int n=0;n<12;++n)if(mask&(1u<<n))out|=1u<<mod(n+shift);return out;
+}
+std::string mechanism(const ProgressionTemplate& t) {
+    const auto family=familyFor(t);
+    // These source families share a tonal plateau/relative-minor vocabulary.
+    // Treating their labels as separate ideas caused G8's apparent diversity.
+    if(family=="PlateauLoop"||family=="AeolianLift"||family=="SubdominantPlane")return "tonal-open-plane";
+    if(family=="AbsentTonic")return "absent-tonic";
+    if(family=="ModalPedal") {
+        const auto key=t.rawChordKey.value_or(KeySignature{PitchClass::C,t.mode});
+        for(std::size_t i=0;i<t.full.size();++i)
+            if(mod(pitches(sourceEvent(t,i,key)).root-int(key.tonic))==1)return "phrygian-pedal";
+        return "dorian-pedal";
+    }
+    if(family=="ChangingPedal")return "changing-upper-pedal";
+    if(family=="MinorLine")return "chromatic-bass-line";
+    if(family=="AscendingBass")return "ascending-bass";
+    if(family=="LydianExpansion")return "lydian-expansion";
+    if(family=="ChromaticMediantBridge"||family=="MinorMediantMotion")return "chromatic-center";
+    if(family=="SuspendedSequence")return "suspended-sequence";
+    if(family=="BorrowedPlagal")return "borrowed-minor-plane";
+    return family.empty()?"unclassified-source":family;
+}
+struct HistoryEvidence {
+    std::set<std::string> families,mechanisms;
+    bool tailSourceMatched{};
+    std::optional<double> sourceOpenHold;
+    std::optional<double> reviewedTailStart;
+};
+HistoryEvidence historyEvidence(const MatchQuery& query,const CandidateIndex& index) {
+    HistoryEvidence result;
+    std::set<double> tailHolds;
+    std::vector<ChordPitchSet> input;for(const auto& e:query.source)input.push_back(chordPitches(e));
+    for(const auto& t:index.templates()) {
+        const auto n=t.full.size();if(n<3||n>input.size())continue;
+        if(query.timeSigNumerator&&query.timeSigDenominator&&
+            (*query.timeSigNumerator!=t.meterNumerator||*query.timeSigDenominator!=t.meterDenominator))continue;
+        const KeySignature key{PitchClass::C,t.mode};
+        std::vector<ChordPitchSet> pattern;std::vector<double> durations;
+        bool valid=true;
+        for(std::size_t i=0;i<n;++i) {
+            const auto event=sourceEvent(t,i,key);pattern.push_back(pitches(event));durations.push_back(event.durationQN);
+            valid&=pattern.back().bass>=0&&std::isfinite(event.durationQN)&&event.durationQN>0;
+        }
+        if(!valid)continue;
+        for(std::size_t begin=0;begin+n<=input.size();++begin) {
+            const int shift=mod(input[begin].bass-pattern[0].bass);
+            bool match=true;
+            for(std::size_t j=0;j<n&&match;++j) {
+                const auto& actual=query.source[begin+j];
+                match=input[begin+j].bass==mod(pattern[j].bass+shift)&&
+                    absoluteMask(input[begin+j])==rotated(absoluteMask(pattern[j]),shift);
+                if(j+1<n)match&=near(query.source[begin+j+1].startQN-actual.startQN,durations[j]);
+                if(actual.durationQN&&!actual.openEnded)match&=near(*actual.durationQN,durations[j]);
+            }
+            if(!match)continue;
+            // A music/timing match is evidence of material reuse, not recovery
+            // of a lost source ID from a MIDI chord symbol.
+            result.families.insert(familyFor(t));result.mechanisms.insert(mechanism(t));
+            if(begin+n==input.size()) {
+                result.tailSourceMatched=true;
+                tailHolds.insert(durations.back());
+                if(t.version==8&&reviewed(t)&&n==8&&
+                    std::all_of(durations.begin(),durations.end(),[](double d){return near(d,4);}))
+                    result.reviewedTailStart=query.source[begin].startQN;
+            }
+        }
+    }
+    // Conflicting source endings do not authorize choosing a convenient hold.
+    if(tailHolds.size()==1)result.sourceOpenHold=*tailHolds.begin();
+    return result;
+}
+float materialSimilarity(const Progression& input,const ContinuationCandidate& c) {
+    if(input.size()<4||c.continuation.size()<4)return 0;
+    float best{};
+    for(std::size_t a=0;a+4<=input.size();++a)for(std::size_t b=0;b+4<=c.continuation.size();++b) {
+        const auto first=chordPitches(input[a]);const auto next=pitches(c.continuation[b]);
+        const int shift=mod(first.bass-next.bass);int count{};
+        for(std::size_t j=0;j<4;++j) {
+            const auto x=chordPitches(input[a+j]),y=pitches(c.continuation[b+j]);
+            // Transposition-neutral skeleton and real bass, not inferred IDs.
+            count+=x.bass==mod(y.bass+shift)&&x.root==mod(y.root+shift)&&core(x.quality)==core(y.quality);
+        }
+        best=std::max(best,float(count)/4.f);
+    }
+    return best;
+}
 }
 
 std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>& templates) {
@@ -291,6 +380,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
     recentContext.timeSigDenominator=query.timeSigDenominator;
     if(query.forcedKey)recentContext.forcedKey=query.interpretations.front().key.key;
     const Progression recent(query.source.end()-recentSize,query.source.end());
+    const auto history=historyEvidence(query,index);
     const auto local=makeMatchQuery(recent,recentContext);
     if(local.interpretations.empty())return;
     const auto origin=local.interpretations.front().key.key;
@@ -387,7 +477,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 colors+=e.degree.alteration!=0||std::popcount(unsigned(p.intervals))>3||p.bass!=p.root;
             }
             if(!playable)continue;
-            c.suggestedCurrentChordDurationQN=progressionOpenDuration(recent);
+            c.suggestedCurrentChordDurationQN=history.sourceOpenHold.value_or(progressionOpenDuration(recent));
             c.constraints=request.constraints;
             c.melodyCompatibility=evaluateMelody(continuationProgression(query.source,c),request.constraints);
             c.hardConstraintsPassed=c.melodyCompatibility.hardSatisfied;
@@ -465,6 +555,85 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
     output.contextualMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();
 }
 
+void assessInspirationStructure(const MatchQuery& query,const CandidateIndex& index,RecommendationSet& set) {
+    if(query.source.empty())return;
+    const auto history=historyEvidence(query,index);
+    const bool meterKnown=query.timeSigNumerator&&query.timeSigDenominator&&
+        *query.timeSigNumerator>0&&*query.timeSigDenominator>0;
+    const double bar=meterKnown?4.0*(*query.timeSigNumerator)/(*query.timeSigDenominator):0;
+    const double fallback=progressionOpenDuration(query.source);
+    const auto aligned=[](double value,double unit){return unit>0&&near(value/unit,std::round(value/unit));};
+    for(auto& group:set.groups)for(auto& c:group) {
+        c.structureQualified=false;c.structurePriority=0;
+        const auto source=std::find_if(index.templates().begin(),index.templates().end(),
+            [&](const auto& t){return t.id==c.primaryTemplate;});
+        if(source==index.templates().end()){c.structureReason="unproven source structure";continue;}
+        c.developmentMechanism=mechanism(*source);
+        c.historyFamilyPresent=history.families.contains(familyFor(*source));
+        c.historyMechanismPresent=history.mechanisms.contains(c.developmentMechanism);
+        c.historySimilarity=materialSimilarity(query.source,c);
+        double end=query.source.front().startQN;bool contiguous=true;
+        for(std::size_t i=0;i<query.source.size();++i) {
+            const auto& e=query.source[i];
+            const auto duration=e.durationQN&&!e.openEnded?*e.durationQN:
+                i+1==query.source.size()?c.suggestedCurrentChordDurationQN.value_or(fallback):0.;
+            contiguous&=std::isfinite(duration)&&duration>0&&near(e.startQN,end);
+            end=e.startQN+duration;
+        }
+        c.seamQN=end-query.source.front().startQN;
+        if(!contiguous){c.structureReason="unproven discontinuous input timeline";continue;}
+        if(!meterKnown){c.structureReason="unproven meter and phrase downbeat";continue;}
+        if(source->meterNumerator!=*query.timeSigNumerator||source->meterDenominator!=*query.timeSigDenominator) {
+            c.structureReason="unproven meter change";continue;
+        }
+        if(!c.sourceEndPreserved){c.structureReason="unproven original source end";continue;}
+        const bool wholeCycle=c.channel==RecommendationChannel::Exact&&source->loopable&&
+            c.continuationStart==source->full.size()&&c.completeSourcePhrase;
+        if(!c.completeSourcePhrase) {
+            // A local catalogue relationship is valid retrieval evidence. It
+            // does not prove a new phrase began inside an already complete input.
+            const auto length=c.channel==RecommendationChannel::Exact?query.source.size():c.contextLength;
+            const bool fromSelectionStart=length==query.source.size()&&c.matchStart==0&&
+                c.continuationStart==query.source.size();
+            if(!fromSelectionStart){c.structureReason="unproven shared-material overlap; local tail is not an independent phrase start";continue;}
+            bool rhythm=true;
+            for(std::size_t i=0;i<query.source.size();++i) {
+                const auto sourceChord=sourceEvent(*source,i,c.key);
+                const auto expected=sourceChord.durationQN;
+                const auto actual=i+1==query.source.size()?end-query.source[i].startQN:
+                    query.source[i+1].startQN-query.source[i].startQN;
+                rhythm&=near(actual,expected)&&compatible(query.source[i],sourceChord);
+            }
+            if(!rhythm){c.structureReason="unproven source-prefix rhythm alignment";continue;}
+            c.structureQualified=true;c.structurePriority=1;
+            c.structureReason="contiguous source prefix from selection start to original ending; no shared events emitted twice";
+            continue;
+        }
+        if(!aligned(c.seamQN,bar)){c.structureReason="unproven off-bar seam; no pickup/delay evidence";continue;}
+        if(c.continuation.empty()||!boundary(chordPitches(query.source.back()),pitches(c.continuation.front())).passed) {
+            c.structureReason="unproven actual-note harmonic seam";continue;
+        }
+        double total{};bool authored=true;
+        for(const auto& e:c.continuation){total+=e.durationQN;authored&=std::isfinite(e.durationQN)&&e.durationQN>0;}
+        const bool reviewedGroups=source->version==8&&reviewed(*source)&&source->full.size()==8&&
+            c.continuation.size()==8&&near(total,32)&&
+            std::all_of(c.continuation.begin(),c.continuation.end(),[](const auto& e){return near(e.durationQN,4);});
+        const bool sourceMetric=authored&&aligned(total,bar)&&
+            (aligned(total,4*bar)||aligned(total,8*bar));
+        const bool knownTail=history.reviewedTailStart&&near(end-*history.reviewedTailStart,32);
+        const bool inputMetric=history.tailSourceMatched&&c.seamQN>=4*bar-1e-6&&aligned(c.seamQN,4*bar);
+        if(!(sourceMetric&&(inputMetric||knownTail))) {
+            c.structureReason="unproven asymmetric phrase grouping; authored timing retained, no automatic padding or overlap";continue;
+        }
+        c.structureQualified=true;c.structurePriority=reviewedGroups?2:1;
+        c.structureReason=wholeCycle?"complete cycle appended once after a supported phrase boundary":
+            reviewedGroups?"whole source, 4+4-bar grouping; independent append after metric/source-supported boundary; algorithm-assessed seam, no independent seam review":
+            "whole source and regular metric boundary; inferred grouping, no independent seam review";
+        if(query.source.back().openEnded&&history.sourceOpenHold&&
+            near(end-query.source.back().startQN,*history.sourceOpenHold))
+            c.structureReason+="; OPEN hold supported by full actual music/timing match, source ID not recovered";
+    }
+}
 void rankCreativeContinuations(std::vector<ContinuationCandidate>& group) {
     // Preserve every legal route. Diversity changes only display order. Start
     // from deterministic identity order and compare raw scores within a channel.
@@ -488,8 +657,9 @@ void rankCreativeContinuations(std::vector<ContinuationCandidate>& group) {
             }
             const float deficit=ratios[d]*float(slot+1)-float(selected[d]);
             const float utility=qualityTier(c)*40.f+deficit*6.f-penalty;
-            if(best==group.size()||utility>bestUtility+.001f||
-               (std::abs(utility-bestUtility)<.001f&&c.channel==group[best].channel&&c.rankingScore>group[best].rankingScore)) {
+            if(best==group.size()||(c.structureQualified&&!group[best].structureQualified)||
+               (c.structureQualified==group[best].structureQualified&&(utility>bestUtility+.001f||
+               (std::abs(utility-bestUtility)<.001f&&c.channel==group[best].channel&&c.rankingScore>group[best].rankingScore)))) {
                 best=i;bestUtility=utility;
             }
         }
@@ -547,6 +717,7 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
     };
     std::array<std::size_t,3> directions{},sources{};
     std::map<int,std::size_t> endings;
+    std::map<std::string,int> mechanismUse,familyUse;
     std::array<std::map<std::string,int>,7> seen;
     std::vector<bool> used(pool.size());
     std::vector<RecommendationPosition> order;order.reserve(pool.size());
@@ -554,8 +725,24 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
     constexpr float diversityWeights[]{6,5,8,4,3,2,2};
     for(std::size_t slot=0;slot<pool.size();++slot) {
         std::size_t best=pool.size();float bestUtility=-1e9f;
+        const auto independent=[](const ContinuationCandidate& c) {
+            return c.structureQualified&&!c.exploratory&&c.completeSourcePhrase&&c.reviewedEnding&&unterminatedEnding(c.ending);
+        };
+        const auto coverage=[&](const ContinuationCandidate& c) {
+            return std::tuple(int(c.historyMechanismPresent||mechanismUse[c.developmentMechanism]>0),
+                int(c.historyFamilyPresent||familyUse[c.family]>0),int(c.historySimilarity>=.75f));
+        };
+        std::optional<std::tuple<int,int,int>> availableCoverage;
+        // First select nonredundant, independently qualified development
+        // mechanisms; only then compare utility. No musical score is weakened
+        // and no legal candidate is deleted from later pages.
+        for(std::size_t i=0;i<pool.size();++i)if(!used[i]&&independent(candidate(i))) {
+            const auto key=coverage(candidate(i));
+            if(!availableCoverage||key<*availableCoverage)availableCoverage=key;
+        }
         for(std::size_t i=0;i<pool.size();++i)if(!used[i]) {
             const auto& c=candidate(i);
+            if(independent(c)&&availableCoverage&&coverage(c)>*availableCoverage)continue;
             const auto d=std::size_t(c.direction),s=std::size_t(sourceClass(c));
             float penalty{};
             for(std::size_t f=0;f<7;++f) {
@@ -572,13 +759,16 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
             const bool closed=c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure;
             const float endingPenalty=closed?3.f*float(endings[int(PhraseEnding::Closed)]):0.f;
             const float utility=qualityBand(c)*6.f+8.f*(directionDeficit+sourceDeficit)+development-penalty-endingPenalty;
-            const bool better=best==pool.size()||(!c.exploratory&&candidate(best).exploratory)||
-                (c.exploratory==candidate(best).exploratory&&(utility>bestUtility+.001f||
-                    (std::abs(utility-bestUtility)<.001f&&c.channel==candidate(best).channel&&c.rankingScore>candidate(best).rankingScore)));
+            const bool better=best==pool.size()||(c.structureQualified&&!candidate(best).structureQualified)||
+                (c.structureQualified==candidate(best).structureQualified&&
+                 ((!c.exploratory&&candidate(best).exploratory)||
+                 (c.exploratory==candidate(best).exploratory&&(utility>bestUtility+.001f||
+                    (std::abs(utility-bestUtility)<.001f&&c.channel==candidate(best).channel&&c.rankingScore>candidate(best).rankingScore)))));
             if(better){best=i;bestUtility=utility;}
         }
         used[best]=true;const auto& c=candidate(best);
         ++directions[std::size_t(c.direction)];++sources[std::size_t(sourceClass(c))];
+        ++mechanismUse[c.developmentMechanism];++familyUse[c.family];
         if(c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure)++endings[int(PhraseEnding::Closed)];
         for(std::size_t f=0;f<7;++f)++seen[f][pool[best].features[f]];
         order.push_back(pool[best].position);

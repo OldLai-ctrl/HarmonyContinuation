@@ -23,6 +23,7 @@
 #include "wish/WishCatalog.h"
 #include "G6Focused.h"
 #include "G8Focused.h"
+#include "G9Focused.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -3422,6 +3423,16 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    if (argc > 1 && std::string_view(argv[1]) == "--g9-rcr") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g9-rcr factory-v8.db original-sampled-starts.tsv output-dir");
+            return runG8Focused(argv[2], argv[4], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G9 fixed-start RCR acceptance FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--g8-replay-recorded") {
         try {
             require(argc == 6,
@@ -3439,6 +3450,16 @@ int main(int argc, char** argv) {
             return runG8Checks(argv[2], argv[3]);
         } catch (const std::exception& error) {
             std::cerr << "Factory G8 focused checks FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g9-checks") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g9-checks factory-v8.db g8-rounds.tsv output-dir");
+            return runG9Checks(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G9 focused checks FAIL: " << error.what() << '\n';
             return 1;
         }
     }

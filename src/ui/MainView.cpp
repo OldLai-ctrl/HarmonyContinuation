@@ -2248,6 +2248,12 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             if(state_.debugExpanded)paragraph(c.connectionReason);
         } else if(c.id.starts_with("g6:"))paragraph(state_.locale==session::Locale::ZhCN?
             "Snapshot3 已冻结实际演奏和后句来源 ID；来源通道与接缝元数据未持久保存。":"Snapshot3 preserves the actual performance and suffix source ID; source channel and seam metadata were not persisted.");
+        if(mixedInspiration&&!c.structureReason.empty()) {
+            paragraph(c.structureQualified?
+                (state_.locale==session::Locale::ZhCN?"乐句连接：保持完整来源结尾，时间结构有依据；音乐接缝仍需试听判断。":"Phrase connection: source ending and timing structure supported; audition the musical seam."):
+                (state_.locale==session::Locale::ZhCN?"探索路线：共享材料或乐句边界依据不足，未作为优先的跨句发展。":"Exploratory route: shared material or phrase boundary is unproven; lower priority for cross-phrase development."));
+            if(state_.debugExpanded)paragraph(c.structureReason);
+        }
         std::vector<std::string> otherKeys;
         for(const auto& source:c.evidence) {
             const auto key=formatKey(source.key);

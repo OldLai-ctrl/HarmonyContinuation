@@ -85,6 +85,13 @@ struct ContinuationCandidate {
     bool reviewedEnding{}, sourceEndPreserved{}, completeSourcePhrase{};
     std::string endingEvidence;
     std::vector<TemplateID> nextPhraseSources; // actual bounded index links, not a promise under future constraints
+    // Inspiration-only structural evidence. Not serialized; frozen performance
+    // and the legacy Exact score/eligibility contract remain independent.
+    bool structureQualified{}, historyFamilyPresent{}, historyMechanismPresent{};
+    int structurePriority{}; // 0 unproven, 1 metric inference, 2 reviewed whole-phrase boundary
+    double seamQN{};
+    float historySimilarity{};
+    std::string structureReason, developmentMechanism;
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
     return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
