@@ -182,6 +182,7 @@ struct HistoryEvidence {
     bool tailSourceMatched{};
     std::optional<double> sourceOpenHold;
     std::optional<double> reviewedTailStart;
+    std::string tailGrouping;
 };
 HistoryEvidence historyEvidence(const MatchQuery& query,const CandidateIndex& index) {
     HistoryEvidence result;
@@ -217,8 +218,26 @@ HistoryEvidence historyEvidence(const MatchQuery& query,const CandidateIndex& in
                 result.tailSourceMatched=true;
                 tailHolds.insert(durations.back());
                 if(t.version==8&&reviewed(t)&&n==8&&
-                    std::all_of(durations.begin(),durations.end(),[](double d){return near(d,4);}))
+                    std::all_of(durations.begin(),durations.end(),[](double d){return near(d,4);})) {
                     result.reviewedTailStart=query.source[begin].startQN;
+                    result.tailGrouping="4+4-bar source grouping";
+                }
+                // Focused G9 review of the reported V6 counterexample: two
+                // bars of tonic preparation precede two four-bar groups. Bind
+                // the review to exact sounding music and authored durations,
+                // not just an ID or a convenient total-length multiple.
+                if(t.id=="V6_B3_02_054"&&t.version==6&&n==8) {
+                    constexpr int roots[]{0,10,5,3,5,0,5,0},basses[]{0,2,9,7,8,7,5,0};
+                    constexpr unsigned masks[]{145,1060,545,1160,289,145,545,145};
+                    bool intact=true;
+                    for(std::size_t j=0;j<n;++j)intact&=pattern[j].root==roots[j]&&
+                        pattern[j].bass==basses[j]&&absoluteMask(pattern[j])==masks[j]&&
+                        near(durations[j],j==0||j==7?8.:4.);
+                    if(intact) {
+                        result.reviewedTailStart=query.source[begin].startQN+8;
+                        result.tailGrouping="reviewed two-bar tonic preparation + 4+4-bar groups; asymmetric whole source retained";
+                    }
+                }
             }
         }
     }
@@ -270,7 +289,11 @@ std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemp
                 const auto richer=boundary(pitches(realizeContinuation(extended,k,4)),start);
                 if(richer.passed)result.push_back({i,0,terminal,"seventh-prototype entry; "+richer.reason});
             }
-            if(degree==5)for(const auto quality:{ChordQuality::Sus4,ChordQuality::Dominant7}) {
+            // A suspended sonority need not be the dominant of a global key.
+            // The index can expose its other diatonic contexts; the user's
+            // actual bass, tones, center and phrase structure still gate entry.
+            for(const auto quality:{ChordQuality::Sus2,ChordQuality::Sus4,ChordQuality::Dominant7}) {
+                if(quality==ChordQuality::Dominant7&&degree!=5)continue;
                 terminal.quality=quality;
                 const auto suspended=boundary(pitches(realizeContinuation(terminal,k,4)),start);
                 if(suspended.passed)result.push_back({i,0,terminal,suspended.reason});
@@ -632,6 +655,7 @@ void assessInspirationStructure(const MatchQuery& query,const CandidateIndex& in
         if(query.source.back().openEnded&&history.sourceOpenHold&&
             near(end-query.source.back().startQN,*history.sourceOpenHold))
             c.structureReason+="; OPEN hold supported by full actual music/timing match, source ID not recovered";
+        if(knownTail&&!history.tailGrouping.empty())c.structureReason+="; input="+history.tailGrouping;
     }
 }
 void rankCreativeContinuations(std::vector<ContinuationCandidate>& group) {

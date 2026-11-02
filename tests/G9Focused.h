@@ -364,6 +364,32 @@ void g9CheckLegacyChains(const library::LoadResult& factory,
             const auto queryId = std::string(startId) + ":round-" + std::to_string(round + 1);
             g9WriteTop10(top10, queryId, recommendations);
 
+            if (startId == "V3_CYCLE_027" && round == 1) {
+                const auto order = mixedInspirationOrder(recommendations);
+                const ContinuationCandidate* firstCompleteUnterminated{};
+                bool hasFreshCompleteUnterminated{};
+                for (const auto position : order) {
+                    const auto* ordered = g8CandidateAt(recommendations, position);
+                    if (!ordered || !ordered->structureQualified ||
+                        !ordered->completeSourcePhrase || !ordered->reviewedEnding ||
+                        !unterminatedEnding(ordered->ending))
+                        continue;
+                    if (!firstCompleteUnterminated) firstCompleteUnterminated = ordered;
+                    if (!ordered->historyMechanismPresent) hasFreshCompleteUnterminated = true;
+                }
+                require(hasFreshCompleteUnterminated,
+                        "V3_CYCLE_027 round 2 has no fresh-mechanism, structure-qualified complete "
+                        "reviewed unterminated candidate in normal recommendations");
+                require(firstCompleteUnterminated &&
+                        !firstCompleteUnterminated->historyMechanismPresent,
+                        "V3_CYCLE_027 round 2 mixed order places a history-present candidate before "
+                        "the first fresh-mechanism complete unterminated candidate");
+                report << "fresh-mechanism-order\tPASS\t" << queryId
+                       << "\tfirst_source=" << g8Tsv(firstCompleteUnterminated->primaryTemplate)
+                       << ";mechanism=" << g8Tsv(firstCompleteUnterminated->developmentMechanism)
+                       << ";history_mechanism_present=0\n";
+            }
+
             const auto& source = g9FindTemplate(factory, record.primarySource);
             const auto actualImport = g9ParseCompleteFingerprint(record.actualImportFingerprint);
             const auto expectedKey = g9KeyFromActualTail(source, actualImport);
