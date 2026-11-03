@@ -37,6 +37,9 @@ void rounded(CDrawContext* dc,UiRect r,CColor color,CColor border=edge,double ra
     dc->setFillColor(color);dc->drawGraphicsPath(path,CDrawContext::kPathFilled);
     dc->setFrameColor(border);dc->setLineWidth(1);dc->drawGraphicsPath(path,CDrawContext::kPathStroked);
 }
+std::size_t browseFirstPageSize(std::size_t category,const RecommendationSet& recommendations){
+    return category==6?inspirationFirstPageSize(recommendations):recommendationPageSize;
+}
 }
 
 CColor MainView::enrichmentProvenanceColor(EnrichmentProvenanceKind kind,bool accent) noexcept {
@@ -75,18 +78,22 @@ void MainView::refreshBrowse(){
         for(std::size_t g=0;g<3;++g)for(const auto i:enrichmentOrder(g))
             rows.push_back({g,i,rows.size()<3,false});
     }else if(inspirationActive){
-        auto& mixed=browseRows_[6];mixed.clear();std::size_t topCount{};
+        auto& mixed=browseRows_[6];mixed.clear();
+        const auto firstLimit=inspirationFirstPageSize(recommendations_);
+        const auto priorityLimit=std::min<std::size_t>(3,firstLimit);
         for(const auto position:mixedInspirationOrder(recommendations_)){
             if(position.group>=recommendations_.groups.size()||position.index>=recommendations_.groups[position.group].size())continue;
             const auto& candidate=recommendations_.groups[position.group][position.index];
-            const bool priority=!candidate.exploratory&&topCount<3;
-            if(priority)++topCount;
+            const auto visibleRank=mixed.size();
+            const bool structureAllowed=!candidate.routeProfile.ready||candidate.structureQualified;
+            const bool priority=visibleRank<priorityLimit&&!candidate.exploratory&&structureAllowed;
             mixed.push_back({position.group,position.index,priority,candidate.exploratory});
         }
     }
     const auto validate=[&](std::size_t category){
         auto& rows=browseRows_[category];
-        browsePages_[category]=browsePage(rows.size(),browsePages_[category]).page;
+        browsePages_[category]=browsePage(rows.size(),browsePages_[category],
+            browseFirstPageSize(category,recommendations_)).page;
         const auto valid=[&](const std::string& id){return std::any_of(rows.begin(),rows.end(),[&](const auto& row){
             return (category==4?enrichments_.groups[row.group][row.index].id:recommendations_.groups[row.group][row.index].id)==id;});};
         if(!valid(browseSelected_[category]))browseSelected_[category].clear();
@@ -130,10 +137,11 @@ void MainView::changeBrowseCategory(std::size_t category,bool updateMatchIntent)
 }
 void MainView::focusBrowseEntry(std::size_t rank){
     const auto& rows=browseRows();if(rank>=rows.size())return;
-    const auto& row=rows[rank];compactSelected_=browseCategory()==4?enrichments_.groups[row.group][row.index].id:recommendations_.groups[row.group][row.index].id;
-    browsePages_[browseCategory()]=rank/recommendationPageSize;compactScroll_=0;
+    const auto category=browseCategory();const auto firstPageSize=browseFirstPageSize(category,recommendations_);
+    const auto& row=rows[rank];compactSelected_=category==4?enrichments_.groups[row.group][row.index].id:recommendations_.groups[row.group][row.index].id;
+    browsePages_[category]=browsePageIndex(rank,firstPageSize);compactScroll_=0;
     const auto geometry=computeCompactLayout(getViewSize().getWidth(),getViewSize().getHeight(),userZoom());
-    for(auto i=browsePage(rows.size(),browsePages_[browseCategory()]).begin;i<rank;++i){
+    for(auto i=browsePage(rows.size(),browsePages_[category],firstPageSize).begin;i<rank;++i){
         auto card=compactCandidateGeometry(geometry.cardsViewport,0,detailedCards_);
         if(detailedCards_)card.row.bottom=card.timeBand.bottom+128.;
         if(browseCategory()!=4&&!snapshotMode_){const auto& c=recommendations_.groups[rows[i].group][rows[i].index];
@@ -200,7 +208,9 @@ void MainView::drawBrowseControls(CDrawContext* dc,const CompactLayoutResult& g)
         compactButton(dc,{g.cardsViewport.right-64,y,g.cardsViewport.right,y+22},"下一页",CompactAction::PageNext,{},0,false,ready&&page.page+1<page.pages);return;
     }
     const bool zh=state_.locale==session::Locale::ZhCN;const auto& rows=browseRows();
-    const auto page=browsePage(rows.size(),browsePages_[browseCategory()]);browsePages_[browseCategory()]=page.page;
+    const auto category=browseCategory();
+    const auto page=browsePage(rows.size(),browsePages_[category],browseFirstPageSize(category,recommendations_));
+    browsePages_[category]=page.page;
     const bool ready=!workerBusy_&&recommendationResultReady_;
     compactButton(dc,{g.recommendationHeading.right-108,g.recommendationHeading.top,g.recommendationHeading.right,g.recommendationHeading.bottom},
         zh?"总览":"Overview",CompactAction::Overview,{},0,false,ready);
@@ -453,7 +463,8 @@ void MainView::drawCompact(CDrawContext* dc){
     if(state_.productMode==session::ProductMode::Enrich){
         drawCompactEnrichments(dc,g);compactInCards_=false;drawCompactTransport(dc);drawResponsiveForm(dc);drawRecommendationOverview(dc);return;
     }
-    const auto& all=browseRows();const auto page=browsePage(all.size(),browsePages_[browseCategory()]);
+    const auto& all=browseRows();const auto category=browseCategory();
+    const auto page=browsePage(all.size(),browsePages_[category],browseFirstPageSize(category,recommendations_));
     if(compactSelected_.empty()&&page.begin<page.end){const auto& first=all[page.begin];compactSelected_=recommendations_.groups[first.group][first.index].id;}
     const bool ready=wishMode_?(wishView_&&!wishView_->busy):!workerBusy_&&recommendationResultReady_;
     double cy=g.cardsViewport.top-compactScroll_,end=cy;
@@ -731,7 +742,8 @@ bool MainView::onCompactMouseDown(CPoint& where){
             focusBrowseEntry(index);break;}
         case CompactAction::PagePrevious:case CompactAction::PageNext:{
             auto& page=browsePages_[browseCategory()];if(action==CompactAction::PagePrevious){if(page)--page;}else ++page;
-            page=browsePage(browseRows().size(),page).page;compactScroll_=0;
+            const auto category=browseCategory();
+            page=browsePage(browseRows().size(),page,browseFirstPageSize(category,recommendations_)).page;compactScroll_=0;
             selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();midiPending_.reset();midiClick_={};break;}
         case CompactAction::Pause:if(actions_.pauseAudition)actions_.pauseAudition();break;
         case CompactAction::Backend:if(actions_.previewBackend)actions_.previewBackend(!auditionHostBackend_);break;
@@ -765,7 +777,7 @@ bool MainView::onCompactMouseDown(CPoint& where){
             const int pinAction=inspiration?2:3,pinnedAction=inspiration?3:4;
             if(n==pinAction){if(const auto* selected=findCandidate(compactSelected_)){if(state_.unpin(selected->id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==selected->id;});else if(state_.pin(selected->id,session::continuationFingerprint(*selected)))pinnedSnapshots_.push_back(*selected);notifyState();}}
             else if(n==pinnedAction){std::vector<std::string> names;for(const auto& pin:pinnedSnapshots_)names.push_back(pin.primaryTemplate+" · "+formatKey(pin.key));const auto picked=popup(names,where);if(picked>=0&&static_cast<std::size_t>(picked)<pinnedSnapshots_.size()){const auto target=pinnedSnapshots_[picked].id;refreshBrowse();bool found=false;
-                if(browseCategory()==6){const auto& rows=browseRows_[6];for(std::size_t rank=0;rank<rows.size();++rank){const auto& row=rows[rank];if(recommendations_.groups[row.group][row.index].id==target){changeBrowseCategory(6);browsePages_[6]=rank/recommendationPageSize;compactSelected_=target;compactScroll_=0;found=true;break;}}}
+                if(browseCategory()==6){const auto& rows=browseRows_[6];for(std::size_t rank=0;rank<rows.size();++rank){const auto& row=rows[rank];if(recommendations_.groups[row.group][row.index].id==target){changeBrowseCategory(6);browsePages_[6]=browsePageIndex(rank,browseFirstPageSize(6,recommendations_));compactSelected_=target;compactScroll_=0;found=true;break;}}}
                 else for(std::size_t candidateGroup=0;candidateGroup<4;++candidateGroup)for(std::size_t rank=0;rank<browseRows_[candidateGroup].size();++rank){const auto& row=browseRows_[candidateGroup][rank];if(recommendations_.groups[row.group][row.index].id==target){changeBrowseCategory(candidateGroup);browsePages_[candidateGroup]=rank/recommendationPageSize;compactSelected_=target;compactScroll_=0;found=true;}}
                 if(!found)actionStatus_=zh?"固定候选不在本次合格结果中":"Pinned candidate is not qualified in the current result";}}
             else if(n>=0){
@@ -1346,20 +1358,23 @@ bool MainView::runG7UiSmoke(CDrawContext* dc,const std::function<void(const std:
         require(!order.empty(),"mixed inspiration bank has candidates");
         const auto& rows=browseRows();
         require(rows.size()==order.size(),"mixed browser keeps the prepared full order");
-        std::size_t markedTop{};
+        const auto firstLimit=inspirationFirstPageSize(recommendations_);
+        const auto topLimit=std::min<std::size_t>(3,firstLimit);
+        std::size_t markedTop{},expectedTop{};
         for(std::size_t i=0;i<order.size();++i){
             require(rows[i].group==order[i].group&&rows[i].index==order[i].index,
                 "mixed browser routes each row by its source position");
             const auto& candidate=recommendations_.groups[order[i].group][order[i].index];
             require(rows[i].exploratory==candidate.exploratory,"mixed card keeps actual exploration status");
-            if(rows[i].priority){require(!candidate.exploratory&&markedTop<3,"mixed Top 3 marks trusted rows");++markedTop;}
+            const bool expectedPriority=i<topLimit&&!candidate.exploratory&&
+                (!candidate.routeProfile.ready||candidate.structureQualified);
+            if(expectedPriority)++expectedTop;
+            if(rows[i].priority){require(expectedPriority,"mixed Top 3 marks only visible qualified rows");++markedTop;}
         }
-        require(markedTop==std::min<std::size_t>(3,std::count_if(order.begin(),order.end(),[&](const auto& position){
-            return position.group<recommendations_.groups.size()&&position.index<recommendations_.groups[position.group].size()&&
-                !recommendations_.groups[position.group][position.index].exploratory;})),"mixed Top 3 count");
+        require(markedTop==expectedTop,"mixed Top 3 count matches the visible qualified limit");
 
-        const auto targetRank=order.size()>recommendationPageSize?recommendationPageSize:0;
-        if(targetRank){click(CompactAction::PageNext,{},{});require(browsePages_[6]==1,"mixed page advances");}
+        const auto targetRank=order.size()>firstLimit?firstLimit:0;
+        if(targetRank){click(CompactAction::PageNext,{},{});require(browsePages_[6]==browsePageIndex(targetRank,firstLimit),"mixed page advances");}
         else if(capture)std::fprintf(stderr,"G7 UI smoke: mixed list has %zu rows; pagination was not exercised\n",order.size());
         const auto target=order[targetRank];
         require(target.group<recommendations_.groups.size()&&target.index<recommendations_.groups[target.group].size(),

@@ -6,6 +6,9 @@ void appendContextualContinuations(const MatchQuery&, const CandidateIndex&,
     const RecommendationRequest&, RecommendationSet&);
 void rankCreativeContinuations(std::vector<ContinuationCandidate>&);
 void assessInspirationStructure(const MatchQuery&,const CandidateIndex&,RecommendationSet&);
+void prepareContextualDiversity(const MatchQuery&,RecommendationSet&);
+float creativeRouteSimilarity(const ContinuationCandidate&,const ContinuationCandidate&) noexcept;
+std::size_t inspirationFirstPageSize(const RecommendationSet&,std::size_t maximum=10);
 const char* recommendationChannelName(RecommendationChannel) noexcept;
 int recommendationQualityTier(const ContinuationCandidate&) noexcept;
 std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSet&);

@@ -438,16 +438,21 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
         if(transition)++output.transitionExamined;else ++output.contextualExamined;
         for(const auto target:centers) {
             if(target.mode!=item.mode)continue;
+            const auto trace=[&](const char* why,float score=0.f) {
+                if(request.diagnoseCreative&&transition&&item.version==8)
+                    output.creativeTrials.push_back({item.id,target,why,score});
+            };
             const bool modulation=!sameCenter(origin,target)&&!relativeCenter(origin,target);
             if(modulation&&!transition)continue;
             if(modulation&&((absoluteMask(current)&scaleMask(origin))!=absoluteMask(current)||
-                (absoluteMask(current)&scaleMask(target))!=absoluteMask(current)))continue;
+                (absoluteMask(current)&scaleMask(target))!=absoluteMask(current))){trace("center-pivot");continue;}
             std::size_t length{};
             if(transition) {
                 const auto terminal=pitches(realizeContinuation(*anchor.terminalPrototype,target,4));
                 // Prototype indexes a harmonic terminal class, not a substitute
                 // for the query's voicing. Its actual bass/tones are checked below.
                 if(current.root!=terminal.root||core(current.quality)!=core(terminal.quality))continue;
+                trace("retrieved");
             } else {
                 for(const auto n:{recentSize,std::size_t(4),std::size_t(3),std::size_t(2)}) {
                     if(n<2||n>query.source.size()||n>anchor.continuationStart)continue;
@@ -483,7 +488,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 authoredCenterEstablished=true;
             }
             const auto seam=boundary(current,pitches(c.continuation.front()));
-            if(!seam.passed)continue;
+            if(!seam.passed){trace("actual-bass-tones-boundary");continue;}
             if(modulation) {
                 bool established{};
                 for(std::size_t j=1;j<c.continuation.size();++j) {
@@ -491,7 +496,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                     established|=mod(a.root-int(target.tonic))==7&&b.root==int(target.tonic)&&
                         (a.quality==ChordQuality::Dominant7||core(a.quality)==ChordQuality::Major)&&core(b.quality)==ChordQuality::Major;
                 }
-                if(!established)continue;
+                if(!established){trace("destination-center-not-established",seam.score);continue;}
             }
             bool playable=true;std::set<int> roots;int colors{};
             for(const auto& e:c.continuation) {
@@ -499,12 +504,12 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 playable&=p.root>=0&&p.bass>=0&&p.intervals&&std::isfinite(e.durationQN)&&e.durationQN>0&&e.durationQN<=128;
                 colors+=e.degree.alteration!=0||std::popcount(unsigned(p.intervals))>3||p.bass!=p.root;
             }
-            if(!playable)continue;
+            if(!playable){trace("playability",seam.score);continue;}
             c.suggestedCurrentChordDurationQN=history.sourceOpenHold.value_or(progressionOpenDuration(recent));
             c.constraints=request.constraints;
             c.melodyCompatibility=evaluateMelody(continuationProgression(query.source,c),request.constraints);
             c.hardConstraintsPassed=c.melodyCompatibility.hardSatisfied;
-            if(!c.hardConstraintsPassed)continue;
+            if(!c.hardConstraintsPassed){trace("hard-constraints",seam.score);continue;}
             const auto last=pitches(c.continuation.back()),first=chordPitches(query.source.front());
             c.actualPhraseReturn=last.root==first.root&&last.bass==first.bass&&last.intervals==first.intervals;
             c.pathContextReliable=!transition;c.preservedLoop=false;
@@ -540,7 +545,8 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
             q.phrase=roots.size()>=3?.95f:c.continuation.size()>=2?.8f:.55f;
             // Independent conjunctive gates. There is no relaxed Unified cutoff.
             q.qualified=q.boundary>=.65f&&q.context>=.75f&&q.center>=.8f&&q.source>=.7f&&q.phrase>=.55f;
-            if(!q.qualified)continue;
+            if(!q.qualified){trace("creative-quality",seam.score);continue;}
+            trace("qualified-before-structure",seam.score);
             // A larger count of shared tones does not make a repeated tonic
             // extension a better quality band than a functional new direction.
             q.tier=q.phrase>=.8f&&(q.source>=.9f||length>=3)?2:1;
@@ -720,13 +726,14 @@ CreativeDirection inspirationDirection(const ContinuationCandidate& c,std::optio
 }
 std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSet& set) {
     if(!set.inspirationOrder.empty())return set.inspirationOrder;
-    struct Item { RecommendationPosition position; std::array<std::string,7> features; };
+    struct Item { RecommendationPosition position; std::string identity; };
     std::vector<Item> pool;
     std::set<std::string> identities;
     for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
         const auto& c=set.groups[g][i];
         if(!c.baseQualified||!c.hardConstraintsPassed||!std::isfinite(c.rankingScore)||c.continuation.empty())continue;
-        if(identities.insert(continuationMusicFingerprint(c)).second)pool.push_back({{g,i},features(c)});
+        const auto identity=continuationMusicFingerprint(c);
+        if(identities.insert(identity).second)pool.push_back({{g,i},identity});
     }
     const auto candidate=[&](std::size_t i)->const ContinuationCandidate& {const auto p=pool[i].position;return set.groups[p.group][p.index];};
     const auto sourceClass=[](const ContinuationCandidate& c) {
@@ -741,60 +748,48 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
     };
     std::array<std::size_t,3> directions{},sources{};
     std::map<int,std::size_t> endings;
-    std::map<std::string,int> mechanismUse,familyUse;
-    std::array<std::map<std::string,int>,7> seen;
     std::vector<bool> used(pool.size());
     std::vector<RecommendationPosition> order;order.reserve(pool.size());
     constexpr float directionTargets[]{.2f,.5f,.3f},sourceTargets[]{.25f,.4f,.35f};
-    constexpr float diversityWeights[]{6,5,8,4,3,2,2};
+    std::vector<float> represented(pool.size());
     for(std::size_t slot=0;slot<pool.size();++slot) {
         std::size_t best=pool.size();float bestUtility=-1e9f;
-        const auto independent=[](const ContinuationCandidate& c) {
-            return c.structureQualified&&!c.exploratory&&c.completeSourcePhrase&&c.reviewedEnding&&unterminatedEnding(c.ending);
-        };
-        const auto coverage=[&](const ContinuationCandidate& c) {
-            return std::tuple(int(c.historyMechanismPresent||mechanismUse[c.developmentMechanism]>0),
-                int(c.historyFamilyPresent||familyUse[c.family]>0),int(c.historySimilarity>=.75f));
-        };
-        std::optional<std::tuple<int,int,int>> availableCoverage;
-        // First select nonredundant, independently qualified development
-        // mechanisms; only then compare utility. No musical score is weakened
-        // and no legal candidate is deleted from later pages.
-        for(std::size_t i=0;i<pool.size();++i)if(!used[i]&&independent(candidate(i))) {
-            const auto key=coverage(candidate(i));
-            if(!availableCoverage||key<*availableCoverage)availableCoverage=key;
-        }
+        bool freshAvailable{};
+        for(std::size_t i=0;i<pool.size();++i)if(!used[i]&&candidate(i).structureQualified&&
+            !candidate(i).exploratory&&qualityBand(candidate(i))>=1&&candidate(i).routeProfile.ready&&represented[i]<.9f){freshAvailable=true;break;}
         for(std::size_t i=0;i<pool.size();++i)if(!used[i]) {
             const auto& c=candidate(i);
-            if(independent(c)&&availableCoverage&&coverage(c)>*availableCoverage)continue;
+            if(freshAvailable&&c.routeProfile.ready&&represented[i]>=.9f)continue;
             const auto d=std::size_t(c.direction),s=std::size_t(sourceClass(c));
-            float penalty{};
-            for(std::size_t f=0;f<7;++f) {
-                const auto found=seen[f].find(pool[i].features[f]);
-                if(found!=seen[f].end())penalty+=diversityWeights[f]*float(found->second);
-            }
             const float directionDeficit=directionTargets[d]*float(slot+1)-float(directions[d]);
             const float sourceDeficit=sourceTargets[s]*float(slot+1)-float(sources[s]);
             // Reviewed full phrases with actual next-entry edges get exposure;
             // a new key or a non-tonic last chord alone earns no such benefit.
             const bool developing=c.sourceEndPreserved&&c.reviewedEnding&&unterminatedEnding(c.ending);
-            const float development=developing?(c.nextPhraseSources.empty()?2.f:
-                c.completeSourcePhrase?7.f:c.continuation.size()>=4?4.f:1.f):0.f;
+            const float development=developing?4.f:0.f; // index degree/size is not musical suitability
             const bool closed=c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure;
             const float endingPenalty=closed?3.f*float(endings[int(PhraseEnding::Closed)]):0.f;
-            const float utility=qualityBand(c)*6.f+8.f*(directionDeficit+sourceDeficit)+development-penalty-endingPenalty;
-            const bool better=best==pool.size()||(c.structureQualified&&!candidate(best).structureQualified)||
-                (c.structureQualified==candidate(best).structureQualified&&
-                 ((!c.exploratory&&candidate(best).exploratory)||
-                 (c.exploratory==candidate(best).exploratory&&(utility>bestUtility+.001f||
-                    (std::abs(utility-bestUtility)<.001f&&c.channel==candidate(best).channel&&c.rankingScore>candidate(best).rankingScore)))));
+            const auto& profile=c.routeProfile;
+            const float utility=qualityBand(c)*6.f+4.f*directionDeficit+2.f*sourceDeficit+development-endingPenalty+
+                (profile.ready?10.f*profile.contextFit+8.f*(1.f-profile.historySimilarity)-12.f*represented[i]:0.f);
+            bool better=best==pool.size();
+            if(!better) {
+                const auto& previous=candidate(best);
+                const auto tier=std::tuple(c.structureQualified,!c.exploratory);
+                const auto priorTier=std::tuple(previous.structureQualified,!previous.exploratory);
+                if(tier!=priorTier)better=tier>priorTier;
+                else if(utility>bestUtility+.001f)better=true;
+                else if(std::abs(utility-bestUtility)<.001f&&c.channel==previous.channel)
+                    better=c.rankingScore>previous.rankingScore||
+                        (c.rankingScore==previous.rankingScore&&pool[i].identity<pool[best].identity);
+            }
             if(better){best=i;bestUtility=utility;}
         }
         used[best]=true;const auto& c=candidate(best);
         ++directions[std::size_t(c.direction)];++sources[std::size_t(sourceClass(c))];
-        ++mechanismUse[c.developmentMechanism];++familyUse[c.family];
         if(c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure)++endings[int(PhraseEnding::Closed)];
-        for(std::size_t f=0;f<7;++f)++seen[f][pool[best].features[f]];
+        for(std::size_t i=0;i<pool.size();++i)if(!used[i])
+            represented[i]=std::max(represented[i],creativeRouteSimilarity(c,candidate(i)));
         order.push_back(pool[best].position);
     }
     return order;

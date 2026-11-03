@@ -43,6 +43,13 @@ struct CreativeQuality {
     bool qualified{};
     int tier{}; // comparable quality band; raw scores remain channel-specific
 };
+struct CreativeRouteProfile {
+    bool ready{};
+    std::array<std::uint16_t,8> tones{}; // actual pitch sets relative to first bass, not chord names
+    std::array<float,8> bass{}, tension{};
+    std::array<float,12> palette{}; // actual sounding pitch-class usage, time weighted
+    float contextFit{}, historySimilarity{}, recentSimilarity{};
+};
 struct ContinuationCandidate {
     std::string id;
     TemplateID primaryTemplate;
@@ -92,6 +99,7 @@ struct ContinuationCandidate {
     double seamQN{};
     float historySimilarity{};
     std::string structureReason, developmentMechanism;
+    CreativeRouteProfile routeProfile; // runtime ranking only; no persistence changes
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
     return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
@@ -117,6 +125,7 @@ struct RecommendationRequest {
     HarmonicTendency tendency{HarmonicTendency::Balanced};
     bool inspirationPriority{}; // runtime only; Session5 remains unchanged
     bool prepareBothViews{}; // worker request only; navigation reuses two immutable result banks
+    bool diagnoseCreative{}; // bounded, opt-in editorial-route gate trace; not used by the worker
 };
 // Output identity shared by ranking and presentation; omits explanatory key/intent.
 std::string continuationMusicFingerprint(const ContinuationCandidate&);
@@ -128,6 +137,12 @@ struct DiminishedInsertionDiagnostic {
     float totalInsertionPenalty{}, originalPenalty{}, refund{}, scoreBefore{}, scoreAfter{};
 };
 struct RecommendationPosition { std::size_t group{}, index{}; };
+struct CreativeTrial {
+    TemplateID source;
+    KeySignature key;
+    std::string disposition;
+    float boundary{};
+};
 struct RecommendationSet {
     RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
     bool phase3aEnabled{}; // actual invocation, diagnostic only; never persisted
@@ -138,6 +153,7 @@ struct RecommendationSet {
     bool abstractChordCompatibility{}; // actual invocation, diagnostic only; never persisted
     std::size_t contextualExamined{}, contextualQualified{}, transitionExamined{}, transitionQualified{};
     double contextualMs{};
+    std::vector<CreativeTrial> creativeTrials;
     std::vector<RecommendationPosition> inspirationOrder; // prepared by the worker, actual candidate references
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(

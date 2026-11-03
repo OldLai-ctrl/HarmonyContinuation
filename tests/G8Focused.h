@@ -558,6 +558,40 @@ std::string g8MechanismSignature(const std::vector<std::string>& mechanisms) {
     return signature;
 }
 
+template<class T, std::size_t N>
+std::string g8NumericArrayText(const std::array<T, N>& values) {
+    std::ostringstream output;
+    output << std::fixed << std::setprecision(3);
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        if (i) output << ',';
+        output << values[i];
+    }
+    return output.str();
+}
+
+std::string g8KeyText(KeySignature key) {
+    constexpr const char* names[]{"C", "Db", "D", "Eb", "E", "F",
+                                  "Gb", "G", "Ab", "A", "Bb", "B"};
+    const auto tonic = static_cast<int>(key.tonic);
+    require(tonic >= 0 && tonic < 12, "G8 report key has an invalid tonic");
+    return std::string(names[tonic]) + (key.mode == Mode::Major ? ":major" : ":minor");
+}
+
+float g8RouteChainSimilarity(const std::vector<G8RoundRecord>& left,
+                             const std::vector<G8RoundRecord>& right) {
+    if (left.size() != 3 || right.size() != 3) return 0.f;
+    float similarity{};
+    for (std::size_t round = 0; round < 3; ++round) {
+        const auto& a = left[round].candidate;
+        const auto& b = right[round].candidate;
+        if (a.routeProfile.ready && b.routeProfile.ready)
+            similarity += creativeRouteSimilarity(a, b);
+        else if (g8CandidateMusicFingerprint(a) == g8CandidateMusicFingerprint(b))
+            similarity += 1.f;
+    }
+    return similarity / 3.f;
+}
+
 std::vector<G8Start> g8ReadFrozenStarts(const std::filesystem::path& path,
                                         const std::vector<G8Start>& validStarts) {
     std::ifstream input(path, std::ios::binary);
@@ -917,12 +951,16 @@ int runG8ReplayRecorded(const std::filesystem::path& factoryPath,
 
 int runG8Focused(const std::filesystem::path& factoryPath,
                  const std::filesystem::path& outputDirectory,
-                 std::filesystem::path frozenStartsPath = {}) {
+                 std::filesystem::path frozenStartsPath = {},
+                 bool g10Run = false) {
     const auto factory = library::loadFactory(factoryPath);
     require(static_cast<bool>(factory), "cannot load G8 Factory: " + factory.error);
     require(factory.libraryVersion >= 8, "G8 focused acceptance requires Factory version 8 or newer");
     std::filesystem::create_directories(outputDirectory);
-    const bool g9Run = !frozenStartsPath.empty();
+    require(!g10Run || !frozenStartsPath.empty(),
+            "G10 RCR requires its original frozen sampled-starts TSV");
+    const bool g9Run = !frozenStartsPath.empty() && !g10Run;
+    const std::string reportPrefix = g10Run ? "g10" : g9Run ? "g9" : "g8";
 
     std::vector<G8Start> validStarts;
     std::set<std::string> startIdentities;
@@ -941,7 +979,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     require(validStarts.size() >= g8SampleCount,
             "G8 valid full-Factory start pool has fewer than 50 distinct music identities");
     const auto populationSize = validStarts.size();
-    if (g9Run) {
+    if (g9Run || g10Run) {
         validStarts = g8ReadFrozenStarts(frozenStartsPath, validStarts);
     } else {
         std::mt19937 generator(g8SampleSeed);
@@ -949,13 +987,14 @@ int runG8Focused(const std::filesystem::path& factoryPath,
         validStarts.resize(g8SampleCount);
     }
 
-    const auto sampledPath = outputDirectory / (g9Run ? "g9-sampled-starts.tsv" : "sampled-starts.tsv");
-    if (g9Run) {
+    const auto sampledPath = outputDirectory / (g9Run || g10Run
+        ? reportPrefix + "-sampled-starts.tsv" : std::string("sampled-starts.tsv"));
+    if (g9Run || g10Run) {
         std::error_code equivalentError;
         const bool wouldOverwriteFrozenInput =
             std::filesystem::equivalent(frozenStartsPath, sampledPath, equivalentError);
         require(!wouldOverwriteFrozenInput,
-                "G9 output sampled-starts path resolves to the frozen input; refusing to overwrite it");
+                reportPrefix + " output sampled-starts path resolves to the frozen input; refusing to overwrite it");
     }
     {
         std::ofstream sampled(sampledPath, std::ios::binary | std::ios::trunc);
@@ -969,8 +1008,8 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     }
 
     CandidateIndex index(factory.templates);
-    const auto roundsPath = outputDirectory / (g9Run ? "g9-rounds.tsv" : "g8-rounds.tsv");
-    const auto startsPath = outputDirectory / (g9Run ? "g9-start-results.tsv" : "g8-start-results.tsv");
+    const auto roundsPath = outputDirectory / (reportPrefix + "-rounds.tsv");
+    const auto startsPath = outputDirectory / (reportPrefix + "-start-results.tsv");
     std::ofstream roundsReport(roundsPath, std::ios::binary | std::ios::trunc);
     std::ofstream startsReport(startsPath, std::ios::binary | std::ios::trunc);
     require(static_cast<bool>(roundsReport) && static_cast<bool>(startsReport),
@@ -983,17 +1022,25 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     if (g9Run)
         roundsReport << "\tstructure_qualified\tstructure_priority\tseam_qn\tstructure_reason"
                         "\tdevelopment_mechanism\thistory_mechanism_present\n";
+    else if (g10Run)
+        roundsReport << "\tfirst_page_size\tkey\tstructure_qualified\tstructure_priority"
+                        "\tseam_qn\tstructure_reason\tdevelopment_mechanism"
+                        "\thistory_mechanism_present\troute_profile_ready\troute_tones"
+                        "\troute_bass\troute_tension\troute_palette\tcontext_fit"
+                        "\troute_history_similarity\trecent_similarity\tcandidate_music_fingerprint\n";
     else roundsReport << '\n';
     startsReport << "sample_order\tstart_id\tstart_identity\tstatus\tcompleted_rounds"
                     "\tfirst_page_rounds\treason";
-    if (g9Run)
+    if (g9Run || g10Run)
         startsReport << "\tfamily_chain\tmechanism_chain\thistory_mechanism_chain"
                         "\tmechanism_repeated\tthree_rounds_nonrepeating_mechanisms\n";
     else startsReport << '\n';
 
     std::size_t passed{}, representatives{}, allThreeFirstPage{}, nonRepeatingMechanismChains{};
     std::set<std::string> representativeMechanismSignatures;
-    const auto tempDirectory = outputDirectory / (g9Run ? ".g9-midi-import" : ".g8-midi-import");
+    std::vector<std::vector<G8RoundRecord>> representativeRouteChains;
+    const auto tempDirectory = outputDirectory / (g10Run ? ".g10-midi-import" :
+        g9Run ? ".g9-midi-import" : ".g8-midi-import");
     std::filesystem::create_directories(tempDirectory);
     for (std::size_t sample = 0; sample < validStarts.size(); ++sample) {
         const auto& start = validStarts[sample];
@@ -1032,18 +1079,24 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                 require(g8EventListFingerprint(current.events) == inputFingerprint,
                         "recommendation query rewrote imported input chord identity");
                 const auto order = mixedInspirationOrder(recommendations);
+                const auto firstPageSize = g10Run
+                    ? inspirationFirstPageSize(recommendations, ui::recommendationPageSize)
+                    : ui::recommendationPageSize;
                 const ContinuationCandidate* selected{};
                 std::size_t selectedFlat{};
                 for (std::size_t visible = 0; visible < order.size(); ++visible) {
                     const auto* candidate = g8CandidateAt(recommendations, order[visible]);
                     if (candidate && g8Eligible(*candidate, index, usedMusic, usedSources,
-                                                usedFamilies, g9Run)) {
+                                                usedFamilies, g9Run || g10Run)) {
                         selected = candidate;
                         selectedFlat = visible;
                         break;
                     }
                 }
                 require(selected != nullptr, "no eligible complete open phrase in mixed Inspiration order");
+                const auto selectedPage = g10Run
+                    ? ui::browsePageIndex(selectedFlat, firstPageSize)
+                    : selectedFlat / ui::recommendationPageSize;
 
                 const auto built = preview::buildSequence(current, selected, 120.0);
                 require(static_cast<bool>(built), "RCR Preview failed: " + built.error);
@@ -1108,15 +1161,15 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                 const auto realizedFingerprint = g8EventListFingerprint(completeSession.events);
                 const auto elapsedMs = std::chrono::duration<double, std::milli>(
                     G8Clock::now() - roundStarted).count();
-                if (selectedFlat < ui::recommendationPageSize) ++firstPageRounds;
+                if (selectedPage == 0) ++firstPageRounds;
                 selectedFamilies.push_back(g8SourceFamily(*selected, index));
                 selectedMechanisms.push_back(selected->developmentMechanism);
                 historyMechanismChain.push_back(selected->historyMechanismPresent ? "1" : "0");
                 chain.push_back({current, *selected, built.sequence, payload.payload,
                     inputFingerprint, realizedFingerprint, selectedFlat,
-                    selectedFlat / ui::recommendationPageSize + 1, recommendationMs, elapsedMs});
+                    selectedPage + 1, recommendationMs, elapsedMs});
                 roundsReport << sample + 1 << '\t' << g8Tsv(start.item->id) << '\t' << round << '\t'
-                    << selectedFlat << '\t' << selectedFlat / ui::recommendationPageSize + 1 << '\t'
+                    << selectedFlat << '\t' << selectedPage + 1 << '\t'
                     << g8Tsv(selected->primaryTemplate) << '\t' << g8SourceFamily(*selected, index)
                     << '\t' << recommendationChannelName(selected->channel)
                     << '\t' << phraseEndingName(selected->ending) << '\t' << g8NextIds(*selected) << '\t'
@@ -1131,6 +1184,22 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                         << '\t' << g8Tsv(selected->structureReason)
                         << '\t' << g8Tsv(selected->developmentMechanism)
                         << '\t' << (selected->historyMechanismPresent ? 1 : 0);
+                else if (g10Run)
+                    roundsReport << '\t' << firstPageSize << '\t' << g8KeyText(selected->key)
+                        << '\t' << (selected->structureQualified ? 1 : 0)
+                        << '\t' << selected->structurePriority << '\t' << selected->seamQN
+                        << '\t' << g8Tsv(selected->structureReason)
+                        << '\t' << g8Tsv(selected->developmentMechanism)
+                        << '\t' << (selected->historyMechanismPresent ? 1 : 0)
+                        << '\t' << (selected->routeProfile.ready ? 1 : 0)
+                        << '\t' << g8NumericArrayText(selected->routeProfile.tones)
+                        << '\t' << g8NumericArrayText(selected->routeProfile.bass)
+                        << '\t' << g8NumericArrayText(selected->routeProfile.tension)
+                        << '\t' << g8NumericArrayText(selected->routeProfile.palette)
+                        << '\t' << selected->routeProfile.contextFit
+                        << '\t' << selected->routeProfile.historySimilarity
+                        << '\t' << selected->routeProfile.recentSimilarity
+                        << '\t' << g8Tsv(g8CandidateMusicFingerprint(*selected));
                 roundsReport << '\n';
                 require(static_cast<bool>(roundsReport), "cannot finish G8 round report");
 
@@ -1142,17 +1211,26 @@ int runG8Focused(const std::filesystem::path& factoryPath,
 
             require(chain.size() == 3, "RCR chain did not complete A to B to C to D");
             const auto mechanismSummary = g8SummarizeMechanisms(selectedMechanisms);
-            if (representatives < 3 &&
-                (!g9Run || (!g8MechanismSignature(selectedMechanisms).empty() &&
-                    representativeMechanismSignatures.insert(
-                        g8MechanismSignature(selectedMechanisms)).second))) {
+            bool distinctRepresentative = true;
+            if (g9Run) {
+                const auto signature = g8MechanismSignature(selectedMechanisms);
+                distinctRepresentative = !signature.empty() &&
+                    representativeMechanismSignatures.insert(signature).second;
+            } else if (g10Run) {
+                distinctRepresentative = std::all_of(representativeRouteChains.begin(),
+                    representativeRouteChains.end(), [&](const auto& prior) {
+                        return g8RouteChainSimilarity(chain, prior) < .9f;
+                    });
+            }
+            if (representatives < 3 && distinctRepresentative) {
                 g8WriteRepresentative(outputDirectory, start.item->id, representatives,
                     chain, factory, meter.numerator, meter.denominator);
+                if (g10Run) representativeRouteChains.push_back(chain);
                 ++representatives;
             }
             ++passed;
             allThreeFirstPage += firstPageRounds == 3 ? 1 : 0;
-            if (g9Run) {
+            if (g9Run || g10Run) {
                 nonRepeatingMechanismChains += mechanismSummary.threeDistinct ? 1 : 0;
                 startsReport << sample + 1 << '\t' << g8Tsv(start.item->id) << '\t'
                     << g8Tsv(start.identity) << "\tPASS\t3\t" << firstPageRounds << "\t\t"
@@ -1170,7 +1248,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
             startsReport << sample + 1 << '\t' << g8Tsv(start.item->id) << '\t'
                 << g8Tsv(start.identity) << "\tFAIL\t" << chain.size() << '\t'
                 << firstPageRounds << '\t' << g8Tsv(failure);
-            if (g9Run)
+            if (g9Run || g10Run)
                 startsReport << '\t'
                     << g6Join(selectedFamilies, ";", [](const auto& value) { return g8Tsv(value); }) << '\t'
                     << g6Join(selectedMechanisms, ";", [](const auto& value) { return g8Tsv(value); }) << '\t'
@@ -1180,7 +1258,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
             startsReport << '\n';
         }
         require(static_cast<bool>(startsReport), "cannot finish G8 start results");
-        std::cout << "g8_start order=" << sample + 1 << " id=" << start.item->id
+        std::cout << reportPrefix << "_start order=" << sample + 1 << " id=" << start.item->id
                   << " status=" << (failure.empty() ? "PASS" : "FAIL")
                   << " rounds=" << chain.size();
         if (!failure.empty()) std::cout << " reason=" << g8Tsv(failure);
@@ -1217,6 +1295,34 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                 "G9 RCR acceptance below required 10 of 50 completed three-round chains");
         require(nonRepeatingMechanismChains >= 10,
                 "G9 RCR acceptance below required 10 of 50 three-round chains with distinct mechanisms");
+    } else if (g10Run) {
+        const auto summaryPath = outputDirectory / "g10-summary.tsv";
+        std::ofstream summary(summaryPath, std::ios::binary | std::ios::trunc);
+        require(static_cast<bool>(summary), "cannot create G10 summary report");
+        summary << "metric\tvalue\trequired\n"
+                << "population_size\t" << populationSize << "\t50\n"
+                << "sampled_starts\t" << g8SampleCount << "\t50\n"
+                << "completed_three_round_chains\t" << passed << "\t10\n"
+                << "three_rounds_nonrepeating_mechanisms_measurement\t"
+                << nonRepeatingMechanismChains << "\t-\n"
+                << "distinct_actual_profile_media_representatives\t" << representatives << "\t<=3\n"
+                << "all_three_rounds_dynamic_page1\t" << allThreeFirstPage << "\t-\n"
+                << "sampled_starts_report\t" << sampledPath.filename().string() << "\t-\n"
+                << "rounds_report\t" << roundsPath.filename().string() << "\t-\n"
+                << "start_results_report\t" << startsPath.filename().string() << "\t-\n";
+        summary.flush();
+        require(static_cast<bool>(summary), "cannot finish G10 summary report");
+        std::cout << "g10_rcr frozen_starts=" << frozenStartsPath.string()
+                  << " population_size=" << populationSize << " sampled=" << g8SampleCount
+                  << " completed_three_round_chains=" << passed
+                  << " mechanism_nonrepeat_measurement=" << nonRepeatingMechanismChains
+                  << " required_chains=10 profile_media_representatives=" << representatives
+                  << " all_three_rounds_dynamic_page1=" << allThreeFirstPage
+                  << " sampled_starts=" << sampledPath.string()
+                  << " rounds=" << roundsPath.string() << " results=" << startsPath.string()
+                  << " summary=" << summaryPath.string() << '\n';
+        require(passed >= 10,
+                "G10 RCR acceptance below required 10 of 50 completed three-round chains");
     } else {
         std::cout << "g8_rcr seed=" << g8SampleSeed << " population_size=" << populationSize
                   << " sampled=" << g8SampleCount

@@ -14,13 +14,31 @@ struct BrowsePage {
     std::size_t page{}, pages{}, begin{}, end{}, total{};
 };
 
-inline BrowsePage browsePage(std::size_t total, std::size_t requested) noexcept {
+inline std::size_t normalizedFirstPageSize(std::size_t firstPageSize) noexcept {
+    return std::clamp(firstPageSize, std::size_t{1}, recommendationPageSize);
+}
+
+inline std::size_t browsePageIndex(
+    std::size_t flatIndex,
+    std::size_t firstPageSize = recommendationPageSize) noexcept {
+    firstPageSize = normalizedFirstPageSize(firstPageSize);
+    if (flatIndex < firstPageSize) return 0;
+    return 1 + (flatIndex - firstPageSize) / recommendationPageSize;
+}
+
+inline BrowsePage browsePage(
+    std::size_t total,
+    std::size_t requested,
+    std::size_t firstPageSize = recommendationPageSize) noexcept {
     if (total == 0) return {};
-    const auto pages = total / recommendationPageSize +
-        (total % recommendationPageSize != 0);
+    firstPageSize = normalizedFirstPageSize(firstPageSize);
+    const auto afterFirst = total > firstPageSize ? total - firstPageSize : 0;
+    const auto pages = 1 + afterFirst / recommendationPageSize +
+        (afterFirst % recommendationPageSize != 0);
     const auto page = std::min(requested, pages - 1);
-    const auto begin = page * recommendationPageSize;
-    const auto count = std::min(recommendationPageSize, total - begin);
+    const auto begin = page == 0 ? 0 : firstPageSize + (page - 1) * recommendationPageSize;
+    const auto pageSize = page == 0 ? firstPageSize : recommendationPageSize;
+    const auto count = std::min(pageSize, total - begin);
     return {page, pages, begin, begin + count, total};
 }
 
