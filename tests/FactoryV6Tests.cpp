@@ -25,6 +25,7 @@
 #include "G8Focused.h"
 #include "G9Focused.h"
 #include "G10Focused.h"
+#include "G11Focused.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -3481,6 +3482,47 @@ int main(int argc, char** argv) {
             return runG10Diagnose(argv[2], argv[3], argv[4],argc==6?g8ParseInt(argv[5],"completed query count"):0);
         } catch (const std::exception& error) {
             std::cerr << "Factory G10 frozen-round diagnostics FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g11-diagnose") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g11-diagnose factory-v8.db g10-rounds.tsv output-dir");
+            return runG11Diagnose(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G11 frozen-context diagnostics FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g11-branches") {
+        try {
+            require(argc == 4,
+                    "usage: FactoryV6Tests --g11-branches factory-v8.db output-dir");
+            return runG11Branches(argv[2], argv[3]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G11 one-hop branch probes FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g11-checks") {
+        try {
+            require(argc == 6,
+                    "usage: FactoryV6Tests --g11-checks factory-v8.db g10-rounds.tsv "
+                    "baseline-g11-candidates.tsv output-dir");
+            return runG11Checks(argv[2], argv[3], argv[4], argv[5]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G11 focused checks FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g11-rcr") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g11-rcr factory-v8.db frozen-starts.tsv output-dir");
+            return runG8Focused(argv[2], argv[4], argv[3], true, true);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G11 fixed-start RCR FAIL: " << error.what() << '\n';
             return 1;
         }
     }

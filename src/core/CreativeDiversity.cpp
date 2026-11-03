@@ -61,6 +61,19 @@ float similarity(const CreativeRouteProfile& a,const CreativeRouteProfile& b) {
     const auto palette=intersection/std::max(.001f,unionUse);
     return std::clamp(.4f*palette+.3f*bass/8.f+.2f*tones/8.f+.1f*tension/8.f,0.f,1.f);
 }
+float developmentSimilarity(const CreativeRouteProfile& a,const CreativeRouteProfile& b) {
+    if(!a.ready||!b.ready)return 0;
+    float tones{},bass{},tension{};
+    for(std::size_t i=0;i<8;++i) {
+        tones+=overlap(a.tones[i],b.tones[i]);
+        bass+=1.f-std::min(1.f,std::abs(a.bass[i]-b.bass[i])/6.f);
+        tension+=1.f-std::min(1.f,2.f*std::abs(a.tension[i]-b.tension[i]));
+    }
+    // A change of pitch-class region alone is not a new development mechanism.
+    // Same sounding contour in a different key remains an available reprise,
+    // with a soft preference for another contour when quality is comparable.
+    return std::clamp((.5f*tones+.35f*bass+.15f*tension)/8.f,0.f,1.f);
+}
 std::vector<SoundEvent> inputSounds(const Progression& input,double hold) {
     std::vector<SoundEvent> result;
     for(std::size_t i=0;i<input.size();++i) {
@@ -130,7 +143,7 @@ float contextualFit(const std::vector<SoundEvent>& input,const std::vector<Sound
         .1f*change+.1f*functional+.1f*center,0.f,1.f);
 }
 }
-void prepareContextualDiversity(const MatchQuery& query,RecommendationSet& set) {
+void prepareContextualDiversity(const MatchQuery& query,RecommendationSet& set,std::size_t appendedAfter) {
     double hold=progressionOpenDuration(query.source);
     bool supportedHold{};
     for(const auto& group:set.groups)for(const auto& c:group)
@@ -141,7 +154,7 @@ void prepareContextualDiversity(const MatchQuery& query,RecommendationSet& set) 
     if(sounds.empty())return;
     std::vector<CreativeRouteProfile> history;
     for(const auto size:{std::size_t(4),std::size_t(8)})if(sounds.size()>=size)
-        for(std::size_t i=0;i+size<=sounds.size();++i)
+        for(std::size_t i=appendedAfter>=size?appendedAfter-size+1:0;i+size<=sounds.size();++i)
             history.push_back(profile(std::vector<SoundEvent>(sounds.begin()+i,sounds.begin()+i+size)));
     const auto recent=profile(std::vector<SoundEvent>(sounds.end()-std::min<std::size_t>(8,sounds.size()),sounds.end()));
     for(auto& group:set.groups)for(auto& c:group) {
@@ -150,16 +163,24 @@ void prepareContextualDiversity(const MatchQuery& query,RecommendationSet& set) 
             const auto p=e.harmonicData?chordPitches(*e.harmonicData):chordPitches(e.label,e.quality);
             next.push_back({sounding(p),p.bass,e.durationQN});
         }
+        const auto prior=c.routeProfile;
         c.routeProfile=profile(next);
+        if(appendedAfter) {
+            c.routeProfile.historySimilarity=prior.historySimilarity;
+            c.routeProfile.developmentHistorySimilarity=prior.developmentHistorySimilarity;
+        }
         const auto center=c.channel==RecommendationChannel::Exact?
             (query.interpretations.empty()?std::optional<KeySignature>{}:query.interpretations.front().key.key):c.originCenter;
         if(!c.continuation.empty())c.routeProfile.contextFit=contextualFit(sounds,next,c,center);
         c.routeProfile.recentSimilarity=similarity(c.routeProfile,recent);
-        for(const auto& h:history)c.routeProfile.historySimilarity=std::max(c.routeProfile.historySimilarity,similarity(c.routeProfile,h));
+        for(const auto& h:history) {
+            c.routeProfile.historySimilarity=std::max(c.routeProfile.historySimilarity,similarity(c.routeProfile,h));
+            c.routeProfile.developmentHistorySimilarity=std::max(c.routeProfile.developmentHistorySimilarity,developmentSimilarity(c.routeProfile,h));
+        }
     }
 }
 float creativeRouteSimilarity(const ContinuationCandidate& a,const ContinuationCandidate& b) noexcept {
-    return similarity(a.routeProfile,b.routeProfile);
+    return std::max(similarity(a.routeProfile,b.routeProfile),developmentSimilarity(a.routeProfile,b.routeProfile));
 }
 std::size_t inspirationFirstPageSize(const RecommendationSet& set,std::size_t maximum) {
     const auto order=mixedInspirationOrder(set);

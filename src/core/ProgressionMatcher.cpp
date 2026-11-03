@@ -459,6 +459,7 @@ CandidateIndex::CandidateIndex(std::vector<ProgressionTemplate> templates) : tem
     for (auto& item : templates_) prepareTemplate(item);
     contextAnchors_=buildContextAnchors(templates_);
     developmentLinks_=buildDevelopmentLinks(templates_);
+    continuationLinks_=buildContinuationLinks(*this);
 }
 std::vector<std::size_t> CandidateIndex::shortlist(const MatchQuery& query, const MatchWeights& w) const {
     std::vector<std::size_t> result;

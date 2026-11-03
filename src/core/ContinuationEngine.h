@@ -49,6 +49,12 @@ struct CreativeRouteProfile {
     std::array<float,8> bass{}, tension{};
     std::array<float,12> palette{}; // actual sounding pitch-class usage, time weighted
     float contextFit{}, historySimilarity{}, recentSimilarity{};
+    float developmentHistorySimilarity{}; // relative sound/bass/tension contour, independent of absolute key palette
+};
+struct ContinuationBranching {
+    bool assessed{};
+    std::size_t legalRoutes{}, independentIdeas{}, families{}, centerDirections{}, freshIdeas{};
+    float opportunity{}; // bounded quality-similar tie preference, not a future constraint guarantee
 };
 struct ContinuationCandidate {
     std::string id;
@@ -100,6 +106,7 @@ struct ContinuationCandidate {
     float historySimilarity{};
     std::string structureReason, developmentMechanism;
     CreativeRouteProfile routeProfile; // runtime ranking only; no persistence changes
+    ContinuationBranching branching;
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
     return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&

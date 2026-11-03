@@ -218,17 +218,27 @@ struct PhraseLink {
 };
 std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>&);
 std::vector<PhraseLink> buildDevelopmentLinks(const std::vector<ProgressionTemplate>&);
+struct ContinuationLink {
+    std::size_t sourceTemplate{}, nextTemplate{};
+    KeySignature sourceKey, nextKey;
+    float boundaryScore{};
+    std::optional<KeySignature> nextCenter; // supported explanation; unset while the source remains in transition
+};
+class CandidateIndex;
+std::vector<ContinuationLink> buildContinuationLinks(const CandidateIndex&);
 class CandidateIndex {
 public:
     explicit CandidateIndex(std::vector<ProgressionTemplate> templates = {});
     const std::vector<ProgressionTemplate>& templates() const noexcept { return templates_; }
     const std::vector<ContextAnchor>& contextAnchors() const noexcept { return contextAnchors_; }
     const std::vector<PhraseLink>& developmentLinks() const noexcept { return developmentLinks_; }
+    const std::vector<ContinuationLink>& continuationLinks() const noexcept { return continuationLinks_; }
     std::vector<std::size_t> shortlist(const MatchQuery&, const MatchWeights& = {}) const;
 private:
     std::vector<ProgressionTemplate> templates_;
     std::vector<ContextAnchor> contextAnchors_;
     std::vector<PhraseLink> developmentLinks_;
+    std::vector<ContinuationLink> continuationLinks_; // bounded one-step, qualified full-source possibilities
 };
 
 std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,

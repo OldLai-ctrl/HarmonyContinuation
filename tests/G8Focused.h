@@ -952,7 +952,8 @@ int runG8ReplayRecorded(const std::filesystem::path& factoryPath,
 int runG8Focused(const std::filesystem::path& factoryPath,
                  const std::filesystem::path& outputDirectory,
                  std::filesystem::path frozenStartsPath = {},
-                 bool g10Run = false) {
+                 bool g10Run = false, bool g11Run = false) {
+    g10Run = g10Run || g11Run; // same frozen starts, eligibility, MIDI imports and first-choice selection
     const auto factory = library::loadFactory(factoryPath);
     require(static_cast<bool>(factory), "cannot load G8 Factory: " + factory.error);
     require(factory.libraryVersion >= 8, "G8 focused acceptance requires Factory version 8 or newer");
@@ -960,7 +961,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     require(!g10Run || !frozenStartsPath.empty(),
             "G10 RCR requires its original frozen sampled-starts TSV");
     const bool g9Run = !frozenStartsPath.empty() && !g10Run;
-    const std::string reportPrefix = g10Run ? "g10" : g9Run ? "g9" : "g8";
+    const std::string reportPrefix = g11Run ? "g11" : g10Run ? "g10" : g9Run ? "g9" : "g8";
 
     std::vector<G8Start> validStarts;
     std::set<std::string> startIdentities;
@@ -1022,12 +1023,16 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     if (g9Run)
         roundsReport << "\tstructure_qualified\tstructure_priority\tseam_qn\tstructure_reason"
                         "\tdevelopment_mechanism\thistory_mechanism_present\n";
-    else if (g10Run)
+    else if (g10Run) {
         roundsReport << "\tfirst_page_size\tkey\tstructure_qualified\tstructure_priority"
                         "\tseam_qn\tstructure_reason\tdevelopment_mechanism"
                         "\thistory_mechanism_present\troute_profile_ready\troute_tones"
                         "\troute_bass\troute_tension\troute_palette\tcontext_fit"
-                        "\troute_history_similarity\trecent_similarity\tcandidate_music_fingerprint\n";
+                        "\troute_history_similarity\trecent_similarity\tcandidate_music_fingerprint";
+        if(g11Run)roundsReport << "\tdevelopment_history_similarity\tbranch_assessed\tbranch_routes"
+            "\tbranch_ideas\tbranch_families\tbranch_center_directions\tbranch_fresh_ideas\tbranch_opportunity";
+        roundsReport << '\n';
+    }
     else roundsReport << '\n';
     startsReport << "sample_order\tstart_id\tstart_identity\tstatus\tcompleted_rounds"
                     "\tfirst_page_rounds\treason";
@@ -1039,7 +1044,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     std::size_t passed{}, representatives{}, allThreeFirstPage{}, nonRepeatingMechanismChains{};
     std::set<std::string> representativeMechanismSignatures;
     std::vector<std::vector<G8RoundRecord>> representativeRouteChains;
-    const auto tempDirectory = outputDirectory / (g10Run ? ".g10-midi-import" :
+    const auto tempDirectory = outputDirectory / (g11Run ? ".g11-midi-import" : g10Run ? ".g10-midi-import" :
         g9Run ? ".g9-midi-import" : ".g8-midi-import");
     std::filesystem::create_directories(tempDirectory);
     for (std::size_t sample = 0; sample < validStarts.size(); ++sample) {
@@ -1200,6 +1205,11 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                         << '\t' << selected->routeProfile.historySimilarity
                         << '\t' << selected->routeProfile.recentSimilarity
                         << '\t' << g8Tsv(g8CandidateMusicFingerprint(*selected));
+                if(g11Run)roundsReport << '\t' << selected->routeProfile.developmentHistorySimilarity
+                    << '\t' << selected->branching.assessed << '\t' << selected->branching.legalRoutes
+                    << '\t' << selected->branching.independentIdeas << '\t' << selected->branching.families
+                    << '\t' << selected->branching.centerDirections << '\t' << selected->branching.freshIdeas
+                    << '\t' << selected->branching.opportunity;
                 roundsReport << '\n';
                 require(static_cast<bool>(roundsReport), "cannot finish G8 round report");
 
@@ -1296,7 +1306,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
         require(nonRepeatingMechanismChains >= 10,
                 "G9 RCR acceptance below required 10 of 50 three-round chains with distinct mechanisms");
     } else if (g10Run) {
-        const auto summaryPath = outputDirectory / "g10-summary.tsv";
+        const auto summaryPath = outputDirectory / (reportPrefix + "-summary.tsv");
         std::ofstream summary(summaryPath, std::ios::binary | std::ios::trunc);
         require(static_cast<bool>(summary), "cannot create G10 summary report");
         summary << "metric\tvalue\trequired\n"
@@ -1312,7 +1322,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                 << "start_results_report\t" << startsPath.filename().string() << "\t-\n";
         summary.flush();
         require(static_cast<bool>(summary), "cannot finish G10 summary report");
-        std::cout << "g10_rcr frozen_starts=" << frozenStartsPath.string()
+        std::cout << reportPrefix << "_rcr frozen_starts=" << frozenStartsPath.string()
                   << " population_size=" << populationSize << " sampled=" << g8SampleCount
                   << " completed_three_round_chains=" << passed
                   << " mechanism_nonrepeat_measurement=" << nonRepeatingMechanismChains
@@ -1322,7 +1332,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
                   << " rounds=" << roundsPath.string() << " results=" << startsPath.string()
                   << " summary=" << summaryPath.string() << '\n';
         require(passed >= 10,
-                "G10 RCR acceptance below required 10 of 50 completed three-round chains");
+                reportPrefix + " RCR acceptance below required 10 of 50 completed three-round chains");
     } else {
         std::cout << "g8_rcr seed=" << g8SampleSeed << " population_size=" << populationSize
                   << " sampled=" << g8SampleCount

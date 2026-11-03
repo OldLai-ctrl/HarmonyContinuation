@@ -600,6 +600,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     if(creative)appendContextualContinuations(query,index,request,result);
     if(creative)assessInspirationStructure(query,index,result);
     if(creative)prepareContextualDiversity(query,result);
+    if(creative)prepareContinuationBranching(query,index,result);
     for (std::size_t groupNumber=0;groupNumber<result.groups.size();++groupNumber) {
         auto& group=result.groups[groupNumber];
         // Supported routes retain priority over exploration in the complete list.

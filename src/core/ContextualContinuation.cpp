@@ -681,6 +681,125 @@ void assessInspirationStructure(const MatchQuery& query,const CandidateIndex& in
         if(knownTail&&!history.tailGrouping.empty())c.structureReason+="; input="+history.tailGrouping;
     }
 }
+std::vector<ContinuationLink> buildContinuationLinks(const CandidateIndex& index) {
+    // One query per admitted complete open source, not a catalogue Cartesian
+    // product and not recursive recommendation. Existing retrieval and G9
+    // structure qualification provide the graph's only admission path.
+    std::vector<ContinuationLink> links;
+    for(std::size_t from=0;from<index.templates().size();++from) {
+        const auto& source=index.templates()[from];
+        if(!unterminatedEnding(editorialEnding(source))||source.full.size()<4||
+            source.full.size()>maxImportedChordEvents)continue;
+        const auto key=source.rawChordKey.value_or(KeySignature{PitchClass::C,source.mode});
+        Progression music;double at{};
+        for(std::size_t i=0;i<source.full.size();++i) {
+            const auto realized=sourceEvent(source,i,key);
+            if(!realized.harmonicData){music.clear();break;}
+            auto event=*realized.harmonicData;event.startQN=at;
+            event.durationQN=realized.durationQN;event.openEnded=false;
+            at+=realized.durationQN;music.push_back(std::move(event));
+        }
+        if(music.empty())continue;
+        music.back().durationQN.reset();music.back().openEnded=true;
+        auto query=makeMatchQuery(music);
+        query.timeSigNumerator=source.meterNumerator;query.timeSigDenominator=source.meterDenominator;
+        RecommendationRequest request;request.inspirationPriority=true;
+        RecommendationSet next;
+        appendContextualContinuations(query,index,request,next);
+        assessInspirationStructure(query,index,next);
+        std::set<std::string> identities;
+        for(const auto& group:next.groups)for(const auto& c:group) {
+            if(!c.baseQualified||!c.hardConstraintsPassed||c.exploratory||!c.structureQualified||
+                !c.completeSourcePhrase||!c.sourceEndPreserved||!c.reviewedEnding||
+                !unterminatedEnding(c.ending))continue;
+            const auto target=std::find_if(index.templates().begin(),index.templates().end(),
+                [&](const auto& t){return t.id==c.primaryTemplate;});
+            if(target==index.templates().end()||target==index.templates().begin()+from||
+                !identities.insert(continuationMusicFingerprint(c)).second)continue;
+            links.push_back({from,std::size_t(target-index.templates().begin()),key,c.key,c.creativeQuality.boundary,c.targetCenter});
+        }
+    }
+    return links;
+}
+
+void prepareContinuationBranching(const MatchQuery& query,const CandidateIndex& index,RecommendationSet& set) {
+    std::map<std::string,ContinuationBranching> cache;
+    std::map<std::string,CreativeRouteProfile> priorProfiles;
+    for(auto& group:set.groups)for(auto& c:group) {
+        c.branching={};
+        if(!c.structureQualified||!c.baseQualified||!c.hardConstraintsPassed||c.exploratory||
+            !c.completeSourcePhrase||!c.sourceEndPreserved||!c.reviewedEnding||
+            !unterminatedEnding(c.ending))continue;
+        const auto fingerprint=continuationMusicFingerprint(c);
+        if(const auto found=cache.find(fingerprint);found!=cache.end()){c.branching=found->second;continue;}
+        const auto from=std::find_if(index.templates().begin(),index.templates().end(),
+            [&](const auto& t){return t.id==c.primaryTemplate;});
+        if(from==index.templates().end())continue;
+        const auto fromIndex=std::size_t(from-index.templates().begin());
+        if(!unterminatedEnding(editorialEnding(*from))||from->full.size()<4||
+            from->full.size()>maxImportedChordEvents)continue;
+        c.branching.assessed=true;
+        RecommendationSet future;std::set<std::string> identities;
+        std::set<std::pair<int,int>> directions;
+        for(const auto& link:index.continuationLinks())if(link.sourceTemplate==fromIndex) {
+            const auto& source=index.templates()[link.nextTemplate];
+            if(query.source.size()+c.continuation.size()+source.full.size()>maxImportedChordEvents)continue;
+            const auto shift=mod(int(c.key.tonic)-int(link.sourceKey.tonic));
+            const KeySignature key{PitchClass(mod(int(link.nextKey.tonic)+shift)),link.nextKey.mode};
+            if(query.forcedKey&&!query.interpretations.empty()) {
+                const auto fixed=query.interpretations.front().key.key;
+                if(!sameCenter(key,fixed)&&!relativeCenter(key,fixed))continue;
+            }
+            ContinuationCandidate next;next.primaryTemplate=source.id;next.key=key;next.originCenter=c.key;
+            next.family=familyFor(source);
+            for(std::size_t i=0;i<source.full.size();++i)next.continuation.push_back(sourceEvent(source,i,key));
+            if(next.continuation.empty()||!boundary(pitches(c.continuation.back()),pitches(next.continuation.front())).passed||
+                !identities.insert(continuationMusicFingerprint(next)).second)continue;
+            if(link.nextCenter) {
+                const auto origin=c.targetCenter.value_or(c.key);
+                directions.emplace(mod(int(link.nextCenter->tonic)+shift-int(origin.tonic)),int(link.nextCenter->mode));
+            }
+            future.groups[1].push_back(std::move(next));
+        }
+        auto futureQuery=query;futureQuery.source=continuationProgression(query.source,c);
+        // Future constraints and a DAW's chord reinterpretation are unknown.
+        // This profile evaluates structural opportunities, never eligibility.
+        auto baseQuery=futureQuery;baseQuery.source.resize(query.source.size());
+        const auto hold=baseQuery.source.back().durationQN.value_or(0.);
+        const auto cacheKey=[&](const auto& next){return std::to_string(hold)+":"+continuationMusicFingerprint(next);};
+        RecommendationSet missing;
+        for(const auto& next:future.groups[1])if(!priorProfiles.contains(cacheKey(next)))missing.groups[1].push_back(next);
+        // Old history is identical for all branches under the same proven OPEN
+        // hold. Cache that work; examine only new and seam-crossing windows.
+        if(!missing.groups[1].empty()) {
+            prepareContextualDiversity(baseQuery,missing);
+            for(const auto& next:missing.groups[1])priorProfiles.emplace(cacheKey(next),next.routeProfile);
+        }
+        for(auto& next:future.groups[1])next.routeProfile=priorProfiles.at(cacheKey(next));
+        prepareContextualDiversity(futureQuery,future,query.source.size());
+        auto& choices=future.groups[1];
+        std::sort(choices.begin(),choices.end(),[](const auto& a,const auto& b){
+            return std::max(a.routeProfile.historySimilarity,a.routeProfile.developmentHistorySimilarity)<
+                std::max(b.routeProfile.historySimilarity,b.routeProfile.developmentHistorySimilarity);
+        });
+        std::vector<const ContinuationCandidate*> distinct;std::set<std::string> families;
+        float opportunity{};
+        for(const auto& next:choices) {
+            families.insert(next.family);
+            if(std::any_of(distinct.begin(),distinct.end(),[&](const auto* prior){
+                return creativeRouteSimilarity(next,*prior)>=.9f;}))continue;
+            distinct.push_back(&next);
+            const auto repetition=std::max(next.routeProfile.historySimilarity,next.routeProfile.developmentHistorySimilarity);
+            if(repetition<.9f)++c.branching.freshIdeas;
+            if(distinct.size()<=3)opportunity+=1.f-repetition;
+        }
+        c.branching.legalRoutes=choices.size();c.branching.independentIdeas=distinct.size();
+        c.branching.families=families.size();c.branching.centerDirections=directions.size();
+        c.branching.opportunity=opportunity/3.f;
+        cache.emplace(fingerprint,c.branching);
+    }
+}
+
 void rankCreativeContinuations(std::vector<ContinuationCandidate>& group) {
     // Preserve every legal route. Diversity changes only display order. Start
     // from deterministic identity order and compare raw scores within a channel.
@@ -763,6 +882,13 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
         // A reviewed phrase does not confer an independently reviewed seam.
         return c.provenance==ConnectionProvenance::AlgorithmAssessed?1:c.creativeQuality.tier;
     };
+    const auto currentFit=[](const ContinuationCandidate& c) {
+        if(!c.routeProfile.ready)return 0.f;
+        if(c.channel==RecommendationChannel::Exact)return c.routeProfile.contextFit;
+        // Current seam evidence and broader context have equal standing. The
+        // old active-bass/pedal preference is not a harmonic quality veto.
+        return .5f*(c.creativeQuality.boundary+c.routeProfile.contextFit);
+    };
     std::array<std::size_t,3> directions{},sources{};
     std::map<int,std::size_t> endings;
     std::vector<bool> used(pool.size());
@@ -774,9 +900,22 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
         bool freshAvailable{};
         for(std::size_t i=0;i<pool.size();++i)if(!used[i]&&candidate(i).structureQualified&&
             !candidate(i).exploratory&&qualityBand(candidate(i))>=1&&candidate(i).routeProfile.ready&&represented[i]<.9f){freshAvailable=true;break;}
+        std::tuple<bool,bool> bestTier{};std::map<int,float> bestCurrent;
         for(std::size_t i=0;i<pool.size();++i)if(!used[i]) {
             const auto& c=candidate(i);
             if(freshAvailable&&c.routeProfile.ready&&represented[i]>=.9f)continue;
+            const auto tier=std::tuple(c.structureQualified,!c.exploratory);
+            if(tier>bestTier){bestTier=tier;bestCurrent.clear();}
+            if(tier==bestTier)bestCurrent[qualityBand(c)]=std::max(bestCurrent[qualityBand(c)],currentFit(c));
+        }
+        for(std::size_t i=0;i<pool.size();++i)if(!used[i]) {
+            const auto& c=candidate(i);
+            if(freshAvailable&&c.routeProfile.ready&&represented[i]>=.9f)continue;
+            const auto tier=std::tuple(c.structureQualified,!c.exploratory);
+            if(tier!=bestTier)continue;
+            // Future branching only decides among comparable current music.
+            // Other legal routes remain in this same complete paginated order.
+            if(c.routeProfile.ready&&currentFit(c)+.075f<bestCurrent[qualityBand(c)])continue;
             const auto d=std::size_t(c.direction),s=std::size_t(sourceClass(c));
             const float directionDeficit=directionTargets[d]*float(slot+1)-float(directions[d]);
             const float sourceDeficit=sourceTargets[s]*float(slot+1)-float(sources[s]);
@@ -788,14 +927,13 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
             const float endingPenalty=closed?3.f*float(endings[int(PhraseEnding::Closed)]):0.f;
             const auto& profile=c.routeProfile;
             const float utility=qualityBand(c)*6.f+4.f*directionDeficit+2.f*sourceDeficit+development-endingPenalty+
-                (profile.ready?10.f*profile.contextFit+8.f*(1.f-profile.historySimilarity)-12.f*represented[i]:0.f);
+                (profile.ready?10.f*currentFit(c)+8.f*(1.f-std::max(profile.historySimilarity,profile.developmentHistorySimilarity))-
+                    12.f*represented[i]:0.f)+
+                (c.branching.assessed?2.f*c.branching.opportunity:0.f);
             bool better=best==pool.size();
             if(!better) {
                 const auto& previous=candidate(best);
-                const auto tier=std::tuple(c.structureQualified,!c.exploratory);
-                const auto priorTier=std::tuple(previous.structureQualified,!previous.exploratory);
-                if(tier!=priorTier)better=tier>priorTier;
-                else if(utility>bestUtility+.001f)better=true;
+                if(utility>bestUtility+.001f)better=true;
                 else if(std::abs(utility-bestUtility)<.001f&&c.channel==previous.channel)
                     better=c.rankingScore>previous.rankingScore||
                         (c.rankingScore==previous.rankingScore&&pool[i].identity<pool[best].identity);
