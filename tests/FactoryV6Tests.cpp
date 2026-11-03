@@ -3494,6 +3494,16 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    if (argc > 1 && std::string_view(argv[1]) == "--g10-probe-midi") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g10-probe-midi factory-v8.db g9-rounds.tsv output-dir");
+            return runG10ProbeMidi(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G10 MIDI probe FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
     if (argc > 1 && std::string_view(argv[1]) == "--v7-match-diagnostics") {
         try {
             require(argc == 4,

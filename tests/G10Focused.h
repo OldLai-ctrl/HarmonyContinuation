@@ -711,12 +711,133 @@ struct G10CheckState {
     int meterNumerator{}, meterDenominator{};
 };
 
+void g10WriteFailedMidiProbe(const std::filesystem::path& path,
+                             std::string_view startId, std::size_t round,
+                             const MatchQuery& query,
+                             const RecommendationSet& normal,
+                             const CandidateIndex& index) {
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    require(static_cast<bool>(output), "cannot create failed G10 MIDI probe: " + path.string());
+    constexpr std::size_t columnCount = 27;
+    using ProbeRow = std::array<std::string, columnCount>;
+    output << "record_type\tstart_id\tround\tinput_length\tglobal_interpretation_count"
+              "\trecent_interpretation_count\tmeter\tnormal_candidate_count\tposition"
+              "\tsource\tkey\tchannel\tending\treviewed_ending\tcomplete_source_phrase"
+              "\tbase_qualified\thard_constraints_passed\tstructure_qualified\tstructure_priority"
+              "\tstructure_reason\tnext_phrase_ids\tcontinuation\tkey_confidence\tkey_score"
+              "\tdisposition\tboundary\tdetail\n";
+    std::size_t normalCount{};
+    for (const auto& group : normal.groups) normalCount += group.size();
+    const auto meterNumerator = query.timeSigNumerator.value_or(4);
+    const auto meterDenominator = query.timeSigDenominator.value_or(4);
+    const auto recentCount = std::min<std::size_t>(8, query.source.size());
+    Progression recentEvents(query.source.end() - static_cast<std::ptrdiff_t>(recentCount),
+                             query.source.end());
+    const auto recentQuery = g8MakeQuery(recentEvents,
+        std::pair{meterNumerator, meterDenominator});
+    const auto baseRow = [&](std::string_view type) {
+        ProbeRow row{};
+        row[0] = type;
+        row[1] = std::string(startId);
+        row[2] = std::to_string(round);
+        row[3] = std::to_string(query.source.size());
+        row[4] = std::to_string(query.interpretations.size());
+        row[5] = std::to_string(recentQuery.interpretations.size());
+        row[6] = std::to_string(meterNumerator) + "/" + std::to_string(meterDenominator);
+        row[7] = std::to_string(normalCount);
+        return row;
+    };
+    const auto emit = [&](ProbeRow row) {
+        for (std::size_t i = 0; i < row.size(); ++i) {
+            if (i) output << '\t';
+            output << g8Tsv(std::move(row[i]));
+        }
+        output << '\n';
+    };
+    auto summary = baseRow("summary");
+    summary[26] = "normal recommendation objects; zero is explicit when empty";
+    emit(std::move(summary));
+    const auto writeKeys = [&](std::string_view scope, const MatchQuery& keyQuery) {
+        if (keyQuery.interpretations.empty()) {
+            auto row = baseRow(std::string(scope) + "_key");
+            row[3] = std::to_string(keyQuery.source.size());
+            row[8] = "0";
+            row[26] = "no key interpretations";
+            emit(std::move(row));
+            return;
+        }
+        for (std::size_t i = 0; i < keyQuery.interpretations.size(); ++i) {
+            const auto& interpretation = keyQuery.interpretations[i];
+            auto row = baseRow(std::string(scope) + "_key");
+            row[3] = std::to_string(keyQuery.source.size());
+            row[8] = std::to_string(i + 1);
+            row[10] = g9KeyText(interpretation.key.key);
+            row[22] = std::to_string(interpretation.key.confidence);
+            row[23] = std::to_string(interpretation.key.score);
+            row[26] = std::string(scope) + " query interpretation";
+            emit(std::move(row));
+        }
+    };
+    writeKeys("global", query);
+    writeKeys("recent_last_8", recentQuery);
+
+    std::size_t position{};
+    for (const auto& group : normal.groups) for (const auto& candidate : group) {
+        auto row = baseRow("normal_candidate");
+        row[8] = std::to_string(++position);
+        row[9] = candidate.primaryTemplate;
+        row[10] = g9KeyText(candidate.key);
+        row[11] = recommendationChannelName(candidate.channel);
+        row[12] = phraseEndingName(candidate.ending);
+        row[13] = candidate.reviewedEnding ? "1" : "0";
+        row[14] = candidate.completeSourcePhrase ? "1" : "0";
+        row[15] = candidate.baseQualified ? "1" : "0";
+        row[16] = candidate.hardConstraintsPassed ? "1" : "0";
+        row[17] = candidate.structureQualified ? "1" : "0";
+        row[18] = std::to_string(candidate.structurePriority);
+        row[19] = candidate.structureReason;
+        row[20] = g8NextIds(candidate);
+        row[21] = g8ContinuationLabels(candidate);
+        row[26] = "all normal recommendation objects";
+        emit(std::move(row));
+    }
+
+    try {
+        const auto diagnostic = g10DiagnosticRecommendations(query, index);
+        auto diagnosticSummary = baseRow("diagnostic_summary");
+        diagnosticSummary[26] = "diagnoseCreative=true; same Exact-to-Inspiration wrapper";
+        emit(std::move(diagnosticSummary));
+        std::set<std::tuple<std::string, int, int, std::string>> uniqueTrials;
+        for (const auto& trial : diagnostic.creativeTrials) {
+            const auto key = std::tuple(trial.source, static_cast<int>(trial.key.tonic),
+                                        static_cast<int>(trial.key.mode), trial.disposition);
+            if (!uniqueTrials.insert(key).second) continue;
+            auto row = baseRow("creative_trial");
+            row[8] = std::to_string(uniqueTrials.size());
+            row[9] = trial.source;
+            row[10] = g9KeyText(trial.key);
+            row[24] = trial.disposition;
+            row[25] = std::to_string(trial.boundary);
+            row[26] = "deduplicated by source+key+disposition";
+            emit(std::move(row));
+        }
+    } catch (const std::exception& error) {
+        auto diagnosticError = baseRow("diagnostic_error");
+        diagnosticError[26] = error.what();
+        emit(std::move(diagnosticError));
+    }
+    output.flush();
+    require(static_cast<bool>(output), "cannot finish failed G10 MIDI probe: " + path.string());
+}
+
 std::string g10RunMiniMidiChain(const library::LoadResult& factory,
                                const CandidateIndex& index,
                                const std::filesystem::path& roundsPath,
                                const std::filesystem::path& outputDirectory,
                                std::string_view startId,
-                               std::ostream& report) {
+                               std::ostream& report,
+                               const std::filesystem::path& failedProbePath = {}) {
     const auto records = g8ReadRecordedRounds(roundsPath, startId);
     require(records.size() == 3 && records.front().round == 1,
             "G10 mini-chain requires the three frozen rounds for " + std::string(startId));
@@ -767,9 +888,13 @@ std::string g10RunMiniMidiChain(const library::LoadResult& factory,
                     break;
                 }
             }
-            require(selected != nullptr,
-                    "no eligible structure-qualified open phrase in G10 mini-chain round " +
-                        std::to_string(round));
+            if (!selected) {
+                if (!failedProbePath.empty())
+                    g10WriteFailedMidiProbe(failedProbePath, startId, round, query,
+                                            recommendations, index);
+                require(false, "no eligible structure-qualified open phrase in G10 mini-chain round " +
+                               std::to_string(round));
+            }
             page = ui::browsePageIndex(selectedFlat, firstPageSize) + 1;
             selectedSource = selected->primaryTemplate;
             keyText = g9KeyText(selected->key);
@@ -865,6 +990,41 @@ std::string g10RunMiniMidiChain(const library::LoadResult& factory,
     }
     require(completed == 3, "G10 mini-chain did not complete three actual MIDI imports");
     return "three normal mixed-order structure-qualified rounds exported and re-imported as DAWClip";
+}
+
+int runG10ProbeMidi(const std::filesystem::path& factoryPath,
+                    const std::filesystem::path& roundsPath,
+                    const std::filesystem::path& outputDirectory) {
+    const auto factory = library::loadFactory(factoryPath);
+    require(static_cast<bool>(factory), "cannot load G10 MIDI probe Factory: " + factory.error);
+    require(factory.libraryVersion >= 8, "G10 MIDI probe requires Factory version 8 or newer");
+    require(std::filesystem::is_regular_file(roundsPath),
+            "G10 MIDI probe requires the frozen G9 rounds TSV");
+    std::filesystem::create_directories(outputDirectory);
+    const CandidateIndex index(factory.templates);
+    const auto failedProbePath = outputDirectory / "failed-probe.tsv";
+    const auto roundsReportPath = outputDirectory / "g10-probe-midi-rounds.tsv";
+    std::ofstream roundsReport(roundsReportPath, std::ios::binary | std::ios::trunc);
+    require(static_cast<bool>(roundsReport), "cannot create G10 MIDI probe round report");
+    roundsReport << "start_id\tround\tstatus\tinput_length\tvisible_rank\tpage\tfirst_page_size"
+                    "\tsource\tkey\tfamily\tending\tstructure_qualified\tstructure_priority"
+                    "\tmechanism\tprofile_ready\tcontext_fit\thistory_similarity\trecent_similarity"
+                    "\tcandidate_music_fingerprint\tcomplete_import_fingerprint\topen_input_fingerprint"
+                    "\tmidi_reinterpretation_count\tdetail\n";
+    try {
+        const auto result = g10RunMiniMidiChain(factory, index, roundsPath, outputDirectory,
+            "V3_CYCLE_027", roundsReport, failedProbePath);
+        roundsReport.flush();
+        require(static_cast<bool>(roundsReport), "cannot finish G10 MIDI probe round report");
+        std::cout << "g10_midi_probe start=V3_CYCLE_027 result=" << result
+                  << " rounds=" << roundsReportPath.string() << '\n';
+    } catch (...) {
+        roundsReport.flush();
+        std::cout << "g10_midi_probe start=V3_CYCLE_027 failed_probe="
+                  << failedProbePath.string() << " rounds=" << roundsReportPath.string() << '\n';
+        throw;
+    }
+    return 0;
 }
 
 int runG10Checks(const std::filesystem::path& factoryPath,

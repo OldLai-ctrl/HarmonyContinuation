@@ -406,7 +406,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
     const auto history=historyEvidence(query,index);
     const auto local=makeMatchQuery(recent,recentContext);
     if(local.interpretations.empty())return;
-    const auto origin=local.interpretations.front().key.key;
+    const auto primaryOrigin=local.interpretations.front().key.key;
     std::vector<KeySignature> centers;
     const auto addCenter=[&](KeySignature k) {
         if(std::none_of(centers.begin(),centers.end(),[&](auto x){return sameCenter(x,k);}))centers.push_back(k);
@@ -421,10 +421,10 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
     const auto current=chordPitches(query.source.back());
     // A new center must share the actual pivot chord with the current center.
     // Its catalogue phrase must then establish that destination (checked below).
-    if(!query.forcedKey&&(absoluteMask(current)&scaleMask(origin))==absoluteMask(current))
+    if(!query.forcedKey&&(absoluteMask(current)&scaleMask(primaryOrigin))==absoluteMask(current))
         for(int tonic=0;tonic<12;++tonic) {
             const KeySignature k{PitchClass(tonic),Mode::Major};
-            if(distance(tonic,int(origin.tonic))!=5)continue; // adjacent circle-of-fifths destinations only
+            if(distance(tonic,int(primaryOrigin.tonic))!=5)continue; // adjacent circle-of-fifths destinations only
             if((absoluteMask(current)&scaleMask(k))==absoluteMask(current))addCenter(k);
         }
     std::map<std::string,ContinuationCandidate> distinct;
@@ -438,6 +438,21 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
         if(transition)++output.transitionExamined;else ++output.contextualExamined;
         for(const auto target:centers) {
             if(target.mode!=item.mode)continue;
+            auto origin=primaryOrigin;
+            bool alternativeContext{};
+            if(!query.forcedKey&&(absoluteMask(current)&scaleMask(primaryOrigin))!=absoluteMask(current)) {
+                // Secondary local interpretations are evidence about THIS
+                // input, not automatically a modulation from its top label.
+                // Retain one only when every actual terminal tone fits and the
+                // target is that supported center or its relative major/minor.
+                for(std::size_t k=0;k<std::min<std::size_t>(3,local.interpretations.size());++k) {
+                    const auto supported=local.interpretations[k].key.key;
+                    if((absoluteMask(current)&scaleMask(supported))==absoluteMask(current)&&
+                        (sameCenter(target,supported)||relativeCenter(target,supported))) {
+                        origin=supported;alternativeContext=!sameCenter(origin,primaryOrigin);break;
+                    }
+                }
+            }
             const auto trace=[&](const char* why,float score=0.f) {
                 if(request.diagnoseCreative&&transition&&item.version==8)
                     output.creativeTrials.push_back({item.id,target,why,score});
@@ -562,6 +577,8 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 "direct-source suffix; contiguous "+std::to_string(length)+"-chord context; ")+seam.reason;
             if(modulation)c.connectionReason+="; shared diatonic pivot and destination V-I";
             else if(relativeCenter(origin,target))c.connectionReason+="; relative major/minor interpretation";
+            if(alternativeContext)c.connectionReason+="; terminal tones support an existing alternative local center (primary "+
+                formatKey(primaryOrigin)+", alternative "+formatKey(origin)+"); interpretation, not established modulation";
             if(authoredCenterEstablished)c.connectionReason+="; source-authored predominant/V7/I establishes "+formatKey(*c.targetCenter);
             c.connectionReason+="; ending="+std::string(phraseEndingName(c.ending));
             if(!c.nextPhraseSources.empty())c.connectionReason+="; "+std::to_string(c.nextPhraseSources.size())+" indexed next-phrase seams (constraints rechecked on next import)";
