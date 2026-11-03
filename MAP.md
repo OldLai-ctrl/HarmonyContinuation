@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G10语境多样性与创作覆盖 | `HarmonyContinuation-g10/` → `development/g10-contextual-diversity-20261103`，基于G9交付`921b7f3`；产品/RCR BuildCommit `80487ab5…` | dev.11/Factory8/1288，新增0；[集中报告](docs/G10_CONTEXTUAL_DIVERSITY_REVIEW.md)，工程与RCR通过，持续创作覆盖仅部分达到 |
+| G10定向证据与试听 | 同级 `HarmonyContinuation-g10-evidence/`；`identity.json`记录最终构建及交付HEAD，`rcr-3/representative-paths/`为三条三轮材料 | 一次原冻结50起点复核；保留G9基线，不制作Setup，音乐与真实DAW待验收 |
 | G9乐句连接与历史多样性 | `HarmonyContinuation-g9/` → `development/g9-phrase-diversity-20261102`，基于G8交付`3fedd827`；产品BuildCommit `f105a0b4…` | dev.10/Factory8/1288；[根因、结构门禁与试听](docs/G9_PHRASE_DIVERSITY_REVIEW.md)，保留G7/G8及生产安装 |
 | G9定向验证与媒体 | 同级 `HarmonyContinuation-g9-evidence/` | 结构反例、原三链、长输入及原冻结50起点复核；音乐与DAW验收单独记录；不制作Setup |
 | G8完整开放与递归续写 | `HarmonyContinuation-g8/` → `development/g8-open-recursive-20261027`，基于G7交付`7a7021e`；产品/RCR BuildCommit `0936a483…` | dev.9/Factory8/1288；[历史专题](docs/G8_OPEN_RECURSIVE_REVIEW.md)，原RCR46/50；用户音乐缺陷反馈与整改见[G9](docs/G9_PHRASE_DIVERSITY_REVIEW.md)，G7基线保留 |

@@ -1,5 +1,13 @@
 # Continuation Engine
 
+## G10 contextual diversity and creative coverage
+
+`CreativeDiversity.cpp` derives bounded profiles from actual sound masks, bass pitch-class movement, durations, pitch-class palettes and surface tension. The 128-event history scan needs no recovered source IDs or unique chord-name reconstruction. These are runtime annotations; performance objects, Session5 and Snapshot3 remain unchanged.
+
+G9 structural qualification runs first. Qualified candidates are selected by context fit and marginal musical diversity, with soft history penalties; original Exact scores are not mixed arithmetically with creative scores. Same performed routes after transposition remain similar. An alternative local center is used only from the existing first three interpretations when the primary interpretation cannot contain the actual terminal tones; supported same/relative-center explanations are distinguished from established modulation, whose original evidence gates remain.
+
+`inspirationFirstPageSize` can expose fewer than ten distinct qualified directions. Shared UI pagination retains every remaining legal object on subsequent pages; Match, Upgrade and Wish keep their existing behavior. No source blacklist, random allocation or realtime-audio search is introduced. [G10 diagnosis, scoped checks and listening materials](G10_CONTEXTUAL_DIVERSITY_REVIEW.md) record the unchanged 12/50 RCR result and remaining cross-start concentration; automated diversity does not constitute listening acceptance.
+
 ## G9 phrase integrity and harmonic diversity
 
 Inspiration adds a structural assessment after harmonic qualification. It distinguishes a contiguous source prefix from an unproven local-tail overlap, one complete independent append, and a complete cycle. Catalogue continuity alone does not establish a phrase start inside the user's finished phrase. Unproven or asymmetric joins without reviewed grouping remain accessible after supported routes; no event is removed, duplicated, stretched, or padded to repair a seam. Match keeps its original Exact score, 60-point gate and performance contract.
