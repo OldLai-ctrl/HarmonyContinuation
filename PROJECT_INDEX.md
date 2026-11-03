@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为独立G10语境多样性与创作覆盖线，dev.11 / Factory8（1288条，新增0）；[G10诊断、验收与三轮试听](docs/G10_CONTEXTUAL_DIVERSITY_REVIEW.md)维护本轮交付，[引擎架构](docs/CONTINUATION_ENGINE.md)维护实现，[NOW](NOW.md)维护当前状态。工程与RCR通过，持续创作多样性只部分达到，音乐门禁未通过。保留[G9/dev.10基线](docs/G9_PHRASE_DIVERSITY_REVIEW.md)、[G8/dev.9历史证据](docs/G8_OPEN_RECURSIVE_REVIEW.md)、[G7/dev.8](docs/G7_FOUR_ENTRY_REVIEW.md)、[G6基线](docs/G6_ENGINE_V2_REVIEW.md)和dev.6/V7。不重复旧全量检查，不制作Setup或发布。
+本工作树为独立G11连续路径分叉线，dev.12 / Factory8（1288条，新增0）；[G11诊断、验收与三轮试听](docs/G11_CONTINUATION_NETWORK_REVIEW.md)维护本轮交付，[引擎架构](docs/CONTINUATION_ENGINE.md)维护实现，[NOW](NOW.md)维护当前状态。工程与RCR通过，首选路径分散有所改善，末轮仍集中，音乐待用户验收。保留[G10/dev.11基线](docs/G10_CONTEXTUAL_DIVERSITY_REVIEW.md)、[G9/dev.10](docs/G9_PHRASE_DIVERSITY_REVIEW.md)、[G8/dev.9历史证据](docs/G8_OPEN_RECURSIVE_REVIEW.md)、[G7/dev.8](docs/G7_FOUR_ENTRY_REVIEW.md)、[G6基线](docs/G6_ENGINE_V2_REVIEW.md)和dev.6/V7。不重复旧全量检查，不制作Setup或发布。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 

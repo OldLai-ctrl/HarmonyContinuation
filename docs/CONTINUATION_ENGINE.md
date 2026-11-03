@@ -1,5 +1,13 @@
 # Continuation Engine
 
+## G11 continuation network and creative branching
+
+`CandidateIndex::continuationLinks` holds one-step structural possibilities for admitted reviewed complete open sources. It is built using existing contextual retrieval and `assessInspirationStructure`, with no call back into recursive recommendation. Source and target realization keys, actual seam evidence and an optional supported center explanation remain distinct. An unset destination is not an established modulation. The original four-choice `developmentLinks` is retained for compatibility, not used as proof of future structural eligibility.
+
+After current qualification and G10 profiling, `prepareContinuationBranching` projects those links into the candidate's actual realization, rechecks the endpoint and aggregates independent actual contours, families and supported key directions. The bounded opportunity term never grants current eligibility or promises future melody/constraints. All actual next imports run normal qualification again. This work runs on the existing background Worker with the source index, not the audio thread.
+
+Ranking retains comparable quality-band utility and all legal pagination. Current actual seam/context fit is compared within each band before a small future preference. Relative sound/bass/tension similarity supplements the G10 absolute-palette history measure and homepage diversity; neither source IDs nor global frequency quotas determine novelty. Historical profiles for the same proven OPEN hold are reused, and the appended-window path checks only new or seam-crossing 4/8-event windows. Runtime fields do not migrate Session5 or Snapshot3. [G11 evidence and music gate](G11_CONTINUATION_NETWORK_REVIEW.md) records the unchanged 12/50 RCR, more dispersed first-choice paths and remaining final-round convergence.
+
 ## G10 contextual diversity and creative coverage
 
 `CreativeDiversity.cpp` derives bounded profiles from actual sound masks, bass pitch-class movement, durations, pitch-class palettes and surface tension. The 128-event history scan needs no recovered source IDs or unique chord-name reconstruction. These are runtime annotations; performance objects, Session5 and Snapshot3 remain unchanged.
