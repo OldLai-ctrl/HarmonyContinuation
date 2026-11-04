@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G12乐句衔接与现代和声 | `HarmonyContinuation-g12/` → `development/g12-phrase-flow-20261104`，基于G11交付`797c15f`；BuildCommit `499c69b3…` | dev.13/Factory8/1288，新增0；[集中报告](docs/G12_PHRASE_FLOW_REVIEW.md)，工程与24% RCR通过，音乐接续/现代风格待验收 |
+| G12定向证据与试听 | 同级 `HarmonyContinuation-g12-evidence/`；`identity.json`为构建/交付身份，`boundary-auditions/`为原完整D与合格E，`rcr-3/representative-paths/`为正常三轮新链 | 一次原冻结50复核；G11树与旧包保持，不制作Setup，真实DAW未验收 |
 | G11连续路径分叉 | `HarmonyContinuation-g11/` → `development/g11-continuation-network-20261103`，基于G10交付`fa2de2f`；产品/RCR BuildCommit `c1b3743b…` | dev.12/Factory8/1288，新增0；[集中报告与试听](docs/G11_CONTINUATION_NETWORK_REVIEW.md)，工程与24% RCR通过，末轮集中仍在 |
 | G11定向证据与媒体 | 同级 `HarmonyContinuation-g11-evidence/`；`identity.json`记录构建/最终HEAD与校验，`rcr-3/representative-paths/`为三条首选连续链 | 一次原冻结50复核，三代表各两条首页B实际回导分叉；G10基线保留，不制作Setup，人工音乐与DAW待验收 |
 | G10语境多样性与创作覆盖 | `HarmonyContinuation-g10/` → `development/g10-contextual-diversity-20261103`，基于G9交付`921b7f3`；产品/RCR BuildCommit `80487ab5…` | dev.11/Factory8/1288，新增0；[集中报告](docs/G10_CONTEXTUAL_DIVERSITY_REVIEW.md)，工程与RCR通过，持续创作覆盖仅部分达到 |

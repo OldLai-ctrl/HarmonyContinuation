@@ -1,5 +1,11 @@
 # Continuation Engine
 
+## G12 phrase-boundary evidence
+
+`data/phrase-flow/g12-reviews.json` is compiled into a small offline editorial index. `prepareTemplate` is followed by `applyPhraseBoundaryReview` on the CandidateIndex copy; only an exact whole-source meter/root/bass/quality/actual-tone/duration signature receives its review tags. Factory rows, performed events and persistence formats are unchanged. The reviewed grouping and source ending remain distinct from an algorithm-assessed seam and a human audition.
+
+009/010 retain their original complete music and ending types but no longer receive independently reviewed endpoint eligibility: they remain continuing, exploratory material with all legal pagination. Existing V7_04_044/052 gain specifically explained 16+16-QN modal-pause/loop-return grouping, including their original unequal durations. Actual-music history matching preserves the terminal eight-QN OPEN hold for 044. Arbitrary sources and unreviewed asymmetric endings inherit no certificate. Exact scoring/60, the G9 seam rules, G10 history and G11 branching algorithms remain in place. [G12 review and boundary auditions](G12_PHRASE_FLOW_REVIEW.md) separate source completeness, audible phrase ending, normal RCR selection and two-phrase listening assemblies.
+
 ## G11 continuation network and creative branching
 
 `CandidateIndex::continuationLinks` holds one-step structural possibilities for admitted reviewed complete open sources. It is built using existing contextual retrieval and `assessInspirationStructure`, with no call back into recursive recommendation. Source and target realization keys, actual seam evidence and an optional supported center explanation remain distinct. An unset destination is not an established modulation. The original four-choice `developmentLinks` is retained for compatibility, not used as proof of future structural eligibility.
