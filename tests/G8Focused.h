@@ -952,7 +952,8 @@ int runG8ReplayRecorded(const std::filesystem::path& factoryPath,
 int runG8Focused(const std::filesystem::path& factoryPath,
                  const std::filesystem::path& outputDirectory,
                  std::filesystem::path frozenStartsPath = {},
-                 bool g10Run = false, bool g11Run = false) {
+                 bool g10Run = false, bool g11Run = false, bool g12Run = false) {
+    g11Run = g11Run || g12Run;
     g10Run = g10Run || g11Run; // same frozen starts, eligibility, MIDI imports and first-choice selection
     const auto factory = library::loadFactory(factoryPath);
     require(static_cast<bool>(factory), "cannot load G8 Factory: " + factory.error);
@@ -961,7 +962,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     require(!g10Run || !frozenStartsPath.empty(),
             "G10 RCR requires its original frozen sampled-starts TSV");
     const bool g9Run = !frozenStartsPath.empty() && !g10Run;
-    const std::string reportPrefix = g11Run ? "g11" : g10Run ? "g10" : g9Run ? "g9" : "g8";
+    const std::string reportPrefix = g12Run ? "g12" : g11Run ? "g11" : g10Run ? "g10" : g9Run ? "g9" : "g8";
 
     std::vector<G8Start> validStarts;
     std::set<std::string> startIdentities;
@@ -1044,7 +1045,7 @@ int runG8Focused(const std::filesystem::path& factoryPath,
     std::size_t passed{}, representatives{}, allThreeFirstPage{}, nonRepeatingMechanismChains{};
     std::set<std::string> representativeMechanismSignatures;
     std::vector<std::vector<G8RoundRecord>> representativeRouteChains;
-    const auto tempDirectory = outputDirectory / (g11Run ? ".g11-midi-import" : g10Run ? ".g10-midi-import" :
+    const auto tempDirectory = outputDirectory / (g12Run ? ".g12-midi-import" : g11Run ? ".g11-midi-import" : g10Run ? ".g10-midi-import" :
         g9Run ? ".g9-midi-import" : ".g8-midi-import");
     std::filesystem::create_directories(tempDirectory);
     for (std::size_t sample = 0; sample < validStarts.size(); ++sample) {

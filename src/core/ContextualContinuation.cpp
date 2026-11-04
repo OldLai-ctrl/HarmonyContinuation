@@ -6,7 +6,11 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <iomanip>
+#include <locale>
+#include <numeric>
 #include <tuple>
+#include "PhraseReviewGenerated.h"
 
 namespace harmony {
 namespace {
@@ -98,15 +102,22 @@ bool reviewed(const ProgressionTemplate& t) {
          (t.version==8&&t.id.starts_with("V8_")&&std::find(t.tags.begin(),t.tags.end(),"G8-editorial")!=t.tags.end()));
 }
 PhraseEnding editorialEnding(const ProgressionTemplate& t) {
-    if(!reviewed(t)||std::find(t.tags.begin(),t.tags.end(),"G8-complete")==t.tags.end())return PhraseEnding::Unknown;
+    const bool phraseReviewed=std::find(t.tags.begin(),t.tags.end(),"G12-reviewed-phrase-boundary")!=t.tags.end();
+    if(!reviewed(t)||(!phraseReviewed&&std::find(t.tags.begin(),t.tags.end(),"G8-complete")==t.tags.end()))return PhraseEnding::Unknown;
     constexpr std::pair<const char*,PhraseEnding> values[]{
         {"closed",PhraseEnding::Closed},{"modulated_closure",PhraseEnding::ModulatedClosure},
         {"interim_pause",PhraseEnding::InterimPause},{"open_unresolved",PhraseEnding::OpenUnresolved},
         {"suspended",PhraseEnding::Suspended},{"loop_return",PhraseEnding::LoopReturn},
         {"modal_development",PhraseEnding::ModalDevelopment},{"center_transition",PhraseEnding::CenterTransition}};
     for(const auto& [name,value]:values)
-        if(std::find(t.tags.begin(),t.tags.end(),std::string("G8-ending-")+name)!=t.tags.end())return value;
+        if(std::find(t.tags.begin(),t.tags.end(),std::string(phraseReviewed?"G12-ending-":"G8-ending-")+name)!=t.tags.end())return value;
     return PhraseEnding::Unknown;
+}
+const phrase_review_data::Review* boundaryReview(const ProgressionTemplate& t) {
+    if(std::find(t.tags.begin(),t.tags.end(),"G12-review-identity-bound")==t.tags.end())return nullptr;
+    const auto found=std::find_if(phrase_review_data::reviews.begin(),phrase_review_data::reviews.end(),
+        [&](const auto& review){return review.id==t.id;});
+    return found==phrase_review_data::reviews.end()?nullptr:&*found;
 }
 std::optional<KeySignature> authoredDestination(const ContinuationCandidate& c) {
     if(c.continuation.size()<3)return {};
@@ -217,10 +228,14 @@ HistoryEvidence historyEvidence(const MatchQuery& query,const CandidateIndex& in
             if(begin+n==input.size()) {
                 result.tailSourceMatched=true;
                 tailHolds.insert(durations.back());
-                if(t.version==8&&reviewed(t)&&n==8&&
-                    std::all_of(durations.begin(),durations.end(),[](double d){return near(d,4);})) {
+                const auto phraseReview=boundaryReview(t);
+                const bool explicitGroups=phraseReview&&!phraseReview->continuingTail&&
+                    near(phraseReview->groupOneQN,16)&&near(phraseReview->groupTwoQN,16)&&
+                    near(std::accumulate(durations.begin(),durations.end(),0.),32);
+                if(explicitGroups||(t.version==8&&reviewed(t)&&n==8&&
+                    std::all_of(durations.begin(),durations.end(),[](double d){return near(d,4);}))) {
                     result.reviewedTailStart=query.source[begin].startQN;
-                    result.tailGrouping="4+4-bar source grouping";
+                    result.tailGrouping=explicitGroups?"4+4-bar identity-bound phrase review":"4+4-bar source grouping";
                 }
                 // Focused G9 review of the reported V6 counterexample: two
                 // bars of tonic preparation precede two four-bar groups. Bind
@@ -260,6 +275,31 @@ float materialSimilarity(const Progression& input,const ContinuationCandidate& c
     }
     return best;
 }
+}
+
+void applyPhraseBoundaryReview(ProgressionTemplate& item) {
+    const auto review=std::find_if(phrase_review_data::reviews.begin(),phrase_review_data::reviews.end(),
+        [&](const auto& r){return r.id==item.id;});
+    if(review==phrase_review_data::reviews.end()||!reviewed(item))return;
+    const auto key=item.rawChordKey.value_or(KeySignature{PitchClass::C,item.mode});
+    std::ostringstream signature;signature.imbue(std::locale::classic());
+    signature<<item.meterNumerator<<'/'<<item.meterDenominator;
+    for(std::size_t i=0;i<item.full.size();++i) {
+        const auto event=sourceEvent(item,i,key);const auto p=pitches(event);
+        signature<<'|'<<std::dec<<p.root<<':'<<p.bass<<':'<<int(p.quality)<<":0x"
+            <<std::hex<<std::setw(3)<<std::setfill('0')<<absoluteMask(p)<<std::dec
+            <<'@'<<std::fixed<<std::setprecision(3)<<event.durationQN;
+    }
+    if(signature.str()!=review->signature)return; // never certify an edited or reinterpreted source by ID alone
+    const auto add=[&](std::string tag){
+        if(std::find(item.tags.begin(),item.tags.end(),tag)==item.tags.end())item.tags.push_back(std::move(tag));
+    };
+    add("G12-review-identity-bound");
+    if(review->continuingTail)add("G12-continuing-tail");
+    else if(near(review->groupOneQN,16)&&near(review->groupTwoQN,16)) {
+        add("G12-reviewed-phrase-boundary");add("G12-grouping-4+4");
+        add("G12-ending-"+std::string(review->ending));
+    }
 }
 
 std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>& templates) {
@@ -378,6 +418,15 @@ void annotatePhraseDevelopment(ContinuationCandidate& c,const ProgressionTemplat
     else if(last.root==int(center.tonic))c.ending=PhraseEnding::InterimPause;
     else c.ending=PhraseEnding::Unknown; // no final I does not certify development
     c.endingEvidence=c.reviewedEnding?"complete phrase editorial review; no user audition claim":"observed ending; development unverified";
+    if(const auto review=boundaryReview(item);review&&c.sourceEndPreserved) {
+        c.endingEvidence=std::string(review->purpose)+"; "+std::string(review->reason);
+        if(review->continuingTail) {
+            // A whole stored source can finish inside a larger harmonic motion.
+            // Keep its original performance pageable, but do not certify it as
+            // an independently complete open phrase merely because it has 8 bars.
+            c.reviewedEnding=false;c.exploratory=true;
+        }
+    }
     if(c.ending==PhraseEnding::CenterTransition) {
         c.targetCenter.reset();c.centerRelation=CenterRelation::Undetermined;
         c.endingEvidence+="; center in transition, no established destination claimed";
@@ -581,6 +630,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 formatKey(primaryOrigin)+", alternative "+formatKey(origin)+"); interpretation, not established modulation";
             if(authoredCenterEstablished)c.connectionReason+="; source-authored predominant/V7/I establishes "+formatKey(*c.targetCenter);
             c.connectionReason+="; ending="+std::string(phraseEndingName(c.ending));
+            if(const auto review=boundaryReview(item))c.connectionReason+="; G12 phrase-end review: "+std::string(review->purpose);
             if(!c.nextPhraseSources.empty())c.connectionReason+="; "+std::to_string(c.nextPhraseSources.size())+" indexed next-phrase seams (constraints rechecked on next import)";
             if(transition)++output.transitionQualified;else ++output.contextualQualified;
             const auto identity=continuationMusicFingerprint(c);
@@ -661,9 +711,11 @@ void assessInspirationStructure(const MatchQuery& query,const CandidateIndex& in
         }
         double total{};bool authored=true;
         for(const auto& e:c.continuation){total+=e.durationQN;authored&=std::isfinite(e.durationQN)&&e.durationQN>0;}
-        const bool reviewedGroups=source->version==8&&reviewed(*source)&&source->full.size()==8&&
+        const bool explicitGroups=std::find(source->tags.begin(),source->tags.end(),"G12-grouping-4+4")!=source->tags.end()&&
+            c.continuation.size()==source->full.size()&&near(total,32);
+        const bool reviewedGroups=explicitGroups||(source->version==8&&reviewed(*source)&&source->full.size()==8&&
             c.continuation.size()==8&&near(total,32)&&
-            std::all_of(c.continuation.begin(),c.continuation.end(),[](const auto& e){return near(e.durationQN,4);});
+            std::all_of(c.continuation.begin(),c.continuation.end(),[](const auto& e){return near(e.durationQN,4);}));
         const bool sourceMetric=authored&&aligned(total,bar)&&
             (aligned(total,4*bar)||aligned(total,8*bar));
         const bool knownTail=history.reviewedTailStart&&near(end-*history.reviewedTailStart,32);
@@ -679,6 +731,7 @@ void assessInspirationStructure(const MatchQuery& query,const CandidateIndex& in
             near(end-query.source.back().startQN,*history.sourceOpenHold))
             c.structureReason+="; OPEN hold supported by full actual music/timing match, source ID not recovered";
         if(knownTail&&!history.tailGrouping.empty())c.structureReason+="; input="+history.tailGrouping;
+        if(explicitGroups)c.structureReason+="; explicit G12 source phrase-end review, original nonuniform QN retained";
     }
 }
 std::vector<ContinuationLink> buildContinuationLinks(const CandidateIndex& index) {

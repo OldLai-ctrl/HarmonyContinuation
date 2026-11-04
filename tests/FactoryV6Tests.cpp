@@ -26,6 +26,7 @@
 #include "G9Focused.h"
 #include "G10Focused.h"
 #include "G11Focused.h"
+#include "G12Focused.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -3523,6 +3524,46 @@ int main(int argc, char** argv) {
             return runG8Focused(argv[2], argv[4], argv[3], true, true);
         } catch (const std::exception& error) {
             std::cerr << "Factory G11 fixed-start RCR FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g12-boundaries") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g12-boundaries factory-v8.db g11-rounds.tsv output-dir");
+            return runG12Boundaries(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G12 boundary listing FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g12-checks") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g12-checks factory-v8.db g11-rounds.tsv output-dir");
+            return runG12Checks(argv[2], argv[3], argv[4]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G12 focused checks FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g12-auditions") {
+        try {
+            require(argc == 6,
+                    "usage: FactoryV6Tests --g12-auditions factory-v8.db g11-rounds.tsv selections.tsv output-dir");
+            return runG12Auditions(argv[2], argv[3], argv[4], argv[5]);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G12 D-to-E audition assembly FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc > 1 && std::string_view(argv[1]) == "--g12-rcr") {
+        try {
+            require(argc == 5,
+                    "usage: FactoryV6Tests --g12-rcr factory-v8.db frozen-starts.tsv output-dir");
+            return runG8Focused(argv[2], argv[4], argv[3], true, true, true);
+        } catch (const std::exception& error) {
+            std::cerr << "Factory G12 fixed-start RCR FAIL: " << error.what() << '\n';
             return 1;
         }
     }

@@ -456,7 +456,7 @@ void prepareTemplate(ProgressionTemplate& value) {
     value.fingerprint = makeFingerprint(value.mode, value.full, value.skeletonIndices, value.cadence);
 }
 CandidateIndex::CandidateIndex(std::vector<ProgressionTemplate> templates) : templates_(std::move(templates)) {
-    for (auto& item : templates_) prepareTemplate(item);
+    for (auto& item : templates_) { prepareTemplate(item); applyPhraseBoundaryReview(item); }
     contextAnchors_=buildContextAnchors(templates_);
     developmentLinks_=buildDevelopmentLinks(templates_);
     continuationLinks_=buildContinuationLinks(*this);

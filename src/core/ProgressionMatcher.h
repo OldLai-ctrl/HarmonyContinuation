@@ -203,6 +203,7 @@ MatchQuery makeMatchQuery(const Progression&, const AnalysisContext& = {}, const
 ProgressionFingerprint makeFingerprint(Mode, const std::vector<MatchEvent>&,
                                        const std::vector<std::size_t>&, CadenceType);
 void prepareTemplate(ProgressionTemplate&);
+void applyPhraseBoundaryReview(ProgressionTemplate&); // runtime metadata; source music stays frozen
 
 // Offline-capable source index. One record per internal anchor or admitted phrase
 // entry/terminal prototype, never a Cartesian product of catalogue phrases.
