@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为独立G12乐句衔接线，dev.13 / Factory8（1288条，新增0）；[G12诊断、验收与新旧试听](docs/G12_PHRASE_FLOW_REVIEW.md)维护本轮交付，[引擎架构](docs/CONTINUATION_ENGINE.md)维护实现，[NOW](NOW.md)维护当前状态。工程与24% RCR通过，实际音乐接续与现代风格待听评。保留[G11/dev.12分叉基线](docs/G11_CONTINUATION_NETWORK_REVIEW.md)、[G10/dev.11](docs/G10_CONTEXTUAL_DIVERSITY_REVIEW.md)、[G9/dev.10](docs/G9_PHRASE_DIVERSITY_REVIEW.md)、[G8/dev.9](docs/G8_OPEN_RECURSIVE_REVIEW.md)、[G7/dev.8](docs/G7_FOUR_ENTRY_REVIEW.md)、[G6](docs/G6_ENGINE_V2_REVIEW.md)和dev.6/V7。不重复旧全量检查，不制作Setup或发布。
+本工作树为独立 0.11.0-dev.14 安装交付线，Factory V8 / 1,288 条。用户已认可 G12 的 12 条扩展试听，音乐研发结项。[安装、回退与 DAW 验收](docs/DEV14_DAW_ACCEPTANCE.md)提供实机清单，[NOW](NOW.md)记录当前结果，[MAP](MAP.md)定位 Setup 与证据。[G12 报告](docs/G12_PHRASE_FLOW_REVIEW.md)和[引擎架构](docs/CONTINUATION_ENGINE.md)保留音乐与实现依据。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 

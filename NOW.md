@@ -2,7 +2,13 @@
 
 ## 本轮工作与下一步
 
-### G12 乐句衔接与现代和声表达（2026-11-04工程交付，音乐待验收）
+### 0.11.0-dev.14 安装交付（2026-11-06）
+
+用户认可 G12 扩展试听 12 条 D→E，音乐研发阶段结项。独立分支 `development/dev14-delivery-20261106` 从 G12 交付 HEAD `dd6703c8` 建立。BuildCommit `b45916001064118464b48a8a5e82cda76581d0de`。Release x64、Factory V8 / Schema 2 / 1,288 条，DB/HCA 与 G12 字节一致。安装逻辑纳入 V8 的 HCA 打包、提取和所有权校验。
+
+交付目录在同级 `HarmonyContinuation-dev14-delivery-20261106/`。`BUILD_INFO.json` 记录 Setup、完整校验、隔离升级与冒烟。[安装、卸载回退和实机清单](docs/DEV14_DAW_ACCEPTANCE.md)随包交付。隔离托管 dev.6 / V7 → dev.14 / V8 升级通过，V5/V6/V7 历史与个人数据哨兵保留，已安装处理器加载和试听冒烟通过。下一步由用户在 Cubase / FL Studio 验收，发布授权待定。
+
+### G12 乐句衔接与现代和声表达（2026-11-04工程交付，扩展听评通过后结项）
 
 独立分支 `development/g12-phrase-flow-20261104` 从干净G11交付`797c15f`建立，**0.11.0-dev.13 / BuildCommit `499c69b3cbd94ce68f35921d247d39acfe5fbd89` / Factory8 / 1288**。[G12集中报告、完整新链与D/E对照](docs/G12_PHRASE_FLOW_REVIEW.md)为本轮权威记录。用户已认可G11三个方向的多样性，最新澄清不自然处主要是三条D末两个和弦似在句中却突然结束；本轮未围绕009/010频率调排序。
 
@@ -10,7 +16,7 @@
 
 已加入4条实际音集/低音/时值绑定的运行时审校补充：009/010保留原句与探索分页，撤回未经证明的独立句末资格；现成V7_04_044的末8QN模态停顿及V7_04_052的循环归位获得具体4+4分组说明。新增Factory来源0，DB/HCA与G11逐字节一致；不改全局Voicer。三条完整D/E边界对照均在16秒进入正常合格E，旧D演奏不变；不是第四轮RCR或虚构复合来源。
 
-Release构建、8项定向检查、3组旧Snapshot/MIDI、3组D前缀、E-044及新链9组Snapshot/Preview/MIDI身份通过。唯一一批冻结50起点仍12/50（24%），全部三轮第一页可达；11条机制互异，1条宽泛机制回用。84事件一次正常查询372.897ms（复用索引）。新正常首选仍多为8×4QN、011仍集中，现代节奏与真实听感尚未证明充分改善。**工程与连续技术门禁通过，音乐接续/现代风格及真实DAW待验收，尚不进入Setup。** 证据在同级`HarmonyContinuation-g12-evidence/identity.json`；未操作生产、真实user.db或远端，不制作Setup/main合并/Tag/Release。
+Release构建、8项定向检查、3组旧Snapshot/MIDI、3组D前缀、E-044及新链9组Snapshot/Preview/MIDI身份通过。唯一一批冻结50起点仍12/50（24%），全部三轮第一页可达；11条机制互异，1条宽泛机制回用。84事件一次正常查询372.897ms（复用索引）。原工程证据在同级`HarmonyContinuation-g12-evidence/identity.json`。用户认可同级 `G12_EXTENDED_LISTENING/` 的12条扩展试听，本轮转入上方独立安装交付，真实DAW由用户验收。
 
 ### G11 连续续写路径分叉（2026-11-03工程交付，音乐待验收）
 
