@@ -42,7 +42,7 @@ if (!(Test-Path -LiteralPath $manager)) {
 $info = & $manager inspect $FactoryDatabase
 if ($LASTEXITCODE -ne 0 -or $info -notmatch 'library_version=(\d+)') { throw '进行库检查失败。' }
 $libraryVersion = $Matches[1]
-if ([int]$libraryVersion -eq 7 -and $info -notmatch '\bschema=2\b') { throw 'Factory V7 requires Schema 2.' }
+if ([int]$libraryVersion -ge 7 -and $info -notmatch '\bschema=2\b') { throw "Factory V$libraryVersion requires Schema 2." }
 if ($info -notmatch 'progressions=(\d+)') { throw 'Missing Factory entry count.' }
 $factoryEntryCount = $Matches[1]
 if ($header -notmatch 'HC_PRODUCT_VERSION\s+"([^"]+)"') { throw '无法读取产品版本。' }
@@ -92,6 +92,7 @@ $historicalReferences = @('factory-v2.db','factory-v3.db')
 if ([int]$libraryVersion -ge 5) { $historicalReferences += 'factory-v4.db' }
 if ([int]$libraryVersion -ge 6) { $historicalReferences += 'factory-v5.db' }
 if ([int]$libraryVersion -ge 7) { $historicalReferences += 'factory-v6.db' }
+if ([int]$libraryVersion -ge 8) { $historicalReferences += 'factory-v7.db' }
 foreach ($reference in $historicalReferences) {
     $source = Join-Path $buildPath $reference
     if (!(Test-Path -LiteralPath $source)) { throw "Missing official reference compiled from repository data: $reference" }

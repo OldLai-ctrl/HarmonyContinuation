@@ -18,7 +18,9 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
-  #if LibraryVersion == "7"
+  #if LibraryVersion == "8"
+   #define MinimumPluginVersion "0.11.0-dev.9"
+  #elif LibraryVersion == "7"
    #define MinimumPluginVersion "0.11.0-dev.6"
   #elif LibraryVersion == "6"
   #define MinimumPluginVersion "0.11.0-dev.4"
@@ -30,9 +32,12 @@
   #define MinimumPluginVersion "0.9.0-dev.2"
  #endif
 #endif
+#if LibraryVersion == "6" || LibraryVersion == "7" || LibraryVersion == "8"
+ #define FactoryWithAnnotation
+#endif
 #ifndef AnnotationHash
- #if LibraryVersion == "6" || LibraryVersion == "7"
-  #error AnnotationHash required for Factory V6/V7
+ #ifdef FactoryWithAnnotation
+  #error AnnotationHash required for this Factory version
  #else
   #define AnnotationHash ""
  #endif
@@ -91,7 +96,7 @@ Source: "{#StageDir}\runtime\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\library_manager.exe"; Flags: dontcopy
 Source: "{#StageDir}\runtime\*.dll"; Flags: dontcopy
 Source: "{#StageDir}\factory.db"; Flags: dontcopy
-#if LibraryVersion == "6" || LibraryVersion == "7"
+#ifdef FactoryWithAnnotation
 Source: "{#StageDir}\factory.hca"; Flags: dontcopy
 #endif
 Source: "{#StageDir}\official-factory\*.db"; DestDir: "{tmp}\official-factory"; Flags: dontcopy
@@ -251,7 +256,7 @@ procedure ExtractPayload;
 begin
   ExtractTemporaryFile('library_manager.exe'); ExtractTemporaryFiles('{tmp}\*.dll');
   ExtractTemporaryFile('factory.db'); ExtractTemporaryFile('plugin-files.txt');
-#if LibraryVersion == "6" || LibraryVersion == "7"
+#ifdef FactoryWithAnnotation
   ExtractTemporaryFile('factory.hca');
 #endif
   ExtractTemporaryFiles('{tmp}\official-factory\*.db');
@@ -751,14 +756,14 @@ begin
   if Selection('library') and not SkipLibrary then begin
     if not SetIniString('Components','LibraryHash','{#FactoryHash}',StateFile) or
        not SetIniString('Components','LibraryVersion','{#LibraryVersion}',StateFile) then RaiseException('Cannot record Factory identity');
-#if LibraryVersion == "6" || LibraryVersion == "7"
+#ifdef FactoryWithAnnotation
     if not SetIniString('Components','AnnotationHash','{#AnnotationHash}',StateFile) then RaiseException('Cannot record Factory annotation identity');
 #endif
   end;
   if (GetIniString('Components','Plugin','',StateFile)<>IntToStr(Ord(OwnPlugin))) or
      (GetIniString('Components','Library','',StateFile)<>IntToStr(Ord(OwnLibrary))) then
     RaiseException('Component state verification failed');
-#if LibraryVersion == "6" || LibraryVersion == "7"
+#ifdef FactoryWithAnnotation
   if Selection('library') and not SkipLibrary and (ManagedAnnotationHash<>'{#AnnotationHash}') then
     RaiseException('Factory annotation state verification failed');
 #endif
