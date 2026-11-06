@@ -1,6 +1,7 @@
 #include "WishCatalog.h"
 #include "WishCatalogData.h"
 #include "library/ProgressionLibrary.h"
+#include <algorithm>
 #include <exception>
 #include <unordered_map>
 #include <unordered_set>
@@ -55,8 +56,16 @@ AnnotationLoadResult annotationsForFactory(const std::filesystem::path& factoryD
         boundIds.insert(entry.templateId);
         boundEntries.push_back(entry);
     }
-    if (boundIds.size() != factory.templates.size())
-        return {{}, "unique annotation source count does not match selected Factory"};
+    // Factory V8 retains the V7 mode catalog. Its separately reviewed phrase
+    // increment has no authored mode memberships.
+    for (const auto& source : factory.templates) {
+        if (boundIds.contains(source.id)) continue;
+        const bool unannotatedPhrase = version == 8 && source.version == 8 &&
+            source.id.starts_with("V8_01_") &&
+            std::find(source.tags.begin(), source.tags.end(), "G8-complete") != source.tags.end();
+        if (!unannotatedPhrase)
+            return {{}, "annotation source is missing for selected Factory: " + source.id};
+    }
 
     annotations.catalog.entries = std::move(boundEntries);
     return annotations;
