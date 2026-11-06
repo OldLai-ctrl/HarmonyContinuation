@@ -1,14 +1,16 @@
 # HarmonyContinuation 0.11.0-dev.14 安装与实机验收
 
-G12 扩展试听的 12 条 D→E 路线均获用户认可，音乐研发阶段结项。本包用于 Cubase 和 FL Studio 实机验收，使用 Release x64 VST3、Factory V8 / Schema 2 / 1,288 条。BuildCommit 为 `b45916001064118464b48a8a5e82cda76581d0de`。安装包、校验值与落盘身份见交付目录的 `BUILD_INFO.json` 和 `SHA256SUMS.txt`。
+G12 扩展试听的 12 条 D→E 路线均获用户认可，音乐研发阶段结项。本包用于 Cubase 和 FL Studio 实机验收，使用 Release x64 VST3、Factory V8 / Schema 2 / 1,288 条。BuildCommit 为 `eb05cb2070f0f9a713cabd74729540dfdf897a61`。安装包、校验值与落盘身份见交付目录的 `BUILD_INFO.json` 和 `SHA256SUMS.txt`。
 
 ## 安装或升级
 
 1. 关闭 Cubase、FL Studio 和其他扫描 VST3 的程序。备份用于验收的工程原件、个人曲库目录 `%LOCALAPPDATA%\HarmonyContinuation`，以及当前活动 Factory 的 `active.txt` 与对应版本目录。保留原版本 Setup。若个人库有 SQLite 日志文件，随同备份。
 2. 双击 `HarmonyContinuation-0.11.0-dev.14-Setup.exe`，保留 **VST3** 和 **Factory Library V8 (1288)** 两个组件。已有正常托管安装时沿用现有标准路径。若 Setup 提示手工安装冲突或文件占用，关闭宿主并按提示处理后再继续。
-3. 在宿主刷新 VST3，打开插件 About 核对 `0.11.0-dev.14`、BuildCommit 前缀 `b459160` 和 Factory V8。首次查询后可在宿主诊断确认 `Factory Entries: 1288`。活动库位于 `%ProgramData%\HarmonyContinuation\Libraries\Factory`，`active.txt` 内容为 `8`，`8` 目录中有配套 `factory.db` 和 `factory.hca`。
+3. 在宿主刷新 VST3，打开插件 About 核对 `0.11.0-dev.14`、BuildCommit 前缀 `eb05cb2` 和 Factory V8。首次查询后可在宿主诊断确认 `Factory Entries: 1288`。活动库位于 `%ProgramData%\HarmonyContinuation\Libraries\Factory`，`active.txt` 内容为 `8`，`8` 目录中有配套 `factory.db` 和 `factory.hca`。
 
 一次隔离升级从实际装好的 dev.6 / Factory V7 开始，旧活动指针为 `7` 加换行。升级后指针为 `8` 加换行，V5、V6、V7 历史文件和隔离个人库哨兵的 SHA-256 全部保持。托管 V8 的 DB 与 HCA 校验值均写入安装状态。
+
+隔离冒烟发现 V8 完整句增量的 16 条乐句没有调式注释，旧祈愿加载器把它们视作目录缺失。dev.14 的最终构建允许这批已标记的完整乐句没有调式注释，同时核对既有注释来源的指纹及完整性。安装数据保持 G12 的原配 DB 和 HCA。
 
 ## 卸载与回退
 
@@ -23,4 +25,4 @@ G12 扩展试听的 12 条 D→E 路线均获用户认可，音乐研发阶段�
 3. **试听与拖放。** 选一条后续，用 Host 和 Windows 两个音频后端各试听一次。把同一候选拖入 Cubase MIDI／乐器轨，或 FL Studio 钢琴卷帘，核对音符、低音与时值。
 4. **工程重开。** 保存验收工程副本，关闭后重开，确认和弦输入、时值及已保存音乐对象恢复。出现阻断时记录宿主完整版本、About 身份、最短复现和实际结果。
 
-隔离安装和工程冒烟的范围见 `BUILD_INFO.json`。实机结果由用户在上述两个宿主中确认。
+最终构建在同一隔离 V8 上换装插件组件，确认 16 个落盘文件与包内一致，VST3 处理器可加载并输出试听。原生界面冒烟通过四入口、匹配、完整灵感后句、升级、祈愿一抽及 84 事件计算和显示。同一候选的 Preview、MIDI 和拖放 MIDI 的音符与时值一致。隔离记录见 `BUILD_INFO.json`，实机结果由用户在上述两个宿主中确认。

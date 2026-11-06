@@ -4,9 +4,9 @@
 
 ### 0.11.0-dev.14 安装交付（2026-11-06）
 
-用户认可 G12 扩展试听 12 条 D→E，音乐研发阶段结项。独立分支 `development/dev14-delivery-20261106` 从 G12 交付 HEAD `dd6703c8` 建立。BuildCommit `b45916001064118464b48a8a5e82cda76581d0de`。Release x64、Factory V8 / Schema 2 / 1,288 条，DB/HCA 与 G12 字节一致。安装逻辑纳入 V8 的 HCA 打包、提取和所有权校验。
+用户认可 G12 扩展试听 12 条 D→E，音乐研发阶段结项。独立分支 `development/dev14-delivery-20261106` 从 G12 交付 HEAD `dd6703c8` 建立。BuildCommit `eb05cb2070f0f9a713cabd74729540dfdf897a61`。Release x64、Factory V8 / Schema 2 / 1,288 条，DB/HCA 与 G12 字节一致。安装逻辑纳入 V8 的 HCA 打包、提取和所有权校验，祈愿绑定允许 V8 的 16 条未标注调式的新句，既有来源仍严格核对。
 
-交付目录在同级 `HarmonyContinuation-dev14-delivery-20261106/`。`BUILD_INFO.json` 记录 Setup、完整校验、隔离升级与冒烟。[安装、卸载回退和实机清单](docs/DEV14_DAW_ACCEPTANCE.md)随包交付。隔离托管 dev.6 / V7 → dev.14 / V8 升级通过，V5/V6/V7 历史与个人数据哨兵保留，已安装处理器加载和试听冒烟通过。下一步由用户在 Cubase / FL Studio 验收，发布授权待定。
+交付目录在同级 `HarmonyContinuation-dev14-delivery-20261106/`。`BUILD_INFO.json` 记录 Setup、完整校验、隔离升级与冒烟。[安装、卸载回退和实机清单](docs/DEV14_DAW_ACCEPTANCE.md)随包交付。一次隔离托管 dev.6 / V7 → dev.14 / V8 升级通过，V5/V6/V7 历史与个人数据哨兵保留。HCA 修复后只在已验证的 V8 上换装最终插件，落盘身份、加载和处理器试听通过。原生界面冒烟通过四入口、匹配子项、完整灵感来源、升级、祈愿一抽、Preview/MIDI/DAWClip 及 84 事件显示。下一步由用户在 Cubase / FL Studio 验收，发布授权待定。
 
 ### G12 乐句衔接与现代和声表达（2026-11-04工程交付，扩展听评通过后结项）
 
