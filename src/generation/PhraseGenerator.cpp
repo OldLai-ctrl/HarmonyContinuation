@@ -201,7 +201,7 @@ std::vector<Relation> successors(const SuccessorContext& context,RelationKind ki
         auto material=borrowed(context.center);
         for(int distance:{-4,-3,3,4})material.push_back(chord(previous.root+distance,ChordQuality::Major7,-1,true));
         for(const auto& e:material) {
-            add(e,"modal-borrowing-or-mediant","Parallel/modal borrowing or common-tone chromatic mediant; no song-source claim.");
+            add(e,"modal-borrowing-or-mediant","Parallel/modal borrowing or common-tone mediant derived from the active context.");
             const auto p=chordPitches(e);
             if(context.allowCenterChange&&(context.intent==DevelopmentIntent::Color||context.intent==DevelopmentIntent::Open)&&
                 std::popcount(a&tones(p))>=1&&p.root!=int(context.center.tonic)) {

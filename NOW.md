@@ -2,11 +2,17 @@
 
 ## 本轮工作与下一步
 
+### G13 关系驱动完整乐句生成（2026-11-09）
+
+独立 `development/g13-relation-generation-20261109` 基于已验收dev.14交付HEAD `416a7e3a`，算法代码提交 `b5ae0917e44d369645cfe1329b027909db53663a`。A+B独立工程闭环完成，三类算子与有界搜索生成完整E，五意图默认最多16,000扩展；保留dev.15核心证据，未启用其产品重排序。五输入定向检查1,954项、媒体读回453项与声部指标检查通过；完整五意图请求287–359ms。六条完整D+E共126.9秒、12份MIDI及独立CLI位于同级 `G13_GENERATED_LISTENING/`。[工程、对照与限制](docs/G13_RELATION_GENERATION_REVIEW.md)为权威记录。[试听索引](../G13_GENERATED_LISTENING/LISTENING_INDEX.md)含每条完整路线及生成依据。**音乐待用户听评，C阶段未启动，不制作Setup或进入RC。**
+
+产品仍使用用户已验收的dev.14，Factory V8 / 1,288条不变。G13生成来源与Factory严格分开，显式低音音区计划仅用于独立导出；不改Session5/Snapshot3或真实用户数据。dev.15研究分支及其完整A/B证据保留。
+
 ### 0.11.0-dev.14 安装交付（2026-11-06）
 
 用户认可 G12 扩展试听 12 条 D→E，音乐研发阶段结项。独立分支 `development/dev14-delivery-20261106` 从 G12 交付 HEAD `dd6703c8` 建立。BuildCommit `eb05cb2070f0f9a713cabd74729540dfdf897a61`。Release x64、Factory V8 / Schema 2 / 1,288 条，DB/HCA 与 G12 字节一致。安装逻辑纳入 V8 的 HCA 打包、提取和所有权校验，祈愿绑定允许 V8 的 16 条未标注调式的新句，既有来源仍严格核对。
 
-交付目录在同级 `HarmonyContinuation-dev14-delivery-20261106/`。`BUILD_INFO.json` 记录 Setup、完整校验、隔离升级与冒烟。[安装、卸载回退和实机清单](docs/DEV14_DAW_ACCEPTANCE.md)随包交付。一次隔离托管 dev.6 / V7 → dev.14 / V8 升级通过，V5/V6/V7 历史与个人数据哨兵保留。HCA 修复后只在已验证的 V8 上换装最终插件，落盘身份、加载和处理器试听通过。原生界面冒烟通过四入口、匹配子项、完整灵感来源、升级、祈愿一抽、Preview/MIDI/DAWClip 及 84 事件显示。下一步由用户在 Cubase / FL Studio 验收，发布授权待定。
+交付目录在同级 `HarmonyContinuation-dev14-delivery-20261106/`。`BUILD_INFO.json` 记录 Setup、完整校验、隔离升级与冒烟。[安装、卸载回退和实机清单](docs/DEV14_DAW_ACCEPTANCE.md)随包交付。一次隔离托管 dev.6 / V7 → dev.14 / V8 升级通过，V5/V6/V7 历史与个人数据哨兵保留。HCA 修复后只在已验证的 V8 上换装最终插件，落盘身份、加载和处理器试听通过。原生界面冒烟通过四入口、匹配子项、完整灵感来源、升级、祈愿一抽、Preview/MIDI/DAWClip 及 84 事件显示。后续用户已确认dev.14验收完成；G13另行离线听评，RC/正式发布未获授权。
 
 ### G12 乐句衔接与现代和声表达（2026-11-04工程交付，扩展听评通过后结项）
 

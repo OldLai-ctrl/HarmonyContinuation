@@ -6,9 +6,13 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G13独立生成实验 | `HarmonyContinuation-g13/` → `development/g13-relation-generation-20261109`，基于dev.14交付`416a7e3a` | 仅实验CLI，代码提交与最终状态见[集中报告](docs/G13_RELATION_GENERATION_REVIEW.md)，没有新产品Setup |
+| G13试听与运行入口 | 同级 `G13_GENERATED_LISTENING/`；`phrase_generate.exe`、`LISTENING_INDEX.md`、各组INPUT/JSON/WAV/MIDI | 六条完整D+E，01/05为正常返回第2条，其余第1条；音乐待听评 |
+| G13检查及身份 | 同级 `HarmonyContinuation-g13-evidence/`；`identity.json`、`generated-cases.tsv`、`media-verification.json`、`database-comparison.tsv` | 只覆盖五固定输入、必要约束与六组实际导出，不重复RCR |
+| dev.15研究成果 | `HarmonyContinuation-dev15/` → `development/dev15-chord-map-20261109`，HEAD `33db6f5…` | 新排序保持关闭；G13复用核心连接/轮廓证据，原工作树保留 |
 | dev.14 安装交付线 | `HarmonyContinuation-dev14/` → `development/dev14-delivery-20261106`，基于 `dd6703c8`，BuildCommit `eb05cb2…` | G12 音乐研发结项，Factory V8 / 1,288 条，独立 Release x64 |
-| dev.14 Setup、SHA-256 与证据 | 同级 `HarmonyContinuation-dev14-delivery-20261106/`，`BUILD_INFO.json` 对应最终身份，`evidence/` 保留隔离 V7→V8 记录 | 使用顶层统一 Setup，[实机清单与回退](docs/DEV14_DAW_ACCEPTANCE.md)，Cubase / FL Studio 待用户验收 |
-| G12乐句衔接与现代和声 | `HarmonyContinuation-g12/` → `development/g12-phrase-flow-20261104`，基于G11交付`797c15f`；BuildCommit `499c69b3…` | dev.13/Factory8/1288，新增0；[集中报告](docs/G12_PHRASE_FLOW_REVIEW.md)，工程与24% RCR通过，音乐接续/现代风格待验收 |
+| dev.14 Setup、SHA-256 与证据 | 同级 `HarmonyContinuation-dev14-delivery-20261106/`，`BUILD_INFO.json` 对应最终身份，`evidence/` 保留隔离 V7→V8 记录 | 使用顶层统一 Setup，[实机清单与回退](docs/DEV14_DAW_ACCEPTANCE.md)，用户已确认dev.14验收完成，G13不重复宿主验收 |
+| G12乐句衔接与现代和声 | `HarmonyContinuation-g12/` → `development/g12-phrase-flow-20261104`，基于G11交付`797c15f`；BuildCommit `499c69b3…` | dev.13/Factory8/1288，新增0；[集中报告](docs/G12_PHRASE_FLOW_REVIEW.md)，工程与24% RCR通过，12条扩展音乐试听已获认可 |
 | G12定向证据与试听 | 同级 `HarmonyContinuation-g12-evidence/`；`identity.json`为构建/交付身份，`boundary-auditions/`为原完整D与合格E，`rcr-3/representative-paths/`为正常三轮新链 | 一次原冻结50复核；G11树与旧包保持，不制作Setup，真实DAW未验收 |
 | G11连续路径分叉 | `HarmonyContinuation-g11/` → `development/g11-continuation-network-20261103`，基于G10交付`fa2de2f`；产品/RCR BuildCommit `c1b3743b…` | dev.12/Factory8/1288，新增0；[集中报告与试听](docs/G11_CONTINUATION_NETWORK_REVIEW.md)，工程与24% RCR通过，末轮集中仍在 |
 | G11定向证据与媒体 | 同级 `HarmonyContinuation-g11-evidence/`；`identity.json`记录构建/最终HEAD与校验，`rcr-3/representative-paths/`为三条首选连续链 | 一次原冻结50复核，三代表各两条首页B实际回导分叉；G10基线保留，不制作Setup，人工音乐与DAW待验收 |

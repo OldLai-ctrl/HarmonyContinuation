@@ -2,13 +2,17 @@
 
 先搜索风险 ID、操作或模块，读取对应条目。解决后移除活动风险，必要的复现/原因归档 history；不要堆积已结束事故。
 
+## R06 G13 音乐听评与产品来源/演奏集成
+
+触发：宣称生成音乐已验收、将生成结果接入正式UI、Host或持久化。G13工程与离线导出通过，音乐由用户试听后决定C阶段。`g13:` ID及Recipe不具有Factory来源资格；当前Snapshot3和Host交换路径没有承载其完整生成路径/显式低音计划。生成句仅通过独立 `buildPerformance` 导出，禁止冒用模板来源保存。C阶段应明确来源类型和冻结性能，再验证相关线程/后端；当前不迁移Schema或改真实user.db。具体证据与边界见[G13报告](docs/G13_RELATION_GENERATION_REVIEW.md)。
+
 ## R01 接错设备、分支或包
 
 触发：接手、切换 checkout、同步、回滚、安装、交付。相同目录名曾对应不同分支；核对 [MAP.md](MAP.md) 与实时 Git。源码与分发包提交的差异见 [NOW.md 的证据](NOW.md#证据)，实际包匹配情况待核实，不把差异自动当构建错误。未提交内容/ignored 证据不会随 push 到另一设备。
 
 ## R02 真实宿主仍待验收
 
-触发：宣称 FL 兼容、推进 RC/正式版、修改窗口/拖放/恢复行为。当前待验收状态由 [NOW.md](NOW.md#当前任务) 维护，RC 的 Cubase Pro 15 / FL Studio 六项人工检查见 [RC 清单](docs/RC_DAW_ACCEPTANCE.md)，两者当前 Pending；旧兼容说明见 `docs/FL_STUDIO_COMPATIBILITY.md`。SDK 测试不能证明真实 FL 行为；无可访问真机记录的结论标为待核实。
+触发：宣称 FL 兼容、推进 RC/正式版、修改窗口/拖放/恢复行为。当前验收状态由 [NOW.md](NOW.md) 维护：用户已确认dev.14验收，G13只交付独立离线生成，不代表生成器已经过真实宿主集成验收。RC清单仅在获准进入该阶段后使用；旧兼容说明见 `docs/FL_STUDIO_COMPATIBILITY.md`。SDK 测试不能证明真实 FL 行为；无可访问真机记录的结论标为待核实。
 
 ## R03 安装与持久数据
 

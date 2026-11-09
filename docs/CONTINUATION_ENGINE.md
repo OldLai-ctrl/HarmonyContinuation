@@ -1,5 +1,9 @@
 # Continuation Engine
 
+## G13 独立和声关系生成
+
+`src/generation/PhraseGenerator.*` 通过功能、声部、调外三类关系及有界多步搜索构造完整E。复用G10–G12轮廓、dev.15证据及现有演奏实现；生成的来源与Factory资格分开，生产入口不接入。实际低音音区通过可选运行时性能字段供离线Preview/MIDI共享，旧事件缺省路径保持。算法、检查与试听以[G13报告](G13_RELATION_GENERATION_REVIEW.md)为权威；音乐待听评，产品集成留给C阶段。
+
 ## G12 phrase-boundary evidence
 
 `data/phrase-flow/g12-reviews.json` is compiled into a small offline editorial index. `prepareTemplate` is followed by `applyPhraseBoundaryReview` on the CandidateIndex copy; only an exact whole-source meter/root/bass/quality/actual-tone/duration signature receives its review tags. Factory rows, performed events and persistence formats are unchanged. The reviewed grouping and source ending remain distinct from an algorithm-assessed seam and a human audition.

@@ -30,6 +30,21 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### G13 独立生成入口
+
+在已初始化MSVC x64的终端配置独立Release目录，确认优化项为 `/O2 /Ob2 /DNDEBUG`：
+
+```powershell
+cmake -S . -B build-g13 -G Ninja -DCMAKE_BUILD_TYPE=Release -DHC_BUILD_PLUGIN=OFF -DHC_BUILD_GENERATION_EXPERIMENT=ON -DBUILD_TESTING=ON
+cmake --build build-g13 --target phrase_generate PhraseGenerationTests VoiceLeadingMetricsTests
+./build-g13/phrase_generate.exe ./input.json ./output bass-line
+# 可追加 2，选择该意图正常返回的第2条；省略意图则输出五种意图。
+./build-g13/PhraseGenerationTests.exe <已冻结FactoryV8.db> <检查输出目录>
+./build-g13/PhraseGenerationTests.exe --media ../G13_GENERATED_LISTENING
+```
+
+CLI输入为现有窄格式JSON和弦数组；保留start/duration/mask，缺duration为OPEN。当前CLI使用4/4、120BPM。音区计划须通过 `generation::buildPerformance` 同时送入Preview/MIDI；单用通用候选适配器不能保留它。新Recipe只用于实验，不送入旧Snapshot/Session。已通过证据见[G13报告](docs/G13_RELATION_GENERATION_REVIEW.md)，不要为接手重复整批检查。
+
 Factory V4 产品化：在 `build-v4-dev` 配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=dev.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实离线 SDK。从实现提交构建 Release 的 `HarmonyContinuation`、`library_manager`、`FactoryV4Tests`；运行 `FactoryV4Tests <证据目录>` 得到 28 条可发现性 TSV 和 4 份 MIDI，再运行无参数契约。必要时只运行相关 Matcher / Continuation / Enrichment 检查，TEMP/TMP 指向工作区测试目录。版本 0.10.0-dev.1，默认 Factory 4；V3 源数据与正式 staging 不改。用 `tools/build-installer.ps1 -BuildDirectory build-v4-dev -OutputDirectory build-installer/v4-0.10.0-dev.1 -RuntimeDirectory <已核实CRT> -Iscc <已核实ISCC>` 制作统一包，复制 MIDI/证据和人工清单，记录构建提交与哈希。使用 `tools/test-v4-installer.ps1` 的全新隔离路径验证此次兼容拦截与独立组件保护；不操作生产安装。详见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)。
 
 v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
