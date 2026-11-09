@@ -37,8 +37,8 @@ void rounded(CDrawContext* dc,UiRect r,CColor color,CColor border=edge,double ra
     dc->setFillColor(color);dc->drawGraphicsPath(path,CDrawContext::kPathFilled);
     dc->setFrameColor(border);dc->setLineWidth(1);dc->drawGraphicsPath(path,CDrawContext::kPathStroked);
 }
-std::size_t browseFirstPageSize(std::size_t category,const RecommendationSet& recommendations){
-    return category==6?inspirationFirstPageSize(recommendations):recommendationPageSize;
+std::size_t browseFirstPageSize(std::size_t,const RecommendationSet&){
+    return recommendationPageSize;
 }
 }
 
@@ -71,7 +71,8 @@ void MainView::refreshBrowse(){
             preferred.insert(preferred.end(),colorRanks_[g].order.begin(),colorRanks_[g].order.end());
             auto& rows=browseRows_[g];rows.clear();
             for(const auto i:qualifiedBrowseOrder(recommendations_.groups[g],preferred))
-                rows.push_back({g,i,!recommendations_.groups[g][i].exploratory&&std::find(priority[g].begin(),priority[g].end(),i)!=priority[g].end(),recommendations_.groups[g][i].exploratory});
+                if(!recommendations_.groups[g][i].generated)
+                    rows.push_back({g,i,!recommendations_.groups[g][i].exploratory&&std::find(priority[g].begin(),priority[g].end(),i)!=priority[g].end(),recommendations_.groups[g][i].exploratory});
         }
     }else if(enrichmentActive){
         auto& rows=browseRows_[4];rows.clear();
@@ -79,7 +80,7 @@ void MainView::refreshBrowse(){
             rows.push_back({g,i,rows.size()<3,false});
     }else if(inspirationActive){
         auto& mixed=browseRows_[6];mixed.clear();
-        const auto firstLimit=inspirationFirstPageSize(recommendations_);
+        const auto firstLimit=browseFirstPageSize(6,recommendations_);
         const auto priorityLimit=std::min<std::size_t>(3,firstLimit);
         for(const auto position:mixedInspirationOrder(recommendations_)){
             if(position.group>=recommendations_.groups.size()||position.index>=recommendations_.groups[position.group].size())continue;
@@ -158,6 +159,7 @@ void MainView::focusBrowseEntry(std::size_t rank){
 std::string MainView::browseName(const BrowseEntry& row) const {
     if(browseCategory()==4){constexpr const char* names[]{"group.polish","group.rich","group.advanced"};return t(names[row.group]);}
     const auto& c=recommendations_.groups[row.group][row.index];
+    if(c.generated)return generatedCandidateLabel(c,state_.locale);
     for(const auto* catalog:{&factory_,&user_})for(const auto& p:*catalog)if(p.id==c.primaryTemplate)
         return state_.locale==session::Locale::ZhCN&&!p.nameZh.empty()?p.nameZh:!p.nameEn.empty()?p.nameEn:p.name;
     for(const auto& m:matches_)if(representativeMatch(c,m))return m.templateName;
@@ -178,14 +180,22 @@ std::string MainView::recommendationListText(){
         if(browseCategory()==4){const auto& c=enrichments_.groups[r.group][r.index];out<<" | "<<(zh?"升级进行":"Enrichment")<<" | score="<<c.score<<" | id="<<c.id<<" | fingerprint="<<c.fingerprint;}
         else {const auto& c=recommendations_.groups[r.group][r.index];
             if(browseCategory()==6){
-                if(c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact)
+                if(c.generated) {
+                    out<<" | "<<generatedCandidateLabel(c,state_.locale)
+                       <<" | generator="<<c.generated->generatorVersion
+                       <<" | prior="<<c.generated->priorId
+                       <<" | license="<<c.generated->priorLicense
+                       <<" | explanation="<<c.generated->explanation;
+                } else if(c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact)
                     out<<" | "<<(zh?"冻结演奏 · 来源通道/接缝元数据未保存":"Frozen performance · source channel/seam metadata not saved");
                 else {
                     const auto direction=c.direction==CreativeDirection::Stable?(zh?"稳定":"Stable"):
                         c.direction==CreativeDirection::Rich?(zh?"丰富":"Rich"):(zh?"大胆":"Bold");
                     out<<" | "<<direction<<" | "<<recommendationChannelName(c.channel);
                 }
-                out<<" | id="<<c.id<<" | source="<<c.primaryTemplate<<" | key="<<formatKey(c.key)
+                out<<" | id="<<c.id;
+                if(!c.generated)out<<" | source="<<c.primaryTemplate;
+                out<<" | key="<<formatKey(c.key)
                    <<" | fingerprint="<<continuationMusicFingerprint(c);
                 out<<'\n';continue;
             }
@@ -495,25 +505,28 @@ void MainView::drawCompact(CDrawContext* dc){
             compactButton(dc,cg.select,selected?"✓":std::to_string(row+1),CompactAction::Select,c.id,index,selected,true,true,group);
             const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
             const auto libraryItem=[&]() -> const ProgressionTemplate*{for(const auto* catalog:{&factory_,&user_})for(const auto& p:*catalog)if(p.id==c.primaryTemplate)return &p;return nullptr;}();
-            const auto name=libraryItem?((zh&&!libraryItem->nameZh.empty())?libraryItem->nameZh:(!zh&&!libraryItem->nameEn.empty())?libraryItem->nameEn:libraryItem->name):match!=matches_.end()?match->templateName:c.primaryTemplate;
+            const auto name=c.generated?generatedCandidateLabel(c,state_.locale):
+                libraryItem?((zh&&!libraryItem->nameZh.empty())?libraryItem->nameZh:(!zh&&!libraryItem->nameEn.empty())?libraryItem->nameEn:libraryItem->name):
+                match!=matches_.end()?match->templateName:c.primaryTemplate;
             text(dc,(all[row].priority?(zh?std::string("优先 · "):std::string("Top 3 · ")):c.exploratory?(zh?std::string("探索 · "):std::string("Explore · ")):std::string{})+name,cg.name,13);
             double qn=0;if(route)for(const auto& e:route.candidate.continuation)qn+=e.durationQN;
             const double bar=route&&route.meterDenominator>0?route.meterNumerator*4. / route.meterDenominator:0;
             text(dc,route?(zh?"续写 ":"Next ")+number(bar>0?qn/bar:qn)+(bar>0?(zh?" 小节 · ":" bars · "):" QN · ")+std::to_string(route.candidate.continuation.size())+(zh?" 和弦":" chords"):
                 (zh?"来源不可用":"Source unavailable"),cg.facts,10,secondary,kRightText);
-            const auto sourceCount=libraryItem?libraryItem->full.size():match!=matches_.end()?match->templateLabels.size():0;
+            const auto sourceCount=c.generated?0:libraryItem?libraryItem->full.size():match!=matches_.end()?match->templateLabels.size():0;
             const bool inspiration=browseCategory()==6;
             const bool frozenSnapshot=c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact;
-            const auto channelLabel=frozenSnapshot?(zh?"冻结演奏":"Frozen performance"):inspiration?
+            const auto channelLabel=c.generated?(zh?"完整句算法生成":"Algorithm-generated phrase"):frozenSnapshot?(zh?"冻结演奏":"Frozen performance"):inspiration?
                 (c.channel==RecommendationChannel::Exact?(zh?"直接续写":"Direct continuation"):
                  c.channel==RecommendationChannel::PhraseTransition?(zh?"跨段转接":"Cross-segment transition"):(zh?"局部语境续写":"Local contextual continuation")):
                 c.channel==RecommendationChannel::Exact?(zh?"精确延续":"Exact continuation"):
                 c.channel==RecommendationChannel::PhraseTransition?(zh?"跨段转接":"Phrase transition"):(zh?"语境发展":"Contextual continuation");
-            const auto location=frozenSnapshot?
+            const auto location=c.generated?(zh?std::string("先验 · "):std::string("Prior · "))+c.generated->priorId+" · "+c.generated->priorLicense:
+                frozenSnapshot?
                 (zh?std::string(" · 来源通道/接缝元数据未保存"):std::string(" · Source channel/seam metadata not saved")):
                 c.channel==RecommendationChannel::PhraseTransition?(zh?std::string(" · 算法评估接缝"):std::string(" · Algorithm-assessed seam")):
                 " · "+std::to_string(c.matchStart+1)+"–"+std::to_string(c.matchEnd+1)+"/"+(sourceCount?std::to_string(sourceCount):"?");
-            text(dc,channelLabel+location,cg.location,10,secondary);
+            text(dc,std::string(channelLabel)+(c.generated?" · ":"")+location,cg.location,10,secondary);
             if(!frozenSnapshot&&c.channel==RecommendationChannel::Exact&&sourceCount&&sourceCount<=24){const auto start=cg.location.left+(zh?114.:132.);const double unit=std::min(7.,(cg.location.right-start)/sourceCount);
                 if(unit>=3)for(std::size_t i=0;i<sourceCount;++i)fill(dc,{start+i*unit,cg.location.top+6,start+i*unit+unit-2,cg.location.top+11},i>=c.matchStart&&i<=c.matchEnd?blue:edge);}
             std::size_t substitutions=0,gaps=0,insertions=0;
@@ -522,7 +535,8 @@ void MainView::drawCompact(CDrawContext* dc){
             const auto append=[&](std::size_t count,const char* chinese,const char* english){if(!count)return;if(!difference.empty())difference+=" · ";difference+=std::to_string(count)+(zh?chinese:english);};
             append(substitutions,"处替代"," substitutions");append(insertions,"处输入插入"," input insertions");append(gaps,"处模板跳过"," template skips");
             if(difference.empty())difference=match==matches_.end()?(zh?"匹配明细待取":"Match details pending"):(zh?"逐项对齐":"Aligned");
-            if(frozenSnapshot)difference=zh?"来源通道/接缝元数据未保存":"Source channel/seam metadata not saved";
+            if(c.generated)difference=c.generated->explanation;
+            else if(frozenSnapshot)difference=zh?"来源通道/接缝元数据未保存":"Source channel/seam metadata not saved";
             else if(c.channel!=RecommendationChannel::Exact)difference=c.originCenter&&c.targetCenter&&
                 (c.originCenter->tonic!=c.targetCenter->tonic||c.originCenter->mode!=c.targetCenter->mode)?
                 (c.centerRelation==CenterRelation::Relative?(zh?"大小调双中心 ":"Relative centers "):(zh?"调中心变化 ":"Center change "))+formatKey(*c.originCenter)+" → "+formatKey(*c.targetCenter):
@@ -530,7 +544,7 @@ void MainView::drawCompact(CDrawContext* dc){
             if(!inspiration&&c.channel!=RecommendationChannel::Exact)difference=(c.direction==CreativeDirection::Bold?
                 (zh?std::string("大胆转向 · "):std::string("Bold · ")):
                 (zh?std::string("丰富变化 · "):std::string("Rich · ")))+difference;
-            if(inspiration&&!frozenSnapshot){
+            if(inspiration&&!frozenSnapshot&&!c.generated){
                 const auto direction=c.direction==CreativeDirection::Stable?(zh?std::string("稳定"):std::string("Stable")):
                     c.direction==CreativeDirection::Rich?(zh?std::string("丰富"):std::string("Rich")):
                     (zh?std::string("大胆"):std::string("Bold"));
@@ -662,7 +676,8 @@ void MainView::drawCompactTransport(CDrawContext* dc){
     const auto objectId=!previewCandidateId_.empty()?previewCandidateId_:
         !wishMode_&&state_.productMode==session::ProductMode::Enrich&&selectedEnrichment()?selectedEnrichment()->id:compactSelected_;
     std::string object="—";
-    if(const auto* candidate=findCandidate(objectId))object=(zh?"当前对象 · ":"Current · ")+candidate->primaryTemplate;
+    if(const auto* candidate=findCandidate(objectId))object=(zh?"当前对象 · ":"Current · ")+
+        (candidate->generated?generatedCandidateLabel(*candidate,state_.locale):candidate->primaryTemplate);
     else if(const auto* candidate=findEnrichment(objectId))object=(zh?"升级进行 · ":"Enrichment · ")+candidate->id;
     text(dc,object+(!actionStatus_.empty()?" · "+actionStatus_:""),{fl+198,fy+18,fr-132,fy+39},11);
     const double by=fy+44;
@@ -776,10 +791,34 @@ bool MainView::onCompactMouseDown(CPoint& where){
             const auto n=popup(options,where);
             const int pinAction=inspiration?2:3,pinnedAction=inspiration?3:4;
             if(n==pinAction){if(const auto* selected=findCandidate(compactSelected_)){if(state_.unpin(selected->id))std::erase_if(pinnedSnapshots_,[&](const auto& item){return item.id==selected->id;});else if(state_.pin(selected->id,session::continuationFingerprint(*selected)))pinnedSnapshots_.push_back(*selected);notifyState();}}
-            else if(n==pinnedAction){std::vector<std::string> names;for(const auto& pin:pinnedSnapshots_)names.push_back(pin.primaryTemplate+" · "+formatKey(pin.key));const auto picked=popup(names,where);if(picked>=0&&static_cast<std::size_t>(picked)<pinnedSnapshots_.size()){const auto target=pinnedSnapshots_[picked].id;refreshBrowse();bool found=false;
-                if(browseCategory()==6){const auto& rows=browseRows_[6];for(std::size_t rank=0;rank<rows.size();++rank){const auto& row=rows[rank];if(recommendations_.groups[row.group][row.index].id==target){changeBrowseCategory(6);browsePages_[6]=browsePageIndex(rank,browseFirstPageSize(6,recommendations_));compactSelected_=target;compactScroll_=0;found=true;break;}}}
-                else for(std::size_t candidateGroup=0;candidateGroup<4;++candidateGroup)for(std::size_t rank=0;rank<browseRows_[candidateGroup].size();++rank){const auto& row=browseRows_[candidateGroup][rank];if(recommendations_.groups[row.group][row.index].id==target){changeBrowseCategory(candidateGroup);browsePages_[candidateGroup]=rank/recommendationPageSize;compactSelected_=target;compactScroll_=0;found=true;}}
-                if(!found)actionStatus_=zh?"固定候选不在本次合格结果中":"Pinned candidate is not qualified in the current result";}}
+            else if(n==pinnedAction){
+                std::vector<std::string> names;for(const auto& pin:pinnedSnapshots_)names.push_back(
+                    (pin.generated?generatedCandidateLabel(pin,state_.locale):pin.primaryTemplate)+" · "+formatKey(pin.key));
+                const auto picked=popup(names,where);
+                if(picked>=0&&static_cast<std::size_t>(picked)<pinnedSnapshots_.size()){
+                    const auto target=pinnedSnapshots_[picked].id;
+                    const bool generated=pinnedSnapshots_[picked].generated.has_value();refreshBrowse();bool found=false;
+                    if(generated||browseCategory()==6){
+                        if(browseCategory()!=6)changeBrowseCategory(6);
+                        const auto& rows=browseRows();
+                        for(std::size_t rank=0;rank<rows.size();++rank){const auto& row=rows[rank];
+                            if(recommendations_.groups[row.group][row.index].id==target){
+                                browsePages_[6]=browsePageIndex(rank,browseFirstPageSize(6,recommendations_));
+                                compactSelected_=target;compactScroll_=0;found=true;break;
+                            }
+                        }
+                    } else {
+                        for(std::size_t candidateGroup=0;candidateGroup<4;++candidateGroup)
+                            for(std::size_t rank=0;rank<browseRows_[candidateGroup].size();++rank){const auto& row=browseRows_[candidateGroup][rank];
+                                if(recommendations_.groups[row.group][row.index].id==target){
+                                    changeBrowseCategory(candidateGroup);browsePages_[candidateGroup]=rank/recommendationPageSize;
+                                    compactSelected_=target;compactScroll_=0;found=true;
+                                }
+                            }
+                    }
+                    if(!found)actionStatus_=zh?"固定候选不在本次合格结果中":"Pinned candidate is not qualified in the current result";
+                }
+            }
             else if(n>=0){
                 const int controlIndex=inspiration?(n==0?0:n==1?2:-1):(n==0?3:n==1?0:n==2?2:-1);
                 const auto control=controlIndex>=0?layout_.constraintControls[static_cast<std::size_t>(controlIndex)]:layout_.topControls[3];
@@ -820,7 +859,7 @@ bool MainView::runBrowseSmoke(CDrawContext* dc,const std::function<void(const st
     };
     try {
         actions_.stateChanged={};state_.uiZoomPercent=100;state_.tab=session::Tab::Recommend;
-        state_.productMode=session::ProductMode::Continue;compactGroup_=0;detailedCards_=false;compactScroll_=0;
+        state_.productMode=session::ProductMode::Continue;state_.inspirationPriority=false;state_.intent.reset();compactGroup_=0;detailedCards_=false;compactScroll_=0;
         snapshotMode_=false;selectedCandidate_.reset();selectedEnrichment_.reset();selectedChord_.reset();browsePages_.fill(0);browseDirty_=true;
         const ContinuationCandidate* seed{};for(const auto& g:savedRec.groups)if(!g.empty()){seed=&g.front();break;}
         require(seed,"browser test needs a real realized source");
@@ -852,6 +891,93 @@ bool MainView::runBrowseSmoke(CDrawContext* dc,const std::function<void(const st
         setRecommendations({});paint();changeBrowseCategory(1);changeBrowseCategory(0);paint();
         require(compactSelected_.empty()&&browseSelected_[0].empty(),"removed selection cannot survive a refresh");
         // Real data: overview, category state and page actions all resolve the original candidate.
+        setRecommendations(savedRec);matches_=savedMatches;compactSelected_.clear();browsePages_.fill(0);compactScroll_=0;
+        const auto previousMode=state_.productMode;const auto previousInspiration=state_.inspirationPriority;const auto previousIntent=state_.intent;
+        state_.productMode=session::ProductMode::Continue;state_.inspirationPriority=true;state_.intent.reset();compactGroup_=0;
+        if(capture)capture("generated-start");
+        browseDirty_=true;setRecommendations(savedRec);
+        std::vector<std::pair<std::string,bool>> oldTop;
+        const auto& oldInspirationRows=browseRows();
+        for(std::size_t i=0;i<std::min<std::size_t>(3,oldInspirationRows.size());++i){
+            const auto& row=oldInspirationRows[i];oldTop.emplace_back(recommendations_.groups[row.group][row.index].id,row.priority);
+        }
+        auto generatedRecommendations=savedRec;
+        ContinuationCandidate generated=*seed;generated.id="g13:browse-smoke";generated.primaryTemplate.clear();
+        generated.rankingScore=0;generated.baseQualified=true;generated.hardConstraintsPassed=true;
+        generated.exploratory=false;generated.structureQualified=true;
+        GeneratedCandidateMetadata generatedMetadata{"g13-smoke-v1","smoke-prior","CC0-1.0","conventional",
+            "Smoke evidence: complete phrase plan from the supplied style prior.",{}};
+        for(const auto& event:generated.continuation){
+            const auto pitches=event.harmonicData?chordPitches(*event.harmonicData):chordPitches(event.label,event.quality);
+            generatedMetadata.bassMidi.push_back(36+pitches.bass);
+        }
+        generated.generated=std::move(generatedMetadata);
+        const auto generatedIndex=generatedRecommendations.groups[1].size();
+        generatedRecommendations.groups[1].push_back(generated);
+        auto generatedOrder=mixedInspirationOrder(savedRec);
+        const auto insertion=generatedOrder.begin()+std::min<std::size_t>(3,generatedOrder.size());
+        generatedOrder.insert(insertion,{1,generatedIndex});generatedRecommendations.inspirationOrder=std::move(generatedOrder);
+        setRecommendations(generatedRecommendations);browsePages_[6]=0;compactScroll_=0;compactSelected_.clear();
+        const auto& generatedRows=browseRows();
+        const auto generatedRow=std::find_if(generatedRows.begin(),generatedRows.end(),[&](const auto& row){
+            return recommendations_.groups[row.group][row.index].id==generated.id;
+        });
+        require(generatedRow!=generatedRows.end(),"generated candidate appears in full Inspiration list");
+        if(capture)capture("generated-rows");
+        const auto generatedRank=static_cast<std::size_t>(generatedRow-generatedRows.begin());
+        require(generatedRank==std::min<std::size_t>(3,oldTop.size())&&!generatedRow->priority,
+            "generated card follows the existing Top 3");
+        for(std::size_t i=0;i<oldTop.size();++i){
+            const auto& row=generatedRows[i];
+            require(recommendations_.groups[row.group][row.index].id==oldTop[i].first&&row.priority==oldTop[i].second,
+                "generated card preserves the original Top 3 order and badges");
+        }
+        const auto firstPageSize=browseFirstPageSize(6,recommendations_);
+        const auto generatedPage=browsePage(generatedRows.size(),browsePageIndex(generatedRank,firstPageSize),firstPageSize);
+        require(generatedRank>=generatedPage.begin&&generatedRank<generatedPage.end,
+            "generated candidate remains reachable through existing Inspiration pagination");
+        require(browseName(*generatedRow)==generatedCandidateLabel(generated,state_.locale),
+            "generated card identifies its algorithm and variation");
+        const auto generatedWhyText=generatedWhy(generated,state_.locale);
+        require(generatedWhyText.find(generated.generated->explanation)!=std::string::npos&&
+            generatedWhyText.find(generated.generated->priorId)!=std::string::npos&&
+            generatedWhyText.find(generated.generated->priorLicense)!=std::string::npos,
+            "generated Why shows its explanation and prior license");
+        const auto overviewText=recommendationListText();
+        const auto generatedIdText="id="+generated.id;const auto generatedIdPosition=overviewText.find(generatedIdText);
+        require(generatedIdPosition!=std::string::npos,"complete list contains generated ID");
+        const auto generatedLineStart=overviewText.rfind('\n',generatedIdPosition);
+        const auto generatedLineEnd=overviewText.find('\n',generatedIdPosition);
+        const auto generatedLine=overviewText.substr(generatedLineStart==std::string::npos?0:generatedLineStart+1,
+            (generatedLineEnd==std::string::npos?overviewText.size():generatedLineEnd)-(generatedLineStart==std::string::npos?0:generatedLineStart+1));
+        require(generatedLine.find(generated.generated->explanation)!=std::string::npos&&
+            generatedLine.find(generated.generated->priorLicense)!=std::string::npos,
+            "complete list shows generated explanation and license");
+        require(generatedLine.find("source=")==std::string::npos,"generated list entry does not expose an empty template source");
+        if(capture)capture("generated-metadata");
+        state_.inspirationPriority=false;compactGroup_=1;browseDirty_=true;
+        require(std::none_of(browseRows().begin(),browseRows().end(),[&](const auto& row){
+            return recommendations_.groups[row.group][row.index].id==generated.id;
+        }),"generated card stays out of the regular Develop list");
+        state_.inspirationPriority=true;compactGroup_=0;browseDirty_=true;
+        const auto route=continuationRoute(generated);
+        require(route&&route.candidate.generated&&route.imported.revision==state_.imported.revision,
+            "generated route uses the current imported input without a Factory source");
+        const auto generatedSequence=preview::buildSequence(route.imported,&route.candidate,preview::defaultTempoBPM);
+        require(generatedSequence&&generatedSequence.sequence.events.size()==state_.imported.events.size()+generated.continuation.size(),
+            "generated full phrase builds through the existing preview path");
+        if(capture)capture("generated-route");
+        actions_.audition=[](const auto&){};
+        actions_.midiPayload=[](const auto&){return midi::PayloadResult{{},{}};};
+        focusBrowseEntry(generatedRank);paint();
+        const auto generatedActionEnabled=[&](CompactAction action){return std::any_of(compactHits_.begin(),compactHits_.end(),[&](const auto& hit){
+            return hit.action==action&&hit.id==generated.id&&hit.enabled;
+        });};
+        require(generatedActionEnabled(CompactAction::Audition)&&generatedActionEnabled(CompactAction::Midi),
+            "generated card keeps Preview and MIDI enabled with an empty primaryTemplate");
+        if(capture)capture("generated-paint");
+        state_.productMode=previousMode;state_.inspirationPriority=previousInspiration;state_.intent=previousIntent;
+        compactGroup_=0;browseDirty_=true;
         setRecommendations(savedRec);matches_=savedMatches;compactSelected_.clear();browsePages_.fill(0);compactScroll_=0;
         std::size_t selectedGroup{};for(std::size_t g=0;g<4;++g)if(savedRec.groups[g].size()>savedRec.groups[selectedGroup].size())selectedGroup=g;
         compactGroup_=selectedGroup;paint();const auto count=browseRows().size();require(count>0,"actual list empty");
@@ -1358,7 +1484,7 @@ bool MainView::runG7UiSmoke(CDrawContext* dc,const std::function<void(const std:
         require(!order.empty(),"mixed inspiration bank has candidates");
         const auto& rows=browseRows();
         require(rows.size()==order.size(),"mixed browser keeps the prepared full order");
-        const auto firstLimit=inspirationFirstPageSize(recommendations_);
+        const auto firstLimit=browseFirstPageSize(6,recommendations_);
         const auto topLimit=std::min<std::size_t>(3,firstLimit);
         std::size_t markedTop{},expectedTop{};
         for(std::size_t i=0;i<order.size();++i){

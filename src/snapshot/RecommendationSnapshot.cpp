@@ -131,6 +131,16 @@ std::optional<double> optionalDouble(const Value& value) {return value.kind==Val
 std::optional<std::int32_t> optionalInt(const Value& value) {return value.kind==Value::Kind::Null?std::nullopt:std::optional(static_cast<std::int32_t>(value.integer(-100000,100000)));}
 std::optional<PitchClass> optionalPitch(const Value& value) {return value.kind==Value::Kind::Null?std::nullopt:std::optional(static_cast<PitchClass>(value.integer(0,11)));}
 std::optional<std::string> optionalString(const Value& value) {return value.kind==Value::Kind::Null?std::nullopt:std::optional(value.text());}
+constexpr std::size_t maxGeneratorVersionBytes=128;
+constexpr std::size_t maxPriorIdBytes=256;
+constexpr std::size_t maxPriorLicenseBytes=2048;
+constexpr std::size_t maxVariationBytes=128;
+constexpr std::size_t maxGeneratedExplanationBytes=16384;
+const std::string& boundedText(const Value& value,std::size_t maximum) {
+    const auto& result=value.text();
+    if(result.size()>maximum)throw std::runtime_error("generated metadata string too long");
+    return result;
+}
 void keyOut(std::ostream& out,KeySignature key) {out << '[' << static_cast<int>(key.tonic) << ',' << static_cast<int>(key.mode) << ']';}
 KeySignature keyIn(const Value& value) {
     const auto& pair=value.list(); if (pair.size()!=2) throw std::runtime_error("invalid snapshot key");
@@ -145,6 +155,22 @@ void validate(const RecommendationSnapshot& s) {
         !std::isfinite(s.tempoBPM)||s.tempoBPM<20||s.tempoBPM>400||
         !std::isfinite(s.candidate.rankingScore)||s.candidate.rankingScore<0||s.candidate.rankingScore>100)
         throw std::runtime_error("invalid snapshot data");
+    if(s.candidate.generated) {
+        const auto& generated=*s.candidate.generated;
+        if(generated.generatorVersion.empty()||generated.generatorVersion.size()>maxGeneratorVersionBytes||
+           generated.priorId.empty()||generated.priorId.size()>maxPriorIdBytes||
+           generated.priorLicense.empty()||generated.priorLicense.size()>maxPriorLicenseBytes||
+           generated.variation.empty()||generated.variation.size()>maxVariationBytes||
+           generated.explanation.size()>maxGeneratedExplanationBytes||
+           s.candidate.continuation.empty()||generated.bassMidi.size()!=s.candidate.continuation.size())
+            throw std::runtime_error("invalid generated snapshot metadata");
+        for(std::size_t i=0;i<s.candidate.continuation.size();++i) {
+            const auto& event=s.candidate.continuation[i];
+            const int bass=generated.bassMidi[i];
+            if(!event.harmonicData||bass<0||bass>127||chordPitches(*event.harmonicData).bass!=bass%12)
+                throw std::runtime_error("invalid generated snapshot bass or chord data");
+        }
+    }
     const auto preview=preview::buildSequence(s.imported,&s.candidate,s.tempoBPM);
     if (!preview) throw std::runtime_error(preview.error);
 }
@@ -170,7 +196,7 @@ RecommendationSnapshot capture(const ImportedProgressionSession& imported,const 
 }
 std::string serialize(const RecommendationSnapshot& input) {
     auto s=input;s.schemaVersion=RecommendationSnapshot::currentSchemaVersion;
-    if(s.factoryLibraryVersion>=3) {
+    if(!s.candidate.generated&&s.factoryLibraryVersion>=3) {
         auto& c=s.candidate;
         if(c.id==c.primaryTemplate)c.id=library::canonicalFactoryId(c.id);
         c.primaryTemplate=library::canonicalFactoryId(c.primaryTemplate);
@@ -215,7 +241,21 @@ std::string serialize(const RecommendationSnapshot& input) {
     optNumber(out,c.suggestedCurrentChordDurationQN);
     out << ",\"sources\":[";
     for (std::size_t i=0;i<c.supportingTemplates.size();++i) { if (i) out<<','; quoted(out,c.supportingTemplates[i]); }
-    out << "],\"continuation\":[";
+    out << "],\"source\":";quoted(out,c.generated?"generated":"library");
+    out << ",\"generated\":";
+    if(!c.generated)out<<"null";
+    else {
+        const auto& generated=*c.generated;
+        out<<"{\"generatorVersion\":";quoted(out,generated.generatorVersion);
+        out<<",\"priorId\":";quoted(out,generated.priorId);
+        out<<",\"priorLicense\":";quoted(out,generated.priorLicense);
+        out<<",\"variation\":";quoted(out,generated.variation);
+        out<<",\"explanation\":";quoted(out,generated.explanation);
+        out<<",\"bassMidi\":[";
+        for(std::size_t i=0;i<generated.bassMidi.size();++i){if(i)out<<',';out<<generated.bassMidi[i];}
+        out<<"]}";
+    }
+    out << ",\"continuation\":[";
     for (std::size_t i=0;i<c.continuation.size();++i) {
         if (i) out<<',';
         const auto& e=c.continuation[i];
@@ -293,6 +333,23 @@ DecodeResult deserialize(std::string_view input,const library::LoadResult* activ
         c.supportCount=candidate.at("supportCount").integer(1,100000);
         c.suggestedCurrentChordDurationQN=optionalDouble(candidate.at("suggestedCurrentQN"));
         for(const auto& id:candidate.at("sources").list()) c.supportingTemplates.push_back(id.text());
+        if(s.schemaVersion>=4) {
+            const auto& source=candidate.at("source").text();
+            const auto& metadata=candidate.at("generated");
+            if(source=="generated") {
+                if(metadata.kind!=Value::Kind::Object)throw std::runtime_error("missing generated snapshot metadata");
+                GeneratedCandidateMetadata generated;
+                generated.generatorVersion=boundedText(metadata.at("generatorVersion"),maxGeneratorVersionBytes);
+                generated.priorId=boundedText(metadata.at("priorId"),maxPriorIdBytes);
+                generated.priorLicense=boundedText(metadata.at("priorLicense"),maxPriorLicenseBytes);
+                generated.variation=boundedText(metadata.at("variation"),maxVariationBytes);
+                generated.explanation=boundedText(metadata.at("explanation"),maxGeneratedExplanationBytes);
+                for(const auto& value:metadata.at("bassMidi").list())generated.bassMidi.push_back(value.integer(0,127));
+                c.generated=std::move(generated);
+            } else if((source!="library"&&source!="factory")||metadata.kind!=Value::Kind::Null) {
+                throw std::runtime_error("invalid snapshot candidate source");
+            }
+        }
         for(const auto& item:candidate.at("continuation").list()) {
             ConcreteChordEvent e; e.label=item.at("label").text(); e.durationQN=item.at("durationQN").finite();
             e.degree.degree=item.at("degree").integer(0,7); e.degree.alteration=item.at("alteration").integer(-12,12);
@@ -363,6 +420,7 @@ bool saveFile(const RecommendationSnapshot& s,const std::filesystem::path& path,
     } catch(const std::exception& e) {error=e.what();return false;}
 }
 void restoreFactoryReferences(RecommendationSnapshot& s,const library::LoadResult& active) {
+    if(s.candidate.generated){s.candidateAvailable=true;return;}
     if(!active||active.libraryVersion<1){s.candidateAvailable=false;return;}
     s.factoryLibraryVersion=active.libraryVersion;
     const auto primary=library::resolveFactoryId(s.candidate.primaryTemplate,active.templates);

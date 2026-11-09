@@ -236,11 +236,18 @@ BuildResult buildSequence(const ImportedProgressionSession& imported,const Conti
         end=std::max(end,start+duration);
     }
     out.recommendationBoundary=out.events.size();
+    std::size_t generatedIndex{};
+    if(candidate&&candidate->generated&&candidate->generated->bassMidi.size()!=candidate->continuation.size()){result.error="incomplete generated bass plan";return result;}
     if (candidate) for (const auto& e:candidate->continuation) {
         if (!durationOK(e.durationQN)) { result.error="invalid continuation duration"; result.sequence={}; return result; }
         auto chord=e.harmonicData?convert(*e.harmonicData):chordFromLabel(e.label,e.quality);
         if (chord.root<0 || chord.intervals==0) { result.error="unsupported continuation chord: "+e.label; result.sequence={}; return result; }
         out.events.push_back({std::move(chord),end,e.durationQN,Segment::Recommended});
+        if(candidate->generated){
+            const int bass=candidate->generated->bassMidi[generatedIndex++];
+            if(bass<0||bass>127||bass%12!=out.events.back().chord.bass){result.error="invalid generated bass plan";return result;}
+            out.events.back().bassMidi=bass;
+        }
         end+=e.durationQN;
     }
     out.totalQN=end;

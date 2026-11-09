@@ -63,7 +63,13 @@ struct HarmonicDevelopmentEvidence {
     int commonTones{}, bassClassStep{}, maximumClassMotion{};
     float meanClassMotion{}, coherence{}, novelty{}, repetition{}, tensionChange{}, paletteChange{};
 };
+struct GeneratedCandidateMetadata {
+    std::string generatorVersion, priorId, priorLicense, variation, explanation;
+    std::vector<int> bassMidi;
+};
 struct ContinuationCandidate {
+    std::optional<GeneratedCandidateMetadata> generated; // independent algorithmic source, never a Factory ID
+
     std::string id;
     TemplateID primaryTemplate;
     PhraseIntent intent{PhraseIntent::Neutral};

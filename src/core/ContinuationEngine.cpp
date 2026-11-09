@@ -118,6 +118,7 @@ std::string continuationMusicFingerprint(const ContinuationCandidate& candidate)
             out<<melody.startQN-candidate.sourceAnchorQN<<' '<<melody.durationQN<<' '<<melody.pitch.value_or(-1)<<' '
                 <<melody.pitchClass<<' '<<int(melody.role)<<' '<<int(melody.strictness)<<';';
     }
+    if(candidate.generated){out<<"|generated-bass:";for(int note:candidate.generated->bassMidi)out<<note<<',';}
     return out.str();
 }
 

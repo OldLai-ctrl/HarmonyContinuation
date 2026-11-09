@@ -1,9 +1,34 @@
 #pragma once
 #include "ColorHint.h"
 #include "color/ColorPreferenceReranker.h"
+#include <string>
 
 namespace harmony::ui {
 struct WhyExplanation {std::vector<std::string> sentences;};
+inline std::string generatedVariationLabel(const ContinuationCandidate& candidate,session::Locale locale) {
+    if(!candidate.generated)return {};
+    const bool zh=locale==session::Locale::ZhCN;
+    const auto& variation=candidate.generated->variation;
+    if(variation=="conventional")return zh?"常规":"Conventional";
+    if(variation=="rich")return zh?"丰富":"Rich";
+    if(variation=="bold")return zh?"大胆":"Bold";
+    return variation;
+}
+inline std::string generatedCandidateLabel(const ContinuationCandidate& candidate,session::Locale locale) {
+    if(!candidate.generated)return {};
+    return std::string(locale==session::Locale::ZhCN?"算法生成 · ":"Algorithm-generated · ")+generatedVariationLabel(candidate,locale);
+}
+inline std::string generatedWhy(const ContinuationCandidate& candidate,session::Locale locale) {
+    if(!candidate.generated)return {};
+    const bool zh=locale==session::Locale::ZhCN;
+    std::string out=generatedCandidateLabel(candidate,locale);
+    if(!candidate.generated->explanation.empty())out+=" · "+candidate.generated->explanation;
+    if(!candidate.generated->priorId.empty()||!candidate.generated->priorLicense.empty()) {
+        out+=zh?"。先验：":". Prior: ";out+=candidate.generated->priorId;
+        if(!candidate.generated->priorLicense.empty())out+=" · "+candidate.generated->priorLicense;
+    }
+    return out;
+}
 inline std::string realizationWhy(const ContinuationCandidate& candidate,session::Locale locale) {
     bool bass=false,tones=false;
     for(const auto& event:candidate.continuation)if(event.harmonicData){

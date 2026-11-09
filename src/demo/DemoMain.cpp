@@ -17,6 +17,7 @@
 #include "vstgui/lib/platform/platformfactory.h"
 #include "vstgui/lib/platform/win32/win32factory.h"
 #include <windows.h>
+#include <ole2.h>
 #include <commctrl.h>
 #include <shellapi.h>
 #include <commdlg.h>
@@ -110,14 +111,27 @@ public:
     }
     void simulateScale(double scale) { if(main_)main_->setSimulatedContentScale(scale); }
     bool zoomSmoke(std::uint32_t percent) {if(!main_)return false;main_->setUserZoom(percent);return main_->runZoomSmoke();}
-    bool midiWorkflowSmoke(const std::filesystem::path& fixture) {
+    bool midiWorkflowSmoke(const std::filesystem::path& fixture,std::ostream* progress=nullptr,bool generatedOnly=false) {
+        const auto stage=[&](const char* text){if(progress){*progress<<text<<std::endl;}};
+        if(generatedOnly&&!fixture.empty()){
+            stage("importing focused MIDI fixture");importMidi(false,fixture);if(!waitImportForSmoke())return false;
+        }
+        stage("waiting for recommendations");
         if(!main_||!waitRecommendationsForSmoke())return false;
+        if(generatedOnly&&progress){
+            std::istringstream diagnostics(main_->recommendationUiDiagnostics());std::string line;
+            for(int i=0;i<13&&std::getline(diagnostics,line);++i)*progress<<line<<'\n';
+            progress->flush();
+        }
         const auto size=main_->getViewSize();
         const auto width=std::max(1,static_cast<int>(std::ceil(size.getWidth())));
         const auto height=std::max(1,static_cast<int>(std::ceil(size.getHeight())));
         const auto context=VSTGUI::COffscreenContext::create({double(width),double(height)});
-        if(!context||!main_->runCompactSmoke(context.get())||!main_->runBrowseSmoke(context.get()))return false;
-        if(fixture.empty())return true;
+        if(!context)return false;
+        if(!generatedOnly){stage("starting legacy compact smoke");if(!main_->runCompactSmoke(context.get()))return false;}
+        stage("starting browse smoke");if(!main_->runBrowseSmoke(context.get(),[&](const std::string& name){stage(name.c_str());}))return false;
+        stage("browse smoke finished");
+        if(generatedOnly||fixture.empty())return true;
         importMidi(false,fixture);if(!waitImportForSmoke())return false;if(state_.imported.events.size()!=4||state_.imported.events.back().openEnded||!state_.constraints.melody.empty())return false;
         const auto before=session::serialize(state_);importMidi(false,fixture.parent_path()/"missing.mid");if(!waitImportForSmoke())return false;
         if(session::serialize(state_)!=before)return false;
@@ -215,7 +229,7 @@ public:
             if (main_) { main_->setAnalysis(analysis_); main_->setMatches(activeRecommendations().matches,
                 result->error.empty()?"Ready":result->error); main_->setRecommendations(activeRecommendations());
                 main_->setEnrichments(enrichments_);
-                main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount); }
+                main_->setWorkerStatus(result->generation,result->computationMs,false,result->factoryCount,result->userCount,true); }
             if(main_&&!midiImportSummary_.empty()){main_->setActionStatus(midiImportSummary_+" · "+std::string(localization::text(state_.locale,"midi.key"))+" "+
                 (analysis_.selectedKey?formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();}
             }
@@ -762,6 +776,10 @@ LRESULT CALLBACK windowProc(HWND hwnd,UINT message,WPARAM w,LPARAM l) {
 }
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
+    // The standalone app owns its UI-thread COM apartment. VSTGUI creates
+    // its WIC bitmap factory during init, before any offscreen smoke drawing.
+    if(FAILED(OleInitialize(nullptr)))return 12;
+    struct OleScope {~OleScope(){OleUninitialize();}} oleScope;
     VSTGUI::init(instance);
     INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_BAR_CLASSES}; InitCommonControlsEx(&controls);
     WNDCLASSW wc{}; wc.lpfnWndProc=windowProc; wc.hInstance=instance; wc.lpszClassName=L"HarmonyContinuationDemoWindow";
@@ -791,6 +809,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
     int argc{}; auto args=CommandLineToArgvW(GetCommandLineW(),&argc);
     char initial='D'; int requestedWidth=1100,requestedHeight=900; double scale=1;
     std::filesystem::path resizeSmokeReport,benchmarkSmokeReport,zoomSmokeReport,midiSmokeReport,midiSmokeInput;
+    bool generatedUiSmoke{};
     std::string initialBenchmarkId;
     for (int i=1;i<argc;++i) {
         const std::wstring_view key(args[i]);
@@ -798,6 +817,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
         else if(key==L"--benchmark-case"&&i+1<argc){benchmarkMode=true;initialBenchmarkId=utf8(args[++i]);}
         else if(key==L"--benchmark-smoke"&&i+1<argc){benchmarkMode=true;benchmarkSmokeReport=args[++i];}
         else if(key==L"--zoom-smoke"&&i+1<argc)zoomSmokeReport=args[++i];
+        else if(key==L"--g13c-ui-smoke"&&i+1<argc){generatedUiSmoke=true;midiSmokeReport=args[++i];}
         else if(key==L"--midi-workflow-smoke"&&i+1<argc)midiSmokeReport=args[++i];
         else if(key==L"--midi-smoke-input"&&i+1<argc)midiSmokeInput=args[++i];
         else if (key==L"--case" && i+1<argc && wcslen(args[i+1])==1)initial=static_cast<char>(args[++i][0]);
@@ -890,10 +910,10 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int show) {
         DestroyWindow(hwnd);VSTGUI::exit();return 0;
     }
     if(!midiSmokeReport.empty()) {
-        std::ofstream report(midiSmokeReport,std::ios::trunc);const bool okay=report&&app->midiWorkflowSmoke(midiSmokeInput);
-        report<<"Actual-data compact and paged-browse offscreen smoke "<<(okay?"PASS":"FAIL")<<'\n';
+        std::ofstream report(midiSmokeReport,std::ios::trunc);const bool okay=report&&app->midiWorkflowSmoke(midiSmokeInput,&report,generatedUiSmoke);
+        report<<(generatedUiSmoke?"G13C generated candidate paging/source/operations smoke ":"Actual-data compact and paged-browse offscreen smoke ")<<(okay?"PASS":"FAIL")<<'\n';
         report<<"Fixture MIDI complete/open projection and failed-import state preservation "
-              <<(midiSmokeInput.empty()?"SKIP":okay?"PASS":"FAIL")<<'\n';
+              <<(generatedUiSmoke||midiSmokeInput.empty()?"SKIP":okay?"PASS":"FAIL")<<'\n';
         DestroyWindow(hwnd);VSTGUI::exit();return okay?0:10;
     }
     if(!resizeSmokeReport.empty()) {

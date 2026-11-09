@@ -121,6 +121,7 @@ snapshot::RecommendationSnapshot oldSnapshot(std::string id) {
 }
 std::string oldJson(const snapshot::RecommendationSnapshot& s) {
     auto json=benchmark::json::parse(snapshot::serialize(s));json.object["schemaVersion"]=2;
+    json.object["candidate"].object.erase("source");json.object["candidate"].object.erase("generated");
     json.object.erase("factoryLibraryVersion");json.object.erase("chordData");
     for(auto& event:json.object["candidate"].object["continuation"].array)event.object.erase("harmonicData");
     return benchmark::json::dump(json);
@@ -135,7 +136,7 @@ void snapshots(const fs::path& root) {
         check(back&&back.value.candidate.primaryTemplate==m.requested,"Library2 -> 3 -> 2 restores old reference");
         const auto written=snapshot::serialize(b.value);check(written.find(m.requested)==std::string::npos,"V3 snapshot canonical IDs only");
         const auto newer=snapshot::deserialize(written,&v3),newOld=snapshot::deserialize(written,&v2);
-        check(newer&&newer.value.schemaVersion==3&&newer.value.candidateAvailable,"new snapshot + Library3");
+        check(newer&&newer.value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion&&newer.value.candidateAvailable,"new snapshot + Library3");
         check(newOld&&newOld.value.candidateAvailable,"new snapshot + Library2 canonical entry");
     }
     auto missing=oldSnapshot("V3_ONLY_FIXTURE");missing.factoryLibraryVersion=3;

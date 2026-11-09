@@ -6,7 +6,7 @@
 
 namespace harmony::snapshot {
 struct RecommendationSnapshot {
-    static constexpr int currentSchemaVersion=3;
+    static constexpr int currentSchemaVersion=4;
     int schemaVersion{currentSchemaVersion};
     std::string productVersion;
     ImportedProgressionSession imported;

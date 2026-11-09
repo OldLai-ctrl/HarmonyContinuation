@@ -1,4 +1,5 @@
 #include "RecommendationWorker.h"
+#include "generation/ProductGeneration.h"
 #include "core/ContextualContinuation.h"
 #include "core/RecommendationPolicy.h"
 #include "library/LibraryStore.h"
@@ -273,6 +274,10 @@ void RecommendationWorker::run() {
                         }
                         result.recommendations.inspirationOrder=mixedInspirationOrder(result.recommendations);
                     } else result.recommendations=recommendContinuations(*cachedQuery,*index,task.request,weights);
+                    if(task.request.prepareBothViews||task.request.inspirationPriority) {
+                        const auto cancelled=[&]{std::lock_guard lock(mutex_);return stop_||task.generation!=generation_;};
+                        generation::appendProductGeneration(result.recommendations,task.progression,task.context,task.request,cancelled);
+                    }
                 } else result.error = index ? "推荐查询不可用。" : loadError;
             } else result.error = "超过 128 个和弦；推荐暂不计算。";
         } catch (const std::exception& e) { result.error = e.what(); }

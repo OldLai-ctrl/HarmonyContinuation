@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <array>
 #include <filesystem>
+#include <functional>
+#include <string_view>
 #include <optional>
 #include <string>
 #include <vector>
@@ -26,6 +28,7 @@ struct StylePrior {
     std::vector<StylePosition> positions;
     std::vector<StyleQualityTransition> qualityTransitions;
 };
+StylePrior parseStylePrior(std::string_view);
 StylePrior loadStylePrior(const std::filesystem::path&); // bounded TSV; throws on invalid evidence
 struct PlannedSlot {
     double durationQN{};
@@ -72,6 +75,8 @@ struct SuccessorContext {
 std::vector<Relation> successors(const SuccessorContext&,RelationKind);
 
 struct GenerationRequest {
+    std::function<bool()> cancelled; // worker generation token, checked outside audio thread
+
     Progression input;
     AnalysisContext context;
     HarmonyConstraintSet constraints; // absolute QN, same convention as Preview

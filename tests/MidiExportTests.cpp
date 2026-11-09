@@ -239,14 +239,54 @@ int main() {
         check(decoded && decoded.value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion&&!decoded.value.productVersion.empty()&&
             decoded.value.candidate.continuation.size()==2&&
             decoded.value.match&&decoded.value.match->alignmentTrace.size()==1,"snapshot round trip");
-        auto future=json;const auto pos=future.find("\"schemaVersion\":3");check(pos!=std::string::npos,"version field present");
-        future[pos+16]='4';check(snapshot::deserialize(future).error=="UnsupportedVersion","future snapshot rejected");
+        const auto pos=json.find("\"schemaVersion\":");check(pos!=std::string::npos,"version field present");
+        auto future=json;future.replace(pos+16,1,"5");check(snapshot::deserialize(future).error=="UnsupportedVersion","future snapshot rejected");
+        auto schema3=json;schema3.replace(pos+16,1,"3");
+        const auto schema4Fields=schema3.find(",\"source\":\"library\",\"generated\":null");
+        if(schema4Fields!=std::string::npos)schema3.erase(schema4Fields,std::string(",\"source\":\"library\",\"generated\":null").size());
+        const auto restored3=snapshot::deserialize(schema3);
+        check(restored3&&restored3.value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion,
+              "schema 3 snapshot migrates and remains readable");
         auto legacy=json;legacy[pos+16]='1';
         const auto versionField=legacy.find(",\"productVersion\":");
         const auto tempoField=legacy.find(",\"tempoBPM\":",versionField);
         check(versionField!=std::string::npos&&tempoField!=std::string::npos,"legacy field layout");
         legacy.erase(versionField,tempoField-versionField);
         check(snapshot::deserialize(legacy).value.schemaVersion==snapshot::RecommendationSnapshot::currentSchemaVersion,"v1 snapshot migrates and remains readable");
+        ContinuationCandidate generated=candidate;generated.id="generated:prior:rich";generated.primaryTemplate="prior-source";
+        generated.supportingTemplates.clear();ConcreteChordEvent generatedEvent;generatedEvent.label="G7/B";
+        generatedEvent.durationQN=1.5;generatedEvent.quality=ChordQuality::Dominant7;
+        generatedEvent.harmonicData=chord("G7/B",0,1.5);generated.continuation={generatedEvent};
+        generated.generated=GeneratedCandidateMetadata{"g13-test","prior-source","CC0-1.0","Rich","planned variation",{47}};
+        auto generatedSnapshot=snapshot::capture(input,generated,{},120,4,4);
+        generatedSnapshot.factoryLibraryVersion=8;
+        const auto generatedJson=snapshot::serialize(generatedSnapshot);
+        library::LoadResult unavailableFactory;unavailableFactory.error="factory unavailable";
+        const auto generatedRead=snapshot::deserialize(generatedJson,&unavailableFactory);
+        check(generatedRead&&generatedRead.value.candidateAvailable&&generatedRead.value.candidate.id==generated.id&&
+              generatedRead.value.candidate.primaryTemplate==generated.primaryTemplate&&generatedRead.value.candidate.generated&&
+              generatedRead.value.candidate.generated->generatorVersion=="g13-test"&&
+              generatedRead.value.candidate.generated->priorLicense=="CC0-1.0"&&
+              generatedRead.value.candidate.generated->bassMidi==std::vector<int>{47}&&
+              generatedRead.value.candidate.continuation.front().durationQN==1.5&&
+              continuationMusicFingerprint(generatedRead.value.candidate)==continuationMusicFingerprint(generated),
+              "generated snapshot keeps provenance, bass, timing and identity without Factory");
+        const auto rejectGenerated=[&](std::string malformed,const char* what){
+            check(!snapshot::deserialize(malformed),what);
+        };
+        auto badBass=generatedJson;const auto bassField=badBass.find("\"bassMidi\":[47]");
+        check(bassField!=std::string::npos,"generated bass field present");
+        badBass.replace(bassField,std::string("\"bassMidi\":[47]").size(),"\"bassMidi\":[128]");
+        rejectGenerated(std::move(badBass),"generated bass range validated");
+        auto mismatchedBass=generatedJson;const auto matchingBass=mismatchedBass.find("\"bassMidi\":[47]");
+        check(matchingBass!=std::string::npos,"generated bass field present for mismatch check");
+        mismatchedBass.replace(matchingBass,std::string("\"bassMidi\":[47]").size(),"\"bassMidi\":[46]");
+        rejectGenerated(std::move(mismatchedBass),"generated bass must match chord bass");
+        auto longMetadata=generatedJson;const auto generatorField=longMetadata.find("\"generatorVersion\":\"g13-test\"");
+        check(generatorField!=std::string::npos,"generated metadata field present");
+        longMetadata.replace(generatorField,std::string("\"generatorVersion\":\"g13-test\"").size(),
+            "\"generatorVersion\":\""+std::string(129,'g')+"\"");
+        rejectGenerated(std::move(longMetadata),"generated metadata length bounded");
         const auto path=std::filesystem::path(HC_TEST_OUTPUT_DIR)/"midi-test-snapshot.hcrec.json";
         std::string error;check(snapshot::saveFile(snap,path,error),"snapshot file save");
         check(static_cast<bool>(snapshot::loadFile(path)),"snapshot file load");std::filesystem::remove(path);

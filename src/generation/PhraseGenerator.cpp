@@ -258,7 +258,12 @@ const char* name(VariationLevel level) noexcept {
 }
 StylePrior loadStylePrior(const std::filesystem::path& file) {
     if(std::filesystem::file_size(file)>4*1024*1024)throw std::runtime_error("Style prior exceeds bounded 4 MiB input.");
-    std::ifstream in(file);if(!in)throw std::runtime_error("Cannot open style prior.");StylePrior prior;std::string line;std::size_t rows{};
+    std::ifstream in(file);if(!in)throw std::runtime_error("Cannot open style prior.");
+    return parseStylePrior(std::string((std::istreambuf_iterator<char>(in)),{}));
+}
+StylePrior parseStylePrior(std::string_view text) {
+    if(text.size()>4*1024*1024)throw std::runtime_error("Style prior exceeds bounded 4 MiB input.");
+    std::istringstream in{std::string(text)};StylePrior prior;std::string line;std::size_t rows{};
     while(std::getline(in,line)){if(!line.empty()&&line.back()=='\r')line.pop_back();if(line.empty()||line[0]=='#')continue;
         std::vector<std::string> fields;std::istringstream s(line);std::string field;while(std::getline(s,field,'\t'))fields.push_back(field);
         if(fields.empty())continue;if(++rows>50000)throw std::runtime_error("Style prior row bound exceeded.");
@@ -466,6 +471,7 @@ GenerationResult generate(const GenerationRequest& request) {
         for(const auto& e:heard)initial.lastVoicing=initial.voicer.voice(chordPitches(e));
         std::vector<Node> beam{initial};
         for(std::size_t depth=0;depth<plan.size()&&!beam.empty();++depth) {
+            if(request.cancelled&&request.cancelled()){result.error="Generation cancelled.";return finish();}
             std::vector<Node> next;std::set<std::string> identities;
             for(const auto& node:beam) {
                 Progression recent=heard;recent.insert(recent.end(),node.phrase.begin(),node.phrase.end());

@@ -83,7 +83,9 @@ PreparedPreviewResult preparePreview(const Sequence& sequence, PreviewScope scop
 
         // Voice the complete route in order. Suffix clipping must retain the same
         // voice-leading decision as the corresponding event in a full preview.
-        const auto voicing = voicer.voice(event.chord, event.topVoice);
+        const auto realized=voiceEvent(event,voicer);
+        if(!realized)return fail("unplayable preview bass/voice plan");
+        const auto& voicing=*realized;
         const auto clippedStart = std::max(eventStart, rangeStart);
         const auto clippedEnd = std::min(eventEnd, rangeEnd);
         if (clippedEnd <= clippedStart) continue;

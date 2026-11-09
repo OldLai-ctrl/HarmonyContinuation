@@ -3406,7 +3406,7 @@ int runV7IntegrationSmoke(const std::filesystem::path& factoryPath,
 int main(int argc, char** argv) {
     static_assert(library::factorySchemaVersion == 2);
     static_assert(library::userSchemaVersion == 2);
-    static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 3);
+    static_assert(snapshot::RecommendationSnapshot::currentSchemaVersion == 4);
     static_assert(session::PluginSessionState::currentSchemaVersion == 5);
     if (argc > 1 && std::string_view(argv[1]) == "--g6-focused") {
         try {

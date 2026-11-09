@@ -972,6 +972,14 @@ preview::SourceRouteResult MainView::continuationRoute(const ContinuationCandida
         if(currentWishCandidate(candidate))return wishItem(candidate.id)->route;
         preview::SourceRouteResult result;result.error="祈愿结果已更新，请重新选择";return result;
     }
+    if(candidate.generated) {
+        preview::SourceRouteResult result;result.imported=state_.imported;result.candidate=candidate;
+        result.meterNumerator=state_.meterNumerator.value_or(4);
+        result.meterDenominator=state_.meterDenominator.value_or(4);
+        const auto checked=preview::buildSequence(result.imported,&result.candidate,preview::defaultTempoBPM);
+        if(!checked)result.error=checked.error;
+        return result;
+    }
     if(snapshotMode_) {
         preview::SourceRouteResult result;result.imported=state_.imported;result.candidate=candidate;
         result.meterNumerator=state_.meterNumerator.value_or(4);
@@ -2240,7 +2248,9 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         add(state_.locale==session::Locale::ZhCN?"色彩曲线见主卡片详细模式":"Color curve is in the detailed result card",muted);
         paragraph(state_.forcedKey?t("key.searchFixed")+" "+formatKey(*state_.forcedKey):t("key.searchAuto"));
         add(t("key.match")+" "+formatKey(c.key),muted);
-        if(c.channel!=RecommendationChannel::Exact) {
+        if(c.generated) {
+            // Generated candidates carry their own plan and prior metadata, with no catalogue seam.
+        } else if(c.channel!=RecommendationChannel::Exact) {
             paragraph(c.provenance==ConnectionProvenance::AlgorithmAssessed?
                 (state_.locale==session::Locale::ZhCN?"跨段转接：后句为已审校原创库内乐句；接缝经算法评估，尚无独立编辑审核。":"Phrase transition: reviewed original catalogue phrase; algorithm-assessed seam, no separate editorial seam review."):
                 (state_.locale==session::Locale::ZhCN?"语境发展：保留输入末端连续和弦，续接库内同一来源的真实后段。":"Contextual continuation: contiguous terminal context followed by its actual source suffix."));
@@ -2248,7 +2258,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             if(state_.debugExpanded)paragraph(c.connectionReason);
         } else if(c.id.starts_with("g6:"))paragraph(state_.locale==session::Locale::ZhCN?
             "Snapshot3 已冻结实际演奏和后句来源 ID；来源通道与接缝元数据未持久保存。":"Snapshot3 preserves the actual performance and suffix source ID; source channel and seam metadata were not persisted.");
-        if(mixedInspiration&&!c.structureReason.empty()) {
+        if(mixedInspiration&&!c.generated&&!c.structureReason.empty()) {
             paragraph(c.structureQualified?
                 (state_.locale==session::Locale::ZhCN?"乐句连接：保持完整来源结尾，时间结构有依据；音乐接缝仍需试听判断。":"Phrase connection: source ending and timing structure supported; audition the musical seam."):
                 (state_.locale==session::Locale::ZhCN?"探索路线：共享材料或乐句边界依据不足，未作为优先的跨句发展。":"Exploratory route: shared material or phrase boundary is unproven; lower priority for cross-phrase development."));
@@ -2260,22 +2270,31 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             if(key!=formatKey(c.key)&&std::find(otherKeys.begin(),otherKeys.end(),key)==otherKeys.end())otherKeys.push_back(key);
         }
         if(!otherKeys.empty())addPath(t("key.alternatives"),otherKeys);
-        auto functional=c.exploratory?
+        auto functional=c.generated?generatedWhy(c,state_.locale):c.exploratory?
             (state_.locale==session::Locale::ZhCN?std::string("探索性续写：通过基础匹配门槛，实际音乐意图证据不足。"):
                 std::string("Exploratory continuation: passes basic matching; musical intent evidence is insufficient.")):
             functionalWhy(completion,state_.locale);
-        if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
+        if(!c.generated)if(const auto exact=realizationWhy(c,state_.locale);!exact.empty())functional+=" "+exact;
         const auto explanation=explainWhy(functional,hint,state_.locale,
             mixedInspiration?color::Preference::Off:colorPreference_,reason,promoted);
         for(const auto& sentence:explanation.sentences)paragraph(sentence);
         if(state_.debugExpanded) {
             add(t("whyV2.details"),accent);add("Fingerprint: "+session::continuationFingerprint(c),muted);
+            if(c.generated) {
+                add(generatedCandidateLabel(c,state_.locale),muted);
+                add("Generator · "+c.generated->generatorVersion,muted);
+                add((state_.locale==session::Locale::ZhCN?std::string("先验 · "):std::string("Prior · "))+
+                    c.generated->priorId+" · "+c.generated->priorLicense,muted);
+                if(!c.generated->explanation.empty())paragraph(c.generated->explanation);
+                if(!c.generated->bassMidi.empty())add((state_.locale==session::Locale::ZhCN?std::string("生成低音 · "):std::string("Generated bass · "))+
+                    bassLine(c.generated->bassMidi),muted);
+            }
             addMelody(c.melodyCompatibility);
             if(state_.tab==session::Tab::Recommend&&browseCategory()==6){
                 const bool frozenSnapshot=c.id.starts_with("g6:")&&c.channel==RecommendationChannel::Exact;
                 if(frozenSnapshot)add(state_.locale==session::Locale::ZhCN?
                     "冻结演奏 · 来源通道/接缝元数据未保存":"Frozen performance · source channel/seam metadata not saved",muted);
-                else {
+                else if(!c.generated) {
                     const auto direction=c.direction==CreativeDirection::Stable?(state_.locale==session::Locale::ZhCN?"稳定":"Stable"):
                         c.direction==CreativeDirection::Rich?(state_.locale==session::Locale::ZhCN?"丰富":"Rich"):
                         (state_.locale==session::Locale::ZhCN?"大胆":"Bold");
@@ -2286,7 +2305,7 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
                 }
             }else add(tIntent(c.intent)+" · "+formatKey(c.key)+" · "+(c.channel==RecommendationChannel::Exact?t("inspector.score"):
                 (state_.locale==session::Locale::ZhCN?std::string("通道内排序分"):std::string("Within-channel rank")))+" "+fixed(c.rankingScore,1),muted);
-            add(t("inspector.completion")+" "+fixed(completion.score,2),muted);
+            if(!c.generated)add(t("inspector.completion")+" "+fixed(completion.score,2),muted);
             Progression voiced=state_.imported.events;
             for(const auto& event:c.continuation) {
                 ChordEvent next;next.name=event.label;next.quality=event.quality;
@@ -2302,30 +2321,33 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
             for(const auto index:analysis_.skeletonIndices)if(index<analysis_.full.size())
                 skeletonNames.push_back(formatDegree(analysis_.full[index]));
             for(const auto& chord:c.continuation)continuationNames.push_back(chord.label);
-            addPath(t("inspector.user"),userNames);addPath("SKELETON",skeletonNames);
+            addPath(t("inspector.user"),userNames);
+            if(c.generated)addPath(state_.locale==session::Locale::ZhCN?"算法生成的乐句":"Generated phrase",continuationNames);
+            else addPath("SKELETON",skeletonNames);
             const auto match=std::find_if(matches_.begin(),matches_.end(),[&](const auto& m){return representativeMatch(c,m);});
-            if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
+            if(!c.generated) {
+                if(match!=matches_.end())addPath(t("inspector.matched"),match->templateLabels);
+                add(t("inspector.source")+"  "+c.primaryTemplate,muted);
+                if(c.channel==RecommendationChannel::Exact)add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
+                else add((state_.locale==session::Locale::ZhCN?std::string("连续语境和弦数 "):std::string("Contiguous context chords "))+std::to_string(c.contextLength),muted);
+                add(t("inspector.cadence")+"  "+std::string(cadenceName(c.cadence)),muted);
+                add(t("label.style")+"  "+styleFlags(c.styles),muted);
+                add(t("inspector.rhythm")+"  "+fixed(c.subscores.rhythm,2)+"   "+t("label.style")+"  "+fixed(c.subscores.style,2),muted);
+                add(t("label.intent")+"  "+fixed(c.subscores.intent,2)+"   "+t("inspector.prior")+"  "+fixed(c.subscores.prior,2),muted);
+                add(t("inspector.support")+"  "+std::to_string(c.supportCount),muted);
+                add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):t("inspector.fallback"))+" QN",muted);
 
-            add(t("inspector.source")+"  "+c.primaryTemplate,muted);
-            if(c.channel==RecommendationChannel::Exact)add(t("nav.match")+"  "+fixed(c.matchSimilarity,2),muted);
-            else add((state_.locale==session::Locale::ZhCN?std::string("连续语境和弦数 "):std::string("Contiguous context chords "))+std::to_string(c.contextLength),muted);
-            add(t("inspector.cadence")+"  "+std::string(cadenceName(c.cadence)),muted);
-            add(t("label.style")+"  "+styleFlags(c.styles),muted);
-            add(t("inspector.rhythm")+"  "+fixed(c.subscores.rhythm,2)+"   "+t("label.style")+"  "+fixed(c.subscores.style,2),muted);
-            add(t("label.intent")+"  "+fixed(c.subscores.intent,2)+"   "+t("inspector.prior")+"  "+fixed(c.subscores.prior,2),muted);
-            add(t("inspector.support")+"  "+std::to_string(c.supportCount),muted);
-            add("OPEN  "+(c.suggestedCurrentChordDurationQN?fixed(*c.suggestedCurrentChordDurationQN):t("inspector.fallback"))+" QN",muted);
-
-            if(match!=matches_.end())add("SKELETON "+fixed(match->subScores.skeletonHarmony,2)+
-                "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
-            std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
-            add(t("inspector.sources")+"  "+sources,muted);
-            for(const auto& source:c.evidence)
-                add(source.templateId+" · "+formatKey(source.key),muted);
-            if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
-                const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
-                const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");
-                add(user+"  ↔  "+templ,muted);
+                if(match!=matches_.end())add("SKELETON "+fixed(match->subScores.skeletonHarmony,2)+
+                    "  FULL "+fixed(match->subScores.fullHarmony,2),muted);
+                std::string sources;for(const auto& id:c.supportingTemplates){if(!sources.empty())sources+=", ";sources+=id;}
+                add(t("inspector.sources")+"  "+sources,muted);
+                for(const auto& source:c.evidence)
+                    add(source.templateId+" · "+formatKey(source.key),muted);
+                if(match!=matches_.end())for(const auto& step:match->alignmentTrace) {
+                    const auto user=step.queryIndex&&*step.queryIndex<state_.imported.events.size()?state_.imported.events[*step.queryIndex].name:t("inspector.gap");
+                    const auto templ=step.templateIndex&&*step.templateIndex<match->templateLabels.size()?match->templateLabels[*step.templateIndex]:t("inspector.gap");
+                    add(user+"  ↔  "+templ,muted);
+                }
             }
 
         }
