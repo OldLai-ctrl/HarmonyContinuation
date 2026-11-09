@@ -78,6 +78,17 @@ Chord chordFromLabel(const std::string& label,ChordQuality hint) {
     ChordEvent event; event.name=label; event.quality=hint;
     return convert(event);
 }
+std::optional<harmony::Voicing> voiceEvent(const Event& event,harmony::ChordVoicer& voicer) {
+    auto out=voicer.voice(event.chord,event.topVoice);
+    if(!event.bassMidi)return out; // exact existing product path
+    if(*event.bassMidi<0||*event.bassMidi>127||*event.bassMidi%12!=event.chord.bass||
+        !out.melodySatisfied||(event.topVoice&&*event.topVoice<=*event.bassMidi))return {};
+    out.bass=*event.bassMidi;
+    for(int i=0;i<out.upperCount;++i){while(out.upper[i]<=out.bass)out.upper[i]+=12;if(out.upper[i]>127)return {};}
+    std::sort(out.upper.begin(),out.upper.begin()+out.upperCount);
+    if(event.topVoice&&out.upperCount&&out.upper[out.upperCount-1]!=*event.topVoice)return {};
+    return out;
+}
 BuildResult buildTemplateSequence(const ProgressionTemplate& item,KeySignature key,double tempo) {
     ImportedProgressionSession imported;std::string error;
     if(!templateProgression(item,key,imported,error))return {{},error};

@@ -979,8 +979,12 @@ std::vector<RecommendationPosition> mixedInspirationOrder(const RecommendationSe
             const bool closed=c.ending==PhraseEnding::Closed||c.ending==PhraseEnding::ModulatedClosure;
             const float endingPenalty=closed?3.f*float(endings[int(PhraseEnding::Closed)]):0.f;
             const auto& profile=c.routeProfile;
+            const auto& harmonic=c.harmonicDevelopment;
+            const float musicalFit=set.harmonicReranking&&harmonic.ready?harmonic.coherence:currentFit(c);
+            const float developmentValue=set.harmonicReranking&&harmonic.ready?harmonic.novelty:
+                1.f-std::max(profile.historySimilarity,profile.developmentHistorySimilarity);
             const float utility=qualityBand(c)*6.f+4.f*directionDeficit+2.f*sourceDeficit+development-endingPenalty+
-                (profile.ready?10.f*currentFit(c)+8.f*(1.f-std::max(profile.historySimilarity,profile.developmentHistorySimilarity))-
+                (profile.ready?10.f*musicalFit+8.f*developmentValue-
                     12.f*represented[i]:0.f)+
                 (c.branching.assessed?2.f*c.branching.opportunity:0.f);
             bool better=best==pool.size();

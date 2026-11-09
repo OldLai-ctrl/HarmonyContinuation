@@ -40,8 +40,10 @@ BuildResult buildClip(const preview::Sequence& preview,ArrangementMode mode,Expo
             event.chord.root<0||event.chord.root>11||event.chord.bass<0||event.chord.bass>11||
             event.chord.intervals==0) { result.error="invalid preview event"; result.sequence={}; return result; }
         // Compute all voicings, even for suffix-only exports, to preserve the full preview's voice path.
-        const bool useVoicing=mode==ArrangementMode::VoiceLed||event.topVoice.has_value();
-        const auto voiced=useVoicing?voicer.voice(event.chord,event.topVoice):preview::Voicing{};
+        const bool useVoicing=mode==ArrangementMode::VoiceLed||event.topVoice.has_value()||event.bassMidi.has_value();
+        const auto realized=useVoicing?preview::voiceEvent(event,voicer):std::optional(preview::Voicing{});
+        if(!realized){result.error="invalid explicit performance realization";result.sequence={};return result;}
+        const auto& voiced=*realized;
         if (i<begin||i>=end) continue;
         const auto start=event.startQN-offset;
         if (start<0||!std::isfinite(start)) { result.error="invalid relative start"; result.sequence={}; return result; }

@@ -1,5 +1,6 @@
 #pragma once
 #include "core/Progression.h"
+#include "core/ChordVoicer.h"
 #include <optional>
 #include <vector>
 
@@ -26,5 +27,8 @@ struct VoiceLeadingMetrics {
     int voiceCrossingPenalty{};
     float score{0.5f}; // neutral for a one-chord phrase
 };
+// Pure model evidence for voicings produced by ChordVoicer. This is not a
+// measurement of an imported user's actual arrangement.
+VoiceLeadingTransition measureVoiceLeadingTransition(const harmony::Voicing&,const harmony::Voicing&);
 std::optional<VoiceLeadingMetrics> measureVoiceLeading(const Progression&);
 } // namespace harmony::preview

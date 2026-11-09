@@ -7,6 +7,8 @@ void appendContextualContinuations(const MatchQuery&, const CandidateIndex&,
 void rankCreativeContinuations(std::vector<ContinuationCandidate>&);
 void assessInspirationStructure(const MatchQuery&,const CandidateIndex&,RecommendationSet&);
 void prepareContextualDiversity(const MatchQuery&,RecommendationSet&,std::size_t appendedAfter=0);
+void prepareHarmonicDevelopment(const MatchQuery&,RecommendationSet&);
+void rankHarmonicConnections(std::vector<ContinuationCandidate>&);
 void prepareContinuationBranching(const MatchQuery&,const CandidateIndex&,RecommendationSet&);
 float creativeRouteSimilarity(const ContinuationCandidate&,const ContinuationCandidate&) noexcept;
 std::size_t inspirationFirstPageSize(const RecommendationSet&,std::size_t maximum=10);

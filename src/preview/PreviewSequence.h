@@ -2,6 +2,7 @@
 #include "core/ContinuationEngine.h"
 #include "core/ImportedProgression.h"
 #include "core/ChordPitchSet.h"
+#include "core/ChordVoicer.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -15,7 +16,10 @@ enum class Segment { Existing, CurrentOpen, Recommended };
 enum class PreviewTempoMode { FollowHost, Custom };
 enum class PreviewScope { Full, Suffix };
 using Chord=harmony::ChordPitchSet;
-struct Event { Chord chord; double startQN{}, durationQN{}; Segment segment{}; std::optional<int> topVoice; };
+struct Event { Chord chord; double startQN{}, durationQN{}; Segment segment{}; std::optional<int> topVoice;
+    std::optional<int> bassMidi; // explicit experimental performance; absent preserves the existing voicer
+};
+std::optional<harmony::Voicing> voiceEvent(const Event&,harmony::ChordVoicer&);
 struct Sequence {
     std::vector<Event> events;
     double tempoBPM{defaultTempoBPM};

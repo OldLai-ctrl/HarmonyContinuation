@@ -56,6 +56,13 @@ struct ContinuationBranching {
     std::size_t legalRoutes{}, independentIdeas{}, families{}, centerDirections{}, freshIdeas{};
     float opportunity{}; // bounded quality-similar tie preference, not a future constraint guarantee
 };
+// Pitch-class model evidence, not measured voices in a user's arrangement.
+// Runtime-only: no change to Session5/Snapshot3 or the neutral Unified score.
+struct HarmonicDevelopmentEvidence {
+    bool ready{};
+    int commonTones{}, bassClassStep{}, maximumClassMotion{};
+    float meanClassMotion{}, coherence{}, novelty{}, repetition{}, tensionChange{}, paletteChange{};
+};
 struct ContinuationCandidate {
     std::string id;
     TemplateID primaryTemplate;
@@ -107,6 +114,7 @@ struct ContinuationCandidate {
     std::string structureReason, developmentMechanism;
     CreativeRouteProfile routeProfile; // runtime ranking only; no persistence changes
     ContinuationBranching branching;
+    HarmonicDevelopmentEvidence harmonicDevelopment;
 };
 inline bool representativeMatch(const ContinuationCandidate& c, const MatchResult& m) noexcept {
     return c.channel==RecommendationChannel::Exact && c.primaryTemplate==m.templateId && c.key.tonic==m.key.tonic && c.key.mode==m.key.mode &&
@@ -133,6 +141,7 @@ struct RecommendationRequest {
     bool inspirationPriority{}; // runtime only; Session5 remains unchanged
     bool prepareBothViews{}; // worker request only; navigation reuses two immutable result banks
     bool diagnoseCreative{}; // bounded, opt-in editorial-route gate trace; not used by the worker
+    bool harmonicReranking{}; // reversible dev.15 posterior ranking; false reproduces dev.14
 };
 // Output identity shared by ranking and presentation; omits explanatory key/intent.
 std::string continuationMusicFingerprint(const ContinuationCandidate&);
@@ -162,6 +171,7 @@ struct RecommendationSet {
     double contextualMs{};
     std::vector<CreativeTrial> creativeTrials;
     std::vector<RecommendationPosition> inspirationOrder; // prepared by the worker, actual candidate references
+    bool harmonicReranking{};
 };
 DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     const MatchQuery&, const MatchResult&, const ProgressionTemplate&);

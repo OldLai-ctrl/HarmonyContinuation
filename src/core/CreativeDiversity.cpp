@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
+#include <map>
 
 namespace harmony {
 namespace {
@@ -181,6 +182,86 @@ void prepareContextualDiversity(const MatchQuery& query,RecommendationSet& set,s
 }
 float creativeRouteSimilarity(const ContinuationCandidate& a,const ContinuationCandidate& b) noexcept {
     return std::max(similarity(a.routeProfile,b.routeProfile),developmentSimilarity(a.routeProfile,b.routeProfile));
+}
+namespace {
+// Minimum one-to-one octave-equivalent assignment. Added/omitted tones are
+// described separately by palette/common-tone evidence, not invented voices.
+std::pair<float,int> classMotion(unsigned a,unsigned b) {
+    if(std::popcount(a)>std::popcount(b))std::swap(a,b);
+    std::vector<int> from,to;
+    for(int n=0;n<12;++n){if(a&(1u<<n))from.push_back(n);if(b&(1u<<n))to.push_back(n);}
+    if(from.empty())return {6.f,6};
+    const auto size=std::size_t(1)<<to.size();
+    std::vector<std::pair<int,int>> costs(size,{1000,1000});costs[0]={0,0};
+    for(std::size_t mask=0;mask<size;++mask) {
+        const auto voice=std::size_t(std::popcount(mask));
+        if(voice>=from.size()||costs[mask].first==1000)continue;
+        for(std::size_t j=0;j<to.size();++j)if(!(mask&(std::size_t(1)<<j))) {
+            const auto distance=std::abs(step(from[voice],to[j]));
+            const auto next=std::pair(costs[mask].first+distance,std::max(costs[mask].second,distance));
+            auto& cost=costs[mask|(std::size_t(1)<<j)];cost=std::min(cost,next);
+        }
+    }
+    std::pair<int,int> best{1000,1000};
+    for(std::size_t mask=0;mask<size;++mask)if(std::popcount(mask)==from.size())best=std::min(best,costs[mask]);
+    return {float(best.first)/float(from.size()),best.second};
+}
+}
+void prepareHarmonicDevelopment(const MatchQuery& query,RecommendationSet& set) {
+    const auto input=inputSounds(query.source,progressionOpenDuration(query.source));
+    if(input.empty())return;
+    const auto recentSounds=std::vector<SoundEvent>(input.end()-std::min<std::size_t>(8,input.size()),input.end());
+    std::map<std::pair<unsigned,unsigned>,std::pair<float,int>> motionCache;
+    for(auto& group:set.groups)for(auto& c:group) {
+        auto& e=c.harmonicDevelopment;e={};
+        if(c.continuation.empty()||!c.routeProfile.ready)continue;
+        const auto& first=c.continuation.front();
+        const auto pitch=first.harmonicData?chordPitches(*first.harmonicData):chordPitches(first.label,first.quality);
+        const auto tones=sounding(pitch);
+        if(!tones||pitch.bass<0||input.back().bass<0)continue;
+        const auto key=std::pair(input.back().tones,tones);
+        auto [found,inserted]=motionCache.try_emplace(key);
+        if(inserted)found->second=classMotion(key.first,key.second);
+        e.meanClassMotion=found->second.first;e.maximumClassMotion=found->second.second;
+        e.commonTones=std::popcount(key.first&key.second);
+        e.bassClassStep=step(input.back().bass,pitch.bass);
+        const auto bass=std::abs(e.bassClassStep);
+        const float bassFit=bass==1?1.f:bass==2?.95f:bass==0?.8f:bass==5?.85f:bass==6?.4f:.7f;
+        const float common=float(e.commonTones)/float(std::max(1,std::min(std::popcount(key.first),std::popcount(key.second))));
+        const float voiceFit=std::clamp(1.f-e.meanClassMotion/6.f-.05f*std::max(0,e.maximumClassMotion-3),0.f,1.f);
+        e.coherence=std::clamp(.4f*c.routeProfile.contextFit+.2f*voiceFit+.15f*common+.25f*bassFit,0.f,1.f);
+        const auto& p=c.routeProfile;
+        auto candidateContext=recentSounds;
+        if(query.source.back().openEnded&&c.suggestedCurrentChordDurationQN&&
+            *c.suggestedCurrentChordDurationQN>0)
+            candidateContext.back().duration=*c.suggestedCurrentChordDurationQN;
+        const auto recent=profile(candidateContext);
+        e.repetition=std::max(p.recentSimilarity,p.developmentHistorySimilarity);
+        float early{},late{},bassContrast{},internalMovement{};
+        for(std::size_t i=0;i<8;++i) {
+            (i<4?early:late)+=p.tension[i]/4.f;
+            bassContrast+=std::min(1.f,std::abs(p.bass[i]-recent.bass[i])/6.f)/8.f;
+            if(i)internalMovement+=p.tones[i]!=p.tones[i-1]?1.f/7.f:0.f;
+        }
+        e.tensionChange=std::min(1.f,2.f*std::abs(late-early));
+        for(std::size_t i=0;i<12;++i)e.paletteChange+=.5f*std::abs(p.palette[i]-recent.palette[i]);
+        // Difference earns value only within a phrase that actually develops;
+        // same material remains available for deliberate reprise/looping.
+        e.novelty=std::clamp((.45f*(1.f-e.repetition)+.2f*e.paletteChange+
+            .2f*e.tensionChange+.15f*bassContrast)*(.5f+.5f*internalMovement),0.f,1.f);
+        e.ready=true;
+    }
+}
+void rankHarmonicConnections(std::vector<ContinuationCandidate>& group) {
+    // Neutral Unified scores and eligibility are untouched. Reorder only
+    // neighboring quality bands; a smooth generic join cannot erase a match.
+    std::stable_sort(group.begin(),group.end(),[](const auto& a,const auto& b) {
+        if(a.exploratory!=b.exploratory)return !a.exploratory;
+        const auto band=[](const auto& c){return int(std::floor(c.rankingScore/5.f));};
+        if(band(a)!=band(b))return band(a)>band(b);
+        const auto coherence=[](const auto& c){return c.harmonicDevelopment.ready?c.harmonicDevelopment.coherence:0.f;};
+        return coherence(a)>coherence(b);
+    });
 }
 std::size_t inspirationFirstPageSize(const RecommendationSet& set,std::size_t maximum) {
     const auto order=mixedInspirationOrder(set);

@@ -616,6 +616,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         for (const auto& c:group) mark(c,c.exploratory?"EXPLORATORY_RETAINED":"TARGET_RETAINED");
         result.stats.output+=group.size();
     }
+    if(request.harmonicReranking) {
+        if(!creative)prepareContextualDiversity(query,result);
+        prepareHarmonicDevelopment(query,result);
+        result.harmonicReranking=true;
+        if(!creative)for(auto& group:result.groups)rankHarmonicConnections(group);
+    }
     return result;
 }
 Progression continuationProgression(const Progression& source,const ContinuationCandidate& candidate) {

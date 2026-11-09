@@ -5,8 +5,7 @@
 #include <cmath>
 
 namespace harmony::preview {
-namespace {
-VoiceLeadingTransition transition(const Voicing& previous, const Voicing& current) {
+VoiceLeadingTransition measureVoiceLeadingTransition(const Voicing& previous, const Voicing& current) {
     VoiceLeadingTransition out;
     const int count=std::min(previous.upperCount,current.upperCount);
     for(int i=0;i<current.upperCount;++i) {
@@ -33,7 +32,6 @@ VoiceLeadingTransition transition(const Voicing& previous, const Voicing& curren
         0.17f*upperSmooth-0.10f*std::min(1,out.voiceCrossingPenalty)-0.05f*largeLeap,0.f,1.f);
     return out;
 }
-} // namespace
 
 std::optional<VoiceLeadingMetrics> measureVoiceLeading(const Progression& progression) {
     if(progression.empty()||progression.size()>64)return std::nullopt;
@@ -47,7 +45,7 @@ std::optional<VoiceLeadingMetrics> measureVoiceLeading(const Progression& progre
         const auto current=voicer.voice(chord);
         result.bassMidi.push_back(current.bass);
         if(previous) {
-            auto edge=transition(*previous,current);
+            auto edge=measureVoiceLeadingTransition(*previous,current);
             result.commonToneCount+=edge.commonToneCount;
             result.commonToneRatio+=edge.commonToneRatio;
             result.bassMotionSemitones+=edge.bassMotionSemitones;

@@ -38,6 +38,11 @@ int main() {
         check(inversion->score>=0 && inversion->score<=1 && inversion->maximumVoiceLeap>=0 &&
               inversion->voiceCrossingPenalty==0,"bounded voice-leading metrics");
         check(!preview::measureVoiceLeading({}),"empty phrase rejected");
+        Voicing a,b;a.bass=36;a.upper={60,64,67};a.upperCount=3;
+        b.bass=35;b.upper={60,62,67};b.upperCount=3;
+        const auto edge=preview::measureVoiceLeadingTransition(a,b);
+        check(edge.commonToneCount==2&&edge.bassMotionSemitones==1&&edge.upperVoiceTotalMotion==2&&edge.maximumVoiceLeap==2,
+              "shared generated-voicing transition metrics preserve exact model notes");
         std::cout << "voice-leading cases passed\n";
     } catch(const std::exception& e) {
         std::cerr << "VoiceLeadingMetricsTests: " << e.what() << '\n';

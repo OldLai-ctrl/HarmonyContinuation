@@ -29,7 +29,9 @@ bool PreviewSynth::start(const Sequence& sequence) {
         const auto startSample=qnToSamples(event.startQN,tempo_,sampleRate_);
         const auto endSample=qnToSamples(event.startQN+event.durationQN,tempo_,sampleRate_);
         if (endSample<=startSample || (!chords_.empty() && startSample<chords_.back().start)) { reset(); return false; }
-        chords_.push_back({voicer.voice(event.chord,event.topVoice),startSample,endSample});
+        const auto realized=voiceEvent(event,voicer);
+        if(!realized){reset();return false;}
+        chords_.push_back({*realized,startSample,endSample});
         ends_.emplace_back(endSample,static_cast<int>(chords_.size()-1));
         lastEnd_=std::max(lastEnd_,endSample);
     }
