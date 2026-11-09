@@ -6,8 +6,11 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
-| G13.1当前实现与交付身份 | 原 `HarmonyContinuation-g13/` 分支，基线 `26783c7a` 上的未提交修改 | [技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)；同级 `HarmonyContinuation-g131-evidence/identity.json`记录源码/CLI/先验哈希 |
-| G13.1试听与运行 | 同级 `G13_1_GENERATED_LISTENING/`；CLI、研究先验、许可、索引、三档JSON/WAV/MIDI | 仅F–G–Em–Am，各档首选；独立非商业实验，音乐待验收 |
+| G13-C产品集成 | `HarmonyContinuation-g13/` → `development/g13c-product-integration-20261109`，代码提交`7b4000e` | dev.16测试构建，默认仅CC0先验；[技术报告](docs/G13C_PRODUCT_INTEGRATION.md) |
+| G13-C可运行测试包 | 同级 `HarmonyContinuation-g13c-test-20261110/`，Demo、VST3、examples、BUILD_INFO、宿主清单 | 未覆盖生产安装、无Setup；真实宿主待验收 |
+| G13-C检查与实际显示 | 同级 `HarmonyContinuation-g13c-evidence/` | 414/606/75、原生UI聚焦PASS、真实列表/5组媒体/快照；失败诊断日志保留 |
+| G13.1当前实现与交付身份 | 已保存commit `b1b855d`，从基线`26783c7a`接续 | [技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)；同级 `HarmonyContinuation-g131-evidence/identity.json`记录源码/CLI/先验哈希 |
+| G13.1试听与运行 | 同级 `G13_1_GENERATED_LISTENING/`；CLI、研究先验、许可、索引、三档JSON/WAV/MIDI | 仅F–G–Em–Am，各档首选；独立非商业实验，三条音乐已获用户正面评价 |
 | G13.1语料研究与检查 | 同级 `HarmonyContinuation-g131-corpus/`、`HarmonyContinuation-g131-evidence/` | Idol/RWC资料与CC0聚合分离；原始/派生研究材料未公开分发，跨设备须单独迁移 |
 | G13独立生成实验 | `HarmonyContinuation-g13/` → `development/g13-relation-generation-20261109`，基于dev.14交付`416a7e3a` | 仅实验CLI，代码提交与最终状态见[集中报告](docs/G13_RELATION_GENERATION_REVIEW.md)，没有新产品Setup |
 | G13试听与运行入口 | 同级 `G13_GENERATED_LISTENING/`；`phrase_generate.exe`、`LISTENING_INDEX.md`、各组INPUT/JSON/WAV/MIDI | 旧六条完整D+E；用户认可多样性但认为偏实验性，当前改进见G13.1 |

@@ -1,5 +1,7 @@
 # G13.1 完整乐句语法约束
 
+> 后续：用户已正面评价三条并批准C阶段；G13.1已保存为`b1b855d`。当前集成与测试构建见[G13-C报告](G13C_PRODUCT_INTEGRATION.md)，下文保留研究交付时证据。
+
 ## 当前交付
 
 基于G13独立实验HEAD `26783c7a807be6143423d19f0d5691ee8a0202fc`，分支 `development/g13-relation-generation-20261109`；本轮修改未提交、未推送。算法标识 `g131-corpus-plan-v1`，仍是实验CLI。产品为原已验收dev.14，Factory V8 / 1,288条、旧推荐评分和产品持久化保持原状。

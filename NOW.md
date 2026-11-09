@@ -2,13 +2,15 @@
 
 ## 本轮工作与下一步
 
-### G13.1 基于语料的完整乐句语法（2026-11-09）
+### G13-C 产品集成（2026-11-10）
 
-独立分支 `development/g13-relation-generation-20261109`，基线HEAD `26783c7a807be6143423d19f0d5691ee8a0202fc`；本轮代码及交接修改未提交、未推送。用户已听评G13六条，认可发展多样性，但认为偏实验性、常规流行语感与创作用途不足。本轮按用户确认的独立非商业研究范围，分析IdolSongsJp 15首、RWC 100首（其中80首日语）及Billboard去重740首，改为先验→完整结构计划→三类关系算子→受控变奏。
+用户已正面评价G13.1三条研究试听并批准C阶段。G13.1成果已保存为`b1b855d`；当前独立分支 `development/g13c-product-integration-20261109`，产品集成代码/BuildCommit **`7b4000e364dc3506bd097f07319e7e67c2b67054`**，测试版本 **0.11.0-dev.16 / Factory V8 / 1,288条**。当前[技术报告](docs/G13C_PRODUCT_INTEGRATION.md)维护实现、实际输出、许可、检查与限制。
 
-**工程与离线交付完成，三条新音乐待用户验收，C阶段未启动。** 仅 `F–G–Em–Am` 三档首选完整D→E，3份WAV/6份MIDI共48.45秒，位于同级 `G13_1_GENERATED_LISTENING/`；[试听索引](../G13_1_GENERATED_LISTENING/LISTENING_INDEX.md)含全部和弦、低音、时值及依据。198项定向检查、152项媒体读回通过，三条D音频前缀与旧版一致。[技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)及[语料许可/统计](docs/G131_CORPUS_GRAMMAR.md)为权威细节，当前代码/CLI/先验/媒体哈希在同级 `HarmonyContinuation-g131-evidence/identity.json`。
+**工程集成及聚焦UI检查完成，真实宿主与CC0产品输出音乐待用户验收。** 生成候选接原RecommendationWorker，灵感完整列表固定每页10条，数据库Top3后加入常规/丰富/大胆，数据库候选及相对排序保持。Snapshot4冻结独立来源、实际音集/低音/时值，可读旧1–3；Session5保持。414项集成、606项MIDI/快照、75项旧快照检查通过，F–G–Em–Am原生界面首屏1–3数据库、4–6生成已核对。旧G13.1的198/152证据沿用。
 
-产品仍为已验收dev.14、Factory V8 / 1,288条；未制作Setup、未接入Host或Session5/Snapshot3。当前试听使用Idol连接统计加Billboard节奏/句尾回退的非商业研究先验；CC0先验与RWC研究统计单独保留，商业集成另行授权。G13旧证据与dev.15默认关闭决定保持，[本轮历史记录](history/2026-11/2026-11-09-g131-grammar.md)说明接续关系。
+同级 `HarmonyContinuation-g13c-test-20261110/` 为可直接打开的Demo和独立VST测试构建，包含5条实际生成的D→E与最小宿主清单；`BUILD_INFO.json`记录最终身份与哈希。证据在同级 `HarmonyContinuation-g13c-evidence/`。第二输入Am–G#dim–G–D/F#实际有丰富/大胆两条，常规无合格完整路线；所选A大调解释及接缝需用户听评。产品仅嵌入独立Billboard CC0先验，与已验收Idol研究profile输出不同；研究统计未打入产品。
+
+G13.1的3条研究音乐、语料及CLI保留于原目录；其技术快照见[原报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)。生产安装仍是用户已验收dev.14，本轮未自动覆盖、制作Setup、推送、合并、Tag或发布。当前源码本地已提交，交接提交与最终HEAD以Git核实；[本轮历史](history/2026-11/2026-11-10-g13c-product-integration.md)记录必要根因。
 
 ### 0.11.0-dev.14 安装交付（2026-11-06）
 

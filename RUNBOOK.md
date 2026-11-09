@@ -30,6 +30,22 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### G13-C 产品集成定向检查
+
+当前可用包及最少宿主操作见同级 `HarmonyContinuation-g13c-test-20261110/README.md`，身份见 `BUILD_INFO.json`。当前构建为dev.16，BuildCommit `7b4000e364dc3506bd097f07319e7e67c2b67054`。产品固定编译仓库Billboard CC0表；研究profile继续用下方独立CLI。
+
+仅出现相关新增改动或失败时复用以下入口，不为接手续跑已通过检查：
+
+```powershell
+cmake --build build-g13 --target HarmonyContinuation HarmonyContinuationDemo GenerationIntegrationTests MidiExportTests LibraryCompatibilityTests
+./build-g13/GenerationIntegrationTests.exe <冻结FactoryV8.db> ../G13_GENERATED_LISTENING ../HarmonyContinuation-g13c-evidence
+./build-g13/MidiExportTests.exe
+./build-g13/LibraryCompatibilityTests.exe snapshot
+./build-g13/HarmonyContinuationDemo.exe --g13c-ui-smoke ../HarmonyContinuation-g13c-evidence/generated-ui-fg-em-am.txt --midi-smoke-input ../HarmonyContinuation-g13c-evidence/01-Open-Development-INPUT.mid
+```
+
+原生检查使用真实窗口与离屏上下文；后台执行应使用隐藏窗口。`--g13c-ui-smoke`只覆盖本轮Browse/生成来源/操作，历史 `--midi-workflow-smoke`继续保留原完整语义，其旧导航检查不在本轮宣称通过的范围。不要重复全量CTest、RCR、音乐基准或安装生命周期。详见[有效证据与修复](docs/G13C_PRODUCT_INTEGRATION.md)。
+
 ### G13.1 三档语法实验
 
 沿用下方已配置的MSVC x64 Release `build-g13`，只增量构建 `phrase_generate` 和 `PhraseGenerationTests`。本轮当前先验是IdolSongsJp明确大调段的连接统计，加Billboard符号节奏/句尾回退；仅按已确认的非商业研究用途使用。纯Billboard CC0先验另存 `data/generation-priors/billboard-cc0.tsv`。
