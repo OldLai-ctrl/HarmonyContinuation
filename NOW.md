@@ -2,11 +2,13 @@
 
 ## 本轮工作与下一步
 
-### G13 关系驱动完整乐句生成（2026-11-09）
+### G13.1 基于语料的完整乐句语法（2026-11-09）
 
-独立 `development/g13-relation-generation-20261109` 基于已验收dev.14交付HEAD `416a7e3a`，算法代码提交 `b5ae0917e44d369645cfe1329b027909db53663a`。A+B独立工程闭环完成，三类算子与有界搜索生成完整E，五意图默认最多16,000扩展；保留dev.15核心证据，未启用其产品重排序。五输入定向检查1,954项、媒体读回453项与声部指标检查通过；完整五意图请求287–359ms。六条完整D+E共126.9秒、12份MIDI及独立CLI位于同级 `G13_GENERATED_LISTENING/`。[工程、对照与限制](docs/G13_RELATION_GENERATION_REVIEW.md)为权威记录。[试听索引](../G13_GENERATED_LISTENING/LISTENING_INDEX.md)含每条完整路线及生成依据。**音乐待用户听评，C阶段未启动，不制作Setup或进入RC。**
+独立分支 `development/g13-relation-generation-20261109`，基线HEAD `26783c7a807be6143423d19f0d5691ee8a0202fc`；本轮代码及交接修改未提交、未推送。用户已听评G13六条，认可发展多样性，但认为偏实验性、常规流行语感与创作用途不足。本轮按用户确认的独立非商业研究范围，分析IdolSongsJp 15首、RWC 100首（其中80首日语）及Billboard去重740首，改为先验→完整结构计划→三类关系算子→受控变奏。
 
-产品仍使用用户已验收的dev.14，Factory V8 / 1,288条不变。G13生成来源与Factory严格分开，显式低音音区计划仅用于独立导出；不改Session5/Snapshot3或真实用户数据。dev.15研究分支及其完整A/B证据保留。
+**工程与离线交付完成，三条新音乐待用户验收，C阶段未启动。** 仅 `F–G–Em–Am` 三档首选完整D→E，3份WAV/6份MIDI共48.45秒，位于同级 `G13_1_GENERATED_LISTENING/`；[试听索引](../G13_1_GENERATED_LISTENING/LISTENING_INDEX.md)含全部和弦、低音、时值及依据。198项定向检查、152项媒体读回通过，三条D音频前缀与旧版一致。[技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)及[语料许可/统计](docs/G131_CORPUS_GRAMMAR.md)为权威细节，当前代码/CLI/先验/媒体哈希在同级 `HarmonyContinuation-g131-evidence/identity.json`。
+
+产品仍为已验收dev.14、Factory V8 / 1,288条；未制作Setup、未接入Host或Session5/Snapshot3。当前试听使用Idol连接统计加Billboard节奏/句尾回退的非商业研究先验；CC0先验与RWC研究统计单独保留，商业集成另行授权。G13旧证据与dev.15默认关闭决定保持，[本轮历史记录](history/2026-11/2026-11-09-g131-grammar.md)说明接续关系。
 
 ### 0.11.0-dev.14 安装交付（2026-11-06）
 

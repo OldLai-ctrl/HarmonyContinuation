@@ -30,6 +30,19 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### G13.1 三档语法实验
+
+沿用下方已配置的MSVC x64 Release `build-g13`，只增量构建 `phrase_generate` 和 `PhraseGenerationTests`。本轮当前先验是IdolSongsJp明确大调段的连接统计，加Billboard符号节奏/句尾回退；仅按已确认的非商业研究用途使用。纯Billboard CC0先验另存 `data/generation-priors/billboard-cc0.tsv`。
+
+```powershell
+./build-g13/PhraseGenerationTests.exe --g131 ../HarmonyContinuation-g131-corpus/derived/idol_nc_research/idol-research.tsv
+./build-g13/phrase_generate.exe ../G13_GENERATED_LISTENING/01-Open-Development/INPUT.json ../G13_1_GENERATED_LISTENING/conventional --style ../HarmonyContinuation-g131-corpus/derived/idol_nc_research/idol-research.tsv conventional
+# 另外两档使用 rich / bold，分别指定自己的输出目录。
+./build-g13/PhraseGenerationTests.exe --g131-media ../G13_1_GENERATED_LISTENING
+```
+
+交付目录含可直接运行CLI、研究先验和许可副本，最短运行方法见其README。三档均导出正常首选，不手改音符；实际低音必须沿用 `buildPerformance`。检查已通过时复用当前[证据](docs/G131_PHRASE_GRAMMAR_REVIEW.md)，不为接手重复运行。源码基线加文件哈希识别未提交构建，不把基线HEAD当作新二进制完整身份。
+
 ### G13 独立生成入口
 
 在已初始化MSVC x64的终端配置独立Release目录，确认优化项为 `/O2 /Ob2 /DNDEBUG`：

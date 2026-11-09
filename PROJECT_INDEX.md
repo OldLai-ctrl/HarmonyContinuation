@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为G13独立和声关系生成实验，基于已验收dev.14；Factory V8 / 1,288条及产品行为保持。[G13报告](docs/G13_RELATION_GENERATION_REVIEW.md)说明生成器、独立CLI和最低必要验证，[试听索引](../G13_GENERATED_LISTENING/LISTENING_INDEX.md)提供六条完整D+E。[NOW](NOW.md)记录当前门禁，[MAP](MAP.md)区分产品、研究与试听产物；音乐待用户听评，C阶段未启动。G12与dev.15记录仍保留作技术依据。
+本工作树为G13/G13.1独立生成实验，产品仍为已验收dev.14。当前[语法改造报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)、[语料与许可](docs/G131_CORPUS_GRAMMAR.md)、[三条试听](../G13_1_GENERATED_LISTENING/LISTENING_INDEX.md)提供接续入口；[NOW](NOW.md)记录音乐待验收门禁，[MAP](MAP.md)区分产品、研究与试听产物。旧G13六条、G12验收和dev.15证据保留；C阶段未启动。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 

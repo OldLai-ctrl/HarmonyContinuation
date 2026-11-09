@@ -6,8 +6,11 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| G13.1当前实现与交付身份 | 原 `HarmonyContinuation-g13/` 分支，基线 `26783c7a` 上的未提交修改 | [技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)；同级 `HarmonyContinuation-g131-evidence/identity.json`记录源码/CLI/先验哈希 |
+| G13.1试听与运行 | 同级 `G13_1_GENERATED_LISTENING/`；CLI、研究先验、许可、索引、三档JSON/WAV/MIDI | 仅F–G–Em–Am，各档首选；独立非商业实验，音乐待验收 |
+| G13.1语料研究与检查 | 同级 `HarmonyContinuation-g131-corpus/`、`HarmonyContinuation-g131-evidence/` | Idol/RWC资料与CC0聚合分离；原始/派生研究材料未公开分发，跨设备须单独迁移 |
 | G13独立生成实验 | `HarmonyContinuation-g13/` → `development/g13-relation-generation-20261109`，基于dev.14交付`416a7e3a` | 仅实验CLI，代码提交与最终状态见[集中报告](docs/G13_RELATION_GENERATION_REVIEW.md)，没有新产品Setup |
-| G13试听与运行入口 | 同级 `G13_GENERATED_LISTENING/`；`phrase_generate.exe`、`LISTENING_INDEX.md`、各组INPUT/JSON/WAV/MIDI | 六条完整D+E，01/05为正常返回第2条，其余第1条；音乐待听评 |
+| G13试听与运行入口 | 同级 `G13_GENERATED_LISTENING/`；`phrase_generate.exe`、`LISTENING_INDEX.md`、各组INPUT/JSON/WAV/MIDI | 旧六条完整D+E；用户认可多样性但认为偏实验性，当前改进见G13.1 |
 | G13检查及身份 | 同级 `HarmonyContinuation-g13-evidence/`；`identity.json`、`generated-cases.tsv`、`media-verification.json`、`database-comparison.tsv` | 只覆盖五固定输入、必要约束与六组实际导出，不重复RCR |
 | dev.15研究成果 | `HarmonyContinuation-dev15/` → `development/dev15-chord-map-20261109`，HEAD `33db6f5…` | 新排序保持关闭；G13复用核心连接/轮廓证据，原工作树保留 |
 | dev.14 安装交付线 | `HarmonyContinuation-dev14/` → `development/dev14-delivery-20261106`，基于 `dd6703c8`，BuildCommit `eb05cb2…` | G12 音乐研发结项，Factory V8 / 1,288 条，独立 Release x64 |

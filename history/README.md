@@ -19,3 +19,4 @@ rg --files history -g '*handoff*'
 | --- | --- |
 | 跨设备接手为何建立独立 checkout、文档职责如何确定 | [项目导航建立与规则收口](2026-10/2026-10-08-project-navigation.md)；先定位相关标题 |
 | V3 为何改用 GitHub 基线、旧目录与用户库格式如何处理 | [V3 基线重建与目录归档](2026-10/2026-10-08-v3-baseline-and-archive.md) |
+| G13六条听评反馈、Idol语料接入及G13.1语法改造 | [G13.1接续](2026-11/2026-11-09-g131-grammar.md) |

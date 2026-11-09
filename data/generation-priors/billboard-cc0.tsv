@@ -1,0 +1,2838 @@
+meta	priorId	billboard2-cc0-dedup740-v1
+meta	license	CC0-1.0
+meta	source	https://ddmal.ca/research/The_McGill_Billboard_Project_(Chord_Analysis_Dataset)/
+meta	song_count	740
+meta	slot_count	890
+meta	scope	deduplicated annotated songs; tonic-known 4/4 harmonic changes; all genres and eras; mode unknown
+meta	normalization	pitch class relative to annotated tonic; Harte quality families; duplicate adjacent family/root merged
+meta	duration	symbolic quarter notes, equal subdivisions within annotated bars; not measured performed timing
+meta	phrase	one SALAMI annotation line; xN expanded; no phrase length invented from section labels
+meta	unknown	mode, melodic content, real performed inner-chord timing, arbitrary pauses and unannotated elaborate bars
+meta	product_content	short aggregate transitions only; no titles or multi-chord song continuations
+duration	1.0	7544	301
+duration	10.0	54	19
+duration	11.0	15	4
+duration	112.0	1	1
+duration	12.0	326	86
+duration	124.0	1	1
+duration	128.0	1	1
+duration	13.0	12	5
+duration	14.0	38	9
+duration	140.0	1	1
+duration	15.0	9	3
+duration	16.0	1736	275
+duration	18.0	1	1
+duration	192.0	1	1
+duration	2.0	25536	523
+duration	20.0	19	12
+duration	24.0	13	11
+duration	240.0	1	1
+duration	28.0	1	1
+duration	284.0	1	1
+duration	3.0	1598	137
+duration	316.0	1	1
+duration	32.0	33	14
+duration	4.0	24299	653
+duration	40.0	4	3
+duration	44.0	1	1
+duration	48.0	1	1
+duration	5.0	290	42
+duration	52.0	1	1
+duration	6.0	746	131
+duration	64.0	5	2
+duration	7.0	196	42
+duration	8.0	8254	542
+duration	80.0	2	2
+duration	9.0	6	2
+duration	92.0	2	2
+ending	0	0	558	144
+ending	0	1	26	8
+ending	0	10	297	45
+ending	0	11	9	6
+ending	0	2	253	44
+ending	0	3	61	14
+ending	0	4	51	9
+ending	0	5	1236	192
+ending	0	6	10	5
+ending	0	7	829	182
+ending	0	8	90	30
+ending	0	9	372	62
+ending	1	0	42	15
+ending	1	1	9	4
+ending	1	10	3	2
+ending	1	2	7	4
+ending	1	3	6	2
+ending	1	4	1	1
+ending	1	6	1	1
+ending	1	7	6	4
+ending	1	8	13	4
+ending	10	0	449	77
+ending	10	1	11	1
+ending	10	10	60	21
+ending	10	11	11	5
+ending	10	2	7	5
+ending	10	3	64	15
+ending	10	4	3	1
+ending	10	5	355	55
+ending	10	7	120	27
+ending	10	8	58	11
+ending	10	9	39	16
+ending	11	0	6	4
+ending	11	10	2	2
+ending	11	4	25	11
+ending	11	6	21	2
+ending	11	7	4	3
+ending	11	9	2	1
+ending	2	0	180	42
+ending	2	1	15	8
+ending	2	10	9	7
+ending	2	11	1	1
+ending	2	2	116	20
+ending	2	3	4	2
+ending	2	4	62	18
+ending	2	5	134	22
+ending	2	7	762	174
+ending	2	8	2	2
+ending	2	9	58	17
+ending	3	0	46	17
+ending	3	1	19	5
+ending	3	10	75	21
+ending	3	11	1	1
+ending	3	2	26	6
+ending	3	3	18	9
+ending	3	4	4	3
+ending	3	5	175	31
+ending	3	6	5	2
+ending	3	7	48	17
+ending	3	8	42	18
+ending	3	9	1	1
+ending	4	0	24	6
+ending	4	1	2	2
+ending	4	10	1	1
+ending	4	11	2	1
+ending	4	2	43	18
+ending	4	3	3	2
+ending	4	4	34	14
+ending	4	5	58	11
+ending	4	6	3	2
+ending	4	7	81	21
+ending	4	9	151	41
+ending	5	0	1510	264
+ending	5	10	120	33
+ending	5	2	94	29
+ending	5	3	105	20
+ending	5	4	85	26
+ending	5	5	207	61
+ending	5	6	24	8
+ending	5	7	1378	233
+ending	5	8	29	10
+ending	5	9	36	14
+ending	6	1	6	2
+ending	6	3	1	1
+ending	6	4	1	1
+ending	6	5	7	2
+ending	6	7	11	7
+ending	6	8	9	4
+ending	6	9	1	1
+ending	7	0	1193	223
+ending	7	1	18	2
+ending	7	10	27	7
+ending	7	11	3	2
+ending	7	2	42	16
+ending	7	3	10	4
+ending	7	4	62	17
+ending	7	5	407	88
+ending	7	6	8	4
+ending	7	7	387	103
+ending	7	8	54	12
+ending	7	9	81	28
+ending	8	0	65	19
+ending	8	1	31	8
+ending	8	10	384	50
+ending	8	11	1	1
+ending	8	3	53	16
+ending	8	4	1	1
+ending	8	5	28	8
+ending	8	6	8	3
+ending	8	7	182	30
+ending	8	8	30	6
+ending	8	9	7	3
+ending	9	0	84	24
+ending	9	10	22	8
+ending	9	11	8	5
+ending	9	2	94	30
+ending	9	4	66	21
+ending	9	5	153	31
+ending	9	7	193	51
+ending	9	8	10	2
+ending	9	9	53	21
+length	1	195	130
+length	10	31	12
+length	11	4	2
+length	12	35	16
+length	13	1	1
+length	14	10	5
+length	16	24	17
+length	17	1	1
+length	2	2261	385
+length	20	5	5
+length	23	2	2
+length	24	1	1
+length	28	3	3
+length	3	435	171
+length	31	1	1
+length	32	4	3
+length	35	1	1
+length	36	1	1
+length	4	13163	659
+length	48	2	2
+length	5	411	179
+length	56	1	1
+length	6	257	101
+length	60	1	1
+length	7	29	16
+length	71	1	1
+length	79	1	1
+length	8	399	68
+length	9	4	3
+position	end	0	4157	516
+position	end	1	137	33
+position	end	10	1000	144
+position	end	11	36	22
+position	end	2	682	136
+position	end	3	325	76
+position	end	4	395	102
+position	end	5	2760	343
+position	end	6	80	24
+position	end	7	4001	494
+position	end	8	337	83
+position	end	9	801	166
+position	middle	0	9629	559
+position	middle	1	265	47
+position	middle	10	3170	253
+position	middle	11	251	43
+position	middle	2	3023	318
+position	middle	3	1419	163
+position	middle	4	1397	193
+position	middle	5	9092	543
+position	middle	6	229	47
+position	middle	7	6299	483
+position	middle	8	1556	154
+position	middle	9	2425	282
+position	start	0	10048	669
+position	start	1	65	22
+position	start	10	424	97
+position	start	11	51	16
+position	start	2	952	186
+position	start	3	318	75
+position	start	4	234	65
+position	start	5	2526	403
+position	start	6	38	13
+position	start	7	1327	272
+position	start	8	521	86
+position	start	9	780	162
+transition	-1	0	0	1458	228
+transition	-1	0	1	92	24
+transition	-1	0	10	2123	167
+transition	-1	0	11	94	24
+transition	-1	0	2	1545	193
+transition	-1	0	3	782	90
+transition	-1	0	4	425	88
+transition	-1	0	5	6872	496
+transition	-1	0	6	30	11
+transition	-1	0	7	3571	371
+transition	-1	0	8	808	102
+transition	-1	0	9	1591	186
+transition	-1	1	0	153	32
+transition	-1	1	1	40	6
+transition	-1	1	10	11	6
+transition	-1	1	11	5	1
+transition	-1	1	2	17	10
+transition	-1	1	3	32	10
+transition	-1	1	4	2	2
+transition	-1	1	5	13	6
+transition	-1	1	6	59	12
+transition	-1	1	7	25	8
+transition	-1	1	8	86	12
+transition	-1	10	0	1959	168
+transition	-1	10	1	23	5
+transition	-1	10	10	61	19
+transition	-1	10	11	48	15
+transition	-1	10	2	27	15
+transition	-1	10	3	299	55
+transition	-1	10	4	9	3
+transition	-1	10	5	1314	139
+transition	-1	10	6	1	1
+transition	-1	10	7	307	69
+transition	-1	10	8	413	57
+transition	-1	10	9	120	35
+transition	-1	11	0	54	21
+transition	-1	11	1	4	1
+transition	-1	11	10	14	6
+transition	-1	11	11	13	4
+transition	-1	11	2	7	5
+transition	-1	11	3	12	6
+transition	-1	11	4	100	27
+transition	-1	11	5	25	5
+transition	-1	11	6	66	5
+transition	-1	11	7	17	6
+transition	-1	11	8	1	1
+transition	-1	11	9	32	10
+transition	-1	2	0	933	139
+transition	-1	2	1	50	17
+transition	-1	2	10	176	29
+transition	-1	2	11	24	6
+transition	-1	2	2	164	37
+transition	-1	2	3	54	17
+transition	-1	2	4	290	57
+transition	-1	2	5	689	99
+transition	-1	2	6	30	6
+transition	-1	2	7	1730	253
+transition	-1	2	8	15	10
+transition	-1	2	9	298	55
+transition	-1	3	0	317	57
+transition	-1	3	1	39	12
+transition	-1	3	10	369	52
+transition	-1	3	11	1	1
+transition	-1	3	2	143	32
+transition	-1	3	3	41	11
+transition	-1	3	4	19	7
+transition	-1	3	5	647	75
+transition	-1	3	6	21	8
+transition	-1	3	7	127	34
+transition	-1	3	8	278	55
+transition	-1	3	9	3	3
+transition	-1	4	0	141	32
+transition	-1	4	1	10	6
+transition	-1	4	10	10	4
+transition	-1	4	11	40	8
+transition	-1	4	2	376	63
+transition	-1	4	3	33	13
+transition	-1	4	4	47	20
+transition	-1	4	5	471	93
+transition	-1	4	6	19	5
+transition	-1	4	7	196	39
+transition	-1	4	9	656	129
+transition	-1	5	0	7089	493
+transition	-1	5	1	9	5
+transition	-1	5	10	666	109
+transition	-1	5	11	7	2
+transition	-1	5	2	563	119
+transition	-1	5	3	394	67
+transition	-1	5	4	457	91
+transition	-1	5	5	424	81
+transition	-1	5	6	57	22
+transition	-1	5	7	3778	371
+transition	-1	5	8	298	52
+transition	-1	5	9	349	69
+transition	-1	6	0	27	9
+transition	-1	6	1	69	9
+transition	-1	6	10	4	2
+transition	-1	6	11	47	9
+transition	-1	6	2	10	5
+transition	-1	6	3	7	4
+transition	-1	6	4	33	4
+transition	-1	6	5	36	16
+transition	-1	6	6	7	2
+transition	-1	6	7	58	23
+transition	-1	6	8	51	9
+transition	-1	6	9	2	2
+transition	-1	7	0	6015	535
+transition	-1	7	1	20	4
+transition	-1	7	10	206	53
+transition	-1	7	11	15	11
+transition	-1	7	2	588	102
+transition	-1	7	3	123	28
+transition	-1	7	4	295	65
+transition	-1	7	5	2396	296
+transition	-1	7	6	16	9
+transition	-1	7	7	613	125
+transition	-1	7	8	274	56
+transition	-1	7	9	669	138
+transition	-1	8	0	335	57
+transition	-1	8	1	90	19
+transition	-1	8	10	870	83
+transition	-1	8	11	15	4
+transition	-1	8	2	8	4
+transition	-1	8	3	234	41
+transition	-1	8	4	3	2
+transition	-1	8	5	180	38
+transition	-1	8	6	37	7
+transition	-1	8	7	428	77
+transition	-1	8	8	39	9
+transition	-1	8	9	49	18
+transition	-1	9	0	515	86
+transition	-1	9	1	4	2
+transition	-1	9	10	105	32
+transition	-1	9	11	39	13
+transition	-1	9	2	1020	169
+transition	-1	9	3	8	3
+transition	-1	9	4	326	57
+transition	-1	9	5	1075	160
+transition	-1	9	6	9	3
+transition	-1	9	7	597	115
+transition	-1	9	8	43	12
+transition	-1	9	9	134	23
+transition	0	0	0	560	67
+transition	0	0	1	7	5
+transition	0	0	10	76	28
+transition	0	0	11	4	2
+transition	0	0	2	90	24
+transition	0	0	3	66	15
+transition	0	0	4	14	6
+transition	0	0	5	421	123
+transition	0	0	7	87	29
+transition	0	0	8	44	14
+transition	0	0	9	58	14
+transition	0	1	0	65	10
+transition	0	1	1	4	2
+transition	0	1	10	3	2
+transition	0	1	11	3	1
+transition	0	1	2	4	3
+transition	0	1	3	5	3
+transition	0	1	6	1	1
+transition	0	1	7	1	1
+transition	0	1	8	4	4
+transition	0	10	0	850	74
+transition	0	10	10	10	5
+transition	0	10	2	3	3
+transition	0	10	3	42	12
+transition	0	10	4	5	1
+transition	0	10	5	827	69
+transition	0	10	7	79	14
+transition	0	10	8	249	34
+transition	0	10	9	34	13
+transition	0	11	0	9	2
+transition	0	11	10	13	5
+transition	0	11	3	2	1
+transition	0	11	4	18	8
+transition	0	11	5	23	3
+transition	0	11	6	4	1
+transition	0	11	7	2	1
+transition	0	11	9	18	3
+transition	0	2	0	563	65
+transition	0	2	1	7	4
+transition	0	2	10	83	6
+transition	0	2	2	90	14
+transition	0	2	3	29	6
+transition	0	2	4	73	19
+transition	0	2	5	262	33
+transition	0	2	6	4	1
+transition	0	2	7	383	92
+transition	0	2	8	3	3
+transition	0	2	9	30	14
+transition	0	3	0	141	21
+transition	0	3	1	7	2
+transition	0	3	10	87	17
+transition	0	3	2	64	12
+transition	0	3	3	3	1
+transition	0	3	4	1	1
+transition	0	3	5	366	35
+transition	0	3	6	6	4
+transition	0	3	7	31	9
+transition	0	3	8	70	9
+transition	0	3	9	1	1
+transition	0	4	0	31	5
+transition	0	4	11	4	1
+transition	0	4	2	64	8
+transition	0	4	3	22	4
+transition	0	4	4	2	1
+transition	0	4	5	140	32
+transition	0	4	7	12	5
+transition	0	4	9	150	39
+transition	0	5	0	3871	349
+transition	0	5	1	2	2
+transition	0	5	10	295	62
+transition	0	5	11	4	1
+transition	0	5	2	245	68
+transition	0	5	3	179	27
+transition	0	5	4	145	40
+transition	0	5	5	185	44
+transition	0	5	6	34	12
+transition	0	5	7	1651	212
+transition	0	5	8	85	25
+transition	0	5	9	96	21
+transition	0	6	1	3	1
+transition	0	6	11	6	2
+transition	0	6	2	2	1
+transition	0	6	5	15	7
+transition	0	6	7	4	1
+transition	0	7	0	1522	226
+transition	0	7	10	85	18
+transition	0	7	11	1	1
+transition	0	7	2	191	35
+transition	0	7	3	14	4
+transition	0	7	4	61	14
+transition	0	7	5	1094	148
+transition	0	7	6	4	2
+transition	0	7	7	98	35
+transition	0	7	8	102	13
+transition	0	7	9	315	60
+transition	0	8	0	101	20
+transition	0	8	1	2	2
+transition	0	8	10	430	46
+transition	0	8	11	1	1
+transition	0	8	2	6	3
+transition	0	8	3	49	13
+transition	0	8	4	1	1
+transition	0	8	5	46	17
+transition	0	8	7	148	21
+transition	0	8	8	5	2
+transition	0	8	9	3	3
+transition	0	9	0	320	37
+transition	0	9	1	3	1
+transition	0	9	10	27	6
+transition	0	9	11	2	1
+transition	0	9	2	376	62
+transition	0	9	4	81	14
+transition	0	9	5	617	88
+transition	0	9	7	125	32
+transition	0	9	8	7	3
+transition	0	9	9	14	5
+transition	1	0	0	23	8
+transition	1	0	1	43	3
+transition	1	0	10	9	4
+transition	1	0	11	20	1
+transition	1	0	2	5	5
+transition	1	0	3	8	3
+transition	1	0	5	25	15
+transition	1	0	6	2	1
+transition	1	0	7	7	4
+transition	1	0	8	3	3
+transition	1	0	9	1	1
+transition	1	1	1	25	3
+transition	1	1	11	1	1
+transition	1	1	6	4	2
+transition	1	1	8	8	3
+transition	1	10	0	5	3
+transition	1	10	3	1	1
+transition	1	10	8	5	2
+transition	1	11	1	4	1
+transition	1	11	4	1	1
+transition	1	2	1	3	2
+transition	1	2	4	1	1
+transition	1	2	7	12	7
+transition	1	3	0	3	3
+transition	1	3	1	2	1
+transition	1	3	10	6	2
+transition	1	3	3	5	2
+transition	1	3	4	1	1
+transition	1	3	5	8	3
+transition	1	3	6	2	1
+transition	1	3	8	4	3
+transition	1	4	11	1	1
+transition	1	4	5	1	1
+transition	1	5	0	2	1
+transition	1	5	10	1	1
+transition	1	5	2	1	1
+transition	1	5	3	4	1
+transition	1	5	5	1	1
+transition	1	5	6	1	1
+transition	1	5	7	3	1
+transition	1	6	1	37	5
+transition	1	6	11	2	2
+transition	1	6	3	5	2
+transition	1	6	6	1	1
+transition	1	6	7	3	1
+transition	1	6	8	10	4
+transition	1	6	9	1	1
+transition	1	7	0	9	4
+transition	1	7	11	1	1
+transition	1	7	2	1	1
+transition	1	7	5	10	1
+transition	1	7	8	3	1
+transition	1	8	0	2	2
+transition	1	8	1	48	7
+transition	1	8	3	16	3
+transition	1	8	5	2	1
+transition	1	8	6	15	4
+transition	1	8	7	1	1
+transition	1	8	8	1	1
+transition	10	0	0	63	24
+transition	10	0	1	6	3
+transition	10	0	10	796	73
+transition	10	0	11	1	1
+transition	10	0	2	91	15
+transition	10	0	3	123	26
+transition	10	0	4	9	5
+transition	10	0	5	251	61
+transition	10	0	6	1	1
+transition	10	0	7	132	31
+transition	10	0	8	360	36
+transition	10	0	9	31	15
+transition	10	1	0	5	2
+transition	10	1	3	7	2
+transition	10	1	5	1	1
+transition	10	1	7	10	1
+transition	10	10	0	9	6
+transition	10	10	10	15	5
+transition	10	10	3	15	5
+transition	10	10	5	12	5
+transition	10	10	7	2	2
+transition	10	10	8	5	4
+transition	10	10	9	3	1
+transition	10	11	0	24	11
+transition	10	11	2	3	1
+transition	10	11	3	4	2
+transition	10	11	4	13	3
+transition	10	11	5	1	1
+transition	10	11	6	1	1
+transition	10	11	7	2	1
+transition	10	2	0	2	2
+transition	10	2	10	1	1
+transition	10	2	2	3	2
+transition	10	2	3	4	3
+transition	10	2	4	6	3
+transition	10	2	7	2	2
+transition	10	2	9	8	2
+transition	10	3	0	32	9
+transition	10	3	10	106	26
+transition	10	3	2	7	3
+transition	10	3	3	10	5
+transition	10	3	5	43	10
+transition	10	3	6	1	1
+transition	10	3	7	19	6
+transition	10	3	8	77	15
+transition	10	4	9	9	3
+transition	10	5	0	824	86
+transition	10	5	10	164	33
+transition	10	5	2	27	8
+transition	10	5	3	30	11
+transition	10	5	4	19	6
+transition	10	5	5	14	6
+transition	10	5	6	4	2
+transition	10	5	7	148	42
+transition	10	5	8	46	7
+transition	10	5	9	9	4
+transition	10	6	5	1	1
+transition	10	7	0	209	45
+transition	10	7	10	16	5
+transition	10	7	2	2	2
+transition	10	7	3	5	3
+transition	10	7	5	23	12
+transition	10	7	6	1	1
+transition	10	7	7	12	6
+transition	10	7	8	24	2
+transition	10	7	9	4	2
+transition	10	8	0	96	12
+transition	10	8	1	1	1
+transition	10	8	10	132	22
+transition	10	8	3	37	9
+transition	10	8	5	41	9
+transition	10	8	6	4	1
+transition	10	8	7	86	17
+transition	10	8	8	9	2
+transition	10	8	9	1	1
+transition	10	9	0	19	6
+transition	10	9	1	1	1
+transition	10	9	10	10	4
+transition	10	9	2	23	12
+transition	10	9	4	1	1
+transition	10	9	5	17	5
+transition	10	9	7	21	6
+transition	10	9	8	20	7
+transition	10	9	9	6	2
+transition	11	0	0	5	4
+transition	11	0	10	8	4
+transition	11	0	11	2	1
+transition	11	0	2	13	3
+transition	11	0	4	1	1
+transition	11	0	5	4	4
+transition	11	0	7	11	2
+transition	11	0	8	3	2
+transition	11	0	9	1	1
+transition	11	1	11	1	1
+transition	11	1	7	3	1
+transition	11	10	0	1	1
+transition	11	10	9	13	5
+transition	11	11	11	2	2
+transition	11	11	2	1	1
+transition	11	11	4	5	1
+transition	11	11	7	1	1
+transition	11	11	9	4	1
+transition	11	2	4	1	1
+transition	11	2	5	3	1
+transition	11	2	7	2	2
+transition	11	2	9	1	1
+transition	11	3	5	2	1
+transition	11	3	8	4	2
+transition	11	4	0	11	1
+transition	11	4	1	3	1
+transition	11	4	11	12	3
+transition	11	4	4	7	3
+transition	11	4	5	3	1
+transition	11	4	6	4	1
+transition	11	4	7	13	4
+transition	11	4	9	46	15
+transition	11	5	0	2	2
+transition	11	5	2	1	1
+transition	11	5	7	22	2
+transition	11	6	0	3	1
+transition	11	6	1	2	1
+transition	11	6	11	30	2
+transition	11	6	2	1	1
+transition	11	6	4	15	1
+transition	11	6	7	1	1
+transition	11	6	8	12	1
+transition	11	7	0	2	2
+transition	11	7	11	2	1
+transition	11	7	8	1	1
+transition	11	7	9	10	2
+transition	11	8	6	1	1
+transition	11	9	0	2	1
+transition	11	9	11	20	3
+transition	11	9	2	3	3
+transition	11	9	4	4	1
+transition	11	9	7	3	2
+transition	2	0	0	51	14
+transition	2	0	10	27	13
+transition	2	0	11	6	3
+transition	2	0	2	406	46
+transition	2	0	3	3	2
+transition	2	0	4	32	12
+transition	2	0	5	193	53
+transition	2	0	6	1	1
+transition	2	0	7	98	30
+transition	2	0	8	23	3
+transition	2	0	9	66	21
+transition	2	1	0	38	13
+transition	2	1	2	7	4
+transition	2	1	7	4	2
+transition	2	10	0	93	10
+transition	2	10	2	2	2
+transition	2	10	3	1	1
+transition	2	10	5	26	6
+transition	2	10	7	34	9
+transition	2	10	8	1	1
+transition	2	10	9	17	5
+transition	2	11	0	4	1
+transition	2	11	4	9	3
+transition	2	11	5	1	1
+transition	2	11	7	10	1
+transition	2	2	0	20	6
+transition	2	2	1	3	2
+transition	2	2	10	1	1
+transition	2	2	2	10	6
+transition	2	2	3	1	1
+transition	2	2	4	7	4
+transition	2	2	5	29	3
+transition	2	2	7	89	22
+transition	2	2	8	1	1
+transition	2	2	9	3	2
+transition	2	3	0	1	1
+transition	2	3	10	7	3
+transition	2	3	2	19	3
+transition	2	3	4	13	3
+transition	2	3	5	7	3
+transition	2	3	6	1	1
+transition	2	3	7	3	2
+transition	2	3	8	1	1
+transition	2	4	0	16	7
+transition	2	4	1	1	1
+transition	2	4	2	65	13
+transition	2	4	4	17	6
+transition	2	4	5	88	20
+transition	2	4	7	35	10
+transition	2	4	9	64	18
+transition	2	5	0	341	43
+transition	2	5	10	15	4
+transition	2	5	2	53	10
+transition	2	5	3	1	1
+transition	2	5	4	21	9
+transition	2	5	5	7	4
+transition	2	5	6	1	1
+transition	2	5	7	222	45
+transition	2	5	9	20	10
+transition	2	6	11	3	1
+transition	2	6	5	1	1
+transition	2	6	7	26	4
+transition	2	7	0	1078	194
+transition	2	7	1	1	1
+transition	2	7	10	6	5
+transition	2	7	11	2	1
+transition	2	7	2	225	42
+transition	2	7	3	4	4
+transition	2	7	4	64	21
+transition	2	7	5	98	44
+transition	2	7	6	1	1
+transition	2	7	7	99	31
+transition	2	7	8	8	7
+transition	2	7	9	90	24
+transition	2	8	0	2	2
+transition	2	8	1	2	2
+transition	2	8	10	2	1
+transition	2	8	3	2	1
+transition	2	8	7	6	3
+transition	2	9	0	7	5
+transition	2	9	10	18	7
+transition	2	9	11	8	5
+transition	2	9	2	166	31
+transition	2	9	4	12	5
+transition	2	9	5	21	10
+transition	2	9	7	62	12
+transition	2	9	9	1	1
+transition	3	0	0	8	4
+transition	3	0	1	2	1
+transition	3	0	10	37	12
+transition	3	0	2	1	1
+transition	3	0	3	101	16
+transition	3	0	5	115	22
+transition	3	0	7	12	7
+transition	3	0	8	25	8
+transition	3	0	9	2	2
+transition	3	1	0	21	6
+transition	3	1	10	1	1
+transition	3	1	2	1	1
+transition	3	1	3	7	3
+transition	3	1	5	4	2
+transition	3	1	7	2	1
+transition	3	1	8	2	2
+transition	3	10	0	154	31
+transition	3	10	1	3	1
+transition	3	10	10	4	2
+transition	3	10	2	2	1
+transition	3	10	3	82	15
+transition	3	10	5	55	10
+transition	3	10	7	28	7
+transition	3	10	8	38	7
+transition	3	10	9	1	1
+transition	3	11	0	1	1
+transition	3	2	0	22	5
+transition	3	2	1	30	8
+transition	3	2	10	2	2
+transition	3	2	2	1	1
+transition	3	2	3	2	1
+transition	3	2	4	1	1
+transition	3	2	5	28	4
+transition	3	2	7	49	14
+transition	3	2	8	1	1
+transition	3	3	0	6	1
+transition	3	3	1	6	2
+transition	3	3	3	10	2
+transition	3	3	4	1	1
+transition	3	3	5	1	1
+transition	3	3	7	8	3
+transition	3	3	8	8	4
+transition	3	4	1	3	2
+transition	3	4	5	14	4
+transition	3	4	7	2	1
+transition	3	5	0	280	32
+transition	3	5	1	3	2
+transition	3	5	10	56	9
+transition	3	5	2	2	2
+transition	3	5	3	101	19
+transition	3	5	5	17	7
+transition	3	5	6	1	1
+transition	3	5	7	114	21
+transition	3	5	8	62	9
+transition	3	6	1	7	2
+transition	3	6	3	1	1
+transition	3	6	5	1	1
+transition	3	6	7	2	1
+transition	3	6	8	9	2
+transition	3	6	9	1	1
+transition	3	7	0	64	20
+transition	3	7	10	15	4
+transition	3	7	3	6	4
+transition	3	7	4	1	1
+transition	3	7	5	15	5
+transition	3	7	6	1	1
+transition	3	7	7	8	4
+transition	3	7	8	14	4
+transition	3	8	0	35	7
+transition	3	8	1	18	7
+transition	3	8	10	55	12
+transition	3	8	11	2	2
+transition	3	8	2	2	1
+transition	3	8	3	70	16
+transition	3	8	5	57	8
+transition	3	8	6	1	1
+transition	3	8	7	24	11
+transition	3	8	8	8	3
+transition	3	9	2	1	1
+transition	3	9	5	1	1
+transition	3	9	7	1	1
+transition	4	0	0	6	3
+transition	4	0	10	3	1
+transition	4	0	11	11	1
+transition	4	0	2	20	6
+transition	4	0	4	31	4
+transition	4	0	5	22	7
+transition	4	0	7	24	8
+transition	4	0	9	22	9
+transition	4	1	1	3	1
+transition	4	1	2	1	1
+transition	4	1	3	4	2
+transition	4	1	4	1	1
+transition	4	1	5	1	1
+transition	4	10	0	1	1
+transition	4	10	5	3	1
+transition	4	10	9	6	2
+transition	4	11	11	3	1
+transition	4	11	2	1	1
+transition	4	11	4	9	2
+transition	4	11	6	22	2
+transition	4	11	8	1	1
+transition	4	11	9	3	2
+transition	4	2	0	72	25
+transition	4	2	10	17	5
+transition	4	2	2	2	1
+transition	4	2	3	3	2
+transition	4	2	4	50	13
+transition	4	2	5	95	11
+transition	4	2	7	99	23
+transition	4	2	9	37	7
+transition	4	3	0	1	1
+transition	4	3	1	1	1
+transition	4	3	10	1	1
+transition	4	3	2	27	8
+transition	4	3	7	1	1
+transition	4	3	8	2	1
+transition	4	4	0	10	4
+transition	4	4	1	1	1
+transition	4	4	11	1	1
+transition	4	4	2	3	1
+transition	4	4	5	1	1
+transition	4	4	9	30	14
+transition	4	5	0	99	26
+transition	4	5	10	8	4
+transition	4	5	11	3	1
+transition	4	5	2	45	16
+transition	4	5	3	4	1
+transition	4	5	4	59	13
+transition	4	5	5	8	3
+transition	4	5	6	8	4
+transition	4	5	7	167	50
+transition	4	5	8	11	3
+transition	4	5	9	53	9
+transition	4	6	11	5	1
+transition	4	6	2	2	1
+transition	4	6	4	4	1
+transition	4	6	8	8	2
+transition	4	7	0	41	14
+transition	4	7	10	3	1
+transition	4	7	11	3	2
+transition	4	7	2	18	6
+transition	4	7	3	8	1
+transition	4	7	4	32	7
+transition	4	7	5	31	6
+transition	4	7	6	1	1
+transition	4	7	7	25	5
+transition	4	7	8	4	2
+transition	4	7	9	26	7
+transition	4	9	0	72	15
+transition	4	9	10	5	3
+transition	4	9	2	245	68
+transition	4	9	3	1	1
+transition	4	9	4	64	17
+transition	4	9	5	127	32
+transition	4	9	6	5	2
+transition	4	9	7	96	26
+transition	4	9	8	4	1
+transition	4	9	9	25	9
+transition	5	0	0	272	75
+transition	5	0	1	9	5
+transition	5	0	10	727	79
+transition	5	0	11	12	5
+transition	5	0	2	395	90
+transition	5	0	3	288	40
+transition	5	0	4	109	36
+transition	5	0	5	3223	288
+transition	5	0	6	10	4
+transition	5	0	7	1472	225
+transition	5	0	8	58	23
+transition	5	0	9	320	70
+transition	5	1	0	2	1
+transition	5	1	3	1	1
+transition	5	1	5	3	1
+transition	5	1	6	3	2
+transition	5	10	0	186	32
+transition	5	10	1	11	1
+transition	5	10	10	27	9
+transition	5	10	11	20	4
+transition	5	10	2	15	6
+transition	5	10	3	74	19
+transition	5	10	4	4	2
+transition	5	10	5	196	43
+transition	5	10	7	72	21
+transition	5	10	8	30	6
+transition	5	10	9	18	6
+transition	5	11	4	7	2
+transition	5	2	0	122	33
+transition	5	2	1	3	1
+transition	5	2	10	14	6
+transition	5	2	2	3	1
+transition	5	2	3	1	1
+transition	5	2	4	34	9
+transition	5	2	5	85	19
+transition	5	2	7	278	71
+transition	5	2	9	17	8
+transition	5	3	0	96	14
+transition	5	3	1	5	3
+transition	5	3	10	86	14
+transition	5	3	11	1	1
+transition	5	3	2	17	6
+transition	5	3	3	2	1
+transition	5	3	4	2	1
+transition	5	3	5	111	21
+transition	5	3	6	4	1
+transition	5	3	7	34	9
+transition	5	3	8	31	12
+transition	5	4	0	31	9
+transition	5	4	10	4	1
+transition	5	4	2	180	35
+transition	5	4	3	6	5
+transition	5	4	4	9	4
+transition	5	4	5	46	19
+transition	5	4	6	3	2
+transition	5	4	7	35	7
+transition	5	4	9	139	30
+transition	5	5	0	192	50
+transition	5	5	10	31	9
+transition	5	5	2	9	4
+transition	5	5	3	8	4
+transition	5	5	4	5	3
+transition	5	5	5	113	20
+transition	5	5	7	37	15
+transition	5	5	8	13	6
+transition	5	5	9	10	5
+transition	5	6	0	21	7
+transition	5	6	2	2	1
+transition	5	6	3	1	1
+transition	5	6	4	7	1
+transition	5	6	5	8	2
+transition	5	6	7	18	12
+transition	5	7	0	2306	282
+transition	5	7	1	17	1
+transition	5	7	10	40	14
+transition	5	7	11	2	2
+transition	5	7	2	64	21
+transition	5	7	3	79	15
+transition	5	7	4	79	20
+transition	5	7	5	701	123
+transition	5	7	6	4	2
+transition	5	7	7	136	42
+transition	5	7	8	65	22
+transition	5	7	9	169	53
+transition	5	8	0	33	11
+transition	5	8	1	2	1
+transition	5	8	10	128	21
+transition	5	8	3	17	4
+transition	5	8	5	13	5
+transition	5	8	6	1	1
+transition	5	8	7	92	16
+transition	5	8	9	10	3
+transition	5	9	0	25	8
+transition	5	9	10	12	5
+transition	5	9	2	57	20
+transition	5	9	4	56	8
+transition	5	9	5	77	25
+transition	5	9	6	3	1
+transition	5	9	7	109	16
+transition	5	9	8	2	1
+transition	5	9	9	7	4
+transition	6	0	0	1	1
+transition	6	0	3	1	1
+transition	6	0	4	3	1
+transition	6	0	5	3	1
+transition	6	0	7	8	3
+transition	6	0	9	11	3
+transition	6	1	1	3	2
+transition	6	1	10	2	1
+transition	6	1	2	1	1
+transition	6	1	3	1	1
+transition	6	1	5	4	1
+transition	6	1	6	22	4
+transition	6	1	8	35	7
+transition	6	10	11	3	1
+transition	6	10	3	1	1
+transition	6	11	10	1	1
+transition	6	11	11	6	2
+transition	6	11	3	1	1
+transition	6	11	4	13	4
+transition	6	11	6	26	1
+transition	6	2	2	2	1
+transition	6	2	7	3	2
+transition	6	2	9	5	2
+transition	6	3	0	1	1
+transition	6	3	10	1	1
+transition	6	3	7	2	1
+transition	6	3	8	3	1
+transition	6	4	0	7	1
+transition	6	4	11	17	1
+transition	6	4	5	1	1
+transition	6	4	6	4	1
+transition	6	4	9	3	1
+transition	6	5	0	8	4
+transition	6	5	10	4	3
+transition	6	5	3	6	4
+transition	6	5	4	11	6
+transition	6	5	6	3	1
+transition	6	5	8	2	1
+transition	6	6	4	1	1
+transition	6	6	6	5	1
+transition	6	6	8	1	1
+transition	6	7	0	17	10
+transition	6	7	11	1	1
+transition	6	7	2	22	3
+transition	6	7	5	1	1
+transition	6	7	7	5	5
+transition	6	7	8	6	2
+transition	6	7	9	2	2
+transition	6	8	0	2	1
+transition	6	8	1	11	5
+transition	6	8	10	7	1
+transition	6	8	11	12	1
+transition	6	8	3	7	1
+transition	6	8	4	2	1
+transition	6	8	5	2	1
+transition	6	8	6	3	1
+transition	6	8	7	2	1
+transition	6	9	0	1	1
+transition	6	9	7	1	1
+transition	7	0	0	326	107
+transition	7	0	1	17	11
+transition	7	0	10	225	54
+transition	7	0	11	31	13
+transition	7	0	2	406	83
+transition	7	0	3	125	34
+transition	7	0	4	191	49
+transition	7	0	5	2169	313
+transition	7	0	6	9	2
+transition	7	0	7	1427	206
+transition	7	0	8	169	45
+transition	7	0	9	720	118
+transition	7	1	0	17	2
+transition	7	1	10	1	1
+transition	7	1	4	1	1
+transition	7	10	0	59	19
+transition	7	10	11	11	2
+transition	7	10	2	1	1
+transition	7	10	3	4	2
+transition	7	10	5	88	23
+transition	7	10	7	19	7
+transition	7	10	8	15	2
+transition	7	10	9	7	4
+transition	7	11	0	4	2
+transition	7	11	2	2	2
+transition	7	11	4	4	3
+transition	7	11	6	1	1
+transition	7	11	7	2	2
+transition	7	11	9	2	2
+transition	7	2	0	60	15
+transition	7	2	1	1	1
+transition	7	2	10	22	4
+transition	7	2	11	7	2
+transition	7	2	2	6	4
+transition	7	2	3	10	4
+transition	7	2	4	42	14
+transition	7	2	5	102	17
+transition	7	2	6	21	3
+transition	7	2	7	254	52
+transition	7	2	8	3	1
+transition	7	2	9	48	13
+transition	7	3	0	10	7
+transition	7	3	10	14	4
+transition	7	3	2	7	1
+transition	7	3	5	68	8
+transition	7	3	7	12	4
+transition	7	3	8	12	6
+transition	7	4	0	16	4
+transition	7	4	10	3	1
+transition	7	4	11	1	1
+transition	7	4	2	19	4
+transition	7	4	3	4	3
+transition	7	4	4	10	6
+transition	7	4	5	50	12
+transition	7	4	7	51	12
+transition	7	4	9	135	33
+transition	7	5	0	1099	177
+transition	7	5	10	49	15
+transition	7	5	2	54	17
+transition	7	5	3	28	12
+transition	7	5	4	109	32
+transition	7	5	5	65	17
+transition	7	5	6	3	2
+transition	7	5	7	816	117
+transition	7	5	8	42	8
+transition	7	5	9	104	21
+transition	7	6	1	3	1
+transition	7	6	2	3	1
+transition	7	6	5	7	5
+transition	7	6	7	2	2
+transition	7	7	0	323	94
+transition	7	7	10	11	3
+transition	7	7	2	15	9
+transition	7	7	3	1	1
+transition	7	7	4	25	5
+transition	7	7	5	67	25
+transition	7	7	6	1	1
+transition	7	7	7	122	28
+transition	7	7	8	16	9
+transition	7	7	9	13	6
+transition	7	8	0	49	8
+transition	7	8	1	3	1
+transition	7	8	10	94	22
+transition	7	8	3	27	6
+transition	7	8	5	14	3
+transition	7	8	6	3	1
+transition	7	8	7	49	15
+transition	7	8	8	4	2
+transition	7	8	9	27	9
+transition	7	9	0	53	18
+transition	7	9	10	23	7
+transition	7	9	11	3	2
+transition	7	9	2	99	31
+transition	7	9	3	1	1
+transition	7	9	4	75	23
+transition	7	9	5	202	39
+transition	7	9	6	1	1
+transition	7	9	7	159	42
+transition	7	9	9	37	8
+transition	8	0	0	25	9
+transition	8	0	1	4	2
+transition	8	0	10	90	9
+transition	8	0	11	3	1
+transition	8	0	2	12	5
+transition	8	0	3	39	7
+transition	8	0	4	3	2
+transition	8	0	5	34	16
+transition	8	0	6	1	1
+transition	8	0	7	31	7
+transition	8	0	8	81	22
+transition	8	0	9	2	1
+transition	8	1	0	2	2
+transition	8	1	1	5	3
+transition	8	1	10	4	2
+transition	8	1	3	6	2
+transition	8	1	6	29	6
+transition	8	1	7	5	3
+transition	8	1	8	35	7
+transition	8	10	0	571	60
+transition	8	10	1	9	3
+transition	8	10	10	5	3
+transition	8	10	11	6	2
+transition	8	10	2	1	1
+transition	8	10	3	73	14
+transition	8	10	5	56	11
+transition	8	10	6	1	1
+transition	8	10	7	54	13
+transition	8	10	8	68	17
+transition	8	11	0	2	2
+transition	8	11	6	12	1
+transition	8	2	10	3	1
+transition	8	2	4	1	1
+transition	8	2	7	4	2
+transition	8	3	0	23	6
+transition	8	3	1	12	3
+transition	8	3	10	59	10
+transition	8	3	2	2	1
+transition	8	3	3	9	3
+transition	8	3	5	35	11
+transition	8	3	6	7	2
+transition	8	3	7	17	6
+transition	8	3	8	66	15
+transition	8	4	3	1	1
+transition	8	4	6	2	1
+transition	8	5	0	59	13
+transition	8	5	1	4	2
+transition	8	5	10	15	6
+transition	8	5	2	22	2
+transition	8	5	3	29	5
+transition	8	5	5	4	2
+transition	8	5	7	39	13
+transition	8	5	8	7	3
+transition	8	6	1	17	3
+transition	8	6	10	4	2
+transition	8	6	11	1	1
+transition	8	6	4	2	1
+transition	8	6	6	1	1
+transition	8	6	8	11	2
+transition	8	7	0	216	35
+transition	8	7	10	19	4
+transition	8	7	2	2	2
+transition	8	7	3	6	2
+transition	8	7	5	72	18
+transition	8	7	6	2	2
+transition	8	7	7	62	15
+transition	8	7	8	29	10
+transition	8	7	9	4	2
+transition	8	8	0	7	2
+transition	8	8	10	3	2
+transition	8	8	3	7	2
+transition	8	8	6	8	1
+transition	8	8	7	1	1
+transition	8	8	8	11	5
+transition	8	9	0	9	2
+transition	8	9	10	4	4
+transition	8	9	2	7	3
+transition	8	9	4	6	1
+transition	8	9	5	3	2
+transition	8	9	7	8	5
+transition	8	9	8	10	2
+transition	9	0	0	8	4
+transition	9	0	1	1	1
+transition	9	0	10	3	2
+transition	9	0	2	27	8
+transition	9	0	4	1	1
+transition	9	0	5	125	27
+transition	9	0	6	6	2
+transition	9	0	7	78	20
+transition	9	0	9	255	30
+transition	9	1	0	1	1
+transition	9	1	2	3	1
+transition	9	10	0	15	6
+transition	9	10	11	6	5
+transition	9	10	2	3	2
+transition	9	10	3	3	1
+transition	9	10	5	39	11
+transition	9	10	7	18	5
+transition	9	10	9	20	6
+transition	9	11	0	10	4
+transition	9	11	11	2	2
+transition	9	11	4	20	5
+transition	9	11	9	4	2
+transition	9	2	0	68	22
+transition	9	2	1	3	2
+transition	9	2	10	30	8
+transition	9	2	11	17	5
+transition	9	2	2	47	16
+transition	9	2	3	3	2
+transition	9	2	4	67	18
+transition	9	2	5	81	26
+transition	9	2	6	5	3
+transition	9	2	7	535	107
+transition	9	2	8	6	4
+transition	9	2	9	146	21
+transition	9	3	1	6	1
+transition	9	3	5	1	1
+transition	9	3	9	1	1
+transition	9	4	0	19	5
+transition	9	4	10	3	2
+transition	9	4	11	4	1
+transition	9	4	2	41	10
+transition	9	4	4	1	1
+transition	9	4	5	127	25
+transition	9	4	6	5	1
+transition	9	4	7	48	6
+transition	9	4	9	72	18
+transition	9	5	0	260	47
+transition	9	5	10	21	8
+transition	9	5	2	91	22
+transition	9	5	4	78	16
+transition	9	5	5	7	4
+transition	9	5	6	1	1
+transition	9	5	7	527	83
+transition	9	5	8	28	3
+transition	9	5	9	54	15
+transition	9	6	0	3	1
+transition	9	6	4	4	1
+transition	9	6	5	2	1
+transition	9	7	0	168	47
+transition	9	7	1	2	2
+transition	9	7	10	8	2
+transition	9	7	11	1	1
+transition	9	7	2	47	13
+transition	9	7	4	29	10
+transition	9	7	5	263	57
+transition	9	7	7	34	11
+transition	9	7	8	1	1
+transition	9	7	9	31	13
+transition	9	8	0	5	2
+transition	9	8	10	9	2
+transition	9	8	5	5	3
+transition	9	8	7	17	5
+transition	9	8	9	7	2
+transition	9	9	0	4	2
+transition	9	9	11	4	2
+transition	9	9	2	35	13
+transition	9	9	3	6	1
+transition	9	9	4	25	2
+transition	9	9	5	8	4
+transition	9	9	7	7	3
+transition	9	9	9	40	5
+quality_transition	0	1	0	5	9	4
+quality_transition	0	1	0	dom	15	4
+quality_transition	0	1	0	maj	63	23
+quality_transition	0	1	0	min	21	10
+quality_transition	0	1	10	1	139	8
+quality_transition	0	1	10	maj	1	1
+quality_transition	0	1	11	1	6	1
+quality_transition	0	1	1	1	5	3
+quality_transition	0	1	2	1	17	2
+quality_transition	0	1	2	hdim	7	1
+quality_transition	0	1	2	min	1	1
+quality_transition	0	1	3	1	71	5
+quality_transition	0	1	5	1	147	10
+quality_transition	0	1	5	5	6	2
+quality_transition	0	1	5	dom	1	1
+quality_transition	0	1	5	maj	30	4
+quality_transition	0	1	5	min	2	2
+quality_transition	0	1	7	1	9	5
+quality_transition	0	1	7	dom	1	1
+quality_transition	0	1	7	maj	14	2
+quality_transition	0	1	8	1	7	3
+quality_transition	0	1	8	maj	1	1
+quality_transition	0	1	9	1	1	1
+quality_transition	0	1	9	maj	1	1
+quality_transition	0	5	0	1	7	1
+quality_transition	0	5	0	dom	5	3
+quality_transition	0	5	0	maj	37	10
+quality_transition	0	5	0	min	12	7
+quality_transition	0	5	0	other	11	6
+quality_transition	0	5	0	sus	17	5
+quality_transition	0	5	10	1	2	1
+quality_transition	0	5	10	5	106	12
+quality_transition	0	5	10	maj	31	7
+quality_transition	0	5	10	sus	17	1
+quality_transition	0	5	1	5	1	1
+quality_transition	0	5	2	5	4	1
+quality_transition	0	5	2	maj	4	1
+quality_transition	0	5	2	min	2	2
+quality_transition	0	5	3	5	70	5
+quality_transition	0	5	3	maj	38	5
+quality_transition	0	5	5	5	24	6
+quality_transition	0	5	5	dom	1	1
+quality_transition	0	5	5	maj	5	2
+quality_transition	0	5	5	min	3	1
+quality_transition	0	5	6	5	1	1
+quality_transition	0	5	7	5	31	5
+quality_transition	0	5	7	maj	26	3
+quality_transition	0	5	7	other	1	1
+quality_transition	0	5	7	sus	2	1
+quality_transition	0	5	8	5	12	2
+quality_transition	0	5	8	dom	5	1
+quality_transition	0	5	8	maj	18	6
+quality_transition	0	5	8	other	1	1
+quality_transition	0	5	9	5	24	1
+quality_transition	0	5	9	min	2	1
+quality_transition	0	aug	0	1	3	1
+quality_transition	0	aug	0	maj	4	3
+quality_transition	0	aug	5	maj	6	2
+quality_transition	0	dim	11	dim	1	1
+quality_transition	0	dim	2	min	4	2
+quality_transition	0	dim	7	dom	3	1
+quality_transition	0	dom	0	1	15	3
+quality_transition	0	dom	0	5	1	1
+quality_transition	0	dom	0	maj	124	31
+quality_transition	0	dom	0	min	11	4
+quality_transition	0	dom	0	other	3	1
+quality_transition	0	dom	0	sus	19	4
+quality_transition	0	dom	10	dom	8	3
+quality_transition	0	dom	10	maj	113	5
+quality_transition	0	dom	10	sus	25	3
+quality_transition	0	dom	1	dom	1	1
+quality_transition	0	dom	1	maj	6	4
+quality_transition	0	dom	2	dom	8	2
+quality_transition	0	dom	2	maj	1	1
+quality_transition	0	dom	2	min	5	3
+quality_transition	0	dom	2	sus	4	2
+quality_transition	0	dom	3	1	3	1
+quality_transition	0	dom	3	5	2	1
+quality_transition	0	dom	3	dom	4	2
+quality_transition	0	dom	3	maj	11	3
+quality_transition	0	dom	4	dom	2	1
+quality_transition	0	dom	4	maj	1	1
+quality_transition	0	dom	5	dom	288	37
+quality_transition	0	dom	5	maj	336	86
+quality_transition	0	dom	5	min	39	7
+quality_transition	0	dom	5	sus	3	1
+quality_transition	0	dom	6	hdim	4	1
+quality_transition	0	dom	6	other	1	1
+quality_transition	0	dom	7	dom	173	23
+quality_transition	0	dom	7	hdim	1	1
+quality_transition	0	dom	7	maj	1	1
+quality_transition	0	dom	7	min	2	1
+quality_transition	0	dom	8	maj	15	4
+quality_transition	0	dom	9	maj	2	1
+quality_transition	0	dom	9	min	3	2
+quality_transition	0	dom	9	sus	1	1
+quality_transition	0	maj	0	1	39	14
+quality_transition	0	maj	0	5	5	4
+quality_transition	0	maj	0	aug	11	5
+quality_transition	0	maj	0	dim	5	3
+quality_transition	0	maj	0	dom	321	87
+quality_transition	0	maj	0	min	111	18
+quality_transition	0	maj	0	other	1	1
+quality_transition	0	maj	0	sus	194	26
+quality_transition	0	maj	10	1	4	1
+quality_transition	0	maj	10	5	3	1
+quality_transition	0	maj	10	dom	6	2
+quality_transition	0	maj	10	maj	997	94
+quality_transition	0	maj	10	min	3	1
+quality_transition	0	maj	10	other	2	1
+quality_transition	0	maj	10	sus	2	1
+quality_transition	0	maj	11	1	2	2
+quality_transition	0	maj	11	dim	3	1
+quality_transition	0	maj	11	dom	4	3
+quality_transition	0	maj	11	hdim	5	3
+quality_transition	0	maj	11	maj	32	5
+quality_transition	0	maj	11	min	22	3
+quality_transition	0	maj	11	sus	5	2
+quality_transition	0	maj	1	dim	7	3
+quality_transition	0	maj	1	dom	1	1
+quality_transition	0	maj	1	maj	10	6
+quality_transition	0	maj	1	min	1	1
+quality_transition	0	maj	2	1	3	2
+quality_transition	0	maj	2	dom	100	25
+quality_transition	0	maj	2	hdim	1	1
+quality_transition	0	maj	2	maj	212	26
+quality_transition	0	maj	2	min	1013	129
+quality_transition	0	maj	2	other	2	2
+quality_transition	0	maj	2	sus	36	3
+quality_transition	0	maj	3	5	1	1
+quality_transition	0	maj	3	dim	22	5
+quality_transition	0	maj	3	dom	2	1
+quality_transition	0	maj	3	maj	284	41
+quality_transition	0	maj	4	dim	1	1
+quality_transition	0	maj	4	dom	47	16
+quality_transition	0	maj	4	hdim	4	1
+quality_transition	0	maj	4	maj	16	5
+quality_transition	0	maj	4	min	352	65
+quality_transition	0	maj	4	sus	2	1
+quality_transition	0	maj	5	1	2	2
+quality_transition	0	maj	5	5	33	4
+quality_transition	0	maj	5	dom	83	15
+quality_transition	0	maj	5	maj	4280	338
+quality_transition	0	maj	5	min	209	27
+quality_transition	0	maj	5	other	27	1
+quality_transition	0	maj	5	sus	95	15
+quality_transition	0	maj	6	dim	2	1
+quality_transition	0	maj	6	dom	7	2
+quality_transition	0	maj	6	hdim	8	2
+quality_transition	0	maj	6	maj	4	2
+quality_transition	0	maj	6	sus	1	1
+quality_transition	0	maj	7	1	3	2
+quality_transition	0	maj	7	5	5	2
+quality_transition	0	maj	7	aug	3	1
+quality_transition	0	maj	7	dom	471	90
+quality_transition	0	maj	7	maj	2101	221
+quality_transition	0	maj	7	min	205	23
+quality_transition	0	maj	7	sus	193	34
+quality_transition	0	maj	8	aug	1	1
+quality_transition	0	maj	8	dim	1	1
+quality_transition	0	maj	8	dom	16	9
+quality_transition	0	maj	8	maj	148	32
+quality_transition	0	maj	9	dim	3	1
+quality_transition	0	maj	9	dom	84	13
+quality_transition	0	maj	9	maj	73	12
+quality_transition	0	maj	9	min	1371	157
+quality_transition	0	maj	9	sus	10	3
+quality_transition	0	min	0	1	12	4
+quality_transition	0	min	0	5	15	5
+quality_transition	0	min	0	dom	8	3
+quality_transition	0	min	0	maj	32	10
+quality_transition	0	min	0	sus	9	3
+quality_transition	0	min	10	5	2	2
+quality_transition	0	min	10	dom	19	4
+quality_transition	0	min	10	maj	591	49
+quality_transition	0	min	10	min	12	2
+quality_transition	0	min	10	sus	27	5
+quality_transition	0	min	11	dim	2	1
+quality_transition	0	min	11	maj	4	1
+quality_transition	0	min	11	min	8	2
+quality_transition	0	min	1	dim	1	1
+quality_transition	0	min	1	maj	8	3
+quality_transition	0	min	1	min	2	1
+quality_transition	0	min	2	5	6	1
+quality_transition	0	min	2	dom	3	2
+quality_transition	0	min	2	hdim	3	2
+quality_transition	0	min	2	maj	8	2
+quality_transition	0	min	2	min	72	8
+quality_transition	0	min	3	5	18	1
+quality_transition	0	min	3	dom	11	2
+quality_transition	0	min	3	maj	220	30
+quality_transition	0	min	3	min	19	1
+quality_transition	0	min	3	sus	3	1
+quality_transition	0	min	5	5	18	3
+quality_transition	0	min	5	dom	380	16
+quality_transition	0	min	5	maj	344	33
+quality_transition	0	min	5	min	429	52
+quality_transition	0	min	5	sus	10	4
+quality_transition	0	min	6	maj	2	1
+quality_transition	0	min	7	1	4	2
+quality_transition	0	min	7	aug	48	1
+quality_transition	0	min	7	dom	65	13
+quality_transition	0	min	7	maj	9	5
+quality_transition	0	min	7	min	190	21
+quality_transition	0	min	7	sus	6	4
+quality_transition	0	min	8	dom	24	4
+quality_transition	0	min	8	maj	542	50
+quality_transition	0	min	8	other	1	1
+quality_transition	0	min	9	dim	11	1
+quality_transition	0	min	9	hdim	1	1
+quality_transition	0	min	9	min	4	2
+quality_transition	0	other	0	1	1	1
+quality_transition	0	other	0	5	6	4
+quality_transition	0	other	0	dom	1	1
+quality_transition	0	other	0	min	2	2
+quality_transition	0	other	0	sus	2	1
+quality_transition	0	other	10	1	2	1
+quality_transition	0	other	10	5	2	1
+quality_transition	0	other	10	maj	4	2
+quality_transition	0	other	10	other	4	1
+quality_transition	0	other	1	5	37	1
+quality_transition	0	other	1	dim	3	1
+quality_transition	0	other	1	maj	6	1
+quality_transition	0	other	2	other	6	1
+quality_transition	0	other	3	5	3	1
+quality_transition	0	other	5	maj	2	2
+quality_transition	0	other	5	other	5	1
+quality_transition	0	other	8	other	2	1
+quality_transition	0	sus	0	1	1	1
+quality_transition	0	sus	0	5	3	3
+quality_transition	0	sus	0	dom	23	5
+quality_transition	0	sus	0	maj	271	34
+quality_transition	0	sus	0	min	4	3
+quality_transition	0	sus	0	other	4	2
+quality_transition	0	sus	10	maj	1	1
+quality_transition	0	sus	1	dom	2	1
+quality_transition	0	sus	1	maj	1	1
+quality_transition	0	sus	2	min	6	3
+quality_transition	0	sus	2	other	13	1
+quality_transition	0	sus	2	sus	4	2
+quality_transition	0	sus	5	hdim	1	1
+quality_transition	0	sus	5	maj	46	10
+quality_transition	0	sus	5	min	15	4
+quality_transition	0	sus	5	sus	2	2
+quality_transition	0	sus	7	maj	3	2
+quality_transition	0	sus	7	sus	1	1
+quality_transition	0	sus	8	maj	13	4
+quality_transition	0	sus	8	min	1	1
+quality_transition	10	1	0	1	138	9
+quality_transition	10	1	0	5	1	1
+quality_transition	10	1	0	maj	2	1
+quality_transition	10	1	0	min	20	6
+quality_transition	10	1	10	min	1	1
+quality_transition	10	1	11	dom	2	1
+quality_transition	10	1	3	1	2	2
+quality_transition	10	1	5	1	4	1
+quality_transition	10	1	5	sus	12	1
+quality_transition	10	1	7	1	1	1
+quality_transition	10	1	7	maj	6	1
+quality_transition	10	1	8	1	7	4
+quality_transition	10	1	9	1	9	2
+quality_transition	10	1	9	dom	1	1
+quality_transition	10	5	0	5	87	8
+quality_transition	10	5	0	maj	4	1
+quality_transition	10	5	0	min	3	2
+quality_transition	10	5	0	other	1	1
+quality_transition	10	5	10	sus	1	1
+quality_transition	10	5	11	5	7	5
+quality_transition	10	5	3	5	10	2
+quality_transition	10	5	5	1	1	1
+quality_transition	10	5	5	5	12	3
+quality_transition	10	5	7	5	1	1
+quality_transition	10	5	8	5	9	3
+quality_transition	10	5	8	dom	1	1
+quality_transition	10	aug	10	maj	3	1
+quality_transition	10	dim	11	min	1	1
+quality_transition	10	dim	9	dim	1	1
+quality_transition	10	dim	9	min	1	1
+quality_transition	10	dom	0	dom	15	3
+quality_transition	10	dom	0	maj	3	2
+quality_transition	10	dom	0	min	42	6
+quality_transition	10	dom	0	sus	1	1
+quality_transition	10	dom	11	dom	5	1
+quality_transition	10	dom	11	other	3	1
+quality_transition	10	dom	2	maj	1	1
+quality_transition	10	dom	3	5	2	1
+quality_transition	10	dom	3	dom	10	1
+quality_transition	10	dom	3	maj	26	7
+quality_transition	10	dom	4	min	1	1
+quality_transition	10	dom	5	maj	11	3
+quality_transition	10	dom	5	min	6	2
+quality_transition	10	dom	7	dom	22	1
+quality_transition	10	dom	7	min	3	2
+quality_transition	10	dom	8	dom	8	1
+quality_transition	10	dom	8	maj	2	1
+quality_transition	10	dom	8	sus	1	1
+quality_transition	10	dom	9	dom	16	4
+quality_transition	10	dom	9	min	7	3
+quality_transition	10	maj	0	1	5	4
+quality_transition	10	maj	0	5	30	6
+quality_transition	10	maj	0	dom	22	6
+quality_transition	10	maj	0	maj	701	82
+quality_transition	10	maj	0	min	730	60
+quality_transition	10	maj	0	sus	22	4
+quality_transition	10	maj	10	aug	3	1
+quality_transition	10	maj	10	dom	6	2
+quality_transition	10	maj	10	min	5	2
+quality_transition	10	maj	10	sus	11	6
+quality_transition	10	maj	11	dim	4	1
+quality_transition	10	maj	11	hdim	9	1
+quality_transition	10	maj	11	maj	6	2
+quality_transition	10	maj	1	dom	2	1
+quality_transition	10	maj	1	maj	10	3
+quality_transition	10	maj	1	min	11	1
+quality_transition	10	maj	2	maj	5	3
+quality_transition	10	maj	2	min	14	8
+quality_transition	10	maj	2	sus	3	2
+quality_transition	10	maj	3	dom	14	3
+quality_transition	10	maj	3	maj	168	35
+quality_transition	10	maj	3	sus	3	1
+quality_transition	10	maj	4	maj	3	1
+quality_transition	10	maj	4	min	5	1
+quality_transition	10	maj	5	5	12	3
+quality_transition	10	maj	5	dom	22	4
+quality_transition	10	maj	5	maj	1044	103
+quality_transition	10	maj	5	min	118	16
+quality_transition	10	maj	5	sus	26	4
+quality_transition	10	maj	7	1	2	1
+quality_transition	10	maj	7	5	11	3
+quality_transition	10	maj	7	dom	46	12
+quality_transition	10	maj	7	maj	69	22
+quality_transition	10	maj	7	min	117	19
+quality_transition	10	maj	7	sus	21	8
+quality_transition	10	maj	8	dom	5	1
+quality_transition	10	maj	8	hdim	3	1
+quality_transition	10	maj	8	maj	351	43
+quality_transition	10	maj	8	sus	4	1
+quality_transition	10	maj	9	dom	9	4
+quality_transition	10	maj	9	maj	9	4
+quality_transition	10	maj	9	min	60	17
+quality_transition	10	min	0	maj	3	1
+quality_transition	10	min	0	min	8	1
+quality_transition	10	min	0	other	1	1
+quality_transition	10	min	10	dom	3	1
+quality_transition	10	min	11	maj	3	1
+quality_transition	10	min	3	dom	27	1
+quality_transition	10	min	3	maj	19	4
+quality_transition	10	min	3	min	12	2
+quality_transition	10	min	3	sus	3	1
+quality_transition	10	min	5	maj	13	3
+quality_transition	10	min	5	min	1	1
+quality_transition	10	min	6	maj	1	1
+quality_transition	10	min	8	maj	14	4
+quality_transition	10	other	0	5	10	1
+quality_transition	10	other	0	maj	2	1
+quality_transition	10	other	0	other	5	1
+quality_transition	10	other	2	min	1	1
+quality_transition	10	other	5	min	2	1
+quality_transition	10	other	5	other	1	1
+quality_transition	10	sus	0	5	20	1
+quality_transition	10	sus	0	dom	9	2
+quality_transition	10	sus	0	maj	10	4
+quality_transition	10	sus	0	min	53	11
+quality_transition	10	sus	0	sus	11	2
+quality_transition	10	sus	10	dom	7	3
+quality_transition	10	sus	10	maj	21	8
+quality_transition	10	sus	11	dom	6	1
+quality_transition	10	sus	11	other	2	1
+quality_transition	10	sus	2	min	3	1
+quality_transition	10	sus	3	maj	3	1
+quality_transition	10	sus	5	dom	20	2
+quality_transition	10	sus	5	maj	1	1
+quality_transition	10	sus	5	min	8	3
+quality_transition	10	sus	7	dom	7	3
+quality_transition	10	sus	7	min	1	1
+quality_transition	10	sus	8	maj	4	3
+quality_transition	10	sus	8	sus	4	1
+quality_transition	10	sus	9	min	7	1
+quality_transition	11	1	0	maj	2	2
+quality_transition	11	1	10	1	7	2
+quality_transition	11	1	2	1	1	1
+quality_transition	11	1	9	min	1	1
+quality_transition	11	5	0	5	4	3
+quality_transition	11	5	0	maj	2	2
+quality_transition	11	5	11	dom	1	1
+quality_transition	11	5	5	maj	1	1
+quality_transition	11	aug	4	min	5	1
+quality_transition	11	dim	0	maj	4	2
+quality_transition	11	dim	0	min	5	2
+quality_transition	11	dim	10	dim	1	1
+quality_transition	11	dim	4	dom	3	1
+quality_transition	11	dim	5	min	2	1
+quality_transition	11	dom	0	maj	1	1
+quality_transition	11	dom	0	min	6	1
+quality_transition	11	dom	11	aug	5	1
+quality_transition	11	dom	11	maj	1	1
+quality_transition	11	dom	3	min	2	1
+quality_transition	11	dom	4	dom	2	1
+quality_transition	11	dom	4	maj	3	1
+quality_transition	11	dom	4	min	13	5
+quality_transition	11	dom	4	sus	5	1
+quality_transition	11	dom	5	maj	1	1
+quality_transition	11	dom	6	maj	2	1
+quality_transition	11	dom	7	dom	2	1
+quality_transition	11	dom	7	min	1	1
+quality_transition	11	dom	9	min	2	1
+quality_transition	11	hdim	2	dom	3	1
+quality_transition	11	hdim	2	min	1	1
+quality_transition	11	hdim	4	dom	14	5
+quality_transition	11	hdim	4	sus	1	1
+quality_transition	11	maj	0	maj	15	4
+quality_transition	11	maj	10	maj	6	4
+quality_transition	11	maj	2	1	1	1
+quality_transition	11	maj	2	min	1	1
+quality_transition	11	maj	3	maj	6	2
+quality_transition	11	maj	3	min	1	1
+quality_transition	11	maj	4	maj	6	3
+quality_transition	11	maj	5	maj	20	1
+quality_transition	11	maj	6	dom	16	1
+quality_transition	11	maj	6	maj	46	2
+quality_transition	11	maj	7	maj	1	1
+quality_transition	11	maj	8	min	1	1
+quality_transition	11	maj	9	maj	5	2
+quality_transition	11	min	0	dom	1	1
+quality_transition	11	min	0	maj	11	3
+quality_transition	11	min	0	min	3	2
+quality_transition	11	min	11	dom	1	1
+quality_transition	11	min	1	dim	4	1
+quality_transition	11	min	3	maj	2	1
+quality_transition	11	min	4	dom	8	4
+quality_transition	11	min	4	maj	1	1
+quality_transition	11	min	4	min	29	4
+quality_transition	11	min	5	min	1	1
+quality_transition	11	min	6	min	2	2
+quality_transition	11	min	7	maj	13	3
+quality_transition	11	min	9	maj	3	2
+quality_transition	11	min	9	min	21	4
+quality_transition	11	other	3	other	1	1
+quality_transition	11	other	4	dom	6	1
+quality_transition	11	sus	11	maj	4	1
+quality_transition	11	sus	11	min	1	1
+quality_transition	11	sus	4	dom	4	1
+quality_transition	1	1	0	1	2	2
+quality_transition	1	1	0	maj	2	1
+quality_transition	1	1	0	min	2	1
+quality_transition	1	1	0	other	1	1
+quality_transition	1	1	2	1	2	1
+quality_transition	1	1	4	1	1	1
+quality_transition	1	1	6	1	2	1
+quality_transition	1	1	7	maj	1	1
+quality_transition	1	1	8	1	1	1
+quality_transition	1	5	0	5	3	1
+quality_transition	1	5	0	maj	2	1
+quality_transition	1	5	0	other	31	1
+quality_transition	1	5	10	5	1	1
+quality_transition	1	5	3	5	3	1
+quality_transition	1	5	3	dom	2	1
+quality_transition	1	aug	0	maj	2	1
+quality_transition	1	dim	0	1	3	1
+quality_transition	1	dim	0	maj	3	1
+quality_transition	1	dim	11	maj	1	1
+quality_transition	1	dim	11	min	4	1
+quality_transition	1	dim	2	min	6	3
+quality_transition	1	dim	7	dom	4	2
+quality_transition	1	dom	0	dom	1	1
+quality_transition	1	dom	0	min	7	3
+quality_transition	1	dom	10	maj	1	1
+quality_transition	1	dom	10	sus	2	1
+quality_transition	1	dom	2	dom	3	2
+quality_transition	1	dom	6	maj	3	1
+quality_transition	1	dom	7	hdim	3	1
+quality_transition	1	dom	8	maj	3	1
+quality_transition	1	maj	0	dom	1	1
+quality_transition	1	maj	0	maj	48	12
+quality_transition	1	maj	0	min	32	7
+quality_transition	1	maj	0	other	8	2
+quality_transition	1	maj	0	sus	3	2
+quality_transition	1	maj	10	maj	2	1
+quality_transition	1	maj	10	min	5	2
+quality_transition	1	maj	1	dim	1	1
+quality_transition	1	maj	1	min	6	1
+quality_transition	1	maj	1	sus	15	3
+quality_transition	1	maj	2	maj	5	3
+quality_transition	1	maj	3	5	1	1
+quality_transition	1	maj	3	maj	20	6
+quality_transition	1	maj	3	min	3	2
+quality_transition	1	maj	4	maj	1	1
+quality_transition	1	maj	5	1	1	1
+quality_transition	1	maj	5	min	11	5
+quality_transition	1	maj	6	maj	51	8
+quality_transition	1	maj	6	min	1	1
+quality_transition	1	maj	7	dom	4	2
+quality_transition	1	maj	7	maj	2	1
+quality_transition	1	maj	8	1	1	1
+quality_transition	1	maj	8	dom	2	1
+quality_transition	1	maj	8	maj	72	9
+quality_transition	1	maj	8	sus	1	1
+quality_transition	1	min	0	min	2	1
+quality_transition	1	min	2	min	1	1
+quality_transition	1	min	3	min	3	1
+quality_transition	1	min	5	min	1	1
+quality_transition	1	min	6	dom	1	1
+quality_transition	1	min	7	min	11	2
+quality_transition	1	min	8	maj	6	1
+quality_transition	1	sus	1	dom	3	1
+quality_transition	1	sus	1	maj	15	3
+quality_transition	1	sus	6	maj	1	1
+quality_transition	2	1	0	1	1	1
+quality_transition	2	1	0	maj	1	1
+quality_transition	2	1	0	min	3	2
+quality_transition	2	1	10	1	18	2
+quality_transition	2	1	10	maj	2	1
+quality_transition	2	1	1	1	6	2
+quality_transition	2	1	3	1	1	1
+quality_transition	2	1	5	1	2	1
+quality_transition	2	1	7	1	8	3
+quality_transition	2	1	9	1	2	2
+quality_transition	2	5	0	5	7	3
+quality_transition	2	5	10	maj	6	1
+quality_transition	2	5	2	maj	2	1
+quality_transition	2	5	3	5	5	1
+quality_transition	2	5	7	5	8	1
+quality_transition	2	dim	0	maj	5	1
+quality_transition	2	dim	5	dim	10	1
+quality_transition	2	dim	7	dom	1	1
+quality_transition	2	dim	9	min	3	2
+quality_transition	2	dom	0	dom	6	1
+quality_transition	2	dom	0	maj	50	14
+quality_transition	2	dom	0	min	2	1
+quality_transition	2	dom	10	dom	1	1
+quality_transition	2	dom	10	maj	11	3
+quality_transition	2	dom	11	min	8	2
+quality_transition	2	dom	1	dom	6	3
+quality_transition	2	dom	1	maj	3	1
+quality_transition	2	dom	2	maj	3	1
+quality_transition	2	dom	2	min	21	7
+quality_transition	2	dom	2	sus	2	1
+quality_transition	2	dom	3	maj	5	2
+quality_transition	2	dom	4	min	3	2
+quality_transition	2	dom	5	dom	24	3
+quality_transition	2	dom	5	maj	29	12
+quality_transition	2	dom	5	min	2	1
+quality_transition	2	dom	6	dim	1	1
+quality_transition	2	dom	7	1	2	1
+quality_transition	2	dom	7	dom	143	39
+quality_transition	2	dom	7	maj	53	19
+quality_transition	2	dom	7	min	13	6
+quality_transition	2	dom	7	sus	34	13
+quality_transition	2	dom	8	dom	2	2
+quality_transition	2	dom	9	dom	5	2
+quality_transition	2	dom	9	min	2	1
+quality_transition	2	dom	9	sus	1	1
+quality_transition	2	hdim	0	1	6	1
+quality_transition	2	hdim	0	dom	6	1
+quality_transition	2	hdim	0	maj	10	3
+quality_transition	2	hdim	0	min	1	1
+quality_transition	2	hdim	2	min	4	1
+quality_transition	2	hdim	7	dom	25	5
+quality_transition	2	hdim	7	min	2	1
+quality_transition	2	hdim	7	sus	2	1
+quality_transition	2	hdim	8	maj	3	1
+quality_transition	2	maj	0	1	11	2
+quality_transition	2	maj	0	dom	1	1
+quality_transition	2	maj	0	maj	159	21
+quality_transition	2	maj	0	sus	1	1
+quality_transition	2	maj	10	maj	17	6
+quality_transition	2	maj	10	sus	1	1
+quality_transition	2	maj	11	min	15	3
+quality_transition	2	maj	1	maj	21	4
+quality_transition	2	maj	2	1	1	1
+quality_transition	2	maj	2	dom	4	2
+quality_transition	2	maj	2	min	10	6
+quality_transition	2	maj	2	other	14	1
+quality_transition	2	maj	3	5	1	1
+quality_transition	2	maj	3	maj	3	2
+quality_transition	2	maj	4	maj	8	3
+quality_transition	2	maj	4	min	34	5
+quality_transition	2	maj	5	maj	75	15
+quality_transition	2	maj	5	sus	2	1
+quality_transition	2	maj	6	min	22	3
+quality_transition	2	maj	6	sus	3	1
+quality_transition	2	maj	7	dom	14	7
+quality_transition	2	maj	7	maj	201	38
+quality_transition	2	maj	7	min	1	1
+quality_transition	2	maj	7	sus	6	3
+quality_transition	2	maj	8	dom	1	1
+quality_transition	2	maj	9	dom	10	4
+quality_transition	2	maj	9	maj	61	12
+quality_transition	2	maj	9	min	60	3
+quality_transition	2	maj	9	sus	1	1
+quality_transition	2	min	0	1	5	2
+quality_transition	2	min	0	5	1	1
+quality_transition	2	min	0	dom	10	5
+quality_transition	2	min	0	maj	594	81
+quality_transition	2	min	0	min	32	6
+quality_transition	2	min	0	sus	9	3
+quality_transition	2	min	10	dom	3	2
+quality_transition	2	min	10	maj	114	14
+quality_transition	2	min	11	hdim	1	1
+quality_transition	2	min	1	aug	2	1
+quality_transition	2	min	1	dim	1	1
+quality_transition	2	min	1	maj	8	3
+quality_transition	2	min	2	dim	18	3
+quality_transition	2	min	2	dom	3	2
+quality_transition	2	min	2	hdim	12	2
+quality_transition	2	min	2	sus	1	1
+quality_transition	2	min	3	maj	33	9
+quality_transition	2	min	3	min	5	3
+quality_transition	2	min	4	aug	13	1
+quality_transition	2	min	4	dom	9	4
+quality_transition	2	min	4	maj	11	5
+quality_transition	2	min	4	min	203	41
+quality_transition	2	min	4	sus	9	4
+quality_transition	2	min	5	dom	1	1
+quality_transition	2	min	5	maj	476	66
+quality_transition	2	min	5	min	26	6
+quality_transition	2	min	5	sus	8	3
+quality_transition	2	min	6	dim	4	1
+quality_transition	2	min	7	dom	426	70
+quality_transition	2	min	7	maj	538	88
+quality_transition	2	min	7	min	4	3
+quality_transition	2	min	7	other	1	1
+quality_transition	2	min	7	sus	217	43
+quality_transition	2	min	8	dom	2	2
+quality_transition	2	min	8	maj	7	5
+quality_transition	2	min	9	5	4	1
+quality_transition	2	min	9	dom	25	5
+quality_transition	2	min	9	maj	4	2
+quality_transition	2	min	9	min	117	24
+quality_transition	2	other	0	other	8	1
+quality_transition	2	other	10	1	1	1
+quality_transition	2	other	3	maj	1	1
+quality_transition	2	other	5	maj	27	2
+quality_transition	2	other	7	1	1	1
+quality_transition	2	other	7	other	4	1
+quality_transition	2	sus	0	maj	4	2
+quality_transition	2	sus	10	maj	2	1
+quality_transition	2	sus	1	dom	3	2
+quality_transition	2	sus	2	dom	19	7
+quality_transition	2	sus	2	maj	48	7
+quality_transition	2	sus	2	min	2	1
+quality_transition	2	sus	5	maj	7	1
+quality_transition	2	sus	7	dom	6	2
+quality_transition	2	sus	7	maj	11	3
+quality_transition	2	sus	7	min	6	1
+quality_transition	2	sus	7	sus	3	2
+quality_transition	2	sus	9	min	3	2
+quality_transition	3	1	0	1	2	1
+quality_transition	3	1	10	1	17	3
+quality_transition	3	1	11	1	1	1
+quality_transition	3	1	1	1	1	1
+quality_transition	3	1	2	1	3	1
+quality_transition	3	1	4	1	1	1
+quality_transition	3	1	5	1	48	7
+quality_transition	3	1	5	5	1	1
+quality_transition	3	1	5	maj	2	1
+quality_transition	3	1	6	1	1	1
+quality_transition	3	1	8	1	29	1
+quality_transition	3	5	0	5	22	4
+quality_transition	3	5	0	maj	4	1
+quality_transition	3	5	0	min	3	1
+quality_transition	3	5	0	other	3	1
+quality_transition	3	5	10	5	13	2
+quality_transition	3	5	10	dom	1	1
+quality_transition	3	5	10	maj	8	2
+quality_transition	3	5	10	other	10	1
+quality_transition	3	5	2	5	2	1
+quality_transition	3	5	4	5	9	3
+quality_transition	3	5	5	5	75	6
+quality_transition	3	5	5	sus	1	1
+quality_transition	3	5	6	5	1	1
+quality_transition	3	5	7	5	3	1
+quality_transition	3	5	8	5	1	1
+quality_transition	3	aug	7	maj	1	1
+quality_transition	3	dim	0	maj	1	1
+quality_transition	3	dim	2	min	21	7
+quality_transition	3	dim	7	dom	7	1
+quality_transition	3	dom	0	min	8	3
+quality_transition	3	dom	10	dom	8	1
+quality_transition	3	dom	10	maj	6	1
+quality_transition	3	dom	1	5	1	1
+quality_transition	3	dom	1	maj	1	1
+quality_transition	3	dom	2	dom	5	2
+quality_transition	3	dom	2	hdim	1	1
+quality_transition	3	dom	2	min	2	1
+quality_transition	3	dom	5	dom	9	1
+quality_transition	3	dom	6	dom	2	1
+quality_transition	3	dom	7	dom	4	1
+quality_transition	3	dom	7	sus	1	1
+quality_transition	3	dom	8	dom	2	2
+quality_transition	3	dom	8	maj	41	9
+quality_transition	3	hdim	1	maj	4	1
+quality_transition	3	maj	0	1	29	1
+quality_transition	3	maj	0	5	7	2
+quality_transition	3	maj	0	dom	5	4
+quality_transition	3	maj	0	maj	83	19
+quality_transition	3	maj	0	min	139	26
+quality_transition	3	maj	0	sus	1	1
+quality_transition	3	maj	10	dom	4	2
+quality_transition	3	maj	10	maj	279	40
+quality_transition	3	maj	10	min	7	4
+quality_transition	3	maj	10	sus	7	2
+quality_transition	3	maj	1	dom	1	1
+quality_transition	3	maj	1	maj	29	8
+quality_transition	3	maj	2	maj	24	6
+quality_transition	3	maj	2	min	59	9
+quality_transition	3	maj	2	other	4	1
+quality_transition	3	maj	3	dom	9	5
+quality_transition	3	maj	3	min	6	2
+quality_transition	3	maj	3	sus	7	2
+quality_transition	3	maj	4	dim	1	1
+quality_transition	3	maj	4	maj	2	1
+quality_transition	3	maj	4	min	2	1
+quality_transition	3	maj	5	5	22	2
+quality_transition	3	maj	5	dom	21	3
+quality_transition	3	maj	5	maj	345	48
+quality_transition	3	maj	5	min	80	13
+quality_transition	3	maj	5	sus	9	5
+quality_transition	3	maj	6	maj	9	2
+quality_transition	3	maj	7	5	1	1
+quality_transition	3	maj	7	dim	2	1
+quality_transition	3	maj	7	dom	23	6
+quality_transition	3	maj	7	maj	24	9
+quality_transition	3	maj	7	min	51	12
+quality_transition	3	maj	7	sus	4	3
+quality_transition	3	maj	8	dom	2	1
+quality_transition	3	maj	8	maj	180	36
+quality_transition	3	maj	8	min	6	1
+quality_transition	3	maj	8	sus	2	2
+quality_transition	3	maj	9	dom	1	1
+quality_transition	3	maj	9	hdim	1	1
+quality_transition	3	maj	9	min	1	1
+quality_transition	3	min	0	min	10	1
+quality_transition	3	min	10	maj	9	1
+quality_transition	3	min	1	maj	2	1
+quality_transition	3	min	2	dom	1	1
+quality_transition	3	min	2	min	21	3
+quality_transition	3	min	3	hdim	4	1
+quality_transition	3	min	3	sus	1	1
+quality_transition	3	min	4	min	3	1
+quality_transition	3	min	5	min	12	2
+quality_transition	3	min	6	maj	8	3
+quality_transition	3	min	8	1	6	1
+quality_transition	3	min	8	dom	3	2
+quality_transition	3	min	8	maj	3	1
+quality_transition	3	min	8	sus	3	3
+quality_transition	3	sus	3	maj	14	2
+quality_transition	3	sus	4	maj	1	1
+quality_transition	3	sus	5	1	1	1
+quality_transition	3	sus	5	maj	2	1
+quality_transition	3	sus	5	min	3	1
+quality_transition	3	sus	5	sus	16	1
+quality_transition	3	sus	7	min	6	1
+quality_transition	4	1	11	1	1	1
+quality_transition	4	1	1	1	1	1
+quality_transition	4	1	2	1	5	2
+quality_transition	4	1	2	min	4	1
+quality_transition	4	1	5	1	1	1
+quality_transition	4	1	5	maj	1	1
+quality_transition	4	1	6	1	4	1
+quality_transition	4	5	1	5	2	1
+quality_transition	4	5	5	5	6	2
+quality_transition	4	5	5	maj	1	1
+quality_transition	4	aug	9	min	12	1
+quality_transition	4	dim	2	sus	1	1
+quality_transition	4	dim	5	maj	6	2
+quality_transition	4	dim	9	dom	1	1
+quality_transition	4	dom	0	maj	9	4
+quality_transition	4	dom	0	min	1	1
+quality_transition	4	dom	0	sus	2	1
+quality_transition	4	dom	11	dom	2	1
+quality_transition	4	dom	1	maj	1	1
+quality_transition	4	dom	3	dom	1	1
+quality_transition	4	dom	4	min	1	1
+quality_transition	4	dom	5	maj	25	10
+quality_transition	4	dom	7	maj	12	4
+quality_transition	4	dom	9	5	1	1
+quality_transition	4	dom	9	dom	10	3
+quality_transition	4	dom	9	maj	5	2
+quality_transition	4	dom	9	min	126	40
+quality_transition	4	dom	9	sus	3	3
+quality_transition	4	hdim	2	maj	3	1
+quality_transition	4	hdim	9	dom	6	2
+quality_transition	4	maj	0	maj	25	6
+quality_transition	4	maj	11	maj	17	2
+quality_transition	4	maj	11	sus	3	1
+quality_transition	4	maj	1	min	2	1
+quality_transition	4	maj	1	sus	3	1
+quality_transition	4	maj	2	min	5	1
+quality_transition	4	maj	3	maj	3	2
+quality_transition	4	maj	4	dom	1	1
+quality_transition	4	maj	5	maj	20	8
+quality_transition	4	maj	5	sus	1	1
+quality_transition	4	maj	6	maj	4	1
+quality_transition	4	maj	6	min	4	1
+quality_transition	4	maj	7	maj	8	3
+quality_transition	4	maj	7	sus	2	1
+quality_transition	4	maj	9	dom	1	1
+quality_transition	4	maj	9	maj	26	6
+quality_transition	4	maj	9	min	59	16
+quality_transition	4	maj	9	sus	1	1
+quality_transition	4	min	0	dom	6	2
+quality_transition	4	min	0	maj	95	18
+quality_transition	4	min	0	sus	3	1
+quality_transition	4	min	10	dom	6	2
+quality_transition	4	min	10	maj	4	2
+quality_transition	4	min	11	dom	4	2
+quality_transition	4	min	11	hdim	1	1
+quality_transition	4	min	11	maj	4	1
+quality_transition	4	min	11	min	8	1
+quality_transition	4	min	1	dim	1	1
+quality_transition	4	min	2	dom	5	3
+quality_transition	4	min	2	maj	28	7
+quality_transition	4	min	2	min	309	50
+quality_transition	4	min	2	sus	15	5
+quality_transition	4	min	3	aug	1	1
+quality_transition	4	min	3	dim	3	3
+quality_transition	4	min	3	maj	3	2
+quality_transition	4	min	3	min	21	3
+quality_transition	4	min	4	dom	10	4
+quality_transition	4	min	4	hdim	3	1
+quality_transition	4	min	4	maj	2	2
+quality_transition	4	min	5	dom	1	1
+quality_transition	4	min	5	maj	406	77
+quality_transition	4	min	6	dim	2	1
+quality_transition	4	min	6	min	5	1
+quality_transition	4	min	7	dom	43	8
+quality_transition	4	min	7	maj	86	17
+quality_transition	4	min	7	min	5	2
+quality_transition	4	min	7	sus	40	10
+quality_transition	4	min	9	dom	43	10
+quality_transition	4	min	9	maj	3	3
+quality_transition	4	min	9	min	333	61
+quality_transition	4	min	9	sus	10	5
+quality_transition	4	sus	2	maj	1	1
+quality_transition	4	sus	3	maj	1	1
+quality_transition	4	sus	4	dom	23	9
+quality_transition	4	sus	4	maj	7	2
+quality_transition	4	sus	5	maj	3	1
+quality_transition	4	sus	9	dom	1	1
+quality_transition	4	sus	9	maj	3	1
+quality_transition	4	sus	9	sus	12	1
+quality_transition	5	1	0	1	137	10
+quality_transition	5	1	0	dom	3	1
+quality_transition	5	1	0	maj	5	3
+quality_transition	5	1	0	min	9	3
+quality_transition	5	1	2	5	1	1
+quality_transition	5	1	2	maj	11	1
+quality_transition	5	1	3	1	11	5
+quality_transition	5	1	3	maj	29	1
+quality_transition	5	1	4	1	6	3
+quality_transition	5	1	5	min	1	1
+quality_transition	5	1	6	1	2	2
+quality_transition	5	1	7	1	38	7
+quality_transition	5	1	7	5	1	1
+quality_transition	5	1	8	1	1	1
+quality_transition	5	1	9	5	2	1
+quality_transition	5	5	0	5	103	13
+quality_transition	5	5	0	maj	8	3
+quality_transition	5	5	0	min	25	4
+quality_transition	5	5	0	sus	10	1
+quality_transition	5	5	10	5	1	1
+quality_transition	5	5	10	maj	2	1
+quality_transition	5	5	3	5	32	5
+quality_transition	5	5	5	min	1	1
+quality_transition	5	5	6	5	3	2
+quality_transition	5	5	7	5	39	7
+quality_transition	5	5	7	maj	25	6
+quality_transition	5	5	7	min	7	1
+quality_transition	5	5	7	sus	1	1
+quality_transition	5	5	8	5	4	1
+quality_transition	5	5	8	maj	9	2
+quality_transition	5	aug	5	maj	3	1
+quality_transition	5	dim	0	maj	10	1
+quality_transition	5	dom	0	1	2	2
+quality_transition	5	dom	0	5	1	1
+quality_transition	5	dom	0	dom	354	33
+quality_transition	5	dom	0	maj	153	24
+quality_transition	5	dom	0	min	381	20
+quality_transition	5	dom	0	other	1	1
+quality_transition	5	dom	0	sus	1	1
+quality_transition	5	dom	10	dom	3	2
+quality_transition	5	dom	10	maj	22	7
+quality_transition	5	dom	10	sus	9	2
+quality_transition	5	dom	2	dom	32	6
+quality_transition	5	dom	2	min	4	2
+quality_transition	5	dom	3	dom	4	1
+quality_transition	5	dom	3	maj	18	3
+quality_transition	5	dom	4	dom	2	2
+quality_transition	5	dom	5	maj	13	6
+quality_transition	5	dom	5	min	1	1
+quality_transition	5	dom	5	sus	1	1
+quality_transition	5	dom	6	dim	9	3
+quality_transition	5	dom	7	aug	3	1
+quality_transition	5	dom	7	dom	41	12
+quality_transition	5	dom	7	maj	7	4
+quality_transition	5	dom	7	min	1	1
+quality_transition	5	dom	8	dom	3	1
+quality_transition	5	dom	8	maj	5	2
+quality_transition	5	dom	8	sus	1	1
+quality_transition	5	dom	9	dom	1	1
+quality_transition	5	dom	9	min	8	3
+quality_transition	5	hdim	8	min	4	1
+quality_transition	5	maj	0	1	23	5
+quality_transition	5	maj	0	5	38	8
+quality_transition	5	maj	0	aug	2	1
+quality_transition	5	maj	0	dom	170	15
+quality_transition	5	maj	0	maj	4750	356
+quality_transition	5	maj	0	min	259	27
+quality_transition	5	maj	0	sus	29	7
+quality_transition	5	maj	10	dom	29	8
+quality_transition	5	maj	10	maj	382	64
+quality_transition	5	maj	10	min	12	1
+quality_transition	5	maj	10	sus	9	4
+quality_transition	5	maj	11	hdim	3	1
+quality_transition	5	maj	1	maj	3	2
+quality_transition	5	maj	2	dom	63	20
+quality_transition	5	maj	2	hdim	8	2
+quality_transition	5	maj	2	maj	44	16
+quality_transition	5	maj	2	min	351	69
+quality_transition	5	maj	2	sus	2	2
+quality_transition	5	maj	3	1	1	1
+quality_transition	5	maj	3	5	4	1
+quality_transition	5	maj	3	dim	1	1
+quality_transition	5	maj	3	maj	160	30
+quality_transition	5	maj	4	1	5	1
+quality_transition	5	maj	4	dom	19	8
+quality_transition	5	maj	4	hdim	2	1
+quality_transition	5	maj	4	maj	38	10
+quality_transition	5	maj	4	min	365	61
+quality_transition	5	maj	4	sus	13	5
+quality_transition	5	maj	5	aug	3	1
+quality_transition	5	maj	5	dom	36	14
+quality_transition	5	maj	5	min	129	34
+quality_transition	5	maj	5	sus	71	12
+quality_transition	5	maj	6	dim	21	10
+quality_transition	5	maj	6	hdim	3	2
+quality_transition	5	maj	6	maj	2	1
+quality_transition	5	maj	7	5	32	3
+quality_transition	5	maj	7	dom	323	69
+quality_transition	5	maj	7	hdim	1	1
+quality_transition	5	maj	7	maj	2419	239
+quality_transition	5	maj	7	min	86	14
+quality_transition	5	maj	7	sus	378	55
+quality_transition	5	maj	8	dim	9	2
+quality_transition	5	maj	8	dom	9	3
+quality_transition	5	maj	8	maj	92	18
+quality_transition	5	maj	9	dom	23	5
+quality_transition	5	maj	9	hdim	1	1
+quality_transition	5	maj	9	maj	5	2
+quality_transition	5	maj	9	min	295	55
+quality_transition	5	maj	9	sus	4	3
+quality_transition	5	min	0	1	3	2
+quality_transition	5	min	0	5	4	1
+quality_transition	5	min	0	dom	1	1
+quality_transition	5	min	0	maj	266	46
+quality_transition	5	min	0	min	269	35
+quality_transition	5	min	0	sus	3	1
+quality_transition	5	min	10	dom	15	7
+quality_transition	5	min	10	maj	88	18
+quality_transition	5	min	10	min	22	3
+quality_transition	5	min	10	sus	29	8
+quality_transition	5	min	11	min	4	1
+quality_transition	5	min	1	maj	6	3
+quality_transition	5	min	2	dom	3	1
+quality_transition	5	min	2	hdim	13	2
+quality_transition	5	min	2	maj	2	1
+quality_transition	5	min	2	min	11	5
+quality_transition	5	min	3	1	13	1
+quality_transition	5	min	3	dom	2	2
+quality_transition	5	min	3	maj	88	22
+quality_transition	5	min	3	min	6	3
+quality_transition	5	min	4	dom	3	1
+quality_transition	5	min	4	min	4	2
+quality_transition	5	min	5	1	1	1
+quality_transition	5	min	5	dom	7	2
+quality_transition	5	min	5	maj	19	6
+quality_transition	5	min	5	sus	5	3
+quality_transition	5	min	6	1	5	1
+quality_transition	5	min	6	dim	1	1
+quality_transition	5	min	6	maj	8	2
+quality_transition	5	min	7	dom	59	15
+quality_transition	5	min	7	maj	26	8
+quality_transition	5	min	7	min	190	26
+quality_transition	5	min	7	sus	33	9
+quality_transition	5	min	8	maj	153	21
+quality_transition	5	min	9	dom	2	1
+quality_transition	5	min	9	min	6	2
+quality_transition	5	other	0	maj	27	2
+quality_transition	5	other	0	other	1	1
+quality_transition	5	other	10	other	4	1
+quality_transition	5	other	3	maj	2	2
+quality_transition	5	other	6	maj	3	1
+quality_transition	5	sus	0	1	10	1
+quality_transition	5	sus	0	5	12	3
+quality_transition	5	sus	0	maj	13	5
+quality_transition	5	sus	0	min	6	3
+quality_transition	5	sus	10	dom	1	1
+quality_transition	5	sus	10	maj	37	7
+quality_transition	5	sus	10	sus	1	1
+quality_transition	5	sus	2	hdim	6	1
+quality_transition	5	sus	2	maj	4	1
+quality_transition	5	sus	2	min	8	1
+quality_transition	5	sus	3	maj	3	2
+quality_transition	5	sus	3	sus	20	1
+quality_transition	5	sus	5	dom	7	3
+quality_transition	5	sus	5	maj	120	21
+quality_transition	5	sus	5	min	6	3
+quality_transition	5	sus	7	dom	11	1
+quality_transition	5	sus	7	maj	1	1
+quality_transition	5	sus	7	min	10	1
+quality_transition	5	sus	7	sus	46	2
+quality_transition	5	sus	8	maj	7	2
+quality_transition	5	sus	8	other	1	1
+quality_transition	5	sus	9	min	2	2
+quality_transition	6	1	10	1	1	1
+quality_transition	6	1	5	1	6	2
+quality_transition	6	1	7	1	1	1
+quality_transition	6	1	7	hdim	1	1
+quality_transition	6	1	8	1	11	1
+quality_transition	6	5	5	dom	1	1
+quality_transition	6	5	7	5	3	2
+quality_transition	6	5	9	5	1	1
+quality_transition	6	aug	5	maj	1	1
+quality_transition	6	dim	0	dom	1	1
+quality_transition	6	dim	0	maj	23	7
+quality_transition	6	dim	2	min	6	3
+quality_transition	6	dim	5	dom	1	1
+quality_transition	6	dim	5	min	2	1
+quality_transition	6	dim	7	1	1	1
+quality_transition	6	dim	7	dom	5	2
+quality_transition	6	dim	7	maj	4	4
+quality_transition	6	dim	7	sus	2	2
+quality_transition	6	dom	11	maj	1	1
+quality_transition	6	dom	2	dom	3	1
+quality_transition	6	dom	4	maj	15	1
+quality_transition	6	dom	5	maj	5	2
+quality_transition	6	dom	5	min	3	1
+quality_transition	6	dom	7	dom	3	2
+quality_transition	6	hdim	11	dom	5	1
+quality_transition	6	hdim	5	maj	3	1
+quality_transition	6	hdim	7	dom	2	1
+quality_transition	6	hdim	7	sus	5	2
+quality_transition	6	maj	0	maj	3	1
+quality_transition	6	maj	10	min	3	1
+quality_transition	6	maj	11	maj	30	2
+quality_transition	6	maj	1	maj	65	8
+quality_transition	6	maj	1	min	2	1
+quality_transition	6	maj	1	sus	2	1
+quality_transition	6	maj	3	maj	7	4
+quality_transition	6	maj	4	dom	1	1
+quality_transition	6	maj	4	maj	8	2
+quality_transition	6	maj	4	sus	1	1
+quality_transition	6	maj	5	maj	5	3
+quality_transition	6	maj	5	min	3	2
+quality_transition	6	maj	5	other	4	1
+quality_transition	6	maj	5	sus	1	1
+quality_transition	6	maj	6	sus	3	1
+quality_transition	6	maj	7	maj	3	2
+quality_transition	6	maj	7	min	1	1
+quality_transition	6	maj	7	sus	3	1
+quality_transition	6	maj	8	dom	1	1
+quality_transition	6	maj	8	maj	20	5
+quality_transition	6	maj	8	min	19	2
+quality_transition	6	maj	9	maj	1	1
+quality_transition	6	min	11	dom	6	2
+quality_transition	6	min	2	maj	1	1
+quality_transition	6	min	4	maj	8	1
+quality_transition	6	min	7	maj	23	3
+quality_transition	6	other	5	maj	1	1
+quality_transition	6	sus	11	dom	3	1
+quality_transition	6	sus	11	maj	1	1
+quality_transition	6	sus	11	sus	1	1
+quality_transition	6	sus	6	maj	4	2
+quality_transition	6	sus	7	sus	1	1
+quality_transition	7	1	0	1	36	8
+quality_transition	7	1	0	maj	11	8
+quality_transition	7	1	0	min	4	2
+quality_transition	7	1	10	1	2	1
+quality_transition	7	1	2	1	7	4
+quality_transition	7	1	4	1	1	1
+quality_transition	7	1	4	min	1	1
+quality_transition	7	1	5	1	6	4
+quality_transition	7	1	6	1	1	1
+quality_transition	7	1	7	maj	1	1
+quality_transition	7	1	7	min	3	2
+quality_transition	7	1	8	1	4	3
+quality_transition	7	1	9	1	6	3
+quality_transition	7	5	0	5	60	6
+quality_transition	7	5	0	maj	8	2
+quality_transition	7	5	0	min	7	2
+quality_transition	7	5	0	other	1	1
+quality_transition	7	5	10	5	3	2
+quality_transition	7	5	10	maj	6	1
+quality_transition	7	5	2	5	10	3
+quality_transition	7	5	3	5	2	2
+quality_transition	7	5	5	1	4	1
+quality_transition	7	5	5	5	9	4
+quality_transition	7	5	5	maj	1	1
+quality_transition	7	5	5	sus	4	1
+quality_transition	7	5	7	maj	3	1
+quality_transition	7	5	8	5	4	3
+quality_transition	7	5	9	5	26	2
+quality_transition	7	aug	0	maj	13	6
+quality_transition	7	aug	0	min	36	1
+quality_transition	7	aug	8	maj	3	1
+quality_transition	7	dim	5	min	2	1
+quality_transition	7	dim	7	maj	1	1
+quality_transition	7	dim	7	sus	4	1
+quality_transition	7	dom	0	1	1	1
+quality_transition	7	dom	0	5	5	3
+quality_transition	7	dom	0	dom	115	31
+quality_transition	7	dom	0	maj	1232	187
+quality_transition	7	dom	0	min	272	38
+quality_transition	7	dom	0	sus	9	2
+quality_transition	7	dom	10	maj	1	1
+quality_transition	7	dom	11	1	1	1
+quality_transition	7	dom	11	dim	3	1
+quality_transition	7	dom	11	maj	4	4
+quality_transition	7	dom	1	maj	1	1
+quality_transition	7	dom	2	dom	9	3
+quality_transition	7	dom	2	maj	4	2
+quality_transition	7	dom	2	min	79	18
+quality_transition	7	dom	2	sus	4	2
+quality_transition	7	dom	3	dim	1	1
+quality_transition	7	dom	3	maj	16	6
+quality_transition	7	dom	3	min	1	1
+quality_transition	7	dom	4	maj	8	2
+quality_transition	7	dom	4	min	52	9
+quality_transition	7	dom	5	dom	144	25
+quality_transition	7	dom	5	hdim	1	1
+quality_transition	7	dom	5	maj	138	35
+quality_transition	7	dom	5	min	31	12
+quality_transition	7	dom	5	sus	1	1
+quality_transition	7	dom	6	dom	1	1
+quality_transition	7	dom	7	1	1	1
+quality_transition	7	dom	7	aug	2	2
+quality_transition	7	dom	7	dim	4	1
+quality_transition	7	dom	7	maj	35	13
+quality_transition	7	dom	7	min	6	2
+quality_transition	7	dom	7	sus	11	5
+quality_transition	7	dom	8	5	1	1
+quality_transition	7	dom	8	dom	6	1
+quality_transition	7	dom	8	maj	18	10
+quality_transition	7	dom	9	dom	2	2
+quality_transition	7	dom	9	maj	3	1
+quality_transition	7	dom	9	min	67	16
+quality_transition	7	hdim	0	dom	6	1
+quality_transition	7	maj	0	1	30	7
+quality_transition	7	maj	0	5	12	6
+quality_transition	7	maj	0	dom	14	6
+quality_transition	7	maj	0	maj	2929	310
+quality_transition	7	maj	0	min	124	26
+quality_transition	7	maj	0	sus	37	10
+quality_transition	7	maj	10	1	8	1
+quality_transition	7	maj	10	5	2	1
+quality_transition	7	maj	10	dim	1	1
+quality_transition	7	maj	10	dom	2	2
+quality_transition	7	maj	10	maj	113	29
+quality_transition	7	maj	11	min	6	4
+quality_transition	7	maj	2	1	1	1
+quality_transition	7	maj	2	dom	5	2
+quality_transition	7	maj	2	maj	140	25
+quality_transition	7	maj	2	min	284	46
+quality_transition	7	maj	2	other	1	1
+quality_transition	7	maj	2	sus	1	1
+quality_transition	7	maj	3	dim	2	1
+quality_transition	7	maj	3	maj	35	11
+quality_transition	7	maj	4	dim	6	2
+quality_transition	7	maj	4	dom	21	7
+quality_transition	7	maj	4	maj	4	2
+quality_transition	7	maj	4	min	180	37
+quality_transition	7	maj	4	sus	4	2
+quality_transition	7	maj	5	5	7	2
+quality_transition	7	maj	5	dom	23	5
+quality_transition	7	maj	5	maj	1654	190
+quality_transition	7	maj	5	min	1	1
+quality_transition	7	maj	5	sus	7	5
+quality_transition	7	maj	6	dom	3	1
+quality_transition	7	maj	6	maj	9	5
+quality_transition	7	maj	7	5	1	1
+quality_transition	7	maj	7	aug	6	2
+quality_transition	7	maj	7	dom	115	31
+quality_transition	7	maj	7	min	4	3
+quality_transition	7	maj	7	sus	58	17
+quality_transition	7	maj	8	dim	10	5
+quality_transition	7	maj	8	dom	3	1
+quality_transition	7	maj	8	maj	59	16
+quality_transition	7	maj	8	sus	1	1
+quality_transition	7	maj	9	5	4	2
+quality_transition	7	maj	9	dom	5	3
+quality_transition	7	maj	9	maj	38	13
+quality_transition	7	maj	9	min	413	92
+quality_transition	7	maj	9	other	1	1
+quality_transition	7	maj	9	sus	9	3
+quality_transition	7	min	0	1	4	2
+quality_transition	7	min	0	5	9	1
+quality_transition	7	min	0	dom	63	14
+quality_transition	7	min	0	maj	169	27
+quality_transition	7	min	0	min	193	35
+quality_transition	7	min	0	other	3	1
+quality_transition	7	min	0	sus	9	3
+quality_transition	7	min	10	dom	17	2
+quality_transition	7	min	10	maj	36	8
+quality_transition	7	min	10	min	1	1
+quality_transition	7	min	10	sus	10	3
+quality_transition	7	min	2	1	2	2
+quality_transition	7	min	2	dom	1	1
+quality_transition	7	min	2	hdim	3	1
+quality_transition	7	min	2	maj	2	2
+quality_transition	7	min	2	min	21	4
+quality_transition	7	min	2	sus	8	1
+quality_transition	7	min	3	dom	1	1
+quality_transition	7	min	3	maj	64	10
+quality_transition	7	min	5	1	4	1
+quality_transition	7	min	5	dom	2	1
+quality_transition	7	min	5	maj	119	21
+quality_transition	7	min	5	min	124	18
+quality_transition	7	min	5	sus	24	5
+quality_transition	7	min	6	dom	1	1
+quality_transition	7	min	7	1	1	1
+quality_transition	7	min	7	other	2	1
+quality_transition	7	min	7	sus	3	2
+quality_transition	7	min	8	dom	1	1
+quality_transition	7	min	8	maj	136	19
+quality_transition	7	min	9	dom	1	1
+quality_transition	7	min	9	maj	5	2
+quality_transition	7	min	9	min	6	2
+quality_transition	7	min	9	sus	2	1
+quality_transition	7	other	0	5	7	1
+quality_transition	7	other	0	dom	1	1
+quality_transition	7	other	0	maj	5	2
+quality_transition	7	other	0	min	4	1
+quality_transition	7	other	10	maj	1	1
+quality_transition	7	other	8	maj	1	1
+quality_transition	7	other	9	min	2	1
+quality_transition	7	sus	0	1	7	3
+quality_transition	7	sus	0	dom	10	2
+quality_transition	7	sus	0	maj	548	74
+quality_transition	7	sus	0	min	8	4
+quality_transition	7	sus	0	sus	13	3
+quality_transition	7	sus	10	maj	3	2
+quality_transition	7	sus	11	other	1	1
+quality_transition	7	sus	1	maj	19	3
+quality_transition	7	sus	2	maj	3	1
+quality_transition	7	sus	2	min	3	2
+quality_transition	7	sus	3	maj	1	1
+quality_transition	7	sus	4	dom	5	2
+quality_transition	7	sus	4	maj	4	1
+quality_transition	7	sus	4	min	9	4
+quality_transition	7	sus	5	5	1	1
+quality_transition	7	sus	5	dom	5	2
+quality_transition	7	sus	5	maj	77	17
+quality_transition	7	sus	5	min	3	2
+quality_transition	7	sus	5	sus	4	3
+quality_transition	7	sus	6	aug	1	1
+quality_transition	7	sus	7	5	6	1
+quality_transition	7	sus	7	dom	118	39
+quality_transition	7	sus	7	maj	223	47
+quality_transition	7	sus	7	min	5	4
+quality_transition	7	sus	8	5	3	1
+quality_transition	7	sus	8	dim	7	1
+quality_transition	7	sus	8	maj	17	5
+quality_transition	7	sus	9	1	11	1
+quality_transition	7	sus	9	min	62	13
+quality_transition	7	sus	9	sus	6	1
+quality_transition	8	1	0	1	3	1
+quality_transition	8	1	0	min	1	1
+quality_transition	8	1	10	1	5	2
+quality_transition	8	1	1	1	2	1
+quality_transition	8	1	1	maj	8	1
+quality_transition	8	1	3	1	3	2
+quality_transition	8	1	4	1	2	1
+quality_transition	8	1	5	1	31	3
+quality_transition	8	1	5	min	5	3
+quality_transition	8	1	6	1	5	1
+quality_transition	8	1	7	1	5	3
+quality_transition	8	1	9	1	1	1
+quality_transition	8	5	0	5	4	2
+quality_transition	8	5	1	5	1	1
+quality_transition	8	5	3	5	3	1
+quality_transition	8	5	5	5	13	2
+quality_transition	8	5	5	maj	3	1
+quality_transition	8	5	7	5	6	2
+quality_transition	8	5	7	sus	1	1
+quality_transition	8	5	9	5	2	2
+quality_transition	8	5	9	maj	1	1
+quality_transition	8	aug	0	dom	1	1
+quality_transition	8	dim	7	dim	1	1
+quality_transition	8	dim	7	maj	1	1
+quality_transition	8	dim	9	min	26	7
+quality_transition	8	dom	0	maj	5	1
+quality_transition	8	dom	0	min	9	1
+quality_transition	8	dom	10	dom	3	1
+quality_transition	8	dom	10	maj	9	1
+quality_transition	8	dom	1	maj	6	3
+quality_transition	8	dom	2	5	3	1
+quality_transition	8	dom	2	hdim	2	1
+quality_transition	8	dom	2	min	1	1
+quality_transition	8	dom	3	dom	1	1
+quality_transition	8	dom	5	maj	2	1
+quality_transition	8	dom	5	min	2	1
+quality_transition	8	dom	7	aug	1	1
+quality_transition	8	dom	7	dom	40	8
+quality_transition	8	dom	7	min	1	1
+quality_transition	8	dom	7	sus	1	1
+quality_transition	8	dom	8	maj	1	1
+quality_transition	8	dom	8	sus	1	1
+quality_transition	8	dom	9	5	1	1
+quality_transition	8	dom	9	hdim	1	1
+quality_transition	8	hdim	0	min	3	1
+quality_transition	8	maj	0	1	3	1
+quality_transition	8	maj	0	5	6	2
+quality_transition	8	maj	0	dom	7	2
+quality_transition	8	maj	0	maj	49	17
+quality_transition	8	maj	0	min	229	29
+quality_transition	8	maj	0	sus	1	1
+quality_transition	8	maj	10	dom	43	6
+quality_transition	8	maj	10	maj	715	69
+quality_transition	8	maj	10	min	30	4
+quality_transition	8	maj	10	other	1	1
+quality_transition	8	maj	10	sus	49	9
+quality_transition	8	maj	11	dim	2	2
+quality_transition	8	maj	11	dom	1	1
+quality_transition	8	maj	1	dom	6	1
+quality_transition	8	maj	1	maj	65	12
+quality_transition	8	maj	2	min	2	1
+quality_transition	8	maj	3	dom	7	2
+quality_transition	8	maj	3	maj	195	35
+quality_transition	8	maj	3	min	9	1
+quality_transition	8	maj	3	sus	6	1
+quality_transition	8	maj	4	sus	1	1
+quality_transition	8	maj	5	5	1	1
+quality_transition	8	maj	5	dom	4	2
+quality_transition	8	maj	5	maj	36	9
+quality_transition	8	maj	5	min	78	20
+quality_transition	8	maj	5	sus	2	1
+quality_transition	8	maj	6	maj	22	5
+quality_transition	8	maj	7	dom	113	16
+quality_transition	8	maj	7	maj	75	16
+quality_transition	8	maj	7	min	93	19
+quality_transition	8	maj	7	other	10	1
+quality_transition	8	maj	7	sus	76	13
+quality_transition	8	maj	8	min	20	3
+quality_transition	8	maj	8	sus	7	4
+quality_transition	8	maj	9	hdim	1	1
+quality_transition	8	maj	9	maj	6	2
+quality_transition	8	maj	9	min	8	3
+quality_transition	8	maj	9	sus	1	1
+quality_transition	8	min	0	maj	2	1
+quality_transition	8	min	0	min	6	1
+quality_transition	8	min	0	sus	2	1
+quality_transition	8	min	10	min	9	2
+quality_transition	8	min	11	maj	12	1
+quality_transition	8	min	3	maj	10	2
+quality_transition	8	min	5	hdim	2	1
+quality_transition	8	min	6	maj	8	1
+quality_transition	8	min	6	sus	1	1
+quality_transition	8	other	0	5	4	2
+quality_transition	8	other	10	maj	1	1
+quality_transition	8	other	9	maj	1	1
+quality_transition	8	sus	10	maj	4	1
+quality_transition	8	sus	10	sus	1	1
+quality_transition	8	sus	1	maj	1	1
+quality_transition	8	sus	1	min	1	1
+quality_transition	8	sus	5	min	1	1
+quality_transition	8	sus	6	sus	1	1
+quality_transition	8	sus	7	sus	4	1
+quality_transition	8	sus	8	dom	3	1
+quality_transition	8	sus	8	maj	7	4
+quality_transition	9	1	10	1	2	1
+quality_transition	9	1	11	1	1	1
+quality_transition	9	1	2	1	3	2
+quality_transition	9	1	2	maj	1	1
+quality_transition	9	1	2	other	1	1
+quality_transition	9	1	5	1	2	2
+quality_transition	9	1	5	maj	4	2
+quality_transition	9	1	7	1	3	1
+quality_transition	9	1	8	1	3	1
+quality_transition	9	1	9	sus	15	1
+quality_transition	9	5	0	dom	1	1
+quality_transition	9	5	0	min	1	1
+quality_transition	9	5	10	5	2	2
+quality_transition	9	5	2	dom	4	1
+quality_transition	9	5	4	dom	1	1
+quality_transition	9	5	4	maj	1	1
+quality_transition	9	5	5	5	26	2
+quality_transition	9	5	5	maj	23	1
+quality_transition	9	5	5	sus	1	1
+quality_transition	9	5	7	5	3	1
+quality_transition	9	5	9	sus	3	1
+quality_transition	9	dim	0	dim	3	1
+quality_transition	9	dim	5	sus	11	1
+quality_transition	9	dim	8	dim	1	1
+quality_transition	9	dom	0	maj	4	1
+quality_transition	9	dom	10	maj	4	2
+quality_transition	9	dom	2	dom	53	11
+quality_transition	9	dom	2	hdim	3	1
+quality_transition	9	dom	2	maj	22	5
+quality_transition	9	dom	2	min	123	30
+quality_transition	9	dom	2	sus	2	1
+quality_transition	9	dom	5	maj	31	6
+quality_transition	9	dom	5	min	3	1
+quality_transition	9	dom	7	dom	8	2
+quality_transition	9	dom	7	maj	1	1
+quality_transition	9	dom	8	dom	2	1
+quality_transition	9	dom	9	maj	3	1
+quality_transition	9	dom	9	min	2	1
+quality_transition	9	dom	9	other	3	1
+quality_transition	9	hdim	10	maj	1	1
+quality_transition	9	hdim	2	dom	1	1
+quality_transition	9	hdim	2	min	1	1
+quality_transition	9	hdim	5	dom	1	1
+quality_transition	9	hdim	7	maj	2	2
+quality_transition	9	maj	0	maj	31	5
+quality_transition	9	maj	0	min	2	1
+quality_transition	9	maj	10	5	1	1
+quality_transition	9	maj	10	dim	1	1
+quality_transition	9	maj	10	maj	4	2
+quality_transition	9	maj	11	5	1	1
+quality_transition	9	maj	11	maj	1	1
+quality_transition	9	maj	11	min	6	2
+quality_transition	9	maj	11	sus	1	1
+quality_transition	9	maj	2	dom	7	3
+quality_transition	9	maj	2	maj	70	18
+quality_transition	9	maj	2	min	29	6
+quality_transition	9	maj	2	sus	12	2
+quality_transition	9	maj	4	dom	4	1
+quality_transition	9	maj	4	maj	9	2
+quality_transition	9	maj	4	sus	3	1
+quality_transition	9	maj	5	5	1	1
+quality_transition	9	maj	5	maj	37	9
+quality_transition	9	maj	6	min	4	1
+quality_transition	9	maj	7	dom	1	1
+quality_transition	9	maj	7	maj	28	13
+quality_transition	9	maj	7	sus	3	1
+quality_transition	9	maj	8	maj	5	2
+quality_transition	9	maj	9	dom	6	2
+quality_transition	9	maj	9	sus	6	3
+quality_transition	9	min	0	dom	28	7
+quality_transition	9	min	0	maj	439	67
+quality_transition	9	min	0	min	2	1
+quality_transition	9	min	10	maj	90	22
+quality_transition	9	min	11	dom	7	2
+quality_transition	9	min	11	min	22	6
+quality_transition	9	min	1	dim	3	1
+quality_transition	9	min	1	maj	1	1
+quality_transition	9	min	2	dim	1	1
+quality_transition	9	min	2	dom	100	37
+quality_transition	9	min	2	maj	115	19
+quality_transition	9	min	2	min	444	75
+quality_transition	9	min	2	other	1	1
+quality_transition	9	min	2	sus	19	6
+quality_transition	9	min	3	maj	8	3
+quality_transition	9	min	4	dom	16	5
+quality_transition	9	min	4	maj	30	6
+quality_transition	9	min	4	min	250	41
+quality_transition	9	min	4	sus	12	1
+quality_transition	9	min	5	5	2	1
+quality_transition	9	min	5	dom	8	2
+quality_transition	9	min	5	maj	901	141
+quality_transition	9	min	5	min	10	5
+quality_transition	9	min	5	sus	14	4
+quality_transition	9	min	6	dim	5	2
+quality_transition	9	min	7	dom	29	9
+quality_transition	9	min	7	maj	451	79
+quality_transition	9	min	7	min	34	11
+quality_transition	9	min	7	other	1	1
+quality_transition	9	min	7	sus	31	9
+quality_transition	9	min	8	maj	32	7
+quality_transition	9	min	9	dom	3	1
+quality_transition	9	min	9	maj	5	3
+quality_transition	9	min	9	sus	6	2
+quality_transition	9	other	2	dom	3	1
+quality_transition	9	other	9	min	1	1
+quality_transition	9	sus	0	maj	4	2
+quality_transition	9	sus	2	maj	3	2
+quality_transition	9	sus	2	min	2	2
+quality_transition	9	sus	7	maj	1	1
+quality_transition	9	sus	7	sus	1	1
+quality_transition	9	sus	9	1	1	1
+quality_transition	9	sus	9	dom	12	4
+quality_transition	9	sus	9	hdim	1	1
+quality_transition	9	sus	9	maj	20	6
+quality_transition	9	sus	9	min	47	3

@@ -69,7 +69,7 @@ void validate(const GenerationRequest& request,const GenerationResult& result) {
             check(p.bassMidi[i]!=p.bassMidi[i-1]&&std::abs(p.bassMidi[i]-p.bassMidi[i-1])<=2,"no octave wrap in continuous bass line");
     }
 }
-void verifyMedia(const std::filesystem::path& directory) {
+void verifyMedia(const std::filesystem::path& directory,std::size_t expected=6) {
     namespace j=benchmark::json;std::size_t files{};
     for(const auto& folder:std::filesystem::directory_iterator(directory)) {
         const auto metadata=folder.path()/"generation.json";if(!folder.is_directory()||!std::filesystem::exists(metadata))continue;
@@ -101,10 +101,54 @@ void verifyMedia(const std::filesystem::path& directory) {
             check(bool(wave)&&std::string(reinterpret_cast<char*>(header),4)=="RIFF"&&integer(24)==48000&&header[22]==2&&frames==expectedFrames,"WAV full timing and 150ms release tail");
         }
     }
-    check(files==6,"six focused listening exports");std::cout<<files<<" WAV and 12 MIDI files; "<<checks<<" media read-back assertions PASS\n";
+    check(files==expected,"expected focused listening exports");std::cout<<files<<" WAV and "<<files*2<<" MIDI files; "<<checks<<" media read-back assertions PASS\n";
+}
+void verifyG131(const std::filesystem::path& file) {
+    const auto prior=loadStylePrior(file);check(!prior.id.empty()&&!prior.qualityTransitions.empty(),"tonic-relative root/family prior loaded");
+    GenerationRequest request;request.input=input({"F","G","Em","Am"});request.stylePrior=prior;request.resultsPerIntent=1;
+    const auto original=fingerprint(request.input);std::set<std::string> music,plans;
+    for(auto level:{VariationLevel::Conventional,VariationLevel::Rich,VariationLevel::Bold}){
+        request.variation=level;const auto result=generate(request);validate(request,result);check(result.phrases.size()==1,"one normal first result per variation");
+        const auto& phrase=result.phrases.front();check(phrase.plan.has_value(),"explicit prior-driven full phrase plan");const auto& plan=*phrase.plan;
+        check(plan.priorId==prior.id&&plan.variation==level&&plan.slots.size()==phrase.phrase.size(),"plan provenance and event correspondence");
+        check(plans.insert(plan.id).second&&music.insert(performanceIdentity(phrase)).second,"distinct preplanned variation and actual music");
+        check(phrase.evaluation.outsideChords<=plan.outsideBudget&&phrase.durationQN==16.,"planned four-bar duration and actual outside budget");
+        check(result.skeletonExpanded+result.bassExpanded<=4096&&result.expanded<=request.maximumExpansions,"separate bounded planning and realization search");
+        std::size_t chromatic{};
+        for(std::size_t i=0;i<plan.slots.size();++i){const auto& slot=plan.slots[i];const auto p=chordPitches(phrase.phrase[i]);
+            check((p.root-int(phrase.originCenter.tonic)+12)%12==slot.rootDegree&&phrase.bassMidi[i]==slot.bassMidi&&*phrase.phrase[i].durationQN==slot.durationQN,"preplanned root, bass register and rhythm actually realized");
+            check(slot.bassMidi>=36&&slot.bassMidi<=55,"planned bass remains in deliberate register");
+            if(i)check(std::abs(phrase.bassMidi[i]-phrase.bassMidi[i-1])<=plan.maximumBassLeap,"bounded actual bass trajectory");
+            if(slot.appliedDominant){++chromatic;check(i+1<plan.slots.size()&&p.quality==ChordQuality::Dominant7&&phrase.path[i].expectedRoot==std::optional(chordPitches(phrase.phrase[i+1]).root),"applied dominant has explicit immediately realized target");
+                check((absolute(p)&~unsigned((1<<0)|(1<<2)|(1<<4)|(1<<5)|(1<<7)|(1<<9)|(1<<11)))!=0,"bold transformation actually contains a context-external tone");}
+        }
+        check(chromatic==(level==VariationLevel::Bold?1u:0u),"one prepared chromatic episode only in bold");
+        const auto again=generate(request);check(again.phrases.size()==1&&again.phrases[0].id==phrase.id&&performanceIdentity(again.phrases[0])==performanceIdentity(phrase),"deterministic planned search and identity");
+        auto metadata=phrase;metadata.plan->id="diagnostic-only";check(performanceIdentity(metadata)==performanceIdentity(phrase),"metadata does not alter sounding identity");
+        std::cout<<name(level)<<" id="<<phrase.id<<" plan="<<plan.id<<" ms="<<result.elapsedMs<<" expanded="<<result.expanded<<" ";for(const auto& e:phrase.phrase)std::cout<<e.name<<'@'<<*e.durationQN<<' ';std::cout<<"PASS\n";
+    }
+    check(fingerprint(request.input)==original,"input identity including OPEN preserved");
+    request.maximumExpansions=1;const auto capped=generate(request);check(capped.budgetExhausted&&capped.expanded==1,"planned search stops at exact expansion budget");
+    request.maximumExpansions=16000;request.variation=VariationLevel::Conventional;
+    MelodyConstraint melody;melody.startQN=16.;melody.durationQN=.5;melody.role=ConstraintRole::Present;melody.strictness=ConstraintStrictness::Hard;
+    const auto unconstrained=generate(request);check(!unconstrained.phrases.empty(),"available grammar for hard-top fixture");
+    const int topPitch=72+chordPitches(unconstrained.phrases.front().phrase.front()).root;
+    melody.pitchClass=topPitch%12;melody.pitch=topPitch;melody.role=ConstraintRole::TopVoice;request.constraints.melody={melody};
+    const auto feasible=generate(request);validate(request,feasible);const auto performance=buildPerformance(request.input,feasible.phrases.front());check(bool(performance),performance.error);
+    const auto clip=midi::buildClip(performance.sequence,midi::ArrangementMode::VoiceLed,midi::ExportScope::FullPhrase,{4,4});check(bool(clip),clip.error);
+    const auto exported=midi::readFromMemory(midi::writeToMemory(clip.sequence).bytes);check(bool(exported),exported.error);
+    check(std::any_of(exported.file.notes.begin(),exported.file.notes.end(),[&](const auto& n){return n.pitch==topPitch&&std::abs(n.startQN-16.)<1e-7;}),"feasible hard top note actually exported");
+    request.constraints.melody.clear();melody.pitch.reset();melody.role=ConstraintRole::Present;
+    for(int pc=0;pc<12;++pc){melody.pitchClass=pc;request.constraints.melody.push_back(melody);}const auto impossible=generate(request);
+    check(impossible.phrases.empty()&&impossible.constraintRejected>0,"impossible hard melody is rejected without relaxing grammar");
+    request.constraints.melody.clear();request.stylePrior->transitions={{-1,0,0,1,1}};const auto unsupported=generate(request);
+    check(!unsupported&&unsupported.phrases.empty(),"unsupported prior has no manually authored fallback");
+    std::cout<<checks<<" G13.1 focused assertions PASS; only F-G-Em-Am checked\n";
 }
 }
 int main(int argc,char** argv)try {
+    if(argc==3&&std::string(argv[1])=="--g131"){verifyG131(argv[2]);return 0;}
+    if(argc==3&&std::string(argv[1])=="--g131-media"){verifyMedia(argv[2],3);return 0;}
     if(argc==3&&std::string(argv[1])=="--media"){verifyMedia(argv[2]);return 0;}
     check(argc==3,"usage: PhraseGenerationTests frozen-factory.db output-dir");const std::filesystem::path output=argv[2];std::filesystem::create_directories(output/"inputs");
     const auto factory=library::loadFactory(argv[1]);check(bool(factory),factory.error);check(factory.templates.size()==1288,"frozen Factory V8");

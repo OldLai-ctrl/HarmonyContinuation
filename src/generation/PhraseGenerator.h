@@ -3,12 +3,44 @@
 #include "core/ChordVoicer.h"
 #include "preview/PreviewSequence.h"
 #include <cstddef>
+#include <array>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace harmony::generation {
 inline constexpr const char* generatorVersion="g13-relations-v1";
+enum class VariationLevel { Conventional, Rich, Bold };
+const char* name(VariationLevel) noexcept;
+// Aggregated, tonic-relative corpus evidence. Mode is intentionally unknown
+// when the source supplies tonic but no major/minor annotation.
+struct StyleTransition { int previous2{-1}, previous{}, next{}; double count{}, songs{}; };
+struct StyleDuration { double qn{}, count{}, songs{}; };
+struct StylePosition { std::string phase; int root{}; double count{}, songs{}; };
+struct StyleQualityTransition { int previous{}, next{}; std::string previousFamily, nextFamily; double count{}, songs{}; };
+struct StylePrior {
+    std::string id, source, license, scope;
+    std::vector<StyleTransition> transitions;
+    std::vector<StyleDuration> durations;
+    std::vector<StylePosition> positions;
+    std::vector<StyleQualityTransition> qualityTransitions;
+};
+StylePrior loadStylePrior(const std::filesystem::path&); // bounded TSV; throws on invalid evidence
+struct PlannedSlot {
+    double durationQN{};
+    int rootDegree{}, anchorDegree{};
+    bool appliedDominant{};
+    std::string role, evidence;
+    int bassDegree{}, bassMidi{};
+};
+struct PhrasePlan {
+    std::string id, priorId, explanation;
+    VariationLevel variation{};
+    std::vector<PlannedSlot> slots;
+    std::size_t outsideBudget{};
+    int maximumBassLeap{7};
+};
 enum class RelationKind { Functional, VoiceLeading, Outside };
 enum class DevelopmentIntent { Natural, Open, Tension, Color, BassLine };
 const char* name(RelationKind) noexcept;
@@ -33,6 +65,8 @@ struct SuccessorContext {
     bool allowCenterChange{true};
     std::size_t maximum{24};
     std::optional<int> establishedPedal; // grounded in input, not two generated coincidences
+    std::optional<VariationLevel> variation; // experiment-only vocabulary, no product configuration
+    std::optional<int> plannedRoot, plannedBass;
 };
 // Each operator can be called independently. All share the same sounding data.
 std::vector<Relation> successors(const SuccessorContext&,RelationKind);
@@ -46,6 +80,8 @@ struct GenerationRequest {
     std::size_t beamWidth{12}, successorLimit{16}, maximumExpansions{16000};
     std::size_t resultsPerIntent{2};
     std::size_t chordCount{}; // zero: derive a 4/6/8-event phrase plan
+    std::optional<StylePrior> stylePrior;
+    VariationLevel variation{VariationLevel::Conventional};
 };
 struct PhraseEvaluation {
     // Ordinal diagnostics. structure==1 means the explicit construction checks
@@ -71,11 +107,15 @@ struct GeneratedPhrase {
     PhraseEvaluation evaluation;
     double seamQN{}, durationQN{}, inputOpenHoldQN{};
     bool hardConstraintsPassed{}, complete{};
+    std::optional<PhrasePlan> plan;
 };
 struct GenerationResult {
     std::vector<GeneratedPhrase> phrases;
     std::vector<KeySignature> contextInterpretations;
     std::size_t expanded{}, completeExamined{}, constraintRejected{}, structureRejected{};
+    // Style planning has fixed loop/beam limits, at most 4,096 examined states
+    // in addition to maximumExpansions for relation realization.
+    std::size_t skeletonExpanded{}, bassExpanded{};
     bool budgetExhausted{};
     double elapsedMs{};
     std::string error;
