@@ -6,8 +6,11 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
-| G13-C产品集成 | `HarmonyContinuation-g13/` → `development/g13c-product-integration-20261109`，代码提交`7b4000e` | dev.16测试构建，默认仅CC0先验；[技术报告](docs/G13C_PRODUCT_INTEGRATION.md) |
-| G13-C可运行测试包 | 同级 `HarmonyContinuation-g13c-test-20261110/`，Demo、VST3、examples、BUILD_INFO、宿主清单 | 未覆盖生产安装、无Setup；真实宿主待验收 |
+| 当前正式源码/主线 | `HarmonyContinuation-v011-main-20261110/` → `main`；Tag `v0.11.0` / `d888e2c` | main后续文档提交与Tag发布源码分别核实 |
+| v0.11正式构建/交付 | `HarmonyContinuation-g13/build-g13/`；同级`HarmonyContinuation-v011-delivery-20261110/` | G13 checkout所属缓存，Release x64 / Factory8 / 1288；唯一Setup、BUILD_INFO与SHA256 |
+| v0.11发布证据 | 同级`HarmonyContinuation-v011-release-evidence/` | 正式元数据、官方v0.10→v0.11隔离升级17项及远端资产digest；生产未触碰 |
+| G13-C产品集成 | 代码分支 `development/g13c-product-integration-20261109` / `7b4000e`；该分支保留，`HarmonyContinuation-g13/`当前为`release/v0.11.0-20261110` | dev.16测试构建，默认仅CC0先验；[技术报告](docs/G13C_PRODUCT_INTEGRATION.md) |
+| G13-C可运行测试包 | 同级 `HarmonyContinuation-g13c-test-20261110/`，Demo、VST3、examples、BUILD_INFO、宿主清单 | 未覆盖生产安装、独立测试交付时无Setup；用户后续确认最小宿主操作 |
 | G13-C检查与实际显示 | 同级 `HarmonyContinuation-g13c-evidence/` | 414/606/75、原生UI聚焦PASS、真实列表/5组媒体/快照；失败诊断日志保留 |
 | G13.1当前实现与交付身份 | 已保存commit `b1b855d`，从基线`26783c7a`接续 | [技术报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)；同级 `HarmonyContinuation-g131-evidence/identity.json`记录源码/CLI/先验哈希 |
 | G13.1试听与运行 | 同级 `G13_1_GENERATED_LISTENING/`；CLI、研究先验、许可、索引、三档JSON/WAV/MIDI | 仅F–G–Em–Am，各档首选；独立非商业实验，三条音乐已获用户正面评价 |
@@ -36,17 +39,17 @@
 | V7-I开发包与验证 | 同级`HarmonyContinuation-v7i-delivery-20261026/`；原始证据`HarmonyContinuation-v7i-validation-20261026/` | 正常Setup未执行；独立TestRoot安装验证；四组媒体与SHA保留，真实DAW待验收 |
 | Factory V7 内容线 | `HarmonyContinuation-factory-v7/` → `development/factory-v7-20261025`；从G5交付`24bdc239`建立 | [V7门禁](docs/FACTORY_V7_REVIEW.md)；独立内容与工具，不安装/激活 |
 | V7冻结基线与产物 | G5输入为同级`HarmonyContinuation-g5-delivery-20261025/stage-6/`；V7输出为同级`HarmonyContinuation-v7-evidence/engineering/` | G5/dev.5/Factory6保留；V7实验DB与配套HCA只供隔离集成 |
-| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`；完整主线历史保留 |
-| 原开发 checkout | `HarmonyContinuation-release/`，本轮读取时为 `development/g01-g4u-experience-20261024` | 本轮不写入；已有协作文档及其他工作保留。实时分支以Git为准；正式发布来源仍为 `v0.10.0` / `c8d8dc3` |
+| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`、`v0.11.0`；完整主线历史保留 |
+| 原开发 checkout | `HarmonyContinuation-release/`，本轮读取时为 `development/g01-g4u-experience-20261024` | 本轮不写入；已有协作文档及其他工作保留。实时分支以Git为准；正式发布来源现为 `v0.11.0` / `d888e2c` |
 | Factory V6 工作包B | `HarmonyContinuation-factory-v6/` → `development/factory-v6-b4-20261025`；B3基线分支保留在`aa42b56` | dev.4/5ae1b5a与V6配套；[验收](docs/FACTORY_V6_REVIEW.md)，未改生产V5或合入A UI |
 | V6 数据/验证/听评产物 | 同级 `HarmonyContinuation-v6-b3r-evidence/engineering/r3/`；790与810旧产物保留 | Library6/Schema2，proposal1032/experiment1014；HCA格式1配套2MiB读取器；B3历史内容证据保留，B4开发包与隔离安装证据在同级`HarmonyContinuation-v6-b4-delivery-20261025/`，生产未激活V6 |
-| 当前验证与测试包 | 同级 `HarmonyContinuation-v010-validation-20261023/`、`HarmonyContinuation-v010-delivery-20261023/` | 正式 v0.10.0 构建、门禁日志与唯一Setup；RC1/dev.15目录保留 |
+| v0.10历史验证与测试包 | 同级 `HarmonyContinuation-v010-validation-20261023/`、`HarmonyContinuation-v010-delivery-20261023/` | 正式 v0.10.0 构建、门禁日志与唯一Setup；RC1/dev.15目录保留 |
 | Phase 7 UI | `design/phase7/` 与正式 `src/ui/` | 已集成至main；原型和正式UI临时工作树已撤除，来源历史仍可追溯 |
 | 仓库精简恢复资料 | 同级 `_archive/HarmonyContinuation-repo-cleanup-20261023-180326/` | 全部原引用的Git bundle、原工作区文档ZIP及补丁；仅用于恢复，不在备份内开发 |
 | 旧目录归档 | 同级 `_archive/HarmonyContinuation-20261008/` | 保留三个旧目录全部文件；仅用于恢复。归档入口记录本机恢复条件，不在归档内开发 |
 | SDK 配置 | `VST3_SDK_ROOT` 环境变量或 CMake 缓存项 | 完整离线 SDK；各设备实际路径待核实，不提交 SDK |
 | 工具配置 | 本机开发终端的 CMake / MSVC / Ninja，打包脚本的 `Iscc` / `RuntimeDirectory` | 实际版本与路径按操作前置条件核实 |
-| 正式构建与打包输出 | 同级 `HarmonyContinuation-v010-delivery-20261023/` 与 GitHub Release；临时发布工作树已撤除 | `v0.10.0` Tag、正式源码、About BuildCommit、moduleinfo及Setup固定于 `c8d8dc3`；main后续文档提交不改变已发布身份 |
+| v0.10历史构建与打包输出 | 同级 `HarmonyContinuation-v010-delivery-20261023/` 与 GitHub Release；临时发布工作树已撤除 | `v0.10.0` Tag、正式源码、About BuildCommit、moduleinfo及Setup固定于 `c8d8dc3`；main后续文档提交不改变已发布身份 |
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。

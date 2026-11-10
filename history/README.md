@@ -21,3 +21,4 @@ rg --files history -g '*handoff*'
 | V3 为何改用 GitHub 基线、旧目录与用户库格式如何处理 | [V3 基线重建与目录归档](2026-10/2026-10-08-v3-baseline-and-archive.md) |
 | G13六条听评反馈、Idol语料接入及G13.1语法改造 | [G13.1接续](2026-11/2026-11-09-g131-grammar.md) |
 | G13-C来源集成、Snapshot4与Demo UI线程COM根因 | [G13-C接续](2026-11/2026-11-10-g13c-product-integration.md) |
+| v0.11正式身份、一次官方V5→V8隔离升级与发布证据 | [正式交付](2026-11/2026-11-10-v011-formal-release.md) |

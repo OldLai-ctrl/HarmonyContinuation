@@ -2,21 +2,23 @@
 
 ## 本轮工作与下一步
 
-### v0.11.0 发布授权与宿主门禁（2026-11-10）
+### v0.11.0 正式发布（2026-11-10）
 
-用户已确认G13-C产品音乐好听、可用，批准跳过RC1直接发布v0.11.0。正式构建、安装包、Git同步、Tag和GitHub Release均已授权，无需再次申请常规授权。产品基线仍为 **0.11.0-dev.16 / BuildCommit `7b4000e364dc3506bd097f07319e7e67c2b67054`**，接手HEAD `7ca96ec`，工作树干净。复核测试包插件、Demo、moduleinfo和Factory文件哈希与BUILD_INFO一致；产品只嵌入独立Billboard CC0聚合。
+**v0.11.0已正式发布。** [下载唯一统一Setup及校验](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.11.0)。Tag、正式源码、About BuildCommit及Setup固定于 **`d888e2c8d5f78a19a20a7936e763d407100b6a32`**；main保留完整历史，后续仅文档交接提交不改变该发布身份。Windows x64 Release / Factory V8 / Schema2 / 1,288条，产品仅Billboard CC0先验。
 
-宿主门禁已解除：用户随后确认Cubase与FL Studio的最小加载、生成试听及MIDI操作检查通过，具体宿主版本未提供；该结论为用户确认，不扩写为代理逐项实测或全部版本兼容。正式构建、统一Setup、一次隔离v0.10→v0.11升级与远端发布正在按授权执行；414/606/75及原生UI证据继续复用。最终正式身份、升级结果及下载入口在完成后写回。
+Setup：`HarmonyContinuation-0.11.0-Setup.exe`，5,213,652字节，SHA256 `ab0c1dbcd860b9d91e99701d1e9dbe2056bd0450f05111415d67d2c5597ea1c4`。Release四项资产的GitHub SHA256 digest与本地逐项一致，非草稿、非预发布。交付目录为同级`HarmonyContinuation-v011-delivery-20261110/`，证据为`HarmonyContinuation-v011-release-evidence/`；精确构建和检查范围见包内BUILD_INFO及[发布说明](docs/V0_11_RELEASE_NOTES.md)。
+
+正式版相对已验收dev.16只调整正式元数据与发布记录，算法/产品数据/打包逻辑不变。复用414/606/75与聚焦原生UI及G13.1的198/152有效证据；正式元数据核对通过，一次官方v0.10/Factory5→v0.11/Factory8隔离升级17项通过、5个旧库/个人哨兵文件保持，生产安装与真实用户数据未触碰。用户确认dev.16在Cubase和FL Studio最小加载、生成试听、MIDI操作通过，宿主版本未提供；正式二进制未由代理重新实测两宿主。安装包未签名。当前无发布待办。
 
 ### G13-C 产品集成（2026-11-10）
 
 用户已正面评价G13.1三条研究试听并批准C阶段。G13.1成果已保存为`b1b855d`；当前独立分支 `development/g13c-product-integration-20261109`，产品集成代码/BuildCommit **`7b4000e364dc3506bd097f07319e7e67c2b67054`**，测试版本 **0.11.0-dev.16 / Factory V8 / 1,288条**。当前[技术报告](docs/G13C_PRODUCT_INTEGRATION.md)维护实现、实际输出、许可、检查与限制。
 
-**工程集成及聚焦UI检查完成，CC0产品音乐已获用户认可，真实宿主待验收。** 生成候选接原RecommendationWorker，灵感完整列表固定每页10条，数据库Top3后加入常规/丰富/大胆，数据库候选及相对排序保持。Snapshot4冻结独立来源、实际音集/低音/时值，可读旧1–3；Session5保持。414项集成、606项MIDI/快照、75项旧快照检查通过，F–G–Em–Am原生界面首屏1–3数据库、4–6生成已核对。旧G13.1的198/152证据沿用。
+**工程集成及聚焦UI检查完成，后续用户已认可CC0产品音乐并确认最小宿主操作；正式交付见上方。** 生成候选接原RecommendationWorker，灵感完整列表固定每页10条，数据库Top3后加入常规/丰富/大胆，数据库候选及相对排序保持。Snapshot4冻结独立来源、实际音集/低音/时值，可读旧1–3；Session5保持。414项集成、606项MIDI/快照、75项旧快照检查通过，F–G–Em–Am原生界面首屏1–3数据库、4–6生成已核对。旧G13.1的198/152证据沿用。
 
 同级 `HarmonyContinuation-g13c-test-20261110/` 为可直接打开的Demo和独立VST测试构建，包含5条实际生成的D→E与最小宿主清单；`BUILD_INFO.json`记录最终身份与哈希。证据在同级 `HarmonyContinuation-g13c-evidence/`。第二输入Am–G#dim–G–D/F#实际有丰富/大胆两条，常规无合格完整路线；所选A大调解释及接缝需用户听评。产品仅嵌入独立Billboard CC0先验，与已验收Idol研究profile输出不同；研究统计未打入产品。
 
-G13.1的3条研究音乐、语料及CLI保留于原目录；其技术快照见[原报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)。生产安装仍是用户已验收dev.14，本轮未自动覆盖、制作Setup、推送、合并、Tag或发布。当前源码本地已提交，交接提交与最终HEAD以Git核实；[本轮历史](history/2026-11/2026-11-10-g13c-product-integration.md)记录必要根因。
+G13.1的3条研究音乐、语料及CLI保留于原目录；其技术快照见[原报告](docs/G131_PHRASE_GRAMMAR_REVIEW.md)。G13-C独立测试交付当时未覆盖生产安装或发布；后续正式交付已完成，见上方。当前源码本地已提交，交接提交与最终HEAD以Git核实；[本轮历史](history/2026-11/2026-11-10-g13c-product-integration.md)记录必要根因。
 
 ### 0.11.0-dev.14 安装交付（2026-11-06）
 

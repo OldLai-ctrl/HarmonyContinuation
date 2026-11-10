@@ -2,6 +2,14 @@
 
 先搜索所需标题，只读取对应步骤。以下命令是未在本轮执行的模板，需结合已配置方法与本机环境核实；列出命令不代表执行成功，也不授予安装、提交或发布权限。实际对象按 [MAP.md](MAP.md) 核实，任务允许对应操作后再执行。
 
+## v0.11.0已执行的发布范围
+
+正式构建在所属checkout的`build-g13`完成，设置空`HC_PRERELEASE`、`HC_GIT_COMMIT_OVERRIDE=d888e2c8d5f78a19a20a7936e763d407100b6a32`、Release x64及关闭自动插件链接；复用`tools/build-installer.ps1`与Inno6.7.4生成唯一统一Setup。具体身份见Release的BUILD_INFO，不跨checkout复制缓存。
+
+正式元数据与Factory8/1288核对通过；仅执行一次官方v0.10/Factory5→v0.11/Factory8的TestRoot安装升级。旧脚本没有该跨版本案例，故在外部证据目录使用最小一次性夹具：真实官方旧/新payload、独立HKCU登记和工作区TestRoot，17项通过、5个旧库/个人哨兵保护。未运行生产Setup、修复/卸载循环、全量CTest或音乐基准。相关注册与文件仅属隔离TestRoot，不能当生产安装。隔离卸载登记因清理动作被自动审批策略拒绝而保留，未尝试绕过；证据文件保留。已有通过证据无需接手续跑。
+
+main保留完整历史并fast-forward；正式Tag固定源码，Git推送显式使用操作时核实的代理。GitHub Release四资产为Setup、SHA256SUMS、BUILD_INFO、中文ReleaseNotes；发布后GET的每项digest与本地SHA核对。主线后续文档提交与正式源码身份分别记录，不重打包或移动Tag。
+
 ## 接手与切换
 
 在目标 checkout 执行 `git status -sb`、`git remote -v`、`git log -1 --oneline`；搜索 NOW 的当前任务。对不上基线先定位分支、未提交内容或待同步提交，不能由目录名推断版本。切换分支、清理目录或恢复旧产物前读 RISKS 的对应条目；保留开发者未提交文件。
