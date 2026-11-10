@@ -2,20 +2,20 @@
 
 把已有和弦进行变成下一段音乐，或让它本身更丰富。
 
-正式版本 **v0.10.0** 使用单一推荐引擎与 Factory V5（658 条），提供收束、发展、循环、色彩和升级进行，以及完整列表、分页、总览、真实匹配解释、双音频预览和 MIDI 输出。下载与校验见[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)，详细变更见[更新说明](docs/V0_10_RELEASE_NOTES.md)。
+正式版本 **v0.11.0** 使用Factory V8（1,288条），提供匹配优先、灵感优先、升级进行、和声祈愿四入口。灵感优先结合曲库推荐与常规/丰富/大胆生成结果，支持完整D→E试听、MIDI和冻结快照。下载与校验见[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.11.0)，详细变更见[更新说明](docs/V0_11_RELEASE_NOTES.md)。
 
 HarmonyContinuation 是一款本地运行的 Windows x64 VST3 和声创作助手。你可以导入和弦片段，查看和声分析，选择「继续发展」或「升级进行」，试听方案，再输出 MIDI 给自己的乐器演奏。界面默认简体中文，也可以切换 English。
 
-**当前版本：0.10.0。** 用户已确认 RC1 在 Cubase、FL Studio 实机全部验收通过。正式版仅调整版本元数据和文档，复用RC1实机证据；正式包另做构建、安装与加载验证，不宣称正式二进制已重新在DAW实测，不推断具体宿主或系统版本组合。
+**当前版本：0.11.0。** 用户已认可dev.16音乐并确认Cubase、FL Studio的最小加载、生成试听和MIDI操作通过，具体版本未提供。正式版保留已验收实现；正式构建、安装升级及准确身份随Release资产记录。
 
 ## 1. 安装与加载
 
-正式统一安装包为 HarmonyContinuation-0.10.0-Setup.exe，保留已验收的 RC1 功能。默认安装 VST3 与 Factory Library，也可只更新主程序；用户数据保留，旧 RC 包不覆盖。安装包未数字签名。
+正式统一安装包为 HarmonyContinuation-0.11.0-Setup.exe，默认安装VST3与Factory V8，也可只更新主程序；旧Factory和个人数据保留。安装包未数字签名。
 
 ### 安装
 
-1. 使用 Windows x64 和支持 VST3 的 64 位宿主。Cubase 与 FL Studio 的RC1验收由用户确认，其他宿主组合需自行核实。
-2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.10.0-Setup.exe**，允许安装程序请求管理员权限。
+1. 使用 Windows x64 和支持 VST3 的 64 位宿主。Cubase与FL Studio的本轮最小验收由用户确认，其他宿主组合需自行核实。
+2. 关闭正在使用插件的宿主，运行 **HarmonyContinuation-0.11.0-Setup.exe**，允许安装程序请求管理员权限。
 3. 默认插件位置为 `C:\Program Files\Common Files\VST3\HarmonyContinuation.vst3`。这是一个插件文件夹，请保留完整内容。
 4. 统一 Setup 默认选择 VST3 和 Factory Library，可单独安装任一组件；安装 / 更新、修复、修改和完整卸载均使用同一入口，无需开发工具。安装和音乐处理均可离线进行。
 
@@ -134,7 +134,7 @@ MIDI 导入不会自动把旋律轨变成旋律约束。复杂多轨、稀疏配
 
 1. 按宿主正常方式保存工程，重新打开后核对片段、模式、设置和缩放。
 2. 更新前关闭占用插件的宿主，运行新版完整 Setup。当前更新方式是运行新包，不是联网自动下载。
-3. 再次运行 **HarmonyContinuation-0.10.0-Setup.exe**，只选 Factory Library 即可更新数据，不替换 VST3；删除组件请使用「修改组件」中的明确移除项。
+3. 再次运行 **HarmonyContinuation-0.11.0-Setup.exe**，只选 Factory Library 即可更新数据，不替换 VST3；删除组件请使用「修改组件」中的明确移除项。
 4. 从 Windows「已安装的应用」或开始菜单卸载入口卸载。
 
 更新时取消勾选不会卸载。统一管理器可单独移除 VST3 或本次管理的 Factory V5；完整卸载移除管理入口。个人进行库、收藏、配置和非本次管理的 Factory 历史始终保留。个人库位于 `%LOCALAPPDATA%\HarmonyContinuation\user.db`；如需备份，关闭宿主后复制该数据目录。
