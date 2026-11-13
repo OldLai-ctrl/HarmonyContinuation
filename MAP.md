@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| B7 实验工作树 | `HarmonyContinuation-b7-factory-coverage-20261114/` → `experiment/b7-factory-coverage-20261114`，起点 B6 `f95f2af37a915b1f93019b342db96f3f883e80e2` | `git log -1` 查当前 HEAD，正式源码身份为 v0.11.0 标签 |
+| B7 回放与素材证据 | 同级 `HarmonyContinuation-b7-evidence/`；`tools/b7/` 复用 B5 冻结数据、B6 适配配置与 Release 回放 | [B7 报告](docs/B7_FACTORY_COVERAGE.md) 的 V9 规格为方案，当前无 V9 数据 |
 | B6 实验工作树 | `HarmonyContinuation-b6-retrieval-statistics-20261113/` → `experiment/b6-retrieval-statistics-20261113`，起点 B5 `bbd1f4da6b472cb845260df96f5aacfff72e7c58` | `git log -1` 核对实际实验 HEAD；正式 BuildCommit 仍按 v0.11.0 Tag |
 | B6 回放与统计证据 | 同级 `HarmonyContinuation-b6-evidence/`；`tools/b6/` 使用 B5 冻结集和原统计模型 | 回放程序和输出仅用于离线研究。B6 未生成新模型权重，`reliability/selection.json` 固定适配配置 |
 | B5 实验工作树 | `HarmonyContinuation-b5-corpus-statistics-20261113/` → `experiment/b5-corpus-statistics-20261113`，基于正式 `d888e2c8d5f78a19a20a7936e763d407100b6a32` | `git log -1` 核对实际实验 HEAD。正式身份另见 v0.11.0 Tag 和 [发布说明](docs/V0_11_RELEASE_NOTES.md) |
@@ -55,6 +57,23 @@
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
+
+## B7 外部证据身份
+
+路径相对 B7 证据根，可迁移。保留 `cohorts-final/`、`cohorts-replication/`、`replay/`、`replication/`、`trace-replay/`、`content/` 和 `time-audit/`。只需迁移证据或按 [RUNBOOK](RUNBOOK.md#b7-factory-覆盖与时值) 重建。B5/B6 模型及适配配置沿用下列原哈希。B7 没有新模型、插件或 Factory 制品，外部资料尚未同步。
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `cohorts-final/cohort.json` | `0cf062e7655789f8523fb0f5b9abd4abd2ba4d88ac6f931ecb9fb21990318c71` |
+| `cohorts-replication/cohort.json` | `cc2699cfd6f393945516cf28fc7d14062daac773f49aadc23e68e68d954e3f34` |
+| `timing-results.json` | `c363bf66a00e2303171b0fc38e41774e4d0498f03c9d9f75568767109fd5ffbb` |
+| `replication-results.json` | `65cc30b09838c34d5f75886933d103e34420244458a0e5e13cf78558c01257b8` |
+| `trace-inputs.jsonl` | `93ca5eee3c38d63bb3115cc1baf56a6e2f52f25f311e41f191918f3868e69c8c` |
+| `trace-summary.json` | `7491a47855fe697ce61504a4fb7a2c267160c8116a5b6458d2d04ae63d4265fe` |
+| `content/summary.json` | `185cd48cdb285a20ee642e15b237f1ce0acc4f5e517320e439abe8689d25df7c` |
+| `content/source_rows.jsonl` | `f03a6d405a800aae891bc3c95a990a5facfdf16444a165131178656b809c9ca2` |
+| `time-audit/timing_audit.py` | `b73be32bf8c391de216dfd6ebef3d0c54219b40bbb81eff82e00ec19f8b99b4b` |
+| `time-audit/timing_audit.json` | `e8747319d1de52d893b85972ff3e1fea9d41dc5f42a2c26fedbc14aefae53ade` |
 
 ## B6 外部证据身份
 

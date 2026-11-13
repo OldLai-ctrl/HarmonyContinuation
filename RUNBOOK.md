@@ -30,6 +30,39 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### B7 Factory 覆盖与时值
+
+核对 [MAP](MAP.md#b7-外部证据身份) 的 B5/B6 冻结数据及正式 DB/HCA。复用 B6 Release 回放工具，跨设备按下方 B6 步骤重新构建。Python 用 3.12+。下方命令使用同级目录；每个 Worker 输出目录须全新。B7 重建输出的耗时字段随机器和负载变化。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+$b6 = "../HarmonyContinuation-b6-evidence"
+$b7 = "../HarmonyContinuation-b7-evidence"
+$db = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$worker = "$b6/factory-clean-build/b5_factory_replay.exe"
+python -B tools/b7/b7_timing.py prepare --benchmark "$b5/benchmark" --b6 $b6 --output "$b7/cohorts-final"
+python -B tools/b7/b7_timing.py prepare --split validation --benchmark "$b5/benchmark" --b6 $b6 --output "$b7/cohorts-replication"
+New-Item -ItemType Directory -Force "$b7/replay","$b7/replication" | Out-Null
+foreach ($condition in @("real","grid","equal_span","open")) {
+    & $worker $db "$b7/cohorts-final/$condition.jsonl" "$b7/replay/$condition"
+    if ($LASTEXITCODE -ne 0) { throw "回放失败 $condition" }
+}
+& $worker $db "$b7/cohorts-final/real.jsonl" "$b7/replay/b6_on" --recover-consumed-tail
+foreach ($condition in @("real","grid")) {
+    & $worker $db "$b7/cohorts-replication/$condition.jsonl" "$b7/replication/$condition"
+    if ($LASTEXITCODE -ne 0) { throw "回放失败 $condition" }
+}
+python -B tools/b7/b7_timing.py compare --benchmark "$b5/benchmark" --b6 $b6 --cohorts "$b7/cohorts-final" --replays "$b7/replay" --output "$b7/timing-results.json"
+python -B tools/b7/b7_timing.py compare --benchmark "$b5/benchmark" --b6 $b6 --cohorts "$b7/cohorts-replication" --replays "$b7/replication" --output "$b7/replication-results.json"
+python -B tools/b7/b7_timing.py trace_inputs --cohorts "$b7/cohorts-final" --replays "$b7/replay" --output "$b7/trace-inputs.jsonl"
+& $worker $db "$b7/trace-inputs.jsonl" "$b7/trace-replay"
+python -B tools/b7/b7_timing.py diagnose --queries "$b7/trace-inputs.jsonl" --replay "$b7/trace-replay" --output "$b7/trace-summary.json"
+python -B tools/b7/b7_content.py --b5 $b5 --b6 $b6 --factory $db --output "$b7/content" --replay-queries "$b7/cohorts-final/real.jsonl" --replication-queries "$b7/cohorts-replication/real.jsonl"
+python -B "$b7/time-audit/timing_audit.py" --b5 $b5 --queries "$b7/cohorts-final/real.jsonl" --output "$b7/time-audit/timing_audit.json"
+```
+
+回放使用已核验的 B6 程序，重复利用已有结果时从相应 `compare`、`trace_inputs` 或 `diagnose` 命令开始。原始符号时值检查脚本随外部证据保留。分析的 V9 规格见 [B7 报告](docs/B7_FACTORY_COVERAGE.md#factory-v9-首批建设规格)，后续制库需新任务。
+
 ### B6 Factory 检索与统计适配
 
 以 [MAP](MAP.md) 指定的 B5 冻结输入和正式 Factory V8 DB/HCA 为基础。以下命令在 B6 checkout 的 MSVC x64 开发终端执行，离线回放目录须全新。重跑 ON/OFF 计时按顺序执行。
