@@ -136,6 +136,7 @@ struct MatchWeights {
     float minimumMatchedFraction{0.75f};
     float lowCoveragePenalty{0.80f};
     std::size_t shortlistLimit{}; // 0 scans the full index; positive values cap fingerprint preselection
+    bool recoverConsumedFactoryTail{}; // opt-in continuation retrieval for a nonlooping source
     bool abstractChordCompatibility{false}; // directional explicit pitch-set experiment; default off
 };
 

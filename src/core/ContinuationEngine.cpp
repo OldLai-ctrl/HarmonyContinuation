@@ -317,6 +317,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     result.abstractChordCompatibility=unified||w.abstractChordCompatibility;
     MatchWeights matchWeights;
     matchWeights.abstractChordCompatibility=result.abstractChordCompatibility;
+    matchWeights.recoverConsumedFactoryTail=request.recoverConsumedFactoryTail;
     if(unified) matchWeights.keyPriorWeight=0.f;
     const bool creative=request.inspirationPriority&&request.preferredIntent!=PhraseIntent::Resolve;
     // The ordinary Match bank keeps its full-history contract. Inspiration

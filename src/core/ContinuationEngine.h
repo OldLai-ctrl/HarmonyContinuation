@@ -148,6 +148,8 @@ struct RecommendationRequest {
     bool prepareBothViews{}; // worker request only; navigation reuses two immutable result banks
     bool diagnoseCreative{}; // bounded, opt-in editorial-route gate trace; not used by the worker
     bool harmonicReranking{}; // reversible dev.15 posterior ranking; false reproduces dev.14
+    std::vector<TemplateID> traceSources; // offline retrieval audit, sorted source IDs
+    bool recoverConsumedFactoryTail{}; // B6 experiment, runtime request only
 };
 // Output identity shared by ranking and presentation; omits explanatory key/intent.
 std::string continuationMusicFingerprint(const ContinuationCandidate&);
@@ -164,6 +166,7 @@ struct CreativeTrial {
     KeySignature key;
     std::string disposition;
     float boundary{};
+    std::size_t continuationStart{};
 };
 struct RecommendationSet {
     RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};

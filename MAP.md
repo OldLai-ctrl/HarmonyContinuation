@@ -6,6 +6,8 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| B6 实验工作树 | `HarmonyContinuation-b6-retrieval-statistics-20261113/` → `experiment/b6-retrieval-statistics-20261113`，起点 B5 `bbd1f4da6b472cb845260df96f5aacfff72e7c58` | `git log -1` 核对实际实验 HEAD；正式 BuildCommit 仍按 v0.11.0 Tag |
+| B6 回放与统计证据 | 同级 `HarmonyContinuation-b6-evidence/`；`tools/b6/` 使用 B5 冻结集和原统计模型 | 回放程序和输出仅用于离线研究。B6 未生成新模型权重，`reliability/selection.json` 固定适配配置 |
 | B5 实验工作树 | `HarmonyContinuation-b5-corpus-statistics-20261113/` → `experiment/b5-corpus-statistics-20261113`，基于正式 `d888e2c8d5f78a19a20a7936e763d407100b6a32` | `git log -1` 核对实际实验 HEAD。正式身份另见 v0.11.0 Tag 和 [发布说明](docs/V0_11_RELEASE_NOTES.md) |
 | B5 语料、划分、模型和离线证据 | 工作树同级 `HarmonyContinuation-b5-evidence/`，可迁移到任意目录；`sources/` 按 [语料清单](docs/B5_CORPORA.md) 恢复，`benchmark/freeze.json` 标记 `b5-v1-20261113` 及固定划分哈希 | `benchmark/selection.json` 记录 `b5-ngram-v1` 选型与模型哈希。训练源仅 Billboard CC0，MPB 仅外测；模型与数据不随代码提交同步 |
 | B5 Factory 回放 | 取 v0.11.0 交付目录 `stage-8/factory.db` 与同目录 `factory.hca`；发布包文件身份见同级 `HarmonyContinuation-v011-delivery-20261110/BUILD_INFO.json` | `factory-replay/` 保留候选、原序和离线评分证据。复现见 [RUNBOOK](RUNBOOK.md#b5-真实音乐续接统计) |
@@ -53,6 +55,20 @@
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
+
+## B6 外部证据身份
+
+外部目录尚未同步。可迁移 `cohorts/`、`diagnostic-off/`、`development-{off,on}/`、`holdout-{off,on}/`、`endpoint-probe/`、`reliability/`、`sample-986-hard.jsonl` 和 `sample-986-hard-on/` 及下表汇总，或用已冻结的 B5 输入按 [RUNBOOK](RUNBOOK.md#b6-factory-检索与统计适配) 复现。探针保留 `witness.py`、`run.cmd`、`EndpointProbe.cpp` 和 `ProbeMatcher.cpp`，用于定位特定来源落点。计时只对应本次顺序回放。
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `cohorts/confirmation.jsonl` | `582192a1f2b4fe8d826380df5ee16dfaead297a7d1e9bebc3d01f22bee2e51b2` |
+| `diagnosis.json` | `e78a2b5e5768f19d6e3ca7979409505a50370a3e38258c7fc3ea46078981c7b9` |
+| `endpoint-probe/summary.json` | `920f301a2fbd350c0034913828d34e7c056a5e497d791716432e3f08f05b820e` |
+| `reliability/selection.json` | `309e6c4391fe0166cc5340df44b625afb4e479e7a99601ec46ddfad809db308e` |
+| `reliability/test_metrics.json` | `03466556f7ee9c9da5034d63a15f9d14db4849ed2c0bd903fc2c37d27001e23d` |
+| `development-comparison.json` | `9726220b159ae542684056d3addee57db056eb692819fe52320a79d491a6ac89` |
+| `holdout-comparison.json` | `e0f5a36a2179b714c47e4cd0f82d6d38698b590ab49937b34b76a7f42c97848e` |
 
 ## B5 外部证据身份
 

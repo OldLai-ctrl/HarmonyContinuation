@@ -30,6 +30,30 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### B6 Factory 检索与统计适配
+
+以 [MAP](MAP.md) 指定的 B5 冻结输入和正式 Factory V8 DB/HCA 为基础。以下命令在 B6 checkout 的 MSVC x64 开发终端执行，离线回放目录须全新。重跑 ON/OFF 计时按顺序执行。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+$b6 = "../HarmonyContinuation-b6-evidence"
+$db = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+python -B tools/b6/b6_factory.py prepare --benchmark "$b5/benchmark" --b5-replay "$b5/factory-replay" --output "$b6/cohorts"
+python -B tools/b6/b6_reliability.py --benchmark "$b5/benchmark" --output "$b6/reliability"
+cmake -S tools/b5/factory -B "$b6/factory-clean-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$b6/factory-clean-build" --target b5_factory_replay
+$replay = "$b6/factory-clean-build/b5_factory_replay.exe"
+& $replay $db "$b6/cohorts/diagnostic.jsonl" "$b6/diagnostic-off"
+python -B tools/b6/b6_factory.py diagnose --queries "$b6/cohorts/diagnostic.jsonl" --replay "$b6/diagnostic-off" --output "$b6/diagnosis.json"
+& $replay $db "$b6/cohorts/confirmation.jsonl" "$b6/holdout-off"
+& $replay $db "$b6/cohorts/confirmation.jsonl" "$b6/holdout-on" --recover-consumed-tail
+python -B tools/b6/b6_factory.py compare --queries "$b6/cohorts/confirmation.jsonl" --benchmark "$b5/benchmark" --baseline "$b6/holdout-off" --replay "$b6/holdout-on" --reliability "$b6/reliability" --output "$b6/holdout-comparison.json"
+```
+
+开发对照将最后三行的输入改为 `$b5/benchmark/factory_queries.jsonl`，回放目录改为 `development-off`、`development-on`，汇总名改为 `development-comparison.json`。工具读取 Worker 的实际顺序，统计排序在回放之后离线运行。复查硬约束时用外部 `sample-986-hard.jsonl` 运行同一回放并开启 `--recover-consumed-tail`，核对 `V3_HOME_055`、`key=4`、`next=3` 的 `melody_constraint`。
+
+另有 [MAP](MAP.md#b6-外部证据身份) 指定的定点端点探针，依赖 B5 构建库，探针目录内的 `run.cmd` 包含本机工具路径，迁移后先核对并调整再运行。新设备用新构建目录。当前证据的耗时可随机器、构建与负载变化。
+
 ### B5 真实音乐续接统计
 
 本节已在 B5 工作树运行。离线工具使用 Python 3.12+ 标准库，本轮为 3.14.7。先从 [语料清单](docs/B5_CORPORA.md) 核对版本、使用权限及 SHA-256。证据根按 [MAP](MAP.md) 定位，以下为同级目录示例。

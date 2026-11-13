@@ -4,6 +4,7 @@
 #include "library/ProgressionLibrary.h"
 #include "plugin/RecommendationWorker.h"
 #include "product/ProductVersion.h"
+#include "ui/RecommendationBrowse.h"
 
 #include <algorithm>
 #include <array>
@@ -211,6 +212,8 @@ void writeCatalog(const library::LoadResult& factory, std::ostream& out) {
     for (const auto& item : factory.templates) {
         Value row = Value::map();
         row.object["source"] = item.id;
+        row.object["tonic"] = static_cast<int>(item.rawChordKey.value_or(KeySignature{PitchClass::C, item.mode}).tonic);
+        row.object["mode"] = static_cast<int>(item.mode);
         Value events = Value::list();
         double onset{};
         for (std::size_t i = 0; i < item.full.size(); ++i) {
@@ -228,22 +231,83 @@ void writeCatalog(const library::LoadResult& factory, std::ostream& out) {
 }
 
 Value replay(const Value& query, plugin::RecommendationWorker& worker,
-             const std::set<TemplateID>& factoryIds) {
+             const std::set<TemplateID>& factoryIds, bool recoverConsumedFactoryTail) {
     const auto progression = makeInput(query);
     RecommendationRequest request;
     request.prepareBothViews = true;
+    request.recoverConsumedFactoryTail = recoverConsumedFactoryTail;
+    if (const auto* sources = optional(query, "trace_sources")) {
+        for (const auto& source : sources->items()) request.traceSources.push_back(source.text());
+        std::sort(request.traceSources.begin(), request.traceSources.end());
+    }
+    if (const auto* melody = optional(query, "hard_melody")) {
+        MelodyConstraint note;
+        note.pitchClass = melody->at("pitch_class").integer(0, 11);
+        note.startQN = melody->at("onset").finite();
+        note.durationQN = melody->at("duration").finite();
+        note.strictness = ConstraintStrictness::Hard;
+        request.constraints.melody.push_back(note);
+        if (!validConstraints(request.constraints)) throw std::runtime_error("invalid hard melody fixture");
+    }
     const auto result = waitFor(worker, worker.submit(progression, makeContext(query), request));
     Value row = Value::map();
     row.object["id"] = query.at("id");
     row.object["worker_ms"] = result.computationMs;
+    const auto key = [](KeySignature key) {
+        return static_cast<int>(key.tonic) + 12 * static_cast<int>(key.mode);
+    };
+    if (!request.traceSources.empty()) {
+        Value exact = Value::list();
+        for (const auto& match : result.recommendations.matches) {
+            if (!std::binary_search(request.traceSources.begin(), request.traceSources.end(), match.templateId))
+                continue;
+            Value trace = Value::map();
+            trace.object["source"] = match.templateId;
+            trace.object["key"] = key(match.key);
+            trace.object["start"] = static_cast<int>(match.templateMatchStart);
+            trace.object["next"] = static_cast<int>(match.continuationStartIndex);
+            trace.object["similarity"] = match.similarity;
+            trace.object["eligibility"] = match.candidateEligibilityScore;
+            trace.object["disposition"] = match.disposition;
+            exact.array.push_back(std::move(trace));
+        }
+        Value contextual = Value::list();
+        for (const auto& trial : result.recommendations.creativeTrials) {
+            Value trace = Value::map();
+            trace.object["source"] = trial.source;
+            trace.object["key"] = key(trial.key);
+            trace.object["next"] = static_cast<int>(trial.continuationStart);
+            trace.object["disposition"] = trial.disposition;
+            contextual.array.push_back(std::move(trace));
+        }
+        row.object["exact_trace"] = std::move(exact);
+        row.object["context_trace"] = std::move(contextual);
+    }
+    row.object["aligned"] = static_cast<int>(result.recommendations.stats.aligned);
+    row.object["exact_qualified"] = static_cast<int>(result.recommendations.stats.scorePassed);
+    row.object["context_qualified"] = static_cast<int>(result.recommendations.contextualQualified +
+                                                     result.recommendations.transitionQualified);
     Value candidates = Value::list();
     std::set<std::string> identities;
+    std::vector<std::string> generatedIdentities;
     int generated{}, productRank{};
-    for (const auto position : mixedInspirationOrder(result.recommendations)) {
+    const auto& order = result.recommendations.inspirationOrder;
+    const auto total = order.size();
+    const auto generatedTotal = std::count_if(order.begin(), order.end(), [&](const auto ref) {
+        return result.recommendations.groups.at(ref.group).at(ref.index).generated.has_value();
+    });
+    const auto generatedStart = std::min<std::size_t>(3, total - generatedTotal);
+    for (std::size_t i = 0; i < total; ++i) {
+        const auto page = ui::browsePage(total, ui::browsePageIndex(i));
+        if (i < page.begin || i >= page.end || page.end - page.begin > ui::recommendationPageSize)
+            throw std::runtime_error("invalid inspiration pagination");
+        const auto position = order[i];
         const auto& candidate = result.recommendations.groups.at(position.group).at(position.index);
         ++productRank;
         if (candidate.generated) {
+            if (i != generatedStart + generated) throw std::runtime_error("unexpected G13 insertion position");
             ++generated;
+            generatedIdentities.push_back(continuationMusicFingerprint(candidate));
             continue;
         }
         if (!candidate.baseQualified || !candidate.hardConstraintsPassed ||
@@ -260,6 +324,8 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         record.object["group"] = static_cast<int>(position.group);
         record.object["product_rank"] = productRank;
         record.object["channel"] = channels.at(static_cast<std::size_t>(candidate.channel));
+        record.object["key"] = key(candidate.key);
+        record.object["next"] = static_cast<int>(candidate.continuationStart);
         record.object["structure_qualified"] = candidate.structureQualified;
         record.object["exploratory"] = candidate.exploratory;
         record.object["seam_qn"] = candidate.seamQN;
@@ -274,6 +340,9 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         candidates.array.push_back(std::move(record));
     }
     row.object["generated_count"] = generated;
+    Value generatedRecords = Value::list();
+    for (const auto& identity : generatedIdentities) generatedRecords.array.emplace_back(identity);
+    row.object["generated_identities"] = std::move(generatedRecords);
     row.object["candidates"] = std::move(candidates);
     return row;
 }
@@ -282,8 +351,8 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
 int main(int argc, char** argv) {
     try {
         if (product::printVersionIfRequested(argc, argv)) return 0;
-        if (argc != 4)
-            throw std::runtime_error("usage: b5_factory_replay <frozen factory.db> <queries.jsonl> <new output directory>");
+        if (argc != 4 && !(argc == 5 && std::string_view(argv[4]) == "--recover-consumed-tail"))
+            throw std::runtime_error("usage: b5_factory_replay <frozen factory.db> <queries.jsonl> <new output directory> [--recover-consumed-tail]");
         const auto database = fs::absolute(argv[1]);
         const auto output = fs::absolute(argv[3]);
         std::ifstream queries(argv[2], std::ios::binary);
@@ -308,7 +377,7 @@ int main(int argc, char** argv) {
             const auto& id = query.at("id").text();
             if (!seen.insert(id).second) throw std::runtime_error("duplicate input query: " + id);
             try {
-                replayFile << json::dump(replay(query, worker, factoryIds)) << '\n';
+                replayFile << json::dump(replay(query, worker, factoryIds, argc == 5)) << '\n';
             } catch (const std::exception& error) {
                 throw std::runtime_error(id + ": " + error.what());
             }

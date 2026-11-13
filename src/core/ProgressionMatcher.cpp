@@ -236,9 +236,9 @@ struct LayerResult {
 struct Cell { float cost{std::numeric_limits<float>::infinity()}; std::uint8_t predecessor{}; std::size_t pairs{}; };
 
 LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent>& t,
-                   const MatchWeights& w, Mode mode, bool continuousStructure = false) {
-    LayerResult out;
-    if (q.empty() || t.empty()) return out;
+                   const MatchWeights& w, Mode mode, bool continuousStructure = false,
+                   LayerResult* earlierTail = nullptr) {
+    if (q.empty() || t.empty()) return {};
     const auto n = q.size(), m = t.size();
     // Select the path by harmony; timing is measured on that path for ranking only.
     std::vector<Cell> dp((n + 1) * (m + 1));
@@ -266,101 +266,126 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     }
     // The complete query is consumed. Template suffix is free; prefer higher
     // pair coverage when endpoints have equal cost.
+    const auto adjustedCost = [&](std::size_t j) {
+        const auto& cell = at(n, j);
+        const float coverage = static_cast<float>(cell.pairs) / static_cast<float>(n);
+        return cell.cost + w.lowCoveragePenalty *
+            std::max(0.f, w.minimumMatchedFraction - coverage) * static_cast<float>(n);
+    };
+    const auto betterEndpoint = [&](std::size_t j, std::size_t current, float cost, float best) {
+        return cost < best - epsilon || (std::abs(cost - best) <= epsilon && at(n, j).pairs > at(n, current).pairs);
+    };
     std::size_t end = 1;
     float best = std::numeric_limits<float>::infinity();
     for (std::size_t j = 1; j <= m; ++j) {
-        const auto& cell = at(n, j);
-        const float coverage = static_cast<float>(cell.pairs) / static_cast<float>(n);
-        const float adjusted = cell.cost + w.lowCoveragePenalty *
-            std::max(0.f, w.minimumMatchedFraction - coverage) * static_cast<float>(n);
-        if (adjusted < best - epsilon || (std::abs(adjusted - best) <= epsilon && cell.pairs > at(n, end).pairs)) {
+        const auto adjusted = adjustedCost(j);
+        if (betterEndpoint(j, end, adjusted, best)) {
             best = adjusted;
             end = j;
         }
     }
-    out.cost = best;
-    out.similarity = std::clamp(std::exp(-best / (std::max(1.f, static_cast<float>(n)) * w.similarityScale)), 0.f, 1.f);
-    out.end = end - 1;
-    std::size_t i = n, j = end;
-    float functionSum{}, roleSum{}, rhythmSum{};
-    std::size_t rhythmCount{};
-    std::vector<std::optional<std::pair<std::size_t, std::size_t>>> pairPositions;
-    while (i > 0) {
-        const auto pred = at(i, j).predecessor;
-        AlignmentStep step;
-        if (pred == 1 && j > 0) {
-            --i; --j;
-            pairPositions.emplace_back(std::pair{i, j});
-            step.queryIndex = q[i].sourceIndex;
-            step.templateIndex = t[j].sourceIndex;
-            step.cost = pairCost(q[i], t[j], w, step.reasons, i + 1 == n, mode);
-            step.operation = step.cost <= epsilon ? AlignmentOp::Match : AlignmentOp::Substitute;
-            ++out.pairCount;
-            functionSum += q[i].function == t[j].function ? 1.f : 0.f;
-            roleSum += (step.reasons & flag(MatchReason::SameRole)) ? 1.f : 0.f;
-        } else if (pred == 2 || j == 0) {
-            --i;
-            pairPositions.emplace_back(std::nullopt);
-            step.queryIndex = q[i].sourceIndex;
-            step.operation = AlignmentOp::QueryInsertion;
-            step.cost = gapCost(q[i], w, step.reasons, true, continuousStructure);
-            if (i + 1 == n && !hasReason(step.reasons, MatchReason::EmbellishingInsertion))
-                step.cost *= w.queryTailStructuralFactor;
-        } else {
-            --j;
-            pairPositions.emplace_back(std::nullopt);
-            step.templateIndex = t[j].sourceIndex;
-            step.operation = AlignmentOp::TemplateDeletion;
-            step.cost = gapCost(t[j], w, step.reasons, false, continuousStructure);
-        }
-        out.trace.push_back(step);
-    }
-    out.start = j;
-    std::reverse(out.trace.begin(), out.trace.end());
-    std::reverse(pairPositions.begin(), pairPositions.end());
-    for (std::size_t k = 0; k < out.trace.size(); ++k) {
-        auto& step = out.trace[k];
-        if (step.operation != AlignmentOp::QueryInsertion || !step.queryIndex) continue;
-        const auto inserted = std::find_if(q.begin(), q.end(), [&](const auto& event) {
-            return event.sourceIndex == *step.queryIndex;
-        });
-        if (inserted == q.end() || !inserted->target) continue;
-        for (std::size_t next = k + 1; next < out.trace.size(); ++next) {
-            if (!out.trace[next].queryIndex) continue;
-            if (out.trace[next].templateIndex) {
-                const auto resolved = std::find_if(q.begin(), q.end(), [&](const auto& event) {
-                    return event.sourceIndex == *out.trace[next].queryIndex;
-                });
-                if (resolved != q.end() && sameDegree(inserted->target, resolved->degree))
-                    step.reasons |= flag(MatchReason::ResolvesToMatchedTarget);
+    const auto materialize = [&](std::size_t end, float best) {
+        LayerResult out;
+        out.cost = best;
+        out.similarity = std::clamp(std::exp(-best / (std::max(1.f, static_cast<float>(n)) * w.similarityScale)), 0.f, 1.f);
+        out.end = end - 1;
+        std::size_t i = n, j = end;
+        float functionSum{}, roleSum{}, rhythmSum{};
+        std::size_t rhythmCount{};
+        std::vector<std::optional<std::pair<std::size_t, std::size_t>>> pairPositions;
+        while (i > 0) {
+            const auto pred = at(i, j).predecessor;
+            AlignmentStep step;
+            if (pred == 1 && j > 0) {
+                --i; --j;
+                pairPositions.emplace_back(std::pair{i, j});
+                step.queryIndex = q[i].sourceIndex;
+                step.templateIndex = t[j].sourceIndex;
+                step.cost = pairCost(q[i], t[j], w, step.reasons, i + 1 == n, mode);
+                step.operation = step.cost <= epsilon ? AlignmentOp::Match : AlignmentOp::Substitute;
+                ++out.pairCount;
+                functionSum += q[i].function == t[j].function ? 1.f : 0.f;
+                roleSum += (step.reasons & flag(MatchReason::SameRole)) ? 1.f : 0.f;
+            } else if (pred == 2 || j == 0) {
+                --i;
+                pairPositions.emplace_back(std::nullopt);
+                step.queryIndex = q[i].sourceIndex;
+                step.operation = AlignmentOp::QueryInsertion;
+                step.cost = gapCost(q[i], w, step.reasons, true, continuousStructure);
+                if (i + 1 == n && !hasReason(step.reasons, MatchReason::EmbellishingInsertion))
+                    step.cost *= w.queryTailStructuralFactor;
+            } else {
+                --j;
+                pairPositions.emplace_back(std::nullopt);
+                step.templateIndex = t[j].sourceIndex;
+                step.operation = AlignmentOp::TemplateDeletion;
+                step.cost = gapCost(t[j], w, step.reasons, false, continuousStructure);
             }
-            break;
+            out.trace.push_back(step);
         }
+        out.start = j;
+        std::reverse(out.trace.begin(), out.trace.end());
+        std::reverse(pairPositions.begin(), pairPositions.end());
+        for (std::size_t k = 0; k < out.trace.size(); ++k) {
+            auto& step = out.trace[k];
+            if (step.operation != AlignmentOp::QueryInsertion || !step.queryIndex) continue;
+            const auto inserted = std::find_if(q.begin(), q.end(), [&](const auto& event) {
+                return event.sourceIndex == *step.queryIndex;
+            });
+            if (inserted == q.end() || !inserted->target) continue;
+            for (std::size_t next = k + 1; next < out.trace.size(); ++next) {
+                if (!out.trace[next].queryIndex) continue;
+                if (out.trace[next].templateIndex) {
+                    const auto resolved = std::find_if(q.begin(), q.end(), [&](const auto& event) {
+                        return event.sourceIndex == *out.trace[next].queryIndex;
+                    });
+                    if (resolved != q.end() && sameDegree(inserted->target, resolved->degree))
+                        step.reasons |= flag(MatchReason::ResolvesToMatchedTarget);
+                }
+                break;
+            }
+        }
+        // Estimate one global tempo ratio from aligned, known-duration pairs.
+        // This excludes an OPEN final chord and unmatched passing events, so
+        // missing durations cannot shift the normalization of earlier chords.
+        std::vector<double> ratios;
+        for (const auto& pair : pairPositions) if (pair) {
+            const auto [qi, ti] = *pair;
+            if (q[qi].durationQN && t[ti].durationQN && *q[qi].durationQN > 0 && *t[ti].durationQN > 0)
+                ratios.push_back(*t[ti].durationQN / *q[qi].durationQN);
+        }
+        const auto tempoScale = median(std::move(ratios));
+        for (std::size_t k = 0; k < out.trace.size(); ++k) if (pairPositions[k]) {
+            const auto [qi, ti] = *pairPositions[k];
+            if (!q[qi].durationQN || !t[ti].durationQN || *q[qi].durationQN <= 0 || *t[ti].durationQN <= 0) continue;
+            const auto newDeviation = std::min(2.f, static_cast<float>(
+                std::abs(std::log2(*q[qi].durationQN * tempoScale / *t[ti].durationQN))));
+            if (newDeviation > 0.25f) out.trace[k].reasons |= flag(MatchReason::RhythmMismatch);
+            rhythmSum += std::max(0.f, 1.f - newDeviation / 2.f);
+            ++rhythmCount;
+        }
+        out.similarity = std::clamp(std::exp(-out.cost / (std::max(1.f, static_cast<float>(n)) * w.similarityScale)), 0.f, 1.f);
+        out.functionScore = out.pairCount ? functionSum / static_cast<float>(out.pairCount) : 0.f;
+        out.roleScore = out.pairCount ? roleSum / static_cast<float>(out.pairCount) : 0.f;
+        out.rhythmScore = rhythmCount ? rhythmSum / static_cast<float>(rhythmCount) : 1.f;
+        return out;
+    };
+    if (earlierTail && end == m && at(n, m).predecessor == 1) {
+        std::size_t earlier = 1;
+        float earlierCost = std::numeric_limits<float>::infinity();
+        for (std::size_t j = 1; j < m; ++j) {
+            // The final input chord must participate at the source seam, as in
+            // the existing Exact tail gate. Reuse the already-computed DP.
+            if (at(n, j).predecessor != 1) continue;
+            const auto cost = adjustedCost(j);
+            if (betterEndpoint(j, earlier, cost, earlierCost)) {
+                earlier = j;
+                earlierCost = cost;
+            }
+        }
+        if (std::isfinite(earlierCost)) *earlierTail = materialize(earlier, earlierCost);
     }
-    // Estimate one global tempo ratio from aligned, known-duration pairs.
-    // This excludes an OPEN final chord and unmatched passing events, so
-    // missing durations cannot shift the normalization of earlier chords.
-    std::vector<double> ratios;
-    for (const auto& pair : pairPositions) if (pair) {
-        const auto [qi, ti] = *pair;
-        if (q[qi].durationQN && t[ti].durationQN && *q[qi].durationQN > 0 && *t[ti].durationQN > 0)
-            ratios.push_back(*t[ti].durationQN / *q[qi].durationQN);
-    }
-    const auto tempoScale = median(std::move(ratios));
-    for (std::size_t k = 0; k < out.trace.size(); ++k) if (pairPositions[k]) {
-        const auto [qi, ti] = *pairPositions[k];
-        if (!q[qi].durationQN || !t[ti].durationQN || *q[qi].durationQN <= 0 || *t[ti].durationQN <= 0) continue;
-        const auto newDeviation = std::min(2.f, static_cast<float>(
-            std::abs(std::log2(*q[qi].durationQN * tempoScale / *t[ti].durationQN))));
-        if (newDeviation > 0.25f) out.trace[k].reasons |= flag(MatchReason::RhythmMismatch);
-        rhythmSum += std::max(0.f, 1.f - newDeviation / 2.f);
-        ++rhythmCount;
-    }
-    out.similarity = std::clamp(std::exp(-out.cost / (std::max(1.f, static_cast<float>(n)) * w.similarityScale)), 0.f, 1.f);
-    out.functionScore = out.pairCount ? functionSum / static_cast<float>(out.pairCount) : 0.f;
-    out.roleScore = out.pairCount ? roleSum / static_cast<float>(out.pairCount) : 0.f;
-    out.rhythmScore = rhythmCount ? rhythmSum / static_cast<float>(rhythmCount) : 1.f;
-    return out;
+    return materialize(end, best);
 }
 
 float fingerprintScore(const ProgressionFingerprint& q, const ProgressionFingerprint& t) {
@@ -508,42 +533,53 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
                 ? q.full : (t.version >= 4 && t.skeletonIndices.size() == t.full.size()
                     ? q.full : skeleton(q.full, q.skeletonIndices));
             const bool continuousStructure = query.retrievalTimingMode == RetrievalTimingMode::ContinuousStructure;
-            const auto full = align(q.full, t.full, w, t.mode, continuousStructure);
+            LayerResult earlier;
+            const bool recover = w.recoverConsumedFactoryTail && retainKeyInterpretations &&
+                query.retrievalTimingMode == RetrievalTimingMode::Unified && !t.loopable &&
+                t.sourceType == "factory";
+            const auto full = align(q.full, t.full, w, t.mode, continuousStructure,
+                                    recover ? &earlier : nullptr);
             const auto structural = align(qs, ts, w, t.mode, continuousStructure);
             if (!full.pairCount || !structural.pairCount) continue;
-            MatchResult r;
-            r.templateId = t.id;
-            r.templateName = t.name;
-            r.key = q.key.key;
-            r.keyPrior = q.key.confidence;
-            r.rawCost = full.cost;
-            r.subScores.skeletonHarmony = structural.similarity;
-            r.subScores.fullHarmony = full.similarity;
-            r.subScores.functionSimilarity = full.functionScore;
-            r.subScores.roleSimilarity = full.roleScore;
-            r.subScores.rhythmSimilarity = full.rhythmScore;
-            r.subScores.keyCompatibility = q.key.confidence;
-            const auto harmonyScore = (w.skeletonWeight * structural.similarity + w.fullWeight * full.similarity) /
-                                      std::max(epsilon, w.skeletonWeight + w.fullWeight);
-            r.similarity = std::clamp((1.f - w.keyPriorWeight) * harmonyScore +
-                                      w.keyPriorWeight * q.key.confidence, 0.f, 1.f);
-            r.templateMatchStart = full.start;
-            r.templateMatchEnd = full.end;
-            r.continuationStartIndex = std::min(t.full.size(), full.end + 1);
-            r.hasContinuation = r.continuationStartIndex < t.full.size();
-            r.continuationLength = t.full.size() - r.continuationStartIndex;
-            r.alignmentTrace = full.trace;
-            for (const auto& event : t.full) r.templateLabels.push_back(formatMatchEvent(event));
-            if (retainKeyInterpretations) results.push_back(std::move(r));
-            else if (!best || r.similarity > best->similarity) best = std::move(r);
+            const auto append = [&](const LayerResult& full) {
+                MatchResult r;
+                r.templateId = t.id;
+                r.templateName = t.name;
+                r.key = q.key.key;
+                r.keyPrior = q.key.confidence;
+                r.rawCost = full.cost;
+                r.subScores.skeletonHarmony = structural.similarity;
+                r.subScores.fullHarmony = full.similarity;
+                r.subScores.functionSimilarity = full.functionScore;
+                r.subScores.roleSimilarity = full.roleScore;
+                r.subScores.rhythmSimilarity = full.rhythmScore;
+                r.subScores.keyCompatibility = q.key.confidence;
+                const auto harmonyScore = (w.skeletonWeight * structural.similarity + w.fullWeight * full.similarity) /
+                                          std::max(epsilon, w.skeletonWeight + w.fullWeight);
+                r.similarity = std::clamp((1.f - w.keyPriorWeight) * harmonyScore +
+                                          w.keyPriorWeight * q.key.confidence, 0.f, 1.f);
+                r.templateMatchStart = full.start;
+                r.templateMatchEnd = full.end;
+                r.continuationStartIndex = std::min(t.full.size(), full.end + 1);
+                r.hasContinuation = r.continuationStartIndex < t.full.size();
+                r.continuationLength = t.full.size() - r.continuationStartIndex;
+                r.alignmentTrace = full.trace;
+                for (const auto& event : t.full) r.templateLabels.push_back(formatMatchEvent(event));
+                if (retainKeyInterpretations) results.push_back(std::move(r));
+                else if (!best || r.similarity > best->similarity) best = std::move(r);
+            };
+            append(full);
+            if (earlier.pairCount) append(earlier);
         }
         if (best) results.push_back(std::move(*best));
     }
     std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
         if (a.similarity != b.similarity) return a.similarity > b.similarity;
-        return std::tuple(a.templateId,a.key.tonic,a.key.mode) < std::tuple(b.templateId,b.key.tonic,b.key.mode);
+        return std::tuple(a.templateId,a.key.tonic,a.key.mode,a.continuationStartIndex) <
+            std::tuple(b.templateId,b.key.tonic,b.key.mode,b.continuationStartIndex);
     });
-    const auto limit = retainKeyInterpretations ? topN * query.interpretations.size() : topN;
+    const auto limit = retainKeyInterpretations ?
+        topN * query.interpretations.size() * (w.recoverConsumedFactoryTail ? 2 : 1) : topN;
     if (results.size() > limit) results.resize(limit);
     const auto finished = Clock::now();
     if (stats) {
