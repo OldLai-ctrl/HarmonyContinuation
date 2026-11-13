@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树当前为G13-C产品集成测试线（dev.16），[集成报告](docs/G13C_PRODUCT_INTEGRATION.md)提供实现/实际输出/检查，[NOW](NOW.md)记录真实宿主和产品音乐待验收，[MAP](MAP.md)给可运行Demo/VST入口。G13.1三条研究音乐已获正面评价；产品仅使用CC0先验，与原研究输出分开判断。生产仍为已验收dev.14，旧研究材料与有效证据保留。
+本工作树为 B5 离线统计实验，基于 v0.11.0 正式构建提交。当前结果见 [NOW](NOW.md)，数据恢复、按作品划分及 Factory 回放见 [B5 复现入口](RUNBOOK.md#b5-真实音乐续接统计)。G13 产品实现见 [集成报告](docs/G13C_PRODUCT_INTEGRATION.md)。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 
@@ -37,6 +37,7 @@ Phase5 / dev.6 的历史入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261
 | 宿主、窗口、生命周期与诊断 | `src/host/`、`src/plugin/`、`src/ui/EffectiveScale.h` | `docs/V0_9_HOST_ARCHITECTURE.md`、`docs/FL_STUDIO_COMPATIBILITY.md` |
 | MIDI 读取、识别、输出及拖放 | `src/midi/`、`src/io/` | `docs/V0_8_DEV2.md`、`docs/MIDI_EXPORT.md` |
 | 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md`、`docs/DEV3_CUBASE_RELIABILITY_FIX.md` |
+| B5 统计续接与 Factory 离线回放 | `tools/b5/` | [评估报告](docs/B5_CORPUS_STATISTICS.md)、[语料清单](docs/B5_CORPORA.md) |
 | 继续发展与升级进行色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
 | 卡片、Why? V2 与色彩控件 | `src/ui/ColorHint.h`、`src/ui/WhyExplanation.h`、`src/ui/MainView.cpp` | `docs/WHY_V2.md` |
 | 只读色彩分析 | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |

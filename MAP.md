@@ -6,6 +6,9 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| B5 实验工作树 | `HarmonyContinuation-b5-corpus-statistics-20261113/` → `experiment/b5-corpus-statistics-20261113`，基于正式 `d888e2c8d5f78a19a20a7936e763d407100b6a32` | `git log -1` 核对实际实验 HEAD。正式身份另见 v0.11.0 Tag 和 [发布说明](docs/V0_11_RELEASE_NOTES.md) |
+| B5 语料、划分、模型和离线证据 | 工作树同级 `HarmonyContinuation-b5-evidence/`，可迁移到任意目录；`sources/` 按 [语料清单](docs/B5_CORPORA.md) 恢复，`benchmark/freeze.json` 标记 `b5-v1-20261113` 及固定划分哈希 | `benchmark/selection.json` 记录 `b5-ngram-v1` 选型与模型哈希。训练源仅 Billboard CC0，MPB 仅外测；模型与数据不随代码提交同步 |
+| B5 Factory 回放 | 取 v0.11.0 交付目录 `stage-8/factory.db` 与同目录 `factory.hca`；发布包文件身份见同级 `HarmonyContinuation-v011-delivery-20261110/BUILD_INFO.json` | `factory-replay/` 保留候选、原序和离线评分证据。复现见 [RUNBOOK](RUNBOOK.md#b5-真实音乐续接统计) |
 | G13-C产品集成 | `HarmonyContinuation-g13/` → `development/g13c-product-integration-20261109`，代码提交`7b4000e` | dev.16测试构建，默认仅CC0先验；[技术报告](docs/G13C_PRODUCT_INTEGRATION.md) |
 | G13-C可运行测试包 | 同级 `HarmonyContinuation-g13c-test-20261110/`，Demo、VST3、examples、BUILD_INFO、宿主清单 | 未覆盖生产安装、无Setup；真实宿主待验收 |
 | G13-C检查与实际显示 | 同级 `HarmonyContinuation-g13c-evidence/` | 414/606/75、原生UI聚焦PASS、真实列表/5组媒体/快照；失败诊断日志保留 |
@@ -36,8 +39,8 @@
 | V7-I开发包与验证 | 同级`HarmonyContinuation-v7i-delivery-20261026/`；原始证据`HarmonyContinuation-v7i-validation-20261026/` | 正常Setup未执行；独立TestRoot安装验证；四组媒体与SHA保留，真实DAW待验收 |
 | Factory V7 内容线 | `HarmonyContinuation-factory-v7/` → `development/factory-v7-20261025`；从G5交付`24bdc239`建立 | [V7门禁](docs/FACTORY_V7_REVIEW.md)；独立内容与工具，不安装/激活 |
 | V7冻结基线与产物 | G5输入为同级`HarmonyContinuation-g5-delivery-20261025/stage-6/`；V7输出为同级`HarmonyContinuation-v7-evidence/engineering/` | G5/dev.5/Factory6保留；V7实验DB与配套HCA只供隔离集成 |
-| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 仅保留 `main` 和正式 Tag `v0.6.0`、`v0.8.0`、`v0.9.0`、`v0.10.0`；完整主线历史保留 |
-| 原开发 checkout | `HarmonyContinuation-release/`，本轮读取时为 `development/g01-g4u-experience-20261024` | 本轮不写入；已有协作文档及其他工作保留。实时分支以Git为准；正式发布来源仍为 `v0.10.0` / `c8d8dc3` |
+| 远端仓库 | `https://github.com/OldLai-ctrl/HarmonyContinuation.git` | 2026-11-13 核对 `main` 为 `d3552c2`、Tag `v0.11.0` 指向正式构建提交；B5 分支留在本地 |
+| 原开发 checkout | `HarmonyContinuation-release/`，本轮读取时为 `development/g01-g4u-experience-20261024`、HEAD `b1809b2` | 已有未提交文档保留于原工作树；B5 使用独立实验目录 |
 | Factory V6 工作包B | `HarmonyContinuation-factory-v6/` → `development/factory-v6-b4-20261025`；B3基线分支保留在`aa42b56` | dev.4/5ae1b5a与V6配套；[验收](docs/FACTORY_V6_REVIEW.md)，未改生产V5或合入A UI |
 | V6 数据/验证/听评产物 | 同级 `HarmonyContinuation-v6-b3r-evidence/engineering/r3/`；790与810旧产物保留 | Library6/Schema2，proposal1032/experiment1014；HCA格式1配套2MiB读取器；B3历史内容证据保留，B4开发包与隔离安装证据在同级`HarmonyContinuation-v6-b4-delivery-20261025/`，生产未激活V6 |
 | 当前验证与测试包 | 同级 `HarmonyContinuation-v010-validation-20261023/`、`HarmonyContinuation-v010-delivery-20261023/` | 正式 v0.10.0 构建、门禁日志与唯一Setup；RC1/dev.15目录保留 |
@@ -50,6 +53,18 @@
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
+
+## B5 外部证据身份
+
+以下路径相对 B5 证据根目录。源码及交接文档在本地实验分支，外部数据、模型和回放尚未同步。跨设备可迁移该目录，或从 [语料清单](docs/B5_CORPORA.md) 与正式 Factory 文件按 [RUNBOOK](RUNBOOK.md#b5-真实音乐续接统计) 重建。精确哈希针对本次保存的字节，重跑的性能字段会变化。
+
+| 关键文件 | SHA-256 |
+| --- | --- |
+| `benchmark/freeze.json` | `89f0121b793a7021eac95df9b155be44ff63dc2ffd3568a039ea886a4c5723de` |
+| `benchmark/selection.json` | `e84d7e146a62a11540b72cd29a380940875035185e30b5d2d2a7a5650e4e458d` |
+| `benchmark/variable_anchor.json.gz` | `a52b3bb4e7c995cd12f24960850eea9dd93316c5099a6cd809181d9def750e7d` |
+| `benchmark/test_metrics.json` | `63569c978abf6b09691a4ae38c54ea299debc61abd6aa1f0f02aa9567720cc44` |
+| `factory-replay/factory_evaluation.json` | `627e08832800207aa89ea4ec915c8dcfca8c0a716681d5c243264ec231724fce` |
 
 ## 安装与持久数据
 

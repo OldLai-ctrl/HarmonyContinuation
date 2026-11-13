@@ -2,11 +2,19 @@
 
 ## 本轮工作与下一步
 
-### v0.11.0 发布授权与宿主门禁（2026-11-10）
+### B5 真实音乐续接统计（2026-11-13）
 
-用户已确认G13-C产品音乐好听、可用，批准跳过RC1直接发布v0.11.0。正式构建、安装包、Git同步、Tag和GitHub Release均已授权，无需再次申请常规授权。产品基线仍为 **0.11.0-dev.16 / BuildCommit `7b4000e364dc3506bd097f07319e7e67c2b67054`**，接手HEAD `7ca96ec`，工作树干净。复核测试包插件、Demo、moduleinfo和Factory文件哈希与BUILD_INFO一致；产品只嵌入独立Billboard CC0聚合。
+**离线评估结项，保留统计模型，B5 产品接入暂缓。** [评估报告](docs/B5_CORPUS_STATISTICS.md)记录同来源与外测的完整后句收益、非调内及低频转移的概率退化，以及 Factory 可达性限制。100 个 Factory 回放输入有 71 个在库内找到近似尾段，9 个在实际推荐列表中有近似后句。B1—B4 的结论和接入门槛见 [D18](DECISIONS.md#d18-b5-用独立作品评估完整后句)。
 
-宿主门禁已解除：用户随后确认Cubase与FL Studio的最小加载、生成试听及MIDI操作检查通过，具体宿主版本未提供；该结论为用户确认，不扩写为代理逐项实测或全部版本兼容。正式构建、统一Setup、一次隔离v0.10→v0.11升级与远端发布正在按授权执行；414/606/75及原生UI证据继续复用。最终正式身份、升级结果及下载入口在完成后写回。
+接手先按 [MAP](MAP.md) 核对实验分支、语料、冻结划分及模型哈希，再用 [RUNBOOK](RUNBOOK.md#b5-真实音乐续接统计) 恢复。下一步定位库内有近似尾段但未到达 Worker 列表的 62 个输入在哪一步退出，再用独立语料复核非调内与低频转移。实验成果仅保存在本地代码提交和证据目录。无 B5 插件构建、宿主测试、听评或发布。
+
+### v0.11.0 正式发布（2026-11-10）
+
+**v0.11.0已正式发布。** [下载唯一统一Setup及校验](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.11.0)。Tag、正式源码、About BuildCommit及Setup固定于 **`d888e2c8d5f78a19a20a7936e763d407100b6a32`**；main保留完整历史，后续仅文档交接提交不改变该发布身份。Windows x64 Release / Factory V8 / Schema2 / 1,288条，产品仅Billboard CC0先验。
+
+Setup：`HarmonyContinuation-0.11.0-Setup.exe`，5,213,652字节，SHA256 `ab0c1dbcd860b9d91e99701d1e9dbe2056bd0450f05111415d67d2c5597ea1c4`。Release四项资产的GitHub SHA256 digest与本地逐项一致，非草稿、非预发布。交付目录为同级`HarmonyContinuation-v011-delivery-20261110/`，证据为`HarmonyContinuation-v011-release-evidence/`；精确构建和检查范围见包内BUILD_INFO及[发布说明](docs/V0_11_RELEASE_NOTES.md)。
+
+正式版相对已验收dev.16只调整正式元数据与发布记录，算法/产品数据/打包逻辑不变。复用414/606/75与聚焦原生UI及G13.1的198/152有效证据；正式元数据核对通过，一次官方v0.10/Factory5→v0.11/Factory8隔离升级17项通过、5个旧库/个人哨兵文件保持，生产安装与真实用户数据未触碰。用户确认dev.16在Cubase和FL Studio最小加载、生成试听、MIDI操作通过，宿主版本未提供；正式二进制未由代理重新实测两宿主。安装包未签名。当前无发布待办。
 
 ### G13-C 产品集成（2026-11-10）
 

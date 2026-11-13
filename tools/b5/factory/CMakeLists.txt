@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.25)
+project(B5FactoryReplay LANGUAGES C CXX)
+
+set(HC_BUILD_PLUGIN OFF CACHE BOOL "" FORCE)
+set(HC_BUILD_GENERATION_EXPERIMENT OFF CACHE BOOL "" FORCE)
+set(HC_BUILD_FACTORY_V6_EXPERIMENT OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "" FORCE)
+set(HC_GIT_COMMIT_OVERRIDE d888e2c8d5f78a19a20a7936e763d407100b6a32 CACHE STRING "" FORCE)
+get_filename_component(HC_SOURCE_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+add_subdirectory("${HC_SOURCE_ROOT}" "${CMAKE_BINARY_DIR}/formal-source" EXCLUDE_FROM_ALL)
+
+add_executable(b5_factory_replay factory_replay.cpp
+    "${HC_SOURCE_ROOT}/src/plugin/RecommendationWorker.cpp")
+target_link_libraries(b5_factory_replay PRIVATE harmony_product harmony_enrichment)
+target_compile_features(b5_factory_replay PRIVATE cxx_std_20)
+if(WIN32)
+    target_link_libraries(b5_factory_replay PRIVATE bcrypt)
+endif()
+if(MSVC)
+    target_compile_options(b5_factory_replay PRIVATE /utf-8 /W4 /permissive- /EHsc)
+endif()

@@ -30,6 +30,32 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### B5 真实音乐续接统计
+
+本节已在 B5 工作树运行。离线工具使用 Python 3.12+ 标准库，本轮为 3.14.7。先从 [语料清单](docs/B5_CORPORA.md) 核对版本、使用权限及 SHA-256。证据根按 [MAP](MAP.md) 定位，以下为同级目录示例。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+python -B tools/b5/b5_benchmark.py prepare --sources "$b5/sources" --output "$b5/benchmark"
+python -B tools/b5/b5_benchmark.py fit --output "$b5/benchmark"
+python -B tools/b5/b5_benchmark.py test --output "$b5/benchmark"
+python -B tools/b5/b5_beat.py "$b5/benchmark"
+```
+
+`prepare` 读取复用的 G13.1 `billboard_events.jsonl` 和固定版 MPB CSV，保存归一化、固定作品组和候选，写 `freeze.json`。`fit` 读取训练和验证样本，保存压缩模型及 `selection.json`。`test` 校验冻结哈希后评估两个独立测试集。接手中断从第一个缺少完整输出的阶段续跑，已有 `freeze.json` 时可直接续跑拟合或测试。查看 `validation_metrics.json`、`test_metrics.json` 和 `beat_metrics.json`。先验模型身份以 `selection.json` 和 SHA-256 为准，本轮模型为离线研究制品。
+
+Factory 离线回放使用已初始化 MSVC x64 和 CMake/Ninja。保留正式 `factory.db` 与同目录 `factory.hca`，核对 [MAP](MAP.md) 的发布构建清单。运行前确认回放输出目录是新目录。
+
+```powershell
+$factoryDb = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+cmake -S tools/b5/factory -B "$b5/factory-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$b5/factory-build" --target b5_factory_replay
+& "$b5/factory-build/b5_factory_replay.exe" $factoryDb "$b5/benchmark/factory_queries.jsonl" "$b5/factory-replay"
+python -B tools/b5/b5_factory.py --queries "$b5/benchmark/factory_queries.jsonl" --replay "$b5/factory-replay" --selection "$b5/benchmark/selection.json"
+```
+
+已有回放可复用，重跑时给新输出目录。回放调用正式 Worker 的灵感优先列表排序，并使用隔离路径。当前 B5 产品实验入口须等待 [D18](DECISIONS.md#d18-b5-用独立作品评估完整后句) 门槛通过后另行实现。
+
 ### G13-C 产品集成定向检查
 
 当前可用包及最少宿主操作见同级 `HarmonyContinuation-g13c-test-20261110/README.md`，身份见 `BUILD_INFO.json`。当前构建为dev.16，BuildCommit `7b4000e364dc3506bd097f07319e7e67c2b67054`。产品固定编译仓库Billboard CC0表；研究profile继续用下方独立CLI。

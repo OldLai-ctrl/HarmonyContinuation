@@ -1,5 +1,11 @@
 # 有效设计决定
 
+## D18 B5 用独立作品评估完整后句
+
+沿用 D16 的 G13 生成和来源边界。B1 骨架调权及 B2 首页交换已否决，B3 结构证据和 B4 来源及时间证据用于诊断。B5 采用真实歌曲按作品分组、验证集选型、冻结测试及跨来源复核。自动指标衡量原曲续接可预测性和 Factory 候选覆盖，试听用于最终产品验收。统计排序进入默认关闭的产品实验须满足独立收益、重要子组、资源成本和可分发制品许可。训练语料和研究用途按 [语料清单](docs/B5_CORPORA.md) 隔离。结果与接入状态见 [NOW](NOW.md)。
+
+历史原证据见 [B1](../HarmonyContinuation-recommendation-ranking-experiments-20261111/docs/RECOMMENDATION_RANKING_EXPERIMENTS.md)、[B2](../HarmonyContinuation-b2-route-outline-20261112/docs/RECOMMENDATION_RANKING_EXPERIMENTS.md)、[B3](../HarmonyContinuation-b3-phrase-fit-20261113/docs/RECOMMENDATION_RANKING_EXPERIMENTS.md)、[B4](../HarmonyContinuation-b4-context-source-20261113/docs/RECOMMENDATION_RANKING_EXPERIMENTS.md)。
+
 ## D17 v0.11.0 直接正式发布授权
 
 2026-11-10用户确认G13-C产品音乐可用，批准以dev.16 / `7b4000e`为功能基线，跳过RC1直接正式发布v0.11.0，包含正式构建、统一Setup、保留main历史的同步、Tag和GitHub Release。保持音乐算法、排序、Factory V8/1,288条及Snapshot4兼容机制。用户明确要求：出现发布阻断缺陷或缺少必需真实宿主证据时停止正式发布步骤。用户随后确认两宿主的最小加载/生成试听/MIDI检查通过，具体版本未提供，该宿主门禁已解除。授权与执行证据分别记录，进度见[NOW](NOW.md)。
