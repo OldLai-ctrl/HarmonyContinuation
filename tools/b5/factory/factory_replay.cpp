@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -25,6 +26,52 @@ namespace fs = std::filesystem;
 
 constexpr std::string_view factorySha =
     "c32257f878eead44e0df6febe14340ac08eab4a66d7c4db34bf6af911ed6ce9e";
+struct FactoryIdentity {
+    int version{8};
+    std::size_t count{1288};
+    std::string_view sha256{factorySha};
+};
+
+struct ReplayOptions {
+    FactoryIdentity expected;
+    bool recoverConsumedTail{};
+};
+
+constexpr std::string_view usage =
+    "usage: b5_factory_replay <frozen factory.db> <queries.jsonl> <new output directory>"
+    " [--expect <version> <count> <lowercase sha256>] [--recover-consumed-tail]";
+
+int positiveInteger(std::string_view value) {
+    int result{};
+    const auto [position, error] = std::from_chars(value.data(), value.data() + value.size(), result);
+    if (error != std::errc{} || position != value.data() + value.size() || result <= 0)
+        throw std::runtime_error("expected a positive integer, got: " + std::string(value));
+    return result;
+}
+
+ReplayOptions parseOptions(int argc, char** argv) {
+    if (argc < 4) throw std::runtime_error(std::string(usage));
+    ReplayOptions options;
+    bool hasExplicitIdentity{};
+    for (int i = 4; i < argc; ++i) {
+        const std::string_view argument(argv[i]);
+        if (argument == "--recover-consumed-tail" && !options.recoverConsumedTail) {
+            options.recoverConsumedTail = true;
+        } else if (argument == "--expect" && !hasExplicitIdentity && argc - i > 3) {
+            const int version = positiveInteger(argv[++i]);
+            const auto count = static_cast<std::size_t>(positiveInteger(argv[++i]));
+            const std::string_view sha256(argv[++i]);
+            if (version < 3 || sha256.size() != 64 ||
+                sha256.find_first_not_of("0123456789abcdef") != std::string_view::npos)
+                throw std::runtime_error("expected a Schema 2 Factory version and lowercase SHA-256");
+            options.expected = {version, count, sha256};
+            hasExplicitIdentity = true;
+        } else {
+            throw std::runtime_error(std::string(usage));
+        }
+    }
+    return options;
+}
 constexpr std::array<std::string_view, 12> notes{
     "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"};
 constexpr std::array<const char*, 7> channels{
@@ -193,14 +240,17 @@ ChordEvent asEvent(const ConcreteChordEvent& chord) {
     return event;
 }
 
-plugin::WorkerResult waitFor(plugin::RecommendationWorker& worker, std::uint64_t generation) {
+plugin::WorkerResult waitFor(plugin::RecommendationWorker& worker, std::uint64_t generation,
+                             const FactoryIdentity& expected) {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
     while (std::chrono::steady_clock::now() < deadline) {
         if (auto result = worker.takeLatest(); result && result->generation == generation) {
             if (!result->error.empty()) throw std::runtime_error(result->error);
-            if (result->factoryVersion != 8 || result->factoryCount != 1288 ||
-                result->userCount != 0 || result->factorySha256 != factorySha)
-                throw std::runtime_error("unexpected Factory/user identity: " + result->factorySha256);
+            if (result->factoryVersion != expected.version || result->factoryCount != expected.count ||
+                result->userCount != 0 || result->factorySha256 != expected.sha256)
+                throw std::runtime_error("unexpected Factory/user identity: V" + std::to_string(result->factoryVersion) +
+                    " / " + std::to_string(result->factoryCount) + " Factory, " + std::to_string(result->userCount) +
+                    " User / " + result->factorySha256);
             return std::move(*result);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -214,6 +264,10 @@ void writeCatalog(const library::LoadResult& factory, std::ostream& out) {
         row.object["source"] = item.id;
         row.object["tonic"] = static_cast<int>(item.rawChordKey.value_or(KeySignature{PitchClass::C, item.mode}).tonic);
         row.object["mode"] = static_cast<int>(item.mode);
+        row.object["meter"] = std::to_string(item.meterNumerator) + "/" + std::to_string(item.meterDenominator);
+        row.object["template_version"] = item.version;
+        row.object["intent"] = static_cast<int>(item.intent);
+        row.object["loopable"] = item.loopable;
         Value events = Value::list();
         double onset{};
         for (std::size_t i = 0; i < item.full.size(); ++i) {
@@ -231,11 +285,11 @@ void writeCatalog(const library::LoadResult& factory, std::ostream& out) {
 }
 
 Value replay(const Value& query, plugin::RecommendationWorker& worker,
-             const std::set<TemplateID>& factoryIds, bool recoverConsumedFactoryTail) {
+             const std::set<TemplateID>& factoryIds, const ReplayOptions& options) {
     const auto progression = makeInput(query);
     RecommendationRequest request;
     request.prepareBothViews = true;
-    request.recoverConsumedFactoryTail = recoverConsumedFactoryTail;
+    request.recoverConsumedFactoryTail = options.recoverConsumedTail;
     if (const auto* sources = optional(query, "trace_sources")) {
         for (const auto& source : sources->items()) request.traceSources.push_back(source.text());
         std::sort(request.traceSources.begin(), request.traceSources.end());
@@ -249,7 +303,7 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         request.constraints.melody.push_back(note);
         if (!validConstraints(request.constraints)) throw std::runtime_error("invalid hard melody fixture");
     }
-    const auto result = waitFor(worker, worker.submit(progression, makeContext(query), request));
+    const auto result = waitFor(worker, worker.submit(progression, makeContext(query), request), options.expected);
     Value row = Value::map();
     row.object["id"] = query.at("id");
     row.object["worker_ms"] = result.computationMs;
@@ -265,6 +319,7 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
             trace.object["source"] = match.templateId;
             trace.object["key"] = key(match.key);
             trace.object["start"] = static_cast<int>(match.templateMatchStart);
+            trace.object["end"] = static_cast<int>(match.templateMatchEnd);
             trace.object["next"] = static_cast<int>(match.continuationStartIndex);
             trace.object["similarity"] = match.similarity;
             trace.object["eligibility"] = match.candidateEligibilityScore;
@@ -304,10 +359,15 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         const auto position = order[i];
         const auto& candidate = result.recommendations.groups.at(position.group).at(position.index);
         ++productRank;
+        const auto fingerprint = continuationMusicFingerprint(candidate);
+        if (!identities.insert(fingerprint).second)
+            throw std::runtime_error("duplicate music in product order");
         if (candidate.generated) {
             if (i != generatedStart + generated) throw std::runtime_error("unexpected G13 insertion position");
+            if (!candidate.baseQualified || !candidate.hardConstraintsPassed || !candidate.primaryTemplate.empty())
+                throw std::runtime_error("unexpected qualification or Factory identity for G13 candidate");
             ++generated;
-            generatedIdentities.push_back(continuationMusicFingerprint(candidate));
+            generatedIdentities.push_back(fingerprint);
             continue;
         }
         if (!candidate.baseQualified || !candidate.hardConstraintsPassed ||
@@ -316,19 +376,41 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         Value record = Value::map();
         record.object["source"] = candidate.primaryTemplate;
         record.object["id"] = candidate.id;
-        const auto fingerprint = continuationMusicFingerprint(candidate);
-        if (!identities.insert(fingerprint).second)
-            throw std::runtime_error("duplicate Factory music in product order");
         record.object["fingerprint"] = fingerprint;
         record.object["score"] = static_cast<double>(candidate.rankingScore);
+        record.object["eligibility"] = static_cast<double>(candidate.eligibilityScore);
         record.object["group"] = static_cast<int>(position.group);
         record.object["product_rank"] = productRank;
         record.object["channel"] = channels.at(static_cast<std::size_t>(candidate.channel));
         record.object["key"] = key(candidate.key);
+        record.object["match_start"] = static_cast<int>(candidate.matchStart);
+        record.object["match_end"] = static_cast<int>(candidate.matchEnd);
         record.object["next"] = static_cast<int>(candidate.continuationStart);
         record.object["structure_qualified"] = candidate.structureQualified;
+        record.object["complete_source_phrase"] = candidate.completeSourcePhrase;
+        record.object["source_end_preserved"] = candidate.sourceEndPreserved;
+        record.object["provenance"] = static_cast<int>(candidate.provenance);
+        record.object["rhythm_scale"] = static_cast<double>(candidate.rhythmScale);
         record.object["exploratory"] = candidate.exploratory;
         record.object["seam_qn"] = candidate.seamQN;
+        Value supports = Value::list();
+        for (const auto& source : candidate.supportingTemplates) supports.array.emplace_back(source);
+        record.object["support_sources"] = std::move(supports);
+        if (!request.traceSources.empty()) {
+            Value explanations = Value::list();
+            for (const auto& evidence : candidate.evidence) {
+                if (!std::binary_search(request.traceSources.begin(), request.traceSources.end(), evidence.templateId))
+                    continue;
+                Value explanation = Value::map();
+                explanation.object["source"] = evidence.templateId;
+                explanation.object["key"] = key(evidence.key);
+                explanation.object["start"] = static_cast<int>(evidence.matchStart);
+                explanation.object["end"] = static_cast<int>(evidence.matchEnd);
+                explanation.object["next"] = static_cast<int>(evidence.continuationStart);
+                explanations.array.push_back(std::move(explanation));
+            }
+            record.object["evidence"] = std::move(explanations);
+        }
         Value events = Value::list();
         double onset = progression.back().startQN + candidate.suggestedCurrentChordDurationQN.value_or(
             progression.back().durationQN.value_or(0));
@@ -351,17 +433,17 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
 int main(int argc, char** argv) {
     try {
         if (product::printVersionIfRequested(argc, argv)) return 0;
-        if (argc != 4 && !(argc == 5 && std::string_view(argv[4]) == "--recover-consumed-tail"))
-            throw std::runtime_error("usage: b5_factory_replay <frozen factory.db> <queries.jsonl> <new output directory> [--recover-consumed-tail]");
+        const auto options = parseOptions(argc, argv);
         const auto database = fs::absolute(argv[1]);
         const auto output = fs::absolute(argv[3]);
         std::ifstream queries(argv[2], std::ios::binary);
         if (!queries) throw std::runtime_error("cannot open input JSONL");
         if (!fs::create_directory(output)) throw std::runtime_error("output directory must be new");
         plugin::RecommendationWorker worker(database, output / "empty-user.db", output / "empty-store");
-        const auto warm = waitFor(worker, worker.submit({}, {}));
+        const auto warm = waitFor(worker, worker.submit({}, {}), options.expected);
         const auto factory = library::loadFactory(database);
-        if (!factory || factory.storageSchemaVersion != 2 || factory.templates.size() != 1288)
+        if (!factory || factory.storageSchemaVersion != library::factorySchemaVersion ||
+            factory.libraryVersion != options.expected.version || factory.templates.size() != options.expected.count)
             throw std::runtime_error("Factory schema/catalog check failed: " + factory.error);
         std::ofstream replayFile(output / "factory_replay.jsonl", std::ios::binary);
         std::ofstream catalogFile(output / "factory_catalog.jsonl", std::ios::binary);
@@ -377,7 +459,7 @@ int main(int argc, char** argv) {
             const auto& id = query.at("id").text();
             if (!seen.insert(id).second) throw std::runtime_error("duplicate input query: " + id);
             try {
-                replayFile << json::dump(replay(query, worker, factoryIds, argc == 5)) << '\n';
+                replayFile << json::dump(replay(query, worker, factoryIds, options)) << '\n';
             } catch (const std::exception& error) {
                 throw std::runtime_error(id + ": " + error.what());
             }
@@ -386,7 +468,20 @@ int main(int argc, char** argv) {
         replayFile.close();
         catalogFile.close();
         if (!replayFile || !catalogFile) throw std::runtime_error("failed to write complete result");
-        std::cout << product::banner() << "\nFactory V8 / Schema 2 / 1288 / " << warm.factorySha256
+        Value identity = Value::map();
+        identity.object["factory_version"] = warm.factoryVersion;
+        identity.object["factory_schema"] = factory.storageSchemaVersion;
+        identity.object["factory_count"] = static_cast<int>(warm.factoryCount);
+        identity.object["factory_sha256"] = warm.factorySha256;
+        identity.object["user_count"] = static_cast<int>(warm.userCount);
+        identity.object["queries"] = static_cast<int>(seen.size());
+        identity.object["recover_consumed_tail"] = options.recoverConsumedTail;
+        std::ofstream identityFile(output / "factory_identity.json", std::ios::binary);
+        identityFile << json::dump(identity) << '\n';
+        identityFile.close();
+        if (!identityFile) throw std::runtime_error("failed to write Factory identity");
+        std::cout << "Replay engine base: " << product::banner() << "\nFactory V" << warm.factoryVersion
+                  << " / Schema " << factory.storageSchemaVersion << " / " << warm.factoryCount << " / " << warm.factorySha256
                   << "\nWorker queries: " << seen.size() << '\n';
         return 0;
     } catch (const std::exception& error) {

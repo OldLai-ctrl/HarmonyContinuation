@@ -30,6 +30,35 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### Factory V9-A 建库与独立回放
+
+先按 [MAP](MAP.md#v9-a-外部证据身份) 校验 V8、RS200、A2 和 B5 文件身份。取得原数据时从 [Rock Corpus 官方分析](https://rockcorpus.midside.com/harmonic_analyses.html) 下载 expanded ZIP，作品索引用 [RS200 官方表](https://rockcorpus.midside.com/overview/rs200.txt)。下列为 Python 3.12+ 和已初始化 MSVC x64 的 CMake/Ninja。使用独立全新输出目录。
+
+```powershell
+$e = "../HarmonyContinuation-v9-a-evidence"
+$b5 = "../HarmonyContinuation-b5-evidence"
+$db8 = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$a2 = "$e/sources/a2-candidate-v8-comparison.csv"
+cmake -S tools/b5/factory -B "$e/replay-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$e/replay-build" --target b5_factory_replay factory_v6_compiler
+$replay = "$e/replay-build/b5_factory_replay.exe"
+python -B tools/v9a/freeze_rock.py --sources "$e/sources" --b5 $b5 --a2 $a2 --output "$e/confirmation"
+& $replay $db8 "$e/confirmation/confirmation.jsonl" "$e/confirmation-v8"
+python -B tools/v9a/encode.py --a2 $a2 --catalog "$e/confirmation-v8/factory_catalog.jsonl" --output "$e/materials"
+New-Item -ItemType Directory -Force "$e/library" | Out-Null
+$db9 = "$e/library/factory.db"
+& "$e/replay-build/formal-source/factory_v6_compiler.exe" --v9-a-incremental $db8 "$e/materials/candidates.json" $db9
+$sha = (Get-FileHash $db9).Hash.ToLower()
+# 与 MAP 中实验库哈希核对后再回放
+& $replay $db9 "$e/confirmation/confirmation.jsonl" "$e/confirmation-v9" --expect 9 1312 $sha
+& $replay $db9 "$e/materials/controls.jsonl" "$e/controls-v9" --expect 9 1312 $sha
+python -B tools/v9a/evaluate.py --evidence $e --prepare-trace --output "$e/confirmation/trace.jsonl"
+& $replay $db9 "$e/confirmation/trace.jsonl" "$e/confirmation-v9-trace" --expect 9 1312 $sha
+python -B tools/v9a/evaluate.py --evidence $e --trace "$e/confirmation-v9-trace" --output "$e/evaluation.json"
+```
+
+正式 V8 目录导出在现有 `smoke-v8-traced/` 与 `confirmation-v8/` 一致，编库可从现有导出继续。检查各输出目录的 `factory_identity.json` 与行数，已完成的回放可直接复用。硬旋律探针由 `materials/hard-melody.jsonl` 提供，以相同 V9 参数回放并核对指定来源的两路硬约束。计时和 JSON 的相应字节以本机实际回放为准。离线 Worker 使用隔离用户路径。实验库只有推荐回放验收，正式安装及 Wish/HCA 另行决定。
+
 ### B7 Factory 覆盖与时值
 
 核对 [MAP](MAP.md#b7-外部证据身份) 的 B5/B6 冻结数据及正式 DB/HCA。复用 B6 Release 回放工具，跨设备按下方 B6 步骤重新构建。Python 用 3.12+。下方命令使用同级目录；每个 Worker 输出目录须全新。B7 重建输出的耗时字段随机器和负载变化。

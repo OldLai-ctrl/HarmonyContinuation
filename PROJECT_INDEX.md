@@ -4,7 +4,7 @@ Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续
 
 ## 当前摘要
 
-本工作树为 B7 完整后句覆盖实验，基于 B6 与 v0.11.0 正式 Factory。当前结果见 [NOW](NOW.md)，时值回放和素材分析见 [B7 复现入口](RUNBOOK.md#b7-factory-覆盖与时值)。G13 产品实现见 [集成报告](docs/G13C_PRODUCT_INTEGRATION.md)。
+本工作树为 Factory V9-A 隔离制库与独立验证。现状见 [NOW](NOW.md)，制库及回放见 [V9-A 复现入口](RUNBOOK.md#factory-v9-a-建库与独立回放)。
 
 v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
 
@@ -40,6 +40,7 @@ Phase5 / dev.6 的历史入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261
 | B5 统计续接与 Factory 离线回放 | `tools/b5/` | [评估报告](docs/B5_CORPUS_STATISTICS.md)、[语料清单](docs/B5_CORPORA.md) |
 | B6 来源落点、概率回退与联合评估 | `src/core/ProgressionMatcher.cpp`、`tools/b6/` | [B6 报告](docs/B6_RETRIEVAL_STATISTICS.md) |
 | B7 完整尾段覆盖、符号时值及 V9 规格 | `tools/b7/` | [B7 报告](docs/B7_FACTORY_COVERAGE.md) |
+| V9-A 原创长后句和独立回放 | `data/factory-v9-a/phrases.tsv`、`tools/v9a/` | [建设与独立验证](docs/FACTORY_V9_A.md) |
 | 继续发展与升级进行色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
 | 卡片、Why? V2 与色彩控件 | `src/ui/ColorHint.h`、`src/ui/WhyExplanation.h`、`src/ui/MainView.cpp` | `docs/WHY_V2.md` |
 | 只读色彩分析 | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |

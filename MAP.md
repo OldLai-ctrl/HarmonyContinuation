@@ -6,6 +6,7 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| V9-A 工作树与实验库 | `experiment/factory-v9-a-20261114`，起点 B7 `3b58159`；同级 `HarmonyContinuation-v9-a-evidence/library/factory.db` | Schema 2 / Library 9 / 1,312 条；工具从正式 V8 增量构建。当前 HEAD 用 Git 核对 |
 | B7 实验工作树 | `HarmonyContinuation-b7-factory-coverage-20261114/` → `experiment/b7-factory-coverage-20261114`，起点 B6 `f95f2af37a915b1f93019b342db96f3f883e80e2` | `git log -1` 查当前 HEAD，正式源码身份为 v0.11.0 标签 |
 | B7 回放与素材证据 | 同级 `HarmonyContinuation-b7-evidence/`；`tools/b7/` 复用 B5 冻结数据、B6 适配配置与 Release 回放 | [B7 报告](docs/B7_FACTORY_COVERAGE.md) 的 V9 规格为方案，当前无 V9 数据 |
 | B6 实验工作树 | `HarmonyContinuation-b6-retrieval-statistics-20261113/` → `experiment/b6-retrieval-statistics-20261113`，起点 B5 `bbd1f4da6b472cb845260df96f5aacfff72e7c58` | `git log -1` 核对实际实验 HEAD；正式 BuildCommit 仍按 v0.11.0 Tag |
@@ -57,6 +58,24 @@
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
+
+## V9-A 外部证据身份
+
+证据根为 `HarmonyContinuation-v9-a-evidence/`，可迁移到任意目录，尚未同步。定点检查在 `controls-v9/`、`controls-v9-hard/`，两库独立回放在 `confirmation-v8/`、`confirmation-v9/`，路线观测在 `confirmation-v9-trace/`。源和弦标注及 A2 研究 CSV 属于研究资料，权利按 [B5 清单](docs/B5_CORPORA.md) 保留。实验库为独立原创增量，不作为正式分发包。源代码内 [素材表](data/factory-v9-a/phrases.tsv) 维护人工编辑数据，生成文件和哈希在本段。模型未改动，沿用 B5 的句序模型和 B6 适配配置。
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `library/factory.db` | `377abf120a153a1d301290d7af7614ccb87e8ce88e766a6892bf1a164cfe6b96` |
+| `materials/candidates.json` | `96dba1aa29ce6217c2f1d16e7e317aa2dc68e2389ce38aa8b8298d9f9855b6b7` |
+| `materials/manifest.json` | `5fe91d667a74ede854306b26846f8f7553d06c71a7bcbde560bc58ecd878a180` |
+| `materials/hard-melody.jsonl` | `34cf2c672b43c2be4dfff343f16823f2ea579284041f5879cb112b5c0a3814ef` |
+| `source-review.json` | `64bf3cc9411549c25254266bda78806c5dbda141a09e3fbaabaa58add375ebab` |
+| `sources/a2-candidate-v8-comparison.csv` | `5e84080e1fbd16b42d6b2402e88ebcaaaa46f405ba1004e178804f86d86c758c` |
+| `sources/rs200_harmony_exp.zip` | `7054ae6599280732bfba2ce2d531b93ca06274004380c2549756e468a8793fee` |
+| `sources/rs200.txt` | `7882b29b420e70b7493c66d593239f62a391ac62de84326af25e8ffdff8a1f3c` |
+| `confirmation/freeze.json` | `03a048fd87a6db40dbc6f2f2dd29bde1018fad057992ad8f367d0b01e42df6ac` |
+| `confirmation/confirmation.jsonl` | `d5472a10a839ae39c8f55248eadfd58d8cd8ec4523d2bd61e79d0d08f5a87959` |
+| `evaluation.json` | `df81aa61fa292c1bbec2c830ff24cece19d45a48c539ef69c66c9d864496f841` |
 
 ## B7 外部证据身份
 
