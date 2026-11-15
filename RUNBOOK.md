@@ -30,6 +30,47 @@ cmake --build build-v09 --config Release --target HarmonyContinuation library_ma
 
 ## 局部自动验收
 
+### Factory V9-B 建库与独立回放
+
+按 [MAP](MAP.md#v9-b-外部证据身份) 核对现有输入及已完成输出。本轮复用正式 V8、冻结 V9-A 和既有 RS200。Jazzomat 原始 DB 来自 [官方下载页](https://jazzomat.hfm-weimar.de/download/download.html)。仅在本地研究环境使用原标注。下列命令使用 Python 3.12+、MSVC x64 开发终端和 CMake/Ninja；Worker 和编库输出路径须全新。已有完整结果时从汇总步骤恢复。
+
+```powershell
+$e = "../HarmonyContinuation-v9-b-evidence"
+$a = "../HarmonyContinuation-v9-a-evidence"
+$b5 = "../HarmonyContinuation-b5-evidence"
+$v8 = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$v9a = "$a/library/factory.db"
+python -B tools/v9b/diagnose_v9a.py --v9a $a --output "$e/diagnosis.json"
+python -B tools/v9b/freeze_confirmation.py --v9a $a --b5 $b5 --wjazzd "$e/confirmation/sources/wjazzd-range.db" --output "$e/confirmation"
+python -B tools/v9a/encode.py --edition B --a2 "$a/sources/a2-candidate-v8-comparison.csv" --catalog "$a/confirmation-v9/factory_catalog.jsonl" --output "$e/materials"
+cmake -S tools/b5/factory -B "$e/replay-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$e/replay-build" --target b5_factory_replay factory_v6_compiler
+New-Item -ItemType Directory -Force "$e/library" | Out-Null
+$compiler = "$e/replay-build/formal-source/factory_v6_compiler.exe"
+$replay = "$e/replay-build/b5_factory_replay.exe"
+$v9b = "$e/library/factory.db"
+$functions = "$e/library/factory-functions.db"
+& $compiler --v9-b-incremental $v9a "$e/materials/candidates.json" $v9b
+& $compiler --v9-b-incremental $v9a "$e/materials/candidates.json" $functions --complete-functions
+# 对照 MAP 核验库哈希，用同一程序按序回放
+foreach ($cohort in @("rock","jazz")) {
+    foreach ($entry in @(@("v8",$v8,8,1288),@("v9a",$v9a,9,1312),@("v9b",$v9b,9,1332),@("v9b-functions",$functions,9,1332))) {
+        $sha = (Get-FileHash $entry[1]).Hash.ToLower()
+        & $replay $entry[1] "$e/confirmation/$cohort.jsonl" "$e/$cohort-$($entry[0])" --expect $entry[2] $entry[3] $sha
+        if ($LASTEXITCODE -ne 0) { throw "回放失败 $cohort $($entry[0])" }
+    }
+}
+$shaB = (Get-FileHash $v9b).Hash.ToLower()
+$shaFunctions = (Get-FileHash $functions).Hash.ToLower()
+& $replay $v9b "$e/materials/controls.jsonl" "$e/controls-v9b" --expect 9 1332 $shaB
+& $replay $functions "$e/materials/controls.jsonl" "$e/controls-v9b-functions" --expect 9 1332 $shaFunctions --check-snapshots
+python -B tools/v9b/evaluate.py --evidence $e --output "$e/materials/hard-control-both.jsonl" --prepare-hard-control
+& $replay $functions "$e/materials/hard-control-both.jsonl" "$e/hard-both-v9b-functions" --expect 9 1332 $shaFunctions
+python -B tools/v9b/evaluate.py --evidence $e --v9a $a --cohort rock --cohort jazz --output "$e/evaluation.json"
+```
+
+核对硬约束探针的 `V9B_004 / key=0 / next=3` 为 Exact `melody_constraint` 和 Contextual `hard-constraints`。V9-A 重投影反事实可使用已存的原始回放，执行 `diagnose_v9a.py` 时增加 `--projection-dir` 指向 B 证据根，输出至 `diagnosis_projection_summary.json`。底层原始数据和生成快照留在外部，任何跨设备使用都依照 [MAP](MAP.md#v9-b-外部证据身份)。Worker 计时随复现环境变化。
+
 ### Factory V9-A 建库与独立回放
 
 先按 [MAP](MAP.md#v9-a-外部证据身份) 校验 V8、RS200、A2 和 B5 文件身份。取得原数据时从 [Rock Corpus 官方分析](https://rockcorpus.midside.com/harmonic_analyses.html) 下载 expanded ZIP，作品索引用 [RS200 官方表](https://rockcorpus.midside.com/overview/rs200.txt)。下列为 Python 3.12+ 和已初始化 MSVC x64 的 CMake/Ninja。使用独立全新输出目录。

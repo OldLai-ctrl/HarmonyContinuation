@@ -599,41 +599,66 @@ int compileV8Increment(int argc,char** argv) {
     return 0;
 }
 
-int compileV9AIncrement(int argc, char** argv) {
-    require(argc == 5, "usage: factory_v6_compiler --v9-a-incremental factory-v8.db candidates.json new-output.db");
+int compileV9Increment(int argc, char** argv, bool fromV9A) {
+    const bool completeFunctions = fromV9A && argc == 6 && std::string_view(argv[5]) == "--complete-functions";
+    require(argc == 5 || completeFunctions,
+            "usage: factory_v6_compiler --v9-{a,b}-incremental baseline.db candidates.json new-output.db [--complete-functions (B)]");
     const std::filesystem::path input = argv[2], candidatesPath = argv[3], output = argv[4];
     require(!std::filesystem::exists(output) &&
             std::filesystem::weakly_canonical(input) != std::filesystem::weakly_canonical(output),
-            "V9-A needs a new independent output path");
+            "V9 needs a new independent output path");
     const auto base = library::loadFactory(input);
-    require(bool(base) && base.libraryVersion == 8 && base.storageSchemaVersion == 2 &&
-            base.templates.size() == 1288, "V9-A requires Factory V8 / Schema 2 / 1288");
-    const auto increment = readCandidates(candidatesPath, 9);
+    const auto baseName = fromV9A ? "V9-A" : "V8";
+    const auto outputName = fromV9A ? "V9-B" : "V9-A";
+    require(bool(base) && base.libraryVersion == (fromV9A ? 9 : 8) && base.storageSchemaVersion == 2 &&
+            base.templates.size() == (fromV9A ? 1312u : 1288u), "V9 baseline identity mismatch");
+    auto increment = readCandidates(candidatesPath, 9);
     std::set<std::string> ids, performances;
     auto merged = base.templates;
     for (const auto& item : base.templates) {
         ids.insert(item.id);
         performances.insert(audibleSignature(item));
     }
-    for (const auto& item : increment) {
+    std::size_t filledFunctions{};
+    for (auto& item : increment) {
         require(ids.insert(item.id).second && performances.insert(audibleSignature(item)).second,
-                "duplicate V9-A ID or performed music: " + item.id);
+                "duplicate V9 ID or performed music: " + item.id);
         require(item.rawChordKey && item.rawChords.size() == item.full.size(),
-                "V9-A typed performance required: " + item.id);
+                "V9 typed performance required: " + item.id);
+        if (completeFunctions) {
+            AnalysisContext context;
+            context.forcedKey = item.rawChordKey;
+            context.timeSigNumerator = item.meterNumerator;
+            context.timeSigDenominator = item.meterDenominator;
+            const auto query = makeMatchQuery(item.rawChords, context);
+            require(query.interpretations.size() == 1 &&
+                    query.interpretations.front().full.size() == item.full.size(),
+                    "V9-B function projection mismatch: " + item.id);
+            const auto& analyzed = query.interpretations.front().full;
+            for (std::size_t i = 0; i < item.full.size(); ++i) {
+                auto& event = item.full[i];
+                if (event.function == HarmonicFunction::Unknown &&
+                    analyzed[i].function != HarmonicFunction::Unknown) {
+                    event.function = analyzed[i].function;
+                    ++filledFunctions;
+                }
+            }
+        }
         const auto rendered = preview::buildTemplateSequence(
             item, *item.rawChordKey, preview::defaultTempoBPM);
         require(bool(rendered) && rendered.sequence.events.size() == item.rawChords.size(),
-                "V9-A incomplete preview: " + item.id);
+                "V9 incomplete preview: " + item.id);
         ChordVoicer voicer;
         for (const auto& event : rendered.sequence.events)
-            require(bool(preview::voiceEvent(event, voicer)), "V9-A unplayable event: " + item.id);
+            require(bool(preview::voiceEvent(event, voicer)), "V9 unplayable event: " + item.id);
         merged.push_back(item);
     }
     std::string error;
-    require(library::compileFactory(output, merged, error, 9), "V9-A compile: " + error);
-    verifyRoundTrip(output, merged, base.templates, 9, "V8", "V9-A");
-    std::cout << "V9-A PASS schema=2 inherited=" << base.templates.size()
-              << " added=" << increment.size() << " total=" << merged.size() << '\n';
+    require(library::compileFactory(output, merged, error, 9), "V9 compile: " + error);
+    verifyRoundTrip(output, merged, base.templates, 9, baseName, outputName);
+    std::cout << outputName << " PASS schema=2 inherited=" << base.templates.size()
+              << " added=" << increment.size() << " total=" << merged.size()
+              << " filled_functions=" << filledFunctions << '\n';
     return 0;
 }
 
@@ -737,9 +762,10 @@ int compileV7Increment(int argc, char** argv) {
 } // namespace
 
 int main(int argc, char** argv) {
-    if (argc > 1 && std::string_view(argv[1]) == "--v9-a-incremental") {
-        try { return compileV9AIncrement(argc, argv); }
-        catch (const std::exception& e) { std::cerr << "Factory V9-A FAIL: " << e.what() << '\n'; return 1; }
+    const auto command = argc > 1 ? std::string_view(argv[1]) : std::string_view{};
+    if (command == "--v9-a-incremental" || command == "--v9-b-incremental") {
+        try { return compileV9Increment(argc, argv, command == "--v9-b-incremental"); }
+        catch (const std::exception& e) { std::cerr << "Factory V9 FAIL: " << e.what() << '\n'; return 1; }
     }
     if(argc>1&&std::string_view(argv[1])=="--v8-incremental") {
         try{return compileV8Increment(argc,argv);}catch(const std::exception& e){std::cerr<<"Factory V8 FAIL: "<<e.what()<<'\n';return 1;}

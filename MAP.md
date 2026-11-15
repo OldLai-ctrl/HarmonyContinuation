@@ -6,6 +6,7 @@
 
 | 对象 | 有效映射 | 边界 |
 | --- | --- | --- |
+| V9-B 工作树与实验库 | `experiment/factory-v9-b-20261115`，起点 V9-A `b451ce118d88918f47317519369b039c1ca005e7`；同级 `HarmonyContinuation-v9-b-evidence/library/` | `factory.db` 纯素材，`factory-functions.db` 仅对新增项补功能；两者均为 Library 9 / Schema 2 / 1,332 条 |
 | V9-A 工作树与实验库 | `experiment/factory-v9-a-20261114`，起点 B7 `3b58159`；同级 `HarmonyContinuation-v9-a-evidence/library/factory.db` | Schema 2 / Library 9 / 1,312 条；工具从正式 V8 增量构建。当前 HEAD 用 Git 核对 |
 | B7 实验工作树 | `HarmonyContinuation-b7-factory-coverage-20261114/` → `experiment/b7-factory-coverage-20261114`，起点 B6 `f95f2af37a915b1f93019b342db96f3f883e80e2` | `git log -1` 查当前 HEAD，正式源码身份为 v0.11.0 标签 |
 | B7 回放与素材证据 | 同级 `HarmonyContinuation-b7-evidence/`；`tools/b7/` 复用 B5 冻结数据、B6 适配配置与 Release 回放 | [B7 报告](docs/B7_FACTORY_COVERAGE.md) 的 V9 规格为方案，当前无 V9 数据 |
@@ -58,6 +59,25 @@
 | V4 开发数据与产物 | `data/factory-v4/` → `build-v4-dev/factory.db`；开发统一包 `build-installer/v4-0.10.0-dev.1/`，内含 `stage-4/`、`midi/`、`evidence/` | 仅匹配 0.10.0-dev.1+ 引擎；统一 Setup 管理版本化 Factory/4，保留历史；见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md) |
 
 设备具体路径在运行时核实；关系改变时替换失效行，不追加长期流水账。功能版本与来源提交以 [NOW.md](NOW.md#功能基线) 为文档入口，实时状态仍需核对 Git。
+
+## V9-B 外部证据身份
+
+外部证据根可迁移，未同步。每组的四路 Worker 输出为 `rock-{v8,v9a,v9b,v9b-functions}/`、`jazz-{v8,v9a,v9b,v9b-functions}/`。正控与硬约束在 `controls-v9b*/`、`hard-both-v9b-functions/`。另存 `diagnosis_projection.cpp`、相应构建脚本、`diagnosis_projection_replay/` 及 `diagnosis_projection_development/`，这些是重投影 V9-A 的开发对照。研判不使用其中的库作为新基线。原语料与作品窗口按各自许可保存。模型继续沿用 B5/B6 下列身份。跨设备步骤见 [RUNBOOK](RUNBOOK.md#factory-v9-b-建库与独立回放)。
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `library/factory.db` | `78e8f8ae16516f42a6ce98ea944ac94206f1c81854106be057dd348e15c306f9` |
+| `library/factory-functions.db` | `08252b9bc8a3ba37fbf562095df08c5ab088165841a38103ebd2ac69ca580bf7` |
+| `materials/candidates.json` | `2ca77f157e269a330b2a07fd9bd7af5e312d144a4ae202a704240197ffd59feb` |
+| `materials/manifest.json` | `113dc9693e43dfc6d4d02397ff96dc872a0d72e4304940265e52933c0f667aa9` |
+| `materials/controls.jsonl` | `65ef73c2a6c8340911102e72d939943be3b982ca42a41db7f77053a86635cfe8` |
+| `materials/hard-control-both.jsonl` | `cc37ad55a8c4cbef9281e4b8f7e173afb231bcafb779796327a6f5b78da3560a` |
+| `diagnosis.json` | `0b2e2dc27bcb39bc8a6e114f1f6f8a33566164dfdfd833df00ebd456d36bfe60` |
+| `diagnosis_projection_summary.json` | `bf9662b5ef4400d1c3c96a8b1c186e22c48068b04aae833bba7f65cf3274c4bd` |
+| `confirmation/rock-freeze.json` | `8aa7696e6248501a22ab7863d817bc03920996cbf272400ed70cb06c76ea0662` |
+| `confirmation/jazz-freeze.json` | `0b512689caf6a703676bff420c34237a536ffb2bf6622ce0278deaf87b4caebd` |
+| `confirmation/sources/wjazzd-range.db` | `af6a0d9debf042c3581565bd75baad591d32e166cd2ec7298519883de614bf12` |
+| `evaluation.json` | `564e0c4cda3a4bc3f772860a70777d19de0f94b154b42ae8682e33043bc4a9bc` |
 
 ## V9-A 外部证据身份
 

@@ -4,6 +4,7 @@
 #include "library/ProgressionLibrary.h"
 #include "plugin/RecommendationWorker.h"
 #include "product/ProductVersion.h"
+#include "snapshot/RecommendationSnapshot.h"
 #include "ui/RecommendationBrowse.h"
 
 #include <algorithm>
@@ -35,11 +36,12 @@ struct FactoryIdentity {
 struct ReplayOptions {
     FactoryIdentity expected;
     bool recoverConsumedTail{};
+    bool checkSnapshots{};
 };
 
 constexpr std::string_view usage =
     "usage: b5_factory_replay <frozen factory.db> <queries.jsonl> <new output directory>"
-    " [--expect <version> <count> <lowercase sha256>] [--recover-consumed-tail]";
+    " [--expect <version> <count> <lowercase sha256>] [--recover-consumed-tail] [--check-snapshots]";
 
 int positiveInteger(std::string_view value) {
     int result{};
@@ -57,6 +59,8 @@ ReplayOptions parseOptions(int argc, char** argv) {
         const std::string_view argument(argv[i]);
         if (argument == "--recover-consumed-tail" && !options.recoverConsumedTail) {
             options.recoverConsumedTail = true;
+        } else if (argument == "--check-snapshots" && !options.checkSnapshots) {
+            options.checkSnapshots = true;
         } else if (argument == "--expect" && !hasExplicitIdentity && argc - i > 3) {
             const int version = positiveInteger(argv[++i]);
             const auto count = static_cast<std::size_t>(positiveInteger(argv[++i]));
@@ -303,7 +307,12 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         request.constraints.melody.push_back(note);
         if (!validConstraints(request.constraints)) throw std::runtime_error("invalid hard melody fixture");
     }
-    const auto result = waitFor(worker, worker.submit(progression, makeContext(query), request), options.expected);
+    const auto context = makeContext(query);
+    const auto result = waitFor(worker, worker.submit(progression, context, request), options.expected);
+    ImportedProgressionSession imported;
+    if (options.checkSnapshots &&
+        !imported.replace(progression, TimelineCoordinateMode::RelativeToSelection))
+        throw std::runtime_error("snapshot input has invalid timeline coordinates");
     Value row = Value::map();
     row.object["id"] = query.at("id");
     row.object["worker_ms"] = result.computationMs;
@@ -346,6 +355,7 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
     std::set<std::string> identities;
     std::vector<std::string> generatedIdentities;
     int generated{}, productRank{};
+    std::set<TemplateID> snapshotSources;
     const auto& order = result.recommendations.inspirationOrder;
     const auto total = order.size();
     const auto generatedTotal = std::count_if(order.begin(), order.end(), [&](const auto ref) {
@@ -373,6 +383,17 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         if (!candidate.baseQualified || !candidate.hardConstraintsPassed ||
             !factoryIds.contains(candidate.primaryTemplate))
             throw std::runtime_error("unexpected nonqualified or non-Factory candidate");
+        if (options.checkSnapshots &&
+            std::binary_search(request.traceSources.begin(), request.traceSources.end(), candidate.primaryTemplate) &&
+            snapshotSources.insert(candidate.primaryTemplate).second) {
+            const auto frozen = snapshot::capture(imported, candidate, {}, 120,
+                context.timeSigNumerator.value_or(4), context.timeSigDenominator.value_or(4));
+            const auto decoded = snapshot::deserialize(snapshot::serialize(frozen));
+            if (!decoded || !decoded.value.candidateAvailable ||
+                continuationMusicFingerprint(decoded.value.candidate) != fingerprint ||
+                decoded.value.candidate.primaryTemplate != candidate.primaryTemplate)
+                throw std::runtime_error("snapshot changed Factory source or music identity");
+        }
         Value record = Value::map();
         record.object["source"] = candidate.primaryTemplate;
         record.object["id"] = candidate.id;
@@ -389,6 +410,9 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         record.object["structure_qualified"] = candidate.structureQualified;
         record.object["complete_source_phrase"] = candidate.completeSourcePhrase;
         record.object["source_end_preserved"] = candidate.sourceEndPreserved;
+        record.object["family"] = candidate.family;
+        record.object["ending"] = static_cast<int>(candidate.ending);
+        record.object["reviewed_ending"] = candidate.reviewedEnding;
         record.object["provenance"] = static_cast<int>(candidate.provenance);
         record.object["rhythm_scale"] = static_cast<double>(candidate.rhythmScale);
         record.object["exploratory"] = candidate.exploratory;
@@ -422,6 +446,7 @@ Value replay(const Value& query, plugin::RecommendationWorker& worker,
         candidates.array.push_back(std::move(record));
     }
     row.object["generated_count"] = generated;
+    if (options.checkSnapshots) row.object["snapshot_sources"] = static_cast<int>(snapshotSources.size());
     Value generatedRecords = Value::list();
     for (const auto& identity : generatedIdentities) generatedRecords.array.emplace_back(identity);
     row.object["generated_identities"] = std::move(generatedRecords);

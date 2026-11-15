@@ -51,7 +51,7 @@ def symbols_and_durations(bars, meter):
         yield from durations
 
 
-def encode(row):
+def encode(row, edition="A"):
     mode, meter = row["mode"], row["meter"]
     tonic = "C" if mode == "major" else "A"
     events, full, raw, plain = [], [], [], []
@@ -74,7 +74,7 @@ def encode(row):
             if next_event["root"] != tonic_pc:
                 previous["target"] = successor["degree"]
                 previous["roles"] |= 16
-    tags = [row["family"], "V9A-original-editorial"]
+    tags = [row["family"], f"V9{edition}-original-editorial"]
     techniques = ["SlashBass"] if any("/" in item["symbol"] for item in events) else []
     if any(item["colorIntervals"] for item in events):
         techniques.append("ExtendedColor")
@@ -82,7 +82,7 @@ def encode(row):
     encoded = dict(id=row["id"], name=row["name_zh"], nameZh=row["name_zh"], nameEn=row["name_en"],
                    aliases=row["id"], builtInTags=",".join(built_in), techniques=",".join(techniques),
                    complexityLevel="rich", description="Original editorial phrase. " + row["ending"],
-                   note="Independent authored notation. Source references in the V9-A manifest.",
+                   note=f"Independent authored notation. Source references in the V9-{edition} manifest.",
                    mode=mode, sequence=" ".join(v8.sequence_token(item) for item in full),
                    rhythm=" ".join(str(item["durationQN"]) for item in full), cadence="none",
                    intent=row["intent"], loopable=row["intent"] == "loop", styles="pop:0.5,rock:0.3",
@@ -100,31 +100,45 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("a2", "catalog", "output"):
         parser.add_argument(f"--{name}", required=True, type=Path)
+    parser.add_argument("--edition", choices=("A", "B"), default="A")
     args = parser.parse_args()
-    phrase_path = ROOT / "data/factory-v9-a/phrases.tsv"
+    edition = args.edition
+    phrase_path = ROOT / f"data/factory-v9-{edition.lower()}/phrases.tsv"
     with args.a2.open(encoding="utf-8-sig", newline="") as stream:
         reference = {row["candidate_id"]: row for row in csv.DictReader(stream)}
     with phrase_path.open(encoding="utf8", newline="") as stream:
         phrases = list(csv.DictReader(stream, delimiter="\t"))
     catalog = list(read_jsonl(args.catalog))
-    if len(catalog) != 1288 or len({row["source"] for row in catalog}) != 1288:
-        raise ValueError("Expected frozen V8 replay catalog")
+    expected = 1288 if edition == "A" else 1312
+    if len(catalog) != expected or len({row["source"] for row in catalog}) != expected:
+        raise ValueError(f"Expected frozen {expected}-entry replay catalog")
     performances = {relative_performance(row["events"], row["meter"]): row["source"] for row in catalog}
     families = {l1(row["events"]): row["source"] for row in catalog}
     tails = {}
     for item in catalog:
-        for i in range(len(item["events"]) - 5):
+        for i in range(len(item["events"]) - (5 if edition == "A" else 2)):
             tails.setdefault(l1(item["events"][i:]), item["source"])
     candidates, records, fixtures = [], [], []
     ids = set()
     for row in phrases:
-        encoded, raw, performed = encode(row)
+        encoded, raw, performed = encode(row, edition)
         if row["id"] in ids:
             raise ValueError(f"Duplicate ID {row['id']}")
         ids.add(row["id"])
         n = int(row["context_events"])
-        if not 2 <= n <= 4 or not 6 <= len(l1(performed[n:])) <= 12:
-            raise ValueError(f"{row['id']}: intended seam does not leave six changes")
+        tail = l1(performed[n:])
+        min_tail, max_tail = (6, 12) if edition == "A" else (3, 16)
+        if not 2 <= n <= 4 or not min_tail <= len(tail) <= max_tail:
+            raise ValueError(f"{row['id']}: invalid intended seam or tail length")
+        if edition == "B":
+            groups = [int(value) for value in row["group_bars"].split("+")]
+            prefix_qn = sum(event["duration"] for event in performed[:n])
+            numerator, denominator = map(int, row["meter"].split("/"))
+            if min(groups) <= 0 or sum(groups) != len(row["bars"].split("|")) or prefix_qn != groups[0] * numerator * 4 / denominator:
+                raise ValueError(f"{row['id']}: inconsistent authored grouping")
+            if tail in tails:
+                raise ValueError(f"{row['id']}: complete L1 tail already exists in {tails[tail]}")
+            tails[tail] = row["id"]
         signature = relative_performance(performed, row["meter"])
         shape = l1(performed)
         older = performances.get(signature)
@@ -142,14 +156,19 @@ def main():
             a2 = reference[name]
             donor.append(dict(id=name, source=a2["source"], work=a2["source_id"], position=a2["position"],
                               use="harmonic relationship only, independently authored realization"))
-        records.append(dict(id=row["id"], family=row["family"], relationship=row["relationship"],
+        record = dict(id=row["id"], family=row["family"], relationship=row["relationship"],
                             same_l1_performance_parent=previous,
                             v8_same_l1_complete_tail=tails.get(l1(performed[n:])),
                             evidence=donor, rights="original editorial; no source passage, audio, or melody carried",
                             mode=row["mode"], meter=row["meter"], boundary=n,
                             ending=row["ending"], authored_qn=sum(x["duration"] for x in performed),
                             target_l1_events=len(l1(performed[n:])),
-                            performance_sha256=v8.fingerprint(signature)))
+                            performance_sha256=v8.fingerprint(signature))
+        if edition == "B":
+            record.pop("v8_same_l1_complete_tail")
+            record.update(group_bars=groups, source_relation="contiguous original editorial plan",
+                          development_tail_sha256=v8.fingerprint(tail))
+        records.append(record)
         fixture = []
         for plain, item in zip(performed, raw, strict=True):
             base, _, bass = item["name"].partition("/")

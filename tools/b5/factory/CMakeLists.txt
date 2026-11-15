@@ -12,7 +12,7 @@ add_subdirectory("${HC_SOURCE_ROOT}" "${CMAKE_BINARY_DIR}/formal-source" EXCLUDE
 
 add_executable(b5_factory_replay factory_replay.cpp
     "${HC_SOURCE_ROOT}/src/plugin/RecommendationWorker.cpp")
-target_link_libraries(b5_factory_replay PRIVATE harmony_product harmony_enrichment)
+target_link_libraries(b5_factory_replay PRIVATE harmony_product harmony_enrichment harmony_snapshot)
 target_compile_features(b5_factory_replay PRIVATE cxx_std_20)
 if(WIN32)
     target_link_libraries(b5_factory_replay PRIVATE bcrypt)
