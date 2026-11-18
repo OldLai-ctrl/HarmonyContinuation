@@ -141,6 +141,9 @@ struct MatchWeights {
     float alteredDegree{0.28f};
     float enharmonicDegreeDifference{0.06f};
     float qualityDifference{0.25f};
+    // A chromatic colour tone paired with its neighbour costs less than a
+    // passing insertion, so it counts as matched coverage.
+    float chromaticColourPairCost{0.15f};
     float qualityExtensionDifference{0.07f};
     float functionDifference{0.48f};
     float sameFunctionDegreeFactor{0.52f};

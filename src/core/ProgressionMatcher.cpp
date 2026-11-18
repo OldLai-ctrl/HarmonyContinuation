@@ -57,6 +57,23 @@ int qualityThird(ChordQuality quality) {
         default: return -1;
     }
 }
+// Chromatic chords (diminished, half-diminished, augmented) are common passing
+// and leading-tone colours. The DP would rather delete them (a passing insertion
+// costs ~0.2) than pay the full degree-mismatch price, so they never count as
+// matched. Pair them with the chord they resolve to for the price of a colour
+// tone instead.
+bool dimFamily(ChordQuality quality) {
+    using Q = ChordQuality;
+    return quality == Q::Diminished || quality == Q::Diminished7 || quality == Q::HalfDiminished7;
+}
+bool chromaticFamily(ChordQuality quality) {
+    return dimFamily(quality) || quality == ChordQuality::Augmented;
+}
+bool leadingToneOrAuxiliary(int queryRoot, int templateRoot) {
+    if (queryRoot < 0 || templateRoot < 0) return false;
+    const auto difference = (queryRoot - templateRoot + 12) % 12;
+    return difference == 11 || difference == 1; // a semitone below, or a semitone above
+}
 bool hasAlteredFifthWithoutPerfectFifth(std::uint16_t mask) {
     constexpr auto perfectFifth = std::uint16_t{1u << 7};
     constexpr auto alteredFifths = std::uint16_t{(1u << 6) | (1u << 8)};
@@ -163,6 +180,17 @@ float pairCost(const MatchEvent& q, const MatchEvent& t,
     const bool unresolvedDominant = queryFinal && !q.target && t.target &&
         sameDegree(q.degree,t.degree) && q.quality==ChordQuality::Dominant7 &&
         t.quality==ChordQuality::Dominant7 && hasRole(t.roles,Role::SecondaryDominant);
+    const int pairQueryRoot = q.degree ? relativeSemitone(*q.degree, mode) : -1;
+    const int pairTemplateRoot = t.degree ? relativeSemitone(*t.degree, mode) : -1;
+    // A diminished/augmented colour tone is matched to a neighbouring chord
+    // instead of becoming an insertion. Without this the DP always deletes it.
+    if (chromaticFamily(q.quality) != chromaticFamily(t.quality) &&
+        (dimFamily(q.quality) || dimFamily(t.quality) ||
+         q.quality == ChordQuality::Augmented || t.quality == ChordQuality::Augmented) &&
+        (sameBase(q.degree, t.degree) || leadingToneOrAuxiliary(pairQueryRoot, pairTemplateRoot))) {
+        reasons |= flag(MatchReason::QualityVariant) | flag(MatchReason::SameRole);
+        return w.chromaticColourPairCost;
+    }
     if (sameDegree(q.degree, t.degree)) reasons |= flag(MatchReason::SameDegree);
     else if (q.degree && t.degree && relativeSemitone(*q.degree, mode) == relativeSemitone(*t.degree, mode)) {
         reasons |= flag(MatchReason::EnharmonicDegree);

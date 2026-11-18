@@ -547,3 +547,8 @@ develop + colorScore 0.9（reason "legacy"）。
 ## D64 · 保存用户乐句不重读 factory 库
 
 `RecommendationWorker` 缓存 factory 模板、版本与 SHA；`invalidateLibrary()` 只让 user.db 重读并与缓存合并。
+
+## D65 · 色彩和弦按色彩音配对
+
+dim / dim7 / m7b5 / aug 与相邻和弦（同根或相差半音）配对时只收 `chromaticColourPairCost`，
+否则对齐器会为了省代价把它们判成插入，用户输入的色彩和弦就永远不计入匹配。
