@@ -2,6 +2,28 @@
 
 ## 本轮工作与下一步
 
+### 色彩不再是第四栏：color 变成独立维度（0.14.6，2026-11-18）
+
+用户问"能不能让 color 只判断续写部分、忽略用户输入"，并决定让色彩与收束/发展/循环**非互斥**。
+两件事一起做了。
+
+- **只看续写，本来就这样**：运行期 `evaluateIntentCompletion` 只吃 `candidate.continuation`
+  （匹配到的 suffix），用户输入的和弦不在里面。真正的漏洞是旧 `hasExtensionColor` 把普通
+  七和弦、Sus 也当成"扩展色彩"；七和弦是织体，不该让一条进行整段落进色彩栏。
+- **color 变成独立分数**：库里 `intent` 只留 resolve/develop/loop 三值，另加 `color`（0–1）与
+  `colorReason`。新 `evaluateColorEvidence`（`IntentCompletionEvaluator.cpp`）看续写：副属/导音
+  0.95、增/减和弦 0.9、借用小和弦 0.9、张力音 0.85、借用大三/单一变音 0.6。
+- **色彩视图**：`colorScore >= 0.7` 的候选在功能栏照常出现，同时再拷一份进第四栏；
+  色彩栏的卡片徽章显示它真实的功能意图，其它栏里带色彩的候选显示"色彩/Colour"。
+- **旧库照读**：`intent=="color"` 的旧行（本库 173 条）映射成 develop + colorScore 0.9（reason
+  "legacy"），不丢语义。
+- 入库结果（v11）：`resolve 1119 / develop 1019 / loop 804`；色彩 `none 1438 / secondary 736 /
+  mixture 638 / altered-quality 130`，≥0.7 共 866 条。
+- 库身份：4,214 条 / 19,312,640 B / `library_version 11` / sha256
+  `3dfa5b1f3f119f56c59d107ad26f2023f324a8197b4e9e84f52a2ef90e12742d`。
+- 包：`HarmonyContinuation-0.14.6-Setup.exe` 5,775,427 B / sha256
+  `21b186bb0c60f5e7ddc0dfa504dd35389c20040bd71056c7c27f454765fed494`；`ctest` 21/21。
+
 ### 风格重标注与库版本抬到 10（0.14.5，2026-11-18）
 
 第一批地基的最后一件：那 272 条一直挂着模板默认风格 `pop:0.55,rock:0.35` 的继承条目，现在按

@@ -131,7 +131,7 @@ std::optional<KeySignature> authoredDestination(const ContinuationCandidate& c) 
     return KeySignature{PitchClass(i.root),major?Mode::Major:Mode::Minor};
 }
 std::size_t groupFor(PhraseIntent i) {
-    return i==PhraseIntent::Resolve?0:i==PhraseIntent::Loop?2:i==PhraseIntent::Color?3:1;
+    return i==PhraseIntent::Resolve?0:i==PhraseIntent::Loop?2:1;
 }
 std::string familyFor(const ProgressionTemplate& t) {
     for(const auto& tag:t.tags)if(tag!="V7-editorial")return tag;
@@ -570,11 +570,10 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 }
                 if(!established){trace("destination-center-not-established",seam.score);continue;}
             }
-            bool playable=true;std::set<int> roots;int colors{};
+            bool playable=true;std::set<int> roots;
             for(const auto& e:c.continuation) {
                 const auto p=pitches(e);roots.insert(p.root);
                 playable&=p.root>=0&&p.bass>=0&&p.intervals&&std::isfinite(e.durationQN)&&e.durationQN>0&&e.durationQN<=128;
-                colors+=e.degree.alteration!=0||std::popcount(unsigned(p.intervals))>3||p.bass!=p.root;
             }
             if(!playable){trace("playability",seam.score);continue;}
             c.suggestedCurrentChordDurationQN=history.sourceOpenHold.value_or(progressionOpenDuration(recent));
@@ -588,6 +587,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
             c.intent=item.intent==PhraseIntent::Neutral?PhraseIntent::Develop:item.intent;
             if(c.intent==PhraseIntent::Resolve){if(audited)trace("resolve-exact-only");continue;}
             c.completion=evaluateIntentCompletion(c);
+            c.colorScore=evaluateColorEvidence(c,&c.colorReason);
             // Loop requires the actual wrap seam, not the source's loopable flag.
             if(c.intent==PhraseIntent::Loop&&!boundary(last,first).passed&&!c.actualPhraseReturn)c.intent=PhraseIntent::Develop;
             const auto endCenter=c.targetCenter.value_or(target);
@@ -598,7 +598,7 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 if(!open&&!modulation&&c.completion.reason==CompletionReason::DominantTonic){
                     if(audited)trace("development-closed");continue;
                 }
-            } else if(c.intent==PhraseIntent::Color&&colors==0){if(audited)trace("color-missing");continue;}
+            }
             c.completion=evaluateIntentCompletion(c);
             if(c.intent==PhraseIntent::Develop) {
                 const auto previous=c.continuation.size()>1?pitches(c.continuation[c.continuation.size()-2]):current;
@@ -611,7 +611,6 @@ void appendContextualContinuations(const MatchQuery& query,const CandidateIndex&
                 else c.completion={.8f,centerShift?CompletionReason::FunctionalPivot:CompletionReason::DevelopedPath};
             }
             if(c.intent==PhraseIntent::Loop)c.completion={.8f,CompletionReason::LoopClosure};
-            if(c.intent==PhraseIntent::Color&&colors)c.completion={.8f,CompletionReason::AudibleColor};
             c.exploratory=false;
             auto& q=c.creativeQuality;
             q.boundary=seam.score;q.context=transition?.75f:length>=3?1.f:.85f;

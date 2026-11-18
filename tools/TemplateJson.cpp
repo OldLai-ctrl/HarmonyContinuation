@@ -222,10 +222,11 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             input.need('{');
             ProgressionTemplate item;
             std::string sequence, rhythmText, modeText, cadenceText, intentText, stylesText, tagsText, meterText,
-                        skeletonText, aliasesText, builtInTagsText, techniquesText, complexityLevelText, typedData;
+                        skeletonText, aliasesText, builtInTagsText, techniquesText, complexityLevelText, typedData,
+                        colorReasonText;
             bool idSeen{}, sequenceSeen{}, nameSeen{}, modeSeen{}, intentSeen{}, cadenceSeen{},
                  loopSeen{}, meterSeen{}, stylesSeen{}, sourceSeen{}, priorSeen{}, complexitySeen{},
-                 versionSeen{}, phraseSeen{};
+                 versionSeen{}, phraseSeen{}, colorSeen{};
             std::unordered_set<std::string> seenFields;
             while (!input.take('}')) {
                 const auto key = input.string(); input.need(':');
@@ -249,6 +250,13 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
                 else if (key == "rhythm") rhythmText = input.string();
                 else if (key == "cadence") { cadenceText = input.string(); cadenceSeen = true; }
                 else if (key == "intent") { intentText = input.string(); intentSeen = true; }
+                else if (key == "color") {
+                    const auto value = input.number();
+                    if (!(value >= 0.0 && value <= 1.0)) throw std::runtime_error("invalid color");
+                    item.colorScore = static_cast<float>(value);
+                    colorSeen = true;
+                }
+                else if (key == "colorReason") colorReasonText = input.string();
                 else if (key == "loopable") { item.loopable = input.boolean(); loopSeen = true; }
                 else if (key == "styles") { stylesText = input.string(); stylesSeen = true; }
                 else if (key == "tags") tagsText = input.string();
@@ -287,6 +295,15 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             else throw std::runtime_error("mode must be major or minor");
             item.cadence = cadenceFromName(cadenceText);
             item.intent = intentFromName(intentText);
+            // Older libraries stored colour as a fourth intent. Colour is an
+            // orthogonal dimension now, so such a row reads as a develop prior
+            // that carries strong colour evidence.
+            if (item.intent == PhraseIntent::Color) {
+                item.intent = PhraseIntent::Develop;
+                if (!colorSeen) item.colorScore = 0.9f;
+                if (colorReasonText.empty()) colorReasonText = "legacy";
+            }
+            item.colorReason = colorReasonText;
             if (!meterText.empty()) {
                 // Two small integers: 4/4 and 12/8 are both one bar of n quarters.
                 const auto slash = meterText.find('/');
@@ -429,6 +446,7 @@ std::string serializeTemplateJson(const ProgressionTemplate& item, bool includeD
         << ",\"sequence\":" << quoted(sequence.str()) << ",\"rhythm\":" << quoted(rhythm.str())
         << ",\"cadence\":" << quoted(cadenceName(item.cadence))
         << ",\"intent\":" << quoted(intentName(item.intent))
+        << ",\"color\":" << item.colorScore << ",\"colorReason\":" << quoted(item.colorReason)
         << ",\"loopable\":" << (item.loopable ? "true" : "false")
         << ",\"styles\":" << quoted(styles.str()) << ",\"tags\":" << quoted(tags.str())
         << ",\"skeleton\":" << quoted(skeleton.str())

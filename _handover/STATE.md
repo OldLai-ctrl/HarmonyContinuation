@@ -787,3 +787,17 @@ sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
   `WishTests` 的 V5 契约库条件；`UnifiedSetup.iss` 把库 10 映射到 `MinimumPluginVersion 0.14.4`。
 - 库 4,214 条 / 19,185,664 B / sha256 `db8415e9…f47`；包 5,768,958 B / sha256 `0231a83c…e8e`；
   `ctest` 21/21。
+
+## 第 15 步：v0.14.6 色彩独立维度（2026-11-18）
+
+- `tools/ingest/build.py`：新增 `color_evidence()`，`classify_phrase` 返回
+  `(intent, cadence, color, color_reason)`，色彩不再占用意图值；`encode()` 写 `color`/`colorReason`。
+- C++：`ProgressionTemplate`/`ContinuationCandidate` 加 `colorScore`/`colorReason`；
+  `TemplateJson` 解析并映射旧 color 行；`evaluateColorEvidence` 取代 `hasExtensionColor`；
+  `ContinuationEngine` 的 `groupIndex(Color)` 归 1、`kColorViewThreshold=0.7f`、达标候选同时进
+  `groups[3]`；`ContextualContinuation` 去掉 color 拦截；卡片徽章区分"真实意图 / 色彩"。
+- 库：4,214 条、`library_version 11`、19,312,640 B、sha256 `3dfa5b1f…742d`；
+  intent resolve 1,564 / develop 1,512 / loop 1,138、`color>=0.7` 1,038、legacy 173。
+- 包 0.14.6（5,775,427 B / sha256 `21b186bb…9494`）；`ctest` 21/21。
+- 顺带：`CMakeLists.txt` 的 `factory_database` target 全部加 `NOT TARGET` 守卫，
+  `build-tools` 重配不再因重名 target 失败。

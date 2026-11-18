@@ -605,8 +605,29 @@ def _periodic(tokens):
     return False
 
 
+def color_evidence(parsed):
+    """Strengths of colour writing that are audible on their own.
+
+    Ordinary sevenths and sus chords are deliberately absent: they are the
+    default texture of the catalogue, not a colour mark.  Colour is a separate
+    axis from the phrase's function (resolve / loop / develop), so this never
+    decides which column the phrase belongs to."""
+    for degree, alteration, lower, suffix in parsed:
+        if "dim" in suffix or "aug" in suffix:
+            return 0.9, "altered-quality"
+    for degree, alteration, lower, suffix in parsed:
+        if not lower and "7" in suffix and degree in (2, 3, 6, 7):
+            return 0.9, "secondary"
+    # Modal mixture (bVII, bIII, bVI) is idiomatic rock and pop, so it is a
+    # faint tint below the colour view's threshold, not a colour mark.
+    for degree, alteration, lower, suffix in parsed:
+        if alteration != 0:
+            return 0.6, "mixture"
+    return 0.0, ""
+
+
 def classify_phrase(tokens, mode, bars=1):
-    """Derive (intent, cadence) from what the phrase *does*, not from its spelling.
+    """Derive (intent, cadence, color score, color reason) from what the phrase *does*.
 
     The catalogue label is a prior for the engine's own evaluator, so it has to
     match how a player would use the phrase:
@@ -618,33 +639,33 @@ def classify_phrase(tokens, mode, bars=1):
                loop by arithmetic alone.
     * resolve -- settles on the tonic (V/IV/VII -> I) *or* on the dominant
                (half cadence).  "收束到属/主" is the user's definition.
-    * color -- chromatic, borrowed or diminished writing that neither closes
-               nor repeats.
     * develop -- everything that keeps moving: stops on a middle function,
                deceptive cadence, secondary-dominant chains.
+
+    Colour used to be a fourth label; it is now an orthogonal score
+    (:func:`color_evidence`) so a phrase can be both a loop and colourful.
     """
     parsed = [_parse_token(token) for token in tokens]
     if not parsed or any(item is None for item in parsed):
-        return "develop", "none"
+        return "develop", "none", 0.0, ""
+    color, reason = color_evidence(parsed)
     first, last = parsed[0], parsed[-1]
     tonic_quality = last[2] if mode == "minor" else not last[2]
     if len(parsed) >= 4 and _periodic(tokens):
-        return "loop", "loop_closure"
+        return "loop", "loop_closure", color, reason
     if len(parsed) >= 2 and last[0] == 1 and last[1] == 0 and tonic_quality \
             and parsed[-2][1] == 0 and parsed[-2][0] in (4, 5, 7):
         previous = parsed[-2][0]
         cadence = "authentic" if previous == 5 else "plagal" if previous == 4 else "modal"
-        return "resolve", cadence
+        return "resolve", cadence, color, reason
     if last[0] == 5 and last[1] == 0:
-        return "resolve", "half"
+        return "resolve", "half", color, reason
     if len(parsed) >= 3 and bars >= 2 and len(parsed) <= 8 \
             and (first[0] - last[0]) % 7 in (3, 4):
-        return "loop", "loop_closure"
-    if any(token[1] != 0 or "dim" in token[3] or "aug" in token[3] for token in parsed):
-        return "color", "none"
+        return "loop", "loop_closure", color, reason
     if len(parsed) >= 2 and parsed[-2][0] == 5 and last[0] == 6 and last[1] == 0:
-        return "develop", "deceptive"
-    return "develop", "none"
+        return "develop", "deceptive", color, reason
+    return "develop", "none", color, reason
 
 
 def encode(row: dict) -> dict:
@@ -664,7 +685,7 @@ def encode(row: dict) -> dict:
                           quality=FAMILIES[match["quality"]]))
     v8.validate_projection(row["id"], tonic, mode, full, events, raw)
     tokens = [v8.sequence_token(item) for item in full]
-    intent, cadence = classify_phrase(tokens, mode, len(row["bars"].split("|")))
+    intent, cadence, color, color_reason = classify_phrase(tokens, mode, len(row["bars"].split("|")))
     tags = [f"ingest-{row['source_type']}"]
     built_in = [intent, f"common-{mode}"]
     encoded = dict(id=row["id"], name=row["name_zh"], nameZh=row["name_zh"], nameEn=row["name_en"],
@@ -673,6 +694,7 @@ def encode(row: dict) -> dict:
                    mode=mode, sequence=" ".join(v8.sequence_token(item) for item in full),
                    rhythm=" ".join(str(item["durationQN"]) for item in full), cadence=cadence,
                    intent=intent, loopable=intent == "loop", styles=row["styles"], tags=",".join(tags),
+                   color=color, colorReason=color_reason,
                    skeleton=",".join(map(str, range(len(full)))), meter=meter,
                    sourceType="factory", priorWeight=0.5, complexity=0.5, version=9,
                    phraseLength=len(full), secondaryIntents=0,

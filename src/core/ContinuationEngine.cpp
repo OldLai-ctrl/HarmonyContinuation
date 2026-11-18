@@ -33,8 +33,8 @@ bool higherRank(const ContinuationCandidate& a, const ContinuationCandidate& b) 
 PhraseIntent effectiveIntent(const ProgressionTemplate& item, const std::vector<MatchEvent>& suffix) {
     if (item.intent != PhraseIntent::Neutral) return item.intent;
     if (item.loopable) return PhraseIntent::Loop;
-    for (const auto& event : suffix) if (hasRole(event.roles, Role::Borrowed) ||
-        hasRole(event.roles, Role::SecondaryLeadingTone)) return PhraseIntent::Color;
+    // Borrowed or secondary writing is colour on top of a function, never a
+    // fourth function: colour evidence is scored by evaluateColorEvidence.
     if (item.cadence == CadenceType::Authentic || item.cadence == CadenceType::PerfectAuthentic ||
         item.cadence == CadenceType::Plagal) return PhraseIntent::Resolve;
     return PhraseIntent::Develop;
@@ -78,9 +78,12 @@ bool preservesLoopContext(const KeyInterpretation& input, const MatchResult& mat
 std::size_t groupIndex(PhraseIntent intent) {
     switch (intent) {
         case PhraseIntent::Resolve: return 0; case PhraseIntent::Loop: return 2;
-        case PhraseIntent::Color: return 3; default: return 1;
+        // Colour is not a group of its own: it is a view over the three
+        // functional groups, filled with copies that pass evaluateColorEvidence.
+        case PhraseIntent::Color: return 1; default: return 1;
     }
 }
+constexpr float kColorViewThreshold = 0.7f; // "clearly colourful", not a faint tint
 float styleScore(const ProgressionTemplate& item, StyleFlags hintMask, bool exactHarmony) {
     if (!hintMask) return 0.5f;
     // Several selected styles mean "any of these fits": the best affinity wins.
@@ -448,6 +451,7 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
             return evaluateIntentCompletion(probe, selected->full.front().degree, selected->full.back().degree);
         };
         candidate.completion = completionFor(candidate.intent);
+        candidate.colorScore = evaluateColorEvidence(candidate, &candidate.colorReason);
         const auto sufficient = [](IntentCompletionResult value) {
             return value.reason != CompletionReason::NoEvidence && value.reason != CompletionReason::ShortDevelopment;
         };
@@ -460,8 +464,9 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         }
         else if(sufficient(loopEvidence)) candidate.cadence=CadenceType::LoopClosure;
         if (!sufficient(candidate.completion)) {
-            // Prefer supported uses; a failed Loop/Color label does not certify Develop.
-            for (auto intent : {PhraseIntent::Resolve, PhraseIntent::Loop, PhraseIntent::Color, PhraseIntent::Develop}) {
+            // Prefer supported uses; a failed Loop label does not certify Develop.
+            // Colour is no longer one of these uses: it is scored separately.
+            for (auto intent : {PhraseIntent::Resolve, PhraseIntent::Loop, PhraseIntent::Develop}) {
                 const auto evidence = completionFor(intent);
                 if (!sufficient(evidence)) continue;
                 candidate.intent = intent; candidate.completion = evidence; break;
@@ -507,7 +512,11 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
         s.match = match.similarity * (0.5f + 0.5f * evidence);
         s.skeleton = match.subScores.skeletonHarmony;
         s.style = styleScore(item, request.styleMask, match.rawCost <= 0.00001f);
-        s.intent = request.preferredIntent && *request.preferredIntent == candidate.intent ? 1.f : 0.5f;
+        s.intent = request.preferredIntent
+            ? (*request.preferredIntent == PhraseIntent::Color
+                   ? (candidate.colorScore >= kColorViewThreshold ? 1.f : 0.5f)
+                   : (*request.preferredIntent == candidate.intent ? 1.f : 0.5f))
+            : 0.5f;
         s.cadence = sufficient(resolveEvidence) || sufficient(loopEvidence) ? 1.f : 0.5f;
         s.continuation = chordCount / (chordCount + 1.f);
         s.prior = item.priorWeight;
@@ -608,7 +617,12 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     for (auto& [identity,candidate]:distinct) {
         if (!candidate.baseQualified) { mark(candidate,"minimum_score"); continue; }
         ++result.stats.scorePassed;
-        result.groups[groupIndex(candidate.intent)].push_back(std::move(candidate));
+        auto& home = result.groups[groupIndex(candidate.intent)];
+        home.push_back(std::move(candidate));
+        // The colour view mirrors the strongly coloured routes without taking
+        // them out of their functional group: one progression, two readings.
+        if (home.back().colorScore >= kColorViewThreshold)
+            result.groups[3].push_back(home.back());
     }
     if(creative)appendContextualContinuations(query,index,request,result);
     if(creative)assessInspirationStructure(query,index,result);

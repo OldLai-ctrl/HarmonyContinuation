@@ -73,6 +73,8 @@ struct ContinuationCandidate {
     std::string id;
     TemplateID primaryTemplate;
     PhraseIntent intent{PhraseIntent::Neutral};
+    float colorScore{}; // colour evidence read from the continuation only
+    std::string colorReason;
     KeySignature key;
     int keyOffsetFromInput{}; // transposition-invariant tie order, never a score
     std::vector<ConcreteChordEvent> continuation;
@@ -190,6 +192,11 @@ RhythmScaleEstimate estimateRhythmScale(const MatchResult&, const MatchQuery&, c
 ConcreteChordEvent realizeContinuation(const MatchEvent&, KeySignature, double durationQN);
 IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate&,
     std::optional<ScaleDegree> phraseStart = {}, std::optional<ScaleDegree> current = {});
+// Colour is a separate dimension, never a group: only the continuation's own
+// chords count, never the user's input.  Strong evidence only (borrowed,
+// secondary dominant/leading tone, altered degree or quality, colour tones) --
+// a plain seventh or sus chord is texture, not colour.
+float evaluateColorEvidence(const ContinuationCandidate&, std::string* reason = nullptr);
 const char* completionReasonKey(CompletionReason) noexcept;
 Progression continuationProgression(const Progression&,const ContinuationCandidate&);
 RecommendationSet recommendContinuations(const MatchQuery&, const CandidateIndex&,

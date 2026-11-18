@@ -1,6 +1,22 @@
 # 当前库身份与重建链
 
-## v10 / library_version 10（2026-11-18，现行）
+## v11 / library_version 11（2026-11-18，现行）
+
+| 项 | 值 |
+|---|---|
+| 条目 | `progressions=4214`（Billboard 2,926 + 手写/继承 1,288） |
+| 版本 | `library_version=11`、`schema_version=2` |
+| 字节 | 19,312,640 |
+| sha256 | `3dfa5b1f3f119f56c59d107ad26f2023f324a8197b4e9e84f52a2ef90e12742d` |
+
+与 v10 的区别：`intent` 只剩 resolve/develop/loop 三值，色彩拆成独立字段 `color`(0–1) +
+`colorReason`（见 D57/D58）；清单里的旧 `color` 意图行只有 0 条（v11 入库时已改写），
+旧库仍可由插件映射成 develop + colorScore 0.9。只读副本：`data/library/factory-lib11.db`。
+
+重建链：与 v10 同，只是第 3 步换成 `relabel_styles.py <库>.db <库>-lib11.db --library-version 11`
+（该脚本的 `--library-version` 会同时写 metadata），第 4 步用 `-DHC_FACTORY_LIBRARY_VERSION=11`。
+
+## v10 / library_version 10（2026-11-18，上一版）
 
 | 项 | 值 |
 |---|---|

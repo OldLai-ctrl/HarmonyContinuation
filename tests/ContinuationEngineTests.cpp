@@ -305,10 +305,12 @@ int main() {
     const auto colorQuery = progression(R"([{"name":"C","start":0,"duration":4},{"name":"F","start":4}])");
     const auto borrowedColor = recommend(colorQuery, colored);
     const auto* borrowedColorRoute = findCandidate(borrowedColor, "color");
-    check(borrowedColorRoute && borrowedColorRoute->intent == PhraseIntent::Color &&
+    check(borrowedColorRoute && borrowedColorRoute->intent == PhraseIntent::Develop &&
+          borrowedColorRoute->colorScore >= 0.7f &&
           borrowedColorRoute->continuation.size() == 2 && borrowedColorRoute->continuation[0].label == "Fm" &&
-          borrowedColorRoute->continuation[1].label == "C" && !borrowedColor.groups[3].empty(),
-          "J borrowed Fm-C suffix remains Color");
+          borrowedColorRoute->continuation[1].label == "C" && !borrowedColor.groups[1].empty() &&
+          !borrowedColor.groups[3].empty(),
+          "J borrowed Fm-C suffix develops and also shows in the colour view");
     const auto resolveAfterColor = templates(R"([{"id":"color_to_resolve","mode":"major","sequence":"I iv V I","intent":"color"}])");
     const auto developAfterColor = templates(R"([{"id":"color_to_develop","mode":"major","sequence":"I iv V ii","intent":"color"}])");
     const auto colorPrefix = progression(R"([{"name":"C","start":0,"duration":4},{"name":"Fm","start":4,"duration":4},{"name":"G","start":8}])");

@@ -459,13 +459,15 @@ int main() {
         check(user.addProgression(saved.item,error),"user save");
         auto listed=user.listProgressions();
         check(listed && listed.templates.size()==1 && listed.templates.front().name=="Saved Test","user list");
-        auto updated=listed.templates.front(); updated.name="Renamed"; updated.intent=PhraseIntent::Color;
+        auto updated=listed.templates.front(); updated.name="Renamed"; updated.intent=PhraseIntent::Develop;
+        updated.colorScore=0.9f; updated.colorReason="secondary";
         updated.styles=static_cast<StyleFlags>(Style::Jazz); updated.styleWeights={{Style::Jazz,1.f}};
         updated.tags={"副歌","我的常用"}; updated.note="项目 A"; updated.favorite=true;
         updated.createdAt="2026-09-29T00:00:00Z"; updated.updatedAt="2026-09-29T01:00:00Z";
         check(user.updateProgression(updated,error),"user rename metadata");
         listed=user.listProgressions();
-        check(listed && listed.templates.front().name=="Renamed" && listed.templates.front().intent==PhraseIntent::Color &&
+        check(listed && listed.templates.front().name=="Renamed" && listed.templates.front().intent==PhraseIntent::Develop &&
+            listed.templates.front().colorScore>0.89f && listed.templates.front().colorReason=="secondary" &&
             listed.templates.front().tags==updated.tags && listed.templates.front().favorite &&
             listed.templates.front().note==updated.note && listed.templates.front().createdAt==updated.createdAt,
             "user metadata persists");

@@ -95,6 +95,8 @@ struct ProgressionTemplate {
     std::vector<MatchEvent> full;
     std::vector<std::size_t> skeletonIndices;
     PhraseIntent intent{PhraseIntent::Neutral};
+    float colorScore{}; // orthogonal colour evidence, 0 = plain, never a grouping key
+    std::string colorReason;
     StyleFlags secondaryIntents{};
     CadenceType cadence{CadenceType::None};
     StyleFlags styles{};

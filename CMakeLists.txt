@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.14.5 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.14.6 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "Versioned Factory content; published V5/V7 remain frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
@@ -386,7 +386,7 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
 endif()
-if(HC_FACTORY_LIBRARY_VERSION LESS 9)
+if(HC_FACTORY_LIBRARY_VERSION LESS 9 AND NOT TARGET factory_database)
     add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 endif()
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AND HC_FACTORY_LIBRARY_VERSION STREQUAL "5"))
@@ -430,7 +430,7 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUA
         COMMENT "Compile reviewed Factory V6 database and matching annotations"
         VERBATIM)
     add_custom_target(factory_v6_database DEPENDS "${HC_FACTORY_V6_EXPERIMENT_DB}" "${HC_FACTORY_V6_HCA}")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" AND NOT TARGET factory_database)
         add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V6_HCA}")
     elseif(HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8")
         set(HC_FACTORY_V7_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v7")
@@ -470,9 +470,13 @@ if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUA
                     "${HC_FACTORY_V8_SOURCE_DIR}/approved-ids.txt"
                 COMMENT "Compile complete reviewed open-phrase increment; preserve V7 and existing mode annotations"
                 VERBATIM)
-            add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_RUNTIME_HCA}")
+            if(NOT TARGET factory_database)
+                add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_RUNTIME_HCA}")
+            endif()
         else()
-            add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V7_HCA}")
+            if(NOT TARGET factory_database)
+                add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}" "${HC_FACTORY_V7_HCA}")
+            endif()
         endif()
         add_dependencies(factory_database factory_v7_database)
     endif()

@@ -9,14 +9,6 @@ bool isDegree(const ScaleDegree& value, int degree, int alteration = 0) noexcept
 bool sameDegree(const ScaleDegree& left, const ScaleDegree& right) noexcept {
     return left.degree == right.degree && left.alteration == right.alteration;
 }
-bool hasExtensionColor(const ConcreteChordEvent& chord) {
-    if (chord.harmonicData && chordPitches(*chord.harmonicData).colorMask) return true;
-    switch (chord.quality) {
-    case ChordQuality::Major7: case ChordQuality::Minor7: case ChordQuality::Dominant7:
-    case ChordQuality::Sus2: case ChordQuality::Sus4: return true;
-    default: return false;
-    }
-}
 } // namespace
 
 IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate& candidate,
@@ -62,25 +54,43 @@ IntentCompletionResult evaluateIntentCompletion(const ContinuationCandidate& can
         if (path.size() >= 2 && distinct) return {0.78f, CompletionReason::DevelopedPath};
         return {0.38f, CompletionReason::ShortDevelopment};
     }
-    case PhraseIntent::Color:
-        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
-                return hasRole(chord.roles, Role::Borrowed); }))
-            return {0.90f, CompletionReason::BorrowedColor};
-        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
-                return hasRole(chord.roles, Role::SecondaryDominant) ||
-                    hasRole(chord.roles, Role::SecondaryLeadingTone); }))
-            return {0.90f, CompletionReason::SecondaryColor};
-        if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
-                return chord.degree.alteration != 0 || chord.quality == ChordQuality::Diminished ||
-                    chord.quality == ChordQuality::Diminished7 ||
-                    chord.quality == ChordQuality::HalfDiminished7 || chord.quality == ChordQuality::Augmented; }))
-            return {0.90f, CompletionReason::AudibleColor};
-        if (std::any_of(path.begin(), path.end(), hasExtensionColor))
-            return {0.90f, CompletionReason::ExtendedColor};
-        return {0.34f, CompletionReason::NoEvidence};
     default:
         return {0.5f, CompletionReason::NoEvidence};
     }
+}
+
+float evaluateColorEvidence(const ContinuationCandidate& candidate, std::string* reason) {
+    const auto& path = candidate.continuation;
+    const auto note = [&](float score, const char* key) {
+        if (reason) *reason = key;
+        return score;
+    };
+    if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+            return hasRole(chord.roles, Role::SecondaryDominant) ||
+                hasRole(chord.roles, Role::SecondaryLeadingTone); }))
+        return note(0.95f, "secondary");
+    if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+            return chord.quality == ChordQuality::Diminished ||
+                chord.quality == ChordQuality::Diminished7 ||
+                chord.quality == ChordQuality::HalfDiminished7 || chord.quality == ChordQuality::Augmented; }))
+        return note(0.9f, "altered");
+    if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+            return chord.harmonicData && chordPitches(*chord.harmonicData).colorMask; }))
+        return note(0.85f, "tension");
+    // A borrowed *minor* chord (minor iv in major) is a deliberate colour; a
+    // borrowed major chord (bVII, bIII, bVI) is the everyday rock mixture.
+    for (const auto& chord : path)
+        if (hasRole(chord.roles, Role::Borrowed) &&
+            (chord.quality == ChordQuality::Minor || chord.quality == ChordQuality::Minor7 ||
+             chord.quality == ChordQuality::Diminished || chord.quality == ChordQuality::Diminished7 ||
+             chord.quality == ChordQuality::HalfDiminished7 || chord.quality == ChordQuality::Augmented))
+            return note(0.9f, "borrowed");
+    // Modal mixture stays a tint: bVII is the default sound of rock, not a
+    // colour accent, so it never fills the colour view on its own.
+    if (std::any_of(path.begin(), path.end(), [](const auto& chord) {
+            return hasRole(chord.roles, Role::Borrowed) || chord.degree.alteration != 0; }))
+        return note(0.6f, "mixture");
+    return note(0.f, "none");
 }
 
 const char* completionReasonKey(CompletionReason reason) noexcept {

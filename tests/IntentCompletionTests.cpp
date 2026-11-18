@@ -64,41 +64,38 @@ int main() {
         c.continuation={chord(5,flag(Role::SecondaryDominant))};
         check(evaluateIntentCompletion(c).score>0.7f,"single functional pivot is allowed");
 
-        c.intent=PhraseIntent::Color;
-        c.continuation={chord(4,flag(Role::Borrowed))};
-        result=evaluateIntentCompletion(c);
-        check(result.score>0.8f&&result.reason==CompletionReason::BorrowedColor,
-              "single borrowed chord has a borrowed-color reason");
+        std::string why;
         c.continuation={chord(5,flag(Role::SecondaryDominant))};
-        result=evaluateIntentCompletion(c);
-        check(result.reason==CompletionReason::SecondaryColor,
-              "secondary dominant has a secondary-color reason");
+        check(evaluateColorEvidence(c,&why)>0.9f&&why=="secondary",
+              "secondary dominant is colour evidence in the continuation");
         c.continuation={chord(7,flag(Role::SecondaryLeadingTone))};
-        result=evaluateIntentCompletion(c);
-        check(result.reason==CompletionReason::SecondaryColor,
-              "secondary leading tone has a secondary-color reason");
+        check(evaluateColorEvidence(c,&why)>0.9f&&why=="secondary",
+              "secondary leading tone is colour evidence in the continuation");
+        c.continuation={qualityChord(ChordQuality::Augmented)};
+        check(evaluateColorEvidence(c,&why)>0.8f&&why=="altered",
+              "augmented chord is colour evidence");
+        c.continuation={qualityChord(ChordQuality::Diminished7)};
+        check(evaluateColorEvidence(c,&why)>0.8f&&why=="altered",
+              "diminished seventh is colour evidence");
+        auto borrowedMinor=chord(4,flag(Role::Borrowed));
+        borrowedMinor.quality=ChordQuality::Minor;
+        c.continuation={borrowedMinor};
+        check(evaluateColorEvidence(c,&why)>0.8f&&why=="borrowed",
+              "borrowed minor subdominant is colour evidence");
+        c.continuation={chord(7,flag(Role::Borrowed))};
+        check(evaluateColorEvidence(c,&why)>0.5f&&evaluateColorEvidence(c,&why)<0.7f&&why=="mixture",
+              "borrowed major bVII is a faint mixture, below the colour view");
         for (const auto quality:{ChordQuality::Major7,ChordQuality::Minor7,ChordQuality::Dominant7,
                 ChordQuality::Sus2,ChordQuality::Sus4}) {
             c.continuation={qualityChord(quality)};
-            result=evaluateIntentCompletion(c);
-            check(result.reason==CompletionReason::ExtendedColor,
-                  "seventh and suspended chord qualities have an extended-color reason");
+            check(evaluateColorEvidence(c,&why)<0.01f,
+                  "seventh and suspended qualities are texture, not colour");
         }
-        c.continuation={qualityChord(ChordQuality::Augmented)};
-        result=evaluateIntentCompletion(c);
-        check(result.reason==CompletionReason::AudibleColor,
-              "augmented chord has an audible-color reason");
         c.continuation={chord(4,0,1)};
-        result=evaluateIntentCompletion(c);
-        check(result.reason==CompletionReason::AudibleColor,
-              "altered scale degree has an audible-color reason");
-        c.continuation={qualityChord(ChordQuality::Diminished7)};
-        result=evaluateIntentCompletion(c);
-        check(result.reason==CompletionReason::AudibleColor,
-              "diminished seventh has an audible-color reason");
+        check(evaluateColorEvidence(c,&why)>0.5f&&evaluateColorEvidence(c,&why)<0.7f,
+              "an altered degree alone is mixture, not strong colour");
         c.continuation={chord(4)};
-        result=evaluateIntentCompletion(c);
-        check(result.score<0.5f&&result.reason==CompletionReason::NoEvidence,
+        check(evaluateColorEvidence(c,&why)<0.01f&&why=="none",
               "ordinary major triad is not color evidence");
         std::cout << "intent completion cases passed\n";
     } catch (const std::exception& e) {

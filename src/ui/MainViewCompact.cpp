@@ -283,9 +283,15 @@ void MainView::drawRecommendationOverview(CDrawContext* dc){
             }
         }else{
             const auto score=browseCategory()==4?enrichments_.groups[row.group][row.index].score:recommendations_.groups[row.group][row.index].rankingScore;
-            const auto intent=browseCategory()==4?(zh?std::string("升级"):std::string("Enrich")):tIntent(recommendations_.groups[row.group][row.index].intent);
-            const bool creative=browseCategory()!=4&&recommendations_.groups[row.group][row.index].channel!=RecommendationChannel::Exact;
-            text(dc,intent+" · "+(creative?(zh?std::string("创意合格"):std::string("Creative")):number(std::round(double(score)*10.)/10.)),{r-104,top+2,r-4,top+24},10,secondary,kRightText);
+            const auto& card=recommendations_.groups[row.group][row.index];
+            const auto intent=browseCategory()==4?(zh?std::string("升级"):std::string("Enrich")):tIntent(card.intent);
+            const bool creative=browseCategory()!=4&&card.channel!=RecommendationChannel::Exact;
+            // Colour is a second reading of the same route, so the colour view
+            // shows which functional group the card also belongs to.
+            const auto colourBadge=browseCategory()==4?std::string():
+                browseCategory()==3?(std::string(" · ")+tIntent(card.intent)):
+                card.colorScore>=0.7f?(zh?std::string(" · 色彩"):std::string(" · Colour")):std::string();
+            text(dc,intent+colourBadge+" · "+(creative?(zh?std::string("创意合格"):std::string("Creative")):number(std::round(double(score)*10.)/10.)),{r-104,top+2,r-4,top+24},10,secondary,kRightText);
         }
         text(dc,browsePath(row),{l+8,top+23,r-8,top+height-3},11);
         auto hit=rect({l,top,r,top+height-2});hit.bound(rect(overviewBody_));if(hit.getHeight()>0)compactHits_.push_back({hit,CompactAction::OverviewSelect,{},i,true,{}});
