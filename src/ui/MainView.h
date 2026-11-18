@@ -275,6 +275,7 @@ private:
     std::optional<std::pair<std::size_t,std::size_t>> selectedCandidate_;
     std::optional<std::pair<std::size_t,std::size_t>> selectedEnrichment_;
     std::optional<std::pair<bool,std::size_t>> selectedLibrary_;
+    mutable std::vector<std::size_t> libraryFoldCounts_;
     std::size_t libraryPage_{};
     StyleFlags libraryStyleMask_{};
     std::optional<PhraseIntent> libraryIntent_;

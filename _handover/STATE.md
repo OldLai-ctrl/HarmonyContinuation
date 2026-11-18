@@ -768,3 +768,11 @@ sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
 - `src/library/LibraryStore.cpp`：已装库版本高于内置版本时给 `warning`，库照常返回。
 - `tests/ContinuationEngineTests.cpp`：原断言"拒绝未知风格"改成"新库可加载 + 未知风格位被丢掉"。
 - `ctest` 21/21（24.75 s）。库未变（仍是 v10d）。
+
+## 第 13 步：v0.14.4 列表折叠（2026-11-18）
+
+- `src/ui/MainView.cpp`：`filteredLibrary()` 按 `libraryFamilyKey()`（调式 + 级数/变化音串，
+  与引擎 family 同口径）折叠，`libraryFoldCounts_` 记录族大小；解析不出事件的条目按 id 成键。
+- 列表行显示代表条目并追加 `×N`；检索/筛选/分页作用在折叠后的行上。
+- v10d：4,214 条 → 3,924 行，隐藏 290 行，最大一族 7 条；`ctest` 21/21。
+- 待办：1,288 条继承条目重标注（等用户确认是否覆盖人工调过的风格权重）。

@@ -939,8 +939,23 @@ void MainView::drawCompare(CDrawContext* dc,const CRect& bounds) {
         ++shown;
     }
 }
+namespace {
+// Same skeleton = same harmonic plan. Entries without a parsed sequence must
+// never share a key, otherwise every untyped legacy row would collapse into one.
+std::string libraryFamilyKey(const ProgressionTemplate& item) {
+    std::string key=item.mode==Mode::Major?"maj|":"min|";
+    bool any=false;
+    for (const auto& event:item.full) if(event.degree) {
+        key+=std::to_string(event.degree->degree)+'.'+std::to_string(event.degree->alteration)+',';
+        any=true;
+    }
+    return any?key:std::string("id|")+item.id;
+}
+}
 std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
     std::vector<std::pair<bool,std::size_t>> out;
+    libraryFoldCounts_.clear();
+    std::unordered_map<std::string,std::size_t> familySlot;
     const auto append=[&](const auto& entries,bool factory) {
         for (std::size_t i=0;i<entries.size();++i) {
             const auto& item=entries[i];
@@ -963,7 +978,12 @@ std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
                 for (const auto& event:item.full) hit=hit || containsText(formatMatchEvent(event),librarySearch_);
                 if (!hit) continue;
             }
+            const auto family=libraryFamilyKey(item);
+            const auto seen=familySlot.find(family);
+            if (seen!=familySlot.end()) { ++libraryFoldCounts_[seen->second]; continue; }
+            familySlot.emplace(family,out.size());
             out.emplace_back(factory,i);
+            libraryFoldCounts_.push_back(1);
         }
     };
     append(factory_,true); append(user_,false); return out;
@@ -1595,8 +1615,11 @@ void MainView::drawResponsiveLibrary(CDrawContext* dc) {
         const double y=listTop+row*36;
         box(dc,CRect(area.left+8,y,right-8,y+33),CColor(32,49,69,255));
         const double nameEnd=right-(layout_.mode==LayoutMode::Compact?220:435);
-        const auto displayName=state_.locale==session::Locale::ZhCN && !item.nameZh.empty()?item.nameZh:
+        auto displayName=state_.locale==session::Locale::ZhCN && !item.nameZh.empty()?item.nameZh:
             state_.locale==session::Locale::EnUS && !item.nameEn.empty()?item.nameEn:item.name;
+        const auto foldIndex=offset+row;
+        const auto folded=foldIndex<libraryFoldCounts_.size()?libraryFoldCounts_[foldIndex]:std::size_t{1};
+        if(folded>1)displayName+="  ×"+std::to_string(folded);
         line(dc,displayName,CRect(area.left+16,y+3,nameEnd,y+29),pale);
         line(dc,primaryStyle(item.styles),CRect(nameEnd+8,y+3,nameEnd+115,y+29),muted);
         line(dc,tIntent(item.intent),CRect(nameEnd+120,y+3,nameEnd+220,y+29),muted);
