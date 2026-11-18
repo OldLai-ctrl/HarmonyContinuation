@@ -747,3 +747,15 @@ songs=838 tokens=86009 phrases=3735 short=450 duplicate=9017 no_style=0 silent_b
 库 `factory-bb-v10c.db` sha256 `2de2605f…89f274`，包 `HarmonyContinuation-0.14.1-Setup.exe`
 sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
 下一步：架构评审（用户要求）→ 大优化。
+
+## 第 11 步：v10d / 0.14.2（2026-11-18）
+
+第一批"地基"的前三件：12/8 回收、块级去重 + 丢弃名单、乐句邻接占位。
+
+- 拍号：`build.py` 白名单放宽到 `[1-9][0-9]?/(4|8)`；`TemplateJson.cpp` 拍号解析改成两个小整数
+  （1–32 / 4|8）。语料 890 首全入（原 858），BB 2,838 → 2,926，新增 88 条 12/8。
+- 去重：`performance_key` 移到 `chunk_bars` 循环内（与库存储粒度一致），丢弃行写
+  `_ingest_bb_v10d/candidates.json/dropped.tsv`；交叉基线仍丢 16 条（名单 `dropped-compile.txt`）。
+- 邻接：`phrase-links.tsv`（prev/next/song/section），段内与跨段都连，给乐句级发展推荐占位。
+- 库 `factory-bb-v10d.db` 4,214 条 / 19,181,568 字节 / sha256 `9e0246e2…3b793c`；`ctest` 21/21。
+- 下一步（仍是第一批）：继承条目幂等重标注、派生 `familyId` 折叠、库版本协商与未知风格位兼容。

@@ -123,9 +123,9 @@ def load_billboard(sources: Path) -> list[dict]:
         if parsed is None:
             continue
         key, mode = _billboard_key(parsed)
-        # The library stores a single-digit numerator over 4 or 8, so 12/8 has
-        # no bar length it can express; those songs are skipped, not rewritten.
-        if not re.fullmatch(r"[1-9]/(4|8)", parsed["meter"]):
+        # The library stores a metre as two small integers, so 12/8 is expressible
+        # (numerator 12); anything outside n/(4|8) is still skipped, not rewritten.
+        if not re.fullmatch(r"[1-9][0-9]?/(4|8)", parsed["meter"]):
             skipped_meter[parsed["meter"]] = skipped_meter.get(parsed["meter"], 0) + 1
             continue
         meter = parsed["meter"]
@@ -1034,10 +1034,11 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
     songs = load_billboard(sources)
     if limit:
         songs = songs[:limit]
-    rows, seen, stats = [], set(), Counter()
+    rows, seen, stats, dropped, links = [], set(), Counter(), [], []
     for song in songs:
         span = BAR_QN[song["meter"]]
         stats["songs"] += 1
+        previous_piece_last = None
         for index, (label, bars) in enumerate(song["sections"]):
             events = section_events(bars, song["meter"])
             if len(events) < MIN_CHORDS:
@@ -1070,6 +1071,7 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
                     units = split_units(rendered, song["mode"], song["meter"], stats)
                 else:
                     units = [(rendered, "")]
+                piece_units = []
                 for unit_index, (unit_bars, unit_tag) in enumerate(units):
                     # Merge after cutting, so boundaries stay in real bars: a
                     # run of the same chord is one chord change held longer,
@@ -1092,20 +1094,28 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
                     if chord_count < MIN_CHORDS:
                         stats["short"] += 1
                         continue
-                    signature = performance_key(unit_bars, song["meter"])
-                    if signature in seen:
-                        stats["duplicate"] += 1
-                        continue
-                    seen.add(signature)
+                    unit_ids = []
                     for chunk_index, chunk in enumerate(chunk_bars(unit_bars)):
+                        suffix = f"_{chunk_index}" if chunk_index else ""
+                        entry_id = base + (f"_u{unit_index}" if len(units) > 1 else "") + suffix
+                        # Dedupe at the granularity the library stores: a unit
+                        # that splits into chunks must still be able to keep a
+                        # chunk whose performance is new (see the data review).
+                        signature = performance_key(chunk, song["meter"])
+                        if signature in seen:
+                            stats["duplicate"] += 1
+                            dropped.append(dict(reason="duplicate-performance", id=entry_id,
+                                                song=song["slug"], section=index,
+                                                unit=unit_index, chunk=chunk_index))
+                            continue
+                        seen.add(signature)
                         # The bars are already re-spelled against C major / A
                         # minor, so the label must be read in that key too.
                         tokens = bars_tokens(chunk, TONIC_OF[song["mode"]],
                                              song["mode"], song["meter"])
-                        suffix = f"_{chunk_index}" if chunk_index else ""
                         display_zh, display_en = naming.name_phrase(tokens, song["mode"])
                         rows.append(dict(
-                            id=base + (f"_u{unit_index}" if len(units) > 1 else "") + suffix,
+                            id=entry_id,
                             name_zh=display_zh,
                             name_en=display_en,
                             note=f"{song['title']} - {song['artist']} "
@@ -1115,7 +1125,20 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
                                             for style, weight in sorted(piece_styles.items())),
                             source_type="billboard",
                         ))
+                        unit_ids.append(entry_id)
                         stats["phrases"] += 1
+                    if unit_ids:
+                        piece_units.append((song["slug"], unit_ids))
+                # Adjacent minimal phrases inside one section: the hook for
+                # phrase-level development ("after A usually comes B/C/D").
+                for (prev_song, prev_ids), (next_song, next_ids) in zip(piece_units, piece_units[1:]):
+                    links.append(dict(prev=prev_ids[0], next=next_ids[0],
+                                      song=prev_song, section=index))
+                if piece_units:
+                    if previous_piece_last:
+                        links.append(dict(prev=previous_piece_last, next=piece_units[0][1][0],
+                                          song=song["slug"], section=index))
+                    previous_piece_last = piece_units[-1][1][-1]
     out.mkdir(parents=True, exist_ok=True)
     tsv = out / "phrases.tsv"
     fields = ["id", "name_zh", "name_en", "note", "mode", "meter", "bars", "styles", "source_type"]
@@ -1127,6 +1150,18 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
     candidates.write_text(json.dumps([encode(row) for row in rows],
                                      ensure_ascii=False, separators=(",", ":")),
                           encoding="utf-8")
+    dropped_tsv = out / "dropped.tsv"
+    with dropped_tsv.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, delimiter="\t",
+                                fieldnames=["reason", "id", "song", "section", "unit", "chunk"])
+        writer.writeheader()
+        writer.writerows(dropped)
+    links_tsv = out / "phrase-links.tsv"
+    with links_tsv.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, delimiter="\t", fieldnames=["prev", "next", "song", "section"])
+        writer.writeheader()
+        writer.writerows(links)
+    print(f"dropped={len(dropped)} links={len(links)}")
     print(f"songs={stats['songs']} tokens={stats['tokens']} phrases={stats['phrases']} "
           f"normalised={stats['normalised']} "
           f"short={stats['short']} duplicate={stats['duplicate']} "

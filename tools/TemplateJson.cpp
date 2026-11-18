@@ -291,10 +291,26 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             else throw std::runtime_error("mode must be major or minor");
             item.cadence = cadenceFromName(cadenceText);
             item.intent = intentFromName(intentText);
-            if (meterText.size() == 3 && meterText[1] == '/' && meterText[0] >= '1' && meterText[0] <= '9' &&
-                (meterText[2] == '4' || meterText[2] == '8')) {
-                item.meterNumerator = meterText[0] - '0'; item.meterDenominator = meterText[2] - '0';
-            } else if (!meterText.empty()) throw std::runtime_error("unsupported meter");
+            if (!meterText.empty()) {
+                // Two small integers: 4/4 and 12/8 are both one bar of n quarters.
+                const auto slash = meterText.find('/');
+                int numerator{};
+                int denominator{};
+                bool ok = slash != std::string::npos && slash >= 1 &&
+                          slash + 1 < meterText.size();
+                if (ok) {
+                    const auto head = std::from_chars(meterText.data(),
+                                                      meterText.data() + slash, numerator);
+                    const auto tail = std::from_chars(meterText.data() + slash + 1,
+                                                      meterText.data() + meterText.size(), denominator);
+                    ok = head.ec == std::errc{} && head.ptr == meterText.data() + slash &&
+                         tail.ec == std::errc{} && tail.ptr == meterText.data() + meterText.size() &&
+                         numerator >= 1 && numerator <= 32 &&
+                         (denominator == 4 || denominator == 8);
+                }
+                if (!ok) throw std::runtime_error("unsupported meter");
+                item.meterNumerator = numerator; item.meterDenominator = denominator;
+            }
             for (const auto& part : split(stylesText, ',')) {
                 const auto colon = part.find(':');
                 const auto style = styleFromName(std::string_view(part).substr(0, colon));
