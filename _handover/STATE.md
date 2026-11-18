@@ -718,5 +718,7 @@ songs=838 tokens=86009 phrases=3735 short=450 duplicate=9017 no_style=0 silent_b
 - **打包**：`tools/build-installer.ps1` 原为无 BOM UTF-8，PowerShell 5.1 直接语法错，已加 BOM。
   产物 `build-installer/output/HarmonyContinuation-0.13.0-Setup.exe`，5,641,000 字节，
   sha256 `84cb8509463caeb27646b3fb7cf0367583d0740072ca25e1e007d47b8c00e9fd`。
-- **未做**：推 GitHub 远端（本会话 HTTPS 被沙箱挡在证书通道，见 ISSUES/待办）；BB_0705_00 弱起、
+- **推送**：本会话沙箱的 schannel 证书通道坏了（`SEC_E_NO_CREDENTIALS`），需 `danger-full-access` 才能 HTTPS。
+  远端 `main` 在 v0.11.0 且与本地是两套无关历史，故推成新分支 `v9-2026-11-18`（未覆盖 main）。
+- **未做**：BB_0705_00 弱起、
   `Dm7–Am–C–Dm7–F–A7` 零结果仍在 ISSUES。

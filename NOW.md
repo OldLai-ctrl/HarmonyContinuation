@@ -14,7 +14,8 @@ sha256 `cf7d654e…f243e42`，与 v8 逐条比对 `sequence`/`rhythm`/`intent`/`
 sha256 `84cb8509…0e9fd`）。`ctest` 21/21。构建坑见 `LIBRARY_MANIFEST.md`：
 本机必须 `/p:TrackFileAccess=false /m:1`，`cmake --build` 会静默失败。
 
-下一步：推 GitHub 远端（本会话 HTTPS 被沙箱挡）；BB_0705_00 弱起与 `Dm7–Am–C–Dm7–F–A7`
+已推到 GitHub 分支 `v9-2026-11-18`：远端 `main` 停在 v0.11.0、与本地历史无关，所以另开分支没有覆盖任何东西，合并留给用户定。
+下一步：BB_0705_00 弱起与 `Dm7–Am–C–Dm7–F–A7`
 零结果仍在 ISSUES。
 
 
