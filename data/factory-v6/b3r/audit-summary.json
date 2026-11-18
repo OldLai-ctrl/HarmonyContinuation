@@ -1,0 +1,390 @@
+{
+  "batch02": {
+    "batch": "B3-R batch02",
+    "candidateCount": 104,
+    "idRange": [
+      "V6_B3_02_001",
+      "V6_B3_02_104"
+    ],
+    "inputHashes": {
+      "batch02Candidates": "368C4A0656572826CD7D4AAF611E962FBF252768ED87268859906C258EF524BA",
+      "batch02Metadata": "0EDD031931FB7E311AFF79DB55890704D4153034A06A19B335BA6FE1669E1398",
+      "batch02Tsv": "D13602E0323C8B3FF8CA401EEDAD4DD79A0ADAEF06330B928B50D24F969B6D97"
+    },
+    "baseline": {
+      "v5Rows": 658,
+      "v5Sha256": "F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C",
+      "existingV6Candidates": 170,
+      "existingV6Metadata": 170,
+      "newIdsAbsentFrom170": true
+    },
+    "alignment": {
+      "idsUniqueAndSequential": true,
+      "metadataOrderMatches": true,
+      "tsvRowsAlignByOrder": true,
+      "formatIssueCount": 0,
+      "formatIssues": [],
+      "basisVsMetadataEvidenceMismatchCount": 0,
+      "basisVsMetadataEvidenceMismatches": []
+    },
+    "encodedMusicChecks": {
+      "durationOrMeterIssueCount": 0,
+      "durationOrMeterIssues": [],
+      "notationIssueCount": 0,
+      "notationIssues": []
+    },
+    "membershipAudit": {
+      "membershipCount": 104,
+      "strictCompatibleCount": 54,
+      "strictScaleFailureCount": 50,
+      "strictScaleFailureIds": [
+        "V6_B3_02_049",
+        "V6_B3_02_050",
+        "V6_B3_02_051",
+        "V6_B3_02_052",
+        "V6_B3_02_053",
+        "V6_B3_02_054",
+        "V6_B3_02_055",
+        "V6_B3_02_056",
+        "V6_B3_02_057",
+        "V6_B3_02_058",
+        "V6_B3_02_059",
+        "V6_B3_02_060",
+        "V6_B3_02_061",
+        "V6_B3_02_062",
+        "V6_B3_02_063",
+        "V6_B3_02_064",
+        "V6_B3_02_065",
+        "V6_B3_02_066",
+        "V6_B3_02_068",
+        "V6_B3_02_069",
+        "V6_B3_02_070",
+        "V6_B3_02_071",
+        "V6_B3_02_072",
+        "V6_B3_02_074",
+        "V6_B3_02_075",
+        "V6_B3_02_076",
+        "V6_B3_02_077",
+        "V6_B3_02_078",
+        "V6_B3_02_079",
+        "V6_B3_02_081",
+        "V6_B3_02_082",
+        "V6_B3_02_084",
+        "V6_B3_02_085",
+        "V6_B3_02_086",
+        "V6_B3_02_087",
+        "V6_B3_02_088",
+        "V6_B3_02_090",
+        "V6_B3_02_091",
+        "V6_B3_02_092",
+        "V6_B3_02_093",
+        "V6_B3_02_094",
+        "V6_B3_02_095",
+        "V6_B3_02_096",
+        "V6_B3_02_097",
+        "V6_B3_02_098",
+        "V6_B3_02_099",
+        "V6_B3_02_100",
+        "V6_B3_02_101",
+        "V6_B3_02_102",
+        "V6_B3_02_104"
+      ],
+      "strictOutsidePitchClassCounts": {
+        "A": 2,
+        "Ab": 39,
+        "Bb": 27,
+        "Db": 18,
+        "E": 2,
+        "Eb": 31,
+        "Gb": 8
+      },
+      "startsOrEndsOnTonicRootCount": 104,
+      "startsOrEndsIsOnlyCenterClue": true,
+      "basisUnexplainedOutsideIds": []
+    },
+    "identityAgainstV5AndExisting170": {
+      "fullSignatureUniqueCount": 104,
+      "fullExactHitCandidateCount": 0,
+      "fullExactHitIds": [],
+      "rhythmlessSignatureUniqueCount": 104,
+      "rhythmlessHitCandidateCount": 0,
+      "rhythmlessHitIds": [],
+      "lowConfidenceCoreFamilyUniqueCount": 104,
+      "coreFamilyHitCandidateCount": 1,
+      "coreFamilyHitIds": [
+        "V6_B3_02_086"
+      ],
+      "newLowConfidenceCoreFamilyIncrementCount": 103,
+      "internalDuplicateGroups": {
+        "full": [],
+        "rhythmless": [],
+        "core": []
+      },
+      "relationshipPairCounts": {
+        "external": {
+          "V6-existing:low_confidence_core_family": 1,
+          "V6-existing:extension_only": 1
+        },
+        "internal": {},
+        "candidateCounts": {
+          "V6-existing:low_confidence_core_family": 1,
+          "V6-existing:extension_only": 1
+        }
+      },
+      "extensionOnlyPairCount": 1,
+      "extensionOnlyPairs": [
+        {
+          "scope": "against_baseline",
+          "candidate": "V6_B3_02_086",
+          "sourceSet": "V6-existing",
+          "source": "V6_B1_029",
+          "primaryGrade": "C",
+          "adoptionStatus": "pending (not adopted)"
+        }
+      ]
+    },
+    "basisReview": "Final source text reflects resolved factual fixes: V6_B3_02_031 F#m7b5 shares C/E (two tones) with C triad, and V6_B3_02_100 explicitly explains Bb in Cm9 as natural-minor b7 borrowing. No unresolved concrete basis fact error from the completed review; no mode-center or genre verdict is implied.",
+    "method": "Reused repository content-check/audit.py parse_chord and source_event, audit_factory_v5.py actual sequence/membership/signature/family_signature, and established review_b3.py pair_relationship. V5 opened via existing mode=ro/query_only loader. No old corpus audit, test framework, MIDI/Preview/Snapshot, or transposition matrix.",
+    "finalReview": {
+      "gradeCounts": {
+        "A": 103,
+        "C": 1
+      },
+      "adoptionStatusCounts": {
+        "approved": 103,
+        "pending": 1
+      },
+      "statusCounts": {
+        "editorial-reviewed": 103,
+        "pending": 1
+      },
+      "CIds": [
+        "V6_B3_02_086"
+      ]
+    },
+    "statusRefreshNote": "Only hashes and final grade/adoption fields were refreshed after the musical-data pass; no music/structure/signature recomputation was run for this refresh."
+  },
+  "batch03": {
+    "batch": "B3-R batch03",
+    "candidateCount": 100,
+    "idRange": [
+      "V6_B3_03_001",
+      "V6_B3_03_100"
+    ],
+    "inputHashes": {
+      "batch03Candidates": "1AE8E9163E970B0709B978D6A53B1A06501C2827A1C2FAA5BBD9D8398569ED41",
+      "batch03Metadata": "77C9429D89F584181948C368D38C4B8BA2CC142A8965D9B35D3AB6FADE66011A",
+      "batch03Tsv": "7283B105057C939F39161DC7B7D5CD1357279DFDADBE6DE2EF7B6BBA974D5AA2"
+    },
+    "baselineInputs": {
+      "v5Rows": 658,
+      "v5Sha256": "F989A83EA9EF92BA7C272BF0E5E3C7073C225899DC81D60DD46C10EA6B48CB3C",
+      "existingV6Candidates": 170,
+      "existingV6CandidatesSha256": "1BF81E453FD79238AADDF6A876438751E5867EFF2886A3C0E5727C81B50464BC",
+      "existingV6MetadataCandidates": 170,
+      "existingV6MetadataSha256": "E449442AD18C83BAC3B3946402AA9ED02AF3C7CEB97A3FC9E283EA002179DD58",
+      "batch02Candidates": 104,
+      "batch02CandidatesSha256": "368C4A0656572826CD7D4AAF611E962FBF252768ED87268859906C258EF524BA",
+      "batch02MetadataSha256": "0EDD031931FB7E311AFF79DB55890704D4153034A06A19B335BA6FE1669E1398",
+      "identityBaselineCount": 932
+    },
+    "alignment": {
+      "candidateCount": 100,
+      "metadataCount": 100,
+      "tsvRows": 100,
+      "idsUniqueSequentialAndAligned": true,
+      "candidateMetadataTsvFieldsAligned": true,
+      "alignmentIssueCount": 0,
+      "notationRootBassAndToneMismatchCount": 0,
+      "durationOrMeterMismatchCount": 0
+    },
+    "membershipAudit": {
+      "strictCompatibleCandidateCount": 42,
+      "strictOutsideCandidateCount": 58,
+      "membershipModeCounts": {
+        "ionian": 92,
+        "harmonic_minor": 6,
+        "lydian": 1,
+        "dorian": 1
+      },
+      "strictOutsideByMode": {
+        "ionian": 51,
+        "harmonic_minor": 5,
+        "lydian": 1,
+        "dorian": 1
+      },
+      "examples": {
+        "V6_B3_03_001": {
+          "membership": "C harmonic_minor",
+          "outsidePitchClasses": [
+            "Db",
+            "Bb"
+          ],
+          "basis": "both described as Phrygian/natural-minor borrowing"
+        },
+        "V6_B3_03_035": {
+          "membership": "C ionian",
+          "outsidePitchClasses": [
+            "Eb",
+            "Ab"
+          ],
+          "basis": "D#/G# borrowing; erroneous C# claim removed before final hash"
+        },
+        "V6_B3_03_049": {
+          "membership": "C lydian",
+          "outsidePitchClasses": [
+            "Eb",
+            "Bb"
+          ],
+          "basis": "borrowed Eb/Bb explicitly noted"
+        },
+        "V6_B3_03_082": {
+          "membership": "C harmonic_minor",
+          "outsidePitchClasses": [
+            "Db",
+            "E",
+            "A"
+          ],
+          "basis": "C#/A-natural secondary-dominant rationale now also names E natural as the A7 fifth"
+        }
+      },
+      "strictCompatibilityIsDescriptiveOnly": true,
+      "tonicOrModeVerdictMade": false
+    },
+    "identityAgainstV5Existing170AndBatch02": {
+      "fullSignatureUniqueCount": 100,
+      "fullExactHitCandidateCount": 0,
+      "fullExactHitIds": [],
+      "rhythmlessSignatureUniqueCount": 100,
+      "rhythmlessHitCandidateCount": 0,
+      "rhythmlessHitIds": [],
+      "lowConfidenceCoreFamilyUniqueCount": 100,
+      "coreFamilyHitCandidateCount": 1,
+      "coreFamilyHitIds": [
+        "V6_B3_03_035"
+      ],
+      "newLowConfidenceCoreFamilyIncrementCount": 99,
+      "internalDuplicateGroups": {
+        "full": [],
+        "rhythmless": [],
+        "core": []
+      },
+      "extensionOnlyPairs": [
+        {
+          "scope": "against_baseline",
+          "candidate": "V6_B3_03_035",
+          "sourceSet": "V6-existing",
+          "source": "V6_B1_041",
+          "sameRootAndBassContour": true,
+          "sameCoreQualitySequence": true,
+          "fullExact": false,
+          "rhythmlessExact": false,
+          "primaryGrade": "C",
+          "adoptionStatus": "pending/not adopted"
+        }
+      ]
+    },
+    "finalReview": {
+      "gradeCounts": {
+        "A": 99,
+        "C": 1
+      },
+      "adoptionStatusCounts": {
+        "approved": 99,
+        "pending": 1
+      },
+      "statusCounts": {
+        "editorial-reviewed": 99,
+        "pending": 1
+      },
+      "CIds": [
+        "V6_B3_03_035"
+      ]
+    },
+    "basisReview": {
+      "unresolvedConcreteFactualErrors": [],
+      "resolvedBeforeFinalHash": [
+        "V6_B3_03_027 title/technique label corrected to the chromatic-dominant bridge / SecondaryDominant description",
+        "V6_B3_03_035 unsupported C# pitch mention removed; D#/G# retained",
+        "V6_B3_03_082 E-natural outside-tone rationale added"
+      ],
+      "scope": "Basis checked against realized pitches and described bass/function claims. No final tonic, mode, or genre attribution is asserted."
+    },
+    "sourceAndStyleScope": "The referenced sources are concept/technique/editorial-use support; no whole-phrase provenance or genre-frequency evidence is claimed. Style labels are not treated as established genre facts.",
+    "coreFamilyDefinition": "Low-confidence diversity bucket from the repository family_signature helper: transposition-normalized relative root/bass path and collapsed core quality; extension pitch set and rhythm excluded. A match indicates a review relation, not musical equivalence.",
+    "statusRefreshNote": "Musical, structure, membership, and identity results were computed before final text/status synchronization. This final refresh only read input hashes and metadata grade/adoption fields; no full old-corpus, MIDI, preview, snapshot, or key-matrix run was performed."
+  },
+  "coverage": {
+    "totalRows": 1014,
+    "normalizedFullMusic": 1005,
+    "coreFamilyBuckets": 965,
+    "candidateGrades": {
+      "A": 356,
+      "C": 17,
+      "B": 1
+    },
+    "newCandidateGrades": {
+      "A": 202,
+      "C": 2
+    },
+    "newAdoptedFamilies": {
+      "Dorian": 14,
+      "Mixolydian": 12,
+      "Lydian": 12,
+      "Phrygian": 10,
+      "ModernPop": 32,
+      "Keys": 61,
+      "Jazz": 23,
+      "Screen": 20,
+      "Aeolian": 8,
+      "Minor": 10
+    },
+    "newAdoptedTechniques": {
+      "SlashBass": 90,
+      "ModalPlagal": 13,
+      "PedalPoint": 40,
+      "ExtendedHarmony": 7,
+      "HalfDiminishedColor": 16,
+      "CompoundMeter": 4,
+      "SubtonicReturn": 15,
+      "NontraditionalResolution": 6,
+      "OddMeter": 15,
+      "ChromaticBass": 6,
+      "LydianColor": 10,
+      "CommonTone": 7,
+      "OpenHarmony": 1,
+      "PhrygianColor": 10,
+      "ModalMixture": 49,
+      "OpenEnding": 4,
+      "SecondaryDominant": 29,
+      "ChromaticMediant": 4,
+      "TritoneSubstitution": 15,
+      "Backdoor": 13,
+      "SecondaryLeadingTone": 3,
+      "MinorTwoFive": 12,
+      "Suspension": 9,
+      "ChromaticDominantChain": 2,
+      "JazzMelodicMinor": 8,
+      "ChromaticApproach": 2,
+      "ChromaticPlaning": 3,
+      "ParallelMajorMinor": 1,
+      "TwoFiveOne": 1,
+      "AlteredDominant": 2,
+      "AugmentedColor": 4,
+      "ConstantStructures": 1,
+      "LeadingToneDiminished": 2
+    },
+    "newAdoptedApplicationTags": {
+      "pop": 78,
+      "rock": 80,
+      "rnb": 61,
+      "jazz": 94,
+      "functional": 20
+    },
+    "newEvidenceLevels": {
+      "technique-supported-editorial-application": 333
+    },
+    "identityBasis": "V5 frozen649 full /611 core; all356 approved full/core signatures unique in audited candidate sets; old010/028 core overlaps V5; no approved full/rhythmless matches V5. Uses completed incremental relations, not a repeated old-corpus audit."
+  },
+  "identityCountMethod": "Reuse frozen V5 and completed B1/B3/B3-R comparison signatures; no repeated old-corpus review."
+}

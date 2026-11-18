@@ -1,0 +1,962 @@
+{
+  "renderer": "Playwright / installed Edge, offscreen HTML; not VSTGUI or Cubase",
+  "screens": [
+    "A-main.png",
+    "A-detail.png",
+    "A-settings.png",
+    "A-drag.png",
+    "A-loading.png",
+    "A-playing.png",
+    "B-main.png",
+    "B-detail.png",
+    "B-settings.png",
+    "B-drag.png",
+    "B-loading.png",
+    "B-playing.png",
+    "controls.png",
+    "A2-card-comparison.png",
+    "A-card.png",
+    "A-suffix-playing.png",
+    "A-middle.png",
+    "A-middle-card.png",
+    "A-wide.png",
+    "A-small-150.png",
+    "B-small-150.png"
+  ],
+  "layouts": [
+    {
+      "scheme": "A",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 519,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 483,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 446,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 599,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 563,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 526,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 579,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 543,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 506,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 439,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        },
+        {
+          "width": 28,
+          "height": 28
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 403,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        },
+        {
+          "width": 35,
+          "height": 35
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 366,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        },
+        {
+          "width": 42,
+          "height": 42
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 843,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 793,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "A",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 741,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 463,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 378,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        640,
+        720
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 319,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 543,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 458,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        720,
+        800
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 399,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 523,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 473,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        800,
+        780
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 379,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 382,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 333,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        900,
+        640
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 260,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 822,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        },
+        {
+          "width": 30,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.25,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 766,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        },
+        {
+          "width": 37.5,
+          "height": 37.5
+        }
+      ]
+    },
+    {
+      "scheme": "B",
+      "size": [
+        1440,
+        1100
+      ],
+      "zoom": 1.5,
+      "bodyOverflow": false,
+      "appOverflow": false,
+      "mainOverflow": false,
+      "footerVisible": true,
+      "mainHeight": 709,
+      "cards": 3,
+      "circleSizes": [
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        },
+        {
+          "width": 45,
+          "height": 45
+        }
+      ]
+    }
+  ],
+  "interactions": [
+    "B08 names from Factory; 4:8:16 QN chord widths measure 1:2:4; input and continuation boundary visible",
+    "R02 middle window 2–5 shows source prelude, three aligned input chords, one uncovered source chord; actual clip excludes source-only chords",
+    "Layout-only five-long-chord-label fixture retains all five labels and the input block; not a generated music recommendation",
+    "Details open; independent selection changes candidate",
+    "90 BPM and suffix-only WebAudio playback starts; stop resets; recorded MIDI bytes unchanged",
+    "Unavailable host reports fallback; no host connection",
+    "Preset loading clears cards and disables play; rapid switches retain final captured preset",
+    "FULL/SKELETON is display-only; playback scope does not change export default; full/suffix .mid downloads equal recorded bytes",
+    "Separate MIDI handle reaches internal prototype receiver; OS/Cubase drag is not tested"
+  ],
+  "errors": [],
+  "fullCardCircles": {
+    "A": [
+      {
+        "width": 36,
+        "height": 36
+      },
+      {
+        "width": 36,
+        "height": 36
+      },
+      {
+        "width": 36,
+        "height": 36
+      }
+    ],
+    "B": [
+      {
+        "width": 40,
+        "height": 40
+      },
+      {
+        "width": 40,
+        "height": 40
+      },
+      {
+        "width": 40,
+        "height": 40
+      }
+    ]
+  },
+  "cardSize": {
+    "window": [
+      800,
+      780
+    ],
+    "columns": 1,
+    "cardWidth": 772,
+    "cardHeight": 93.75,
+    "A2Height": 224.390625,
+    "A3Baseline": {
+      "commit": "87f40a6",
+      "width": 1125,
+      "height": 94
+    },
+    "areaReductionPercent": 32
+  },
+  "a3Information": {
+    "name": "半音下降低音完整乐句",
+    "position": "输入位置 1–4/8",
+    "input": true,
+    "boundary": true,
+    "chords": [
+      {
+        "label": "Fm/A♭",
+        "qn": "4"
+      },
+      {
+        "label": "C/G",
+        "qn": "4"
+      },
+      {
+        "label": "G7",
+        "qn": "8"
+      },
+      {
+        "label": "C",
+        "qn": "16"
+      }
+    ]
+  },
+  "cardFacts": {
+    "lengths": [
+      "续写 8 小节 · 4 和弦",
+      "续写 2 小节 · 2 和弦",
+      "续写 3 小节 · 3 和弦"
+    ],
+    "alignment": [
+      "逐项对齐",
+      "1处替代",
+      "3处替代"
+    ]
+  }
+}

@@ -1,0 +1,1235 @@
+#include "Controller.h"
+#include "core/RecommendationPolicy.h"
+#include "product/ProductVersion.h"
+#include "PluginIds.h"
+#include "HostContextAdapter.h"
+#include "DropCapture.h"
+#include "HostAdapters.h"
+#include "vstgui/lib/cclipboard.h"
+#include "PluginView.h"
+#include "../ui/MainView.h"
+#include "pluginterfaces/vst/ivsthostapplication.h"
+#include "pluginterfaces/vst/ivstmessage.h"
+#include "public.sdk/source/vst/utility/stringconvert.h"
+#include "pluginterfaces/base/ibstream.h"
+#include "session/ProductServices.h"
+#include "library/LibraryStore.h"
+#include "midi/StandardMidiFileWriter.h"
+#include "midi/MidiImportWorkflow.h"
+#include "snapshot/RecommendationSnapshot.h"
+#include "snapshot/EnrichmentSnapshot.h"
+#if defined(_WIN32)
+#include "platform/windows/ClipboardInspector.h"
+#endif
+
+#include <algorithm>
+#include <bit>
+#include <cstring>
+#include <iomanip>
+#include <sstream>
+#include <filesystem>
+#include <chrono>
+#include <cmath>
+#include <fstream>
+#include <iterator>
+#if defined(_WIN32)
+#include <windows.h>
+#include <commdlg.h>
+#endif
+
+namespace harmony::plugin {
+using namespace Steinberg;
+using namespace Steinberg::Vst;
+
+namespace {
+#if defined(_WIN32)
+void moduleAnchor() {}
+std::filesystem::path factoryDatabasePath() {
+    HMODULE module{};
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            reinterpret_cast<LPCWSTR>(&moduleAnchor), &module)) return {};
+    wchar_t path[32768]{};
+    const auto length = GetModuleFileNameW(module, path, 32768);
+    if (!length || length >= 32768) return {};
+    return std::filesystem::path(path).parent_path().parent_path() / "Resources" / "factory.db";
+}
+std::optional<std::filesystem::path> savePath(void* owner, const std::string& suggestedName,
+                                               const wchar_t* filter,const wchar_t* extension) {
+    std::wstring filename(suggestedName.begin(),suggestedName.end());
+    wchar_t path[32768]{};
+    std::copy_n(filename.begin(),std::min<std::size_t>(filename.size(),32766),path);
+    OPENFILENAMEW dialog{};
+    dialog.lStructSize=sizeof(dialog);
+    dialog.hwndOwner=static_cast<HWND>(owner);
+    dialog.lpstrFilter=filter;
+    dialog.lpstrFile=path;
+    dialog.nMaxFile=32768;
+    dialog.lpstrDefExt=extension;
+    dialog.Flags=OFN_OVERWRITEPROMPT|OFN_PATHMUSTEXIST;
+    if (!GetSaveFileNameW(&dialog)) return std::nullopt;
+    return std::filesystem::path(path);
+}
+#else
+std::filesystem::path factoryDatabasePath() { return "factory.db"; }
+
+#endif
+} // namespace
+
+tresult PLUGIN_API Controller::initialize(FUnknown* context) {
+    const auto result = EditController::initialize(context);
+    if (result != kResultOk) return result;
+    FUnknownPtr<IHostApplication> host(context);
+    if (host) {
+        String128 name{};
+        if (host->getName(name) == kResultOk) hostName_ = StringConvert::convert(name, 128);
+    }
+    hostEnvironment_.identify(hostName_);
+    hostAdapter_=makeHostAdapter(hostEnvironment_.family);
+    return kResultOk;
+}
+tresult PLUGIN_API Controller::terminate(){
+    stopPreview();if(view_)view_->prepareForDetach();view_=nullptr;transportRateChanged_={};resizeRequest_={};
+    midiImportWorker_.reset();recommendationWorker_.reset();
+    return EditController::terminate();
+}
+std::string Controller::hostDiagnostics() const {
+    auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
+    copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
+    return copy.diagnostics(sessionState_.locale==session::Locale::ZhCN)+
+        "\nBuild ID="+std::string(product::commit)+"; Factory version="+std::to_string(sessionState_.factoryLibraryVersion)+
+        "; Factory SHA-256="+factorySha256_+"\nRecommendation engine=Unified"+
+        "; Actual recommendations="+(recommendationResultReady_ ?
+            std::string(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::Unified?"Unified":"unexpected legacy context")+
+            "; strict extension compatibility="+(recommendations_.abstractChordCompatibility?"ON":"OFF") : "PENDING");
+}
+std::string Controller::exportHostDiagnostics(void* owner) noexcept {
+    try {
+        if(factorySha256_.size()!=64)return "Factory identity is pending/unavailable; retry after loading";
+#if defined(_WIN32)
+        const auto path=savePath(owner,"HarmonyContinuation-HostDiagnostics.txt",L"Text files\0*.txt\0\0",L"txt");
+        if(!path)return "Cancelled";
+        auto copy=hostEnvironment_;copy.userZoom=sessionState_.uiZoomPercent;
+        copy.editorWidth=sessionState_.editorWidth;copy.editorHeight=sessionState_.editorHeight;
+        std::ofstream file(*path,std::ios::binary);file<<copy.diagnostics(sessionState_.locale==session::Locale::ZhCN,true);
+        const auto context=harmony::recommendationContext(sessionState_.analysisContext());
+        file<<"\nBuild ID="<<product::commit<<"\nFactory version="<<sessionState_.factoryLibraryVersion
+            <<"\nFactory SHA-256="<<factorySha256_<<"\nRecommendation engine=Unified; Actual recommendations=";
+        if(recommendationResultReady_)
+            file<<(recommendations_.retrievalTimingMode==harmony::RetrievalTimingMode::Unified?"Unified":"unexpected legacy context")
+                <<" strict extension compatibility="<<(recommendations_.abstractChordCompatibility?"ON":"OFF")<<'\n';
+        else file<<"PENDING\n";
+        file<<"Meter source=MIDI/session; live host is reference only (meter may change). Host="
+            <<lastTimeSigNumerator_.value_or(0)<<'/'<<lastTimeSigDenominator_.value_or(0)
+            <<" session="<<sessionState_.meterNumerator.value_or(0)<<'/'<<sessionState_.meterDenominator.value_or(0)<<'\n';
+        file<<"\nLast input route: "<<hostEnvironment_.lastDropType<<"\nGeneration="<<recommendationGeneration_
+            <<" importedRevision="<<importedProgression_.revision<<" status="<<matchStatus_<<"\n"<<lastInputDiagnostic_;
+        if(recommendationResultReady_)
+            file<<harmony::session::recommendationDiagnostics(importedProgression_.events,context,recommendationRequest_,activeRecommendations());
+        else file<<"\nRECOMMENDATION_DIAGNOSTICS=PENDING\n";
+        if(view_)file<<view_->recommendationUiDiagnostics();
+        file.flush();return file?"Local input and recommendation diagnostics exported":"Export failed";
+#else
+        return "Export unavailable";
+#endif
+    }catch(...){return "Export failed";}
+}
+void Controller::observeEditor(double scale,bool accepted,bool scaleObserved) noexcept {
+    hostEnvironment_.contentScaleFactor=scale;
+    // A scale callback alone does not prove that the host accepted a resize.
+    if(scaleObserved)hostEnvironment_.capabilities.contentScaleFactor=host::Observed::Available;
+    else hostEnvironment_.capabilities.editorResize=accepted?host::Observed::Available:host::Observed::Unavailable;
+}
+void Controller::observeDrop(bool file,bool supported) noexcept {
+    hostEnvironment_.lastDropType=file?(supported?"FilePath MIDI":"FilePath unsupported"):"legacy data";
+    if(file)hostEnvironment_.capabilities.filePathDrop=host::Observed::Available;
+}
+void Controller::observeMidiDrag(bool generated,bool accepted) noexcept {
+    hostEnvironment_.lastMidiDragGenerated=generated;
+    hostEnvironment_.capabilities.filePathDragSource=accepted?host::Observed::Available:host::Observed::Unavailable;
+}
+
+tresult PLUGIN_API Controller::getState(IBStream* stream) {
+    if (!stream) return kInvalidArgument;
+    try {
+        const auto bytes=harmony::session::serialize(sessionState_);
+        const auto size=static_cast<std::uint32_t>(bytes.size());
+        const char length[4]{static_cast<char>(size),static_cast<char>(size>>8),static_cast<char>(size>>16),static_cast<char>(size>>24)};
+        int32 written{};
+        if (stream->write(const_cast<char*>(length),4,&written)!=kResultOk || written!=4) return kResultFalse;
+        return stream->write(const_cast<char*>(bytes.data()),static_cast<int32>(bytes.size()),&written)==kResultOk &&
+               written==static_cast<int32>(bytes.size())?kResultOk:kResultFalse;
+    } catch (...) { return kResultFalse; }
+}
+tresult PLUGIN_API Controller::setState(IBStream* stream) {
+    hostEnvironment_.stateRestoreStatus="rejected or incomplete";
+    hostEnvironment_.capabilities.stateRestore=host::Observed::Unavailable;
+    if (!stream) return kInvalidArgument;
+    try {
+        char length[4]{}; int32 read{};
+        if (stream->read(length,4,&read)!=kResultOk || read!=4) return kResultFalse;
+        const auto size=static_cast<std::uint32_t>(static_cast<unsigned char>(length[0])) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[1]))<<8) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[2]))<<16) |
+            (static_cast<std::uint32_t>(static_cast<unsigned char>(length[3]))<<24);
+        if (size<4 || size>1024*1024) return kResultFalse;
+        std::string bytes(size,'\0');
+        if (stream->read(bytes.data(),static_cast<int32>(size),&read)!=kResultOk || read!=static_cast<int32>(size)) return kResultFalse;
+        auto restored=harmony::session::deserialize(bytes);
+        if (!restored) return kResultFalse;
+        stopPreview();
+        if(midiImportWorker_)midiImportWorker_->cancel();
+        if(recommendationWorker_)recommendationWorker_->cancel();
+        editorUiState_.reset();enrichments_={};
+        hostEnvironment_.stateRestoreStatus="restored";
+        hostEnvironment_.capabilities.stateRestore=host::Observed::Available;
+        sessionState_=std::move(restored.state);
+        importedProgression_=sessionState_.imported;
+        recommendationRequest_.styleMask=sessionState_.styleMask;
+        recommendationRequest_.preferredIntent=sessionState_.intent;
+        recommendationRequest_.constraints=sessionState_.constraints;
+        recommendationRequest_.tendency=sessionState_.tendency;
+        recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
+        analysis_={}; matches_.clear(); recommendations_={};exactRecommendations_={}; recommendationResultReady_=false;
+        if (view_) {
+            view_->setSessionState(sessionState_);
+            view_->clearSessionDirty();
+            view_->setAnalysis(analysis_); view_->setMatches(matches_,"Restoring…"); view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_);
+            view_->setHostText(hostDiagnostics());
+        }
+        if (resizeRequest_) resizeRequest_(static_cast<int>(sessionState_.editorWidth),static_cast<int>(sessionState_.editorHeight));
+        submitRecommendation();
+        return kResultOk;
+    } catch (...) { return kResultFalse; }
+}
+
+IPlugView* PLUGIN_API Controller::createView(FIDString name) {
+    try { return name && std::strcmp(name, ViewType::kEditor) == 0 ? new PluginView(this) : nullptr; }
+    catch (...) { return nullptr; }
+}
+
+void Controller::editorSizeChanged(int width,int height) noexcept {
+    if (width<800 || width>2200 || height<640 || height>1400) return;
+    sessionState_.editorWidth=static_cast<std::uint32_t>(width);
+    sessionState_.editorHeight=static_cast<std::uint32_t>(height);
+    if(view_)view_->setEditorSizeState(width,height);
+}
+
+tresult Controller::requestSnapshot() noexcept {
+    try {
+        auto message = owned(allocateMessage());
+        if (!message) return kResultFalse;
+        message->setMessageID("HC.RequestSnapshot");
+        return sendMessage(message);
+    } catch (...) { return kResultFalse; }
+}
+
+tresult Controller::pollTransport() noexcept {
+    try {
+        auto message = owned(allocateMessage());
+        if (!message) return kResultFalse;
+        message->setMessageID("HC.PollTransport");
+        return sendMessage(message);
+    } catch (...) { return kResultFalse; }
+}
+
+void Controller::attach(harmony::ui::MainView* view, std::function<void(bool)> transportRateChanged) noexcept {
+    view_ = view;
+    hostEnvironment_.editorAttached(view!=nullptr);
+    transportRateChanged_ = std::move(transportRateChanged);
+    if (view_) {
+        try {
+            view_->setSessionState(sessionState_);
+            view_->clearSessionDirty();
+            view_->setAnalysis(analysis_);
+            view_->setMatches(matches_, matchStatus_);
+            view_->setRecommendations(activeRecommendations());
+            view_->setEnrichments(enrichments_);
+            if(editorUiState_)view_->restoreEditorUiState(*editorUiState_);
+            view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
+            view_->setHostText(hostDiagnostics());
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
+            reloadLibraries();
+            view_->setHostText(hostDiagnostics());
+            if(factorySha256_=="PENDING")submitRecommendation();
+            if (transportRateChanged_) transportRateChanged_(lastPlaying_);
+        }
+        catch (...) {}
+    }
+}
+
+void Controller::pollRecommendation() noexcept {
+    try {
+        if(view_)view_->pollWish();
+        pollMidiImport();
+        if (!recommendationWorker_) return;
+        auto latest = recommendationWorker_->takeLatest();
+        if (!latest || latest->generation!=recommendationGeneration_||
+            (view_&&!view_->acceptsRecommendationGeneration(latest->generation))) return;
+        stopPreview(); // A new representative can change the complete authored route.
+        analysis_ = std::move(latest->analysis);
+        recommendations_ = std::move(latest->recommendations);
+        exactRecommendations_=std::move(latest->exactRecommendations);
+        recommendationResultReady_=latest->error.empty()&&!importedProgression_.events.empty();
+        enrichmentResultReady_=!analysis_.full.empty();
+        enrichments_=std::move(latest->enrichments);
+        recommendationGeneration_=latest->generation;
+        lastComputationMs_=latest->computationMs;
+        if (latest->factoryCount) factoryCount_=latest->factoryCount;
+        userCount_=latest->userCount;
+        if(latest->factoryVersion>0)sessionState_.factoryLibraryVersion=static_cast<std::uint32_t>(latest->factoryVersion);
+        factorySha256_=latest->factorySha256.empty()?"unavailable":latest->factorySha256;
+        matches_ = activeRecommendations().matches;
+        matchStatus_ = latest->error.empty()
+            ? "RECOMMEND：" + std::to_string(matches_.size()) + " 条匹配已计算"
+            : "RECOMMEND：" + latest->error;
+        if (view_) {
+            view_->setAnalysis(analysis_);
+            view_->setMatches(matches_, matchStatus_);
+            view_->setRecommendations(activeRecommendations());
+            view_->setEnrichments(enrichments_);
+            view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,false,factoryCount_,userCount_,recommendationResultReady_);
+            view_->setHostText(hostDiagnostics());
+            if(!midiImportSummary_.empty()) {
+                view_->setActionStatus(midiImportSummary_+" · "+std::string(harmony::localization::text(sessionState_.locale,"midi.key"))+" "+
+                    (analysis_.selectedKey?harmony::formatKey(analysis_.selectedKey->key):"?"));midiImportSummary_.clear();
+            }
+        }
+    } catch (...) {}
+}
+
+void Controller::submitRecommendation(bool rankingOnly) {
+    recommendationResultReady_=false;
+    enrichmentResultReady_=false;
+    if (!recommendationWorker_) recommendationWorker_=std::make_unique<RecommendationWorker>(factoryDatabasePath(),harmony::library::userDatabasePath());
+    auto analysisContext=sessionState_.analysisContext();
+    recommendationRequest_.inspirationPriority=sessionState_.inspirationPriority;
+    recommendationRequest_.prepareBothViews=true;
+    recommendationGeneration_=recommendationWorker_->submit(importedProgression_.events,analysisContext,
+        recommendationRequest_,rankingOnly,sessionState_.imported.revision);
+    matchStatus_="Analyzing…";
+    if (view_) { view_->setMatches(matches_,matchStatus_); view_->setWorkerStatus(recommendationGeneration_,lastComputationMs_,true,factoryCount_,userCount_,recommendationResultReady_); }
+}
+bool Controller::currentCandidate(const harmony::ContinuationCandidate& candidate) const {
+    if(candidate.id.starts_with("wish-v1:"))return view_&&view_->currentWishCandidate(candidate);
+    if(!recommendationResultReady_)return false;
+    const auto fingerprint=session::continuationFingerprint(candidate);
+    for(const auto* bank:{&recommendations_,&exactRecommendations_})for(const auto& group:bank->groups)for(const auto& current:group)
+        if(current.id==candidate.id&&current.rankingScore==candidate.rankingScore&&
+            current.primaryTemplate==candidate.primaryTemplate&&current.key.tonic==candidate.key.tonic&&
+            current.key.mode==candidate.key.mode&&current.matchStart==candidate.matchStart&&
+            current.matchEnd==candidate.matchEnd&&current.continuationStart==candidate.continuationStart&&
+            session::continuationFingerprint(current)==fingerprint)return true;
+    return false;
+}
+bool Controller::currentCandidate(const harmony::enrichment::EnrichmentCandidate& candidate) const {
+    if(!enrichmentResultReady_)return false;
+    for(const auto& group:enrichments_.groups)for(const auto& current:group)
+        if(current.id==candidate.id&&current.fingerprint==candidate.fingerprint)return true;
+    return false;
+}
+void Controller::applySessionState(const harmony::session::PluginSessionState& next) noexcept {
+    try {
+        const auto old=sessionState_;
+        const auto recompute=harmony::session::recomputeScope(old,next);
+        const auto keyChanged=recompute==harmony::session::RecomputeScope::Analysis;
+        if (recompute!=harmony::session::RecomputeScope::None) stopPreview();
+        sessionState_=next;
+        sessionState_.editorWidth=old.editorWidth;
+        sessionState_.editorHeight=old.editorHeight;
+        recommendationRequest_.styleMask=next.styleMask; recommendationRequest_.preferredIntent=next.intent;
+        recommendationRequest_.constraints=next.constraints;recommendationRequest_.tendency=next.tendency;
+        recommendationRequest_.inspirationPriority=next.inspirationPriority;
+        if (keyChanged) { analysis_={}; matches_.clear(); recommendations_={};exactRecommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset(); }
+        if (view_) {
+            view_->setSessionState(sessionState_);
+            if (keyChanged) { view_->setAnalysis(analysis_); view_->setMatches(matches_,"Analyzing…"); view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_); }
+            else if(old.inspirationPriority!=next.inspirationPriority) {
+                matches_=activeRecommendations().matches;
+                view_->setMatches(matches_,matchStatus_);view_->setRecommendations(activeRecommendations(),true);
+            }
+        }
+        if (recompute!=harmony::session::RecomputeScope::None)
+            submitRecommendation(recompute==harmony::session::RecomputeScope::Ranking);
+    } catch (...) {}
+}
+
+void Controller::setRecommendationPreferences(harmony::StyleFlags styleMask,
+                                               std::optional<harmony::PhraseIntent> intent) noexcept {
+    auto next=sessionState_; next.styleMask=styleMask; next.intent=intent; applySessionState(next);
+}
+
+void Controller::reloadLibraries() {
+    if (!view_) return;
+    const auto bundled=factoryDatabasePath();
+    // Resolving the installed pointer is two small file reads; re-parsing the Factory is not.
+    std::string activePointer;
+    {
+        std::ifstream pointerFile(harmony::library::factoryStoreDirectory()/"active.txt",std::ios::binary);
+        if(pointerFile)activePointer.assign(std::istreambuf_iterator<char>{pointerFile},std::istreambuf_iterator<char>{});
+    }
+    bool stale=!factoryCache_||factoryCache_->activePointer!=activePointer;
+    if(!stale) {
+        std::error_code ec;
+        const auto size=std::filesystem::file_size(factoryCache_->path,ec);
+        if(ec||size!=factoryCache_->size)stale=true;
+        else {
+            const auto writeTime=std::filesystem::last_write_time(factoryCache_->path,ec);
+            if(ec||writeTime!=factoryCache_->writeTime)stale=true;
+        }
+    }
+    if(stale) {
+        FactoryCache entry;
+        entry.activePointer=activePointer;
+        entry.selection=harmony::library::loadAvailableFactory(bundled);
+        entry.path=entry.selection.path;
+        std::error_code ec;
+        entry.size=std::filesystem::file_size(entry.path,ec);
+        entry.writeTime=std::filesystem::last_write_time(entry.path,ec);
+        const auto& loaded=entry.selection.library;
+        entry.annotations=loaded
+            ? harmony::wish::annotationsForFactory(loaded,entry.selection.path,loaded.libraryVersion)
+            : harmony::wish::AnnotationLoadResult{{}, "Factory library unavailable; mode annotations cannot be loaded"};
+        factoryCache_=std::move(entry);
+    }
+    auto& cached=*factoryCache_;
+    const auto& factory=cached.selection.library;
+    hostEnvironment_.factoryEntries=static_cast<unsigned>(factory.templates.size());
+    hostEnvironment_.librarySource=cached.selection.path==bundled?"bundled":"external";
+    if(factory) sessionState_.factoryLibraryVersion=factory.libraryVersion;
+    view_->setSessionState(sessionState_);
+    auto user=harmony::library::UserLibrary(harmony::library::userDatabasePath()).loadAll();
+    auto factoryTemplates=factory.templates;
+    auto annotations=cached.annotations;
+    factoryCount_=factoryTemplates.size(); userCount_=user.templates.size();
+    view_->setLibrary(std::move(factoryTemplates),std::move(user.templates),
+        !factory?factory.error:!user?user.error:cached.selection.warning,!stale);
+    view_->setWishAnnotations(std::move(annotations));
+}
+std::string Controller::saveRecommendation(const harmony::ContinuationCandidate& c,const harmony::session::SaveMetadata& m) noexcept {
+    try {
+        if(!currentCandidate(c))return "Recommendation changed; choose a current result";
+        const auto path=harmony::library::userDatabasePath();
+        if (!path.parent_path().empty()) std::filesystem::create_directories(path.parent_path());
+        harmony::library::UserLibrary library(path); std::string error;
+        if (!harmony::session::saveRecommendation(library,importedProgression_,c,m,error)) return "Save failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "Saved to User Library";
+    } catch (const std::exception& e) { return std::string("Save failed: ")+e.what(); }
+}
+std::string Controller::updateUserProgression(const harmony::ProgressionTemplate& item) noexcept {
+    try {
+        std::string error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).updateProgression(item,error)) return "Update failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "User progression updated";
+    } catch (const std::exception& e) { return std::string("Update failed: ")+e.what(); }
+}
+std::string Controller::deleteUserProgression(const std::string& id) noexcept {
+    try {
+        std::string error;
+        if (!harmony::library::UserLibrary(harmony::library::userDatabasePath()).removeProgression(id,error)) return "Delete failed: "+error;
+        if (recommendationWorker_) recommendationWorker_->invalidateLibrary();
+        reloadLibraries(); submitRecommendation(); return "User progression deleted";
+    } catch (const std::exception& e) { return std::string("Delete failed: ")+e.what(); }
+}
+
+void Controller::clearPreview() noexcept {
+    // Drop the musical reference immediately and send an identity-free stop.
+    // The usual stop acknowledgement still guards backend ownership.
+    preparedPreviewValid_=false;preparedPreview_={};
+    previewTarget_.reset();previewCandidateId_.clear();
+    ++previewClipId_;if(!previewClipId_)++previewClipId_;
+    stopPreview();
+}
+
+void Controller::setPreviewRepeat(bool enabled) noexcept {
+    if(previewRepeat_==enabled)return;
+    if(previewPending_){updatePreviewUi();return;}
+    previewRepeat_=enabled;
+    if(activePreviewBackendValid_&&preparedPreviewValid_&&
+       !submitPreviewState(activePreviewBackend_,previewPlaybackState_,currentPreviewPosition(),false)){
+        previewRepeat_=!enabled;
+        if(view_)view_->setActionStatus("循环试听设置失败");
+    }
+    updatePreviewUi();
+}
+
+void Controller::stopPreview() noexcept {
+    try {
+        if (activePreviewBackendValid_) {
+            const auto previousPosition=currentPreviewPosition();
+            if (!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,
+                                    previewStartQN_,false)) {
+                previewPositionQN_=previousPosition;
+                previewAvailable_=false;
+                if (view_) view_->setActionStatus("试听停止请求失败");
+                updatePreviewUi();return;
+            } else {
+                previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+                previewPositionQN_=previewStartQN_;
+                previewCandidateId_.clear();previewTarget_.reset();
+                previewTransition_={};
+                previewTransition_.phase=PreviewTransitionPhase::StopCurrent;
+                previewTransition_.serial=previewSerial_;
+                previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(1200);
+                previewPending_=true;
+            }
+        } else {
+            previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPositionQN_=previewStartQN_;
+            previewPending_=false;previewTransition_={};
+            previewCandidateId_.clear();previewTarget_.reset();
+            previewAvailable_=false;
+            preparedPreviewValid_=false;
+        }
+        updatePreviewUi();
+    } catch (...) { previewAvailable_=false; previewPending_=false; }
+}
+
+double Controller::effectivePreviewBPM() const noexcept {
+    if (previewTempoMode_==harmony::preview::PreviewTempoMode::Custom)
+        return harmony::preview::sanitizeTempo(customPreviewBPM_);
+    return hostTempoValid_?harmony::preview::sanitizeTempo(lastTempoBPM_):harmony::preview::defaultTempoBPM;
+}
+
+PreviewStatus Controller::previewStatus() const noexcept {
+    const bool active=previewActive();
+    return {previewTempoMode_,customPreviewBPM_,preparedPreviewValid_&&previewPlaybackState_!=harmony::preview::PlaybackState::Stopped
+                ?previewBPMAtStart_:effectivePreviewBPM(),
+            hostTempoValid_,previewScope_,active,previewPlaybackState_,
+            previewBackend_==harmony::preview::AudioBackend::Host,hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_,previewRepeat_};
+}
+
+bool Controller::ensureWindowsPreview() noexcept {
+#if defined(_WIN32)
+    try { if (!windowsPreview_) windowsPreview_=std::make_unique<harmony::preview::WindowsPreview>(); return true; }
+    catch (...) { return false; }
+#else
+    return false;
+#endif
+}
+
+bool Controller::submitPreviewState(harmony::preview::AudioBackend backend,
+                                    harmony::preview::PlaybackState state,double positionQN,bool seek) noexcept {
+    try {
+        harmony::preview::TransportRequest request{};
+        request.serial=++previewSerial_;
+        if (!request.serial) request.serial=++previewSerial_;
+        request.clipId=preparedPreviewValid_?previewClipId_:0;
+        request.seekId=seek?++previewSeekId_:previewSeekId_;
+        request.state=state;
+        request.repeat=previewRepeat_;
+        request.positionQN=std::isfinite(positionQN)?positionQN:previewPositionQN_;
+        if (preparedPreviewValid_) request.clip=preparedPreview_;
+        if (!harmony::preview::validTransportRequest(request)) return false;
+        previewPositionQN_=request.positionQN;
+        previewCommandStarted_=std::chrono::steady_clock::now();
+        if (backend==harmony::preview::AudioBackend::Host) {
+            auto message=owned(allocateMessage());
+            if (!message) return false;
+            message->setMessageID("HC.PreviewCommand");
+            if (message->getAttributes()->setBinary("request",&request,sizeof(request))!=kResultOk) return false;
+            hostCommandBlockBaseline_=hostPreviewFeedbackSeen_?hostPreviewFeedback_.blocks:lastHostBlocks_;
+            return sendMessage(message)==kResultOk;
+        }
+        if (!ensureWindowsPreview()||!windowsPreview_->submit(request)) return false;
+        return true;
+    } catch (...) { return false; }
+}
+
+double Controller::currentPreviewPosition() const noexcept {
+    if (activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Windows&&
+        windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewSerial_&&windowsPreviewFeedback_.clipId==previewClipId_&&
+        std::isfinite(windowsPreviewFeedback_.positionQN)) return windowsPreviewFeedback_.positionQN;
+    if (activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Host&&
+        hostPreviewFeedbackSeen_&&hostPreviewFeedback_.serial>=previewSerial_&&hostPreviewFeedback_.clipId==previewClipId_&&
+        std::isfinite(hostPreviewFeedback_.positionQN)) return hostPreviewFeedback_.positionQN;
+    return previewPositionQN_;
+}
+
+bool Controller::hostPreviewFresh(std::chrono::steady_clock::time_point now) const noexcept {
+    return hostPreviewFeedbackSeen_&&hostPreviewFeedback_.outputActive&&lastHostOutputBlock_!=std::chrono::steady_clock::time_point{}&&
+        now-lastHostOutputBlock_<=std::chrono::milliseconds(750);
+}
+
+void Controller::updatePreviewUi() noexcept {
+    if (!view_) return;
+    if (!previewCandidateId_.empty()&&preparedPreviewValid_) {
+        previewPositionQN_=std::clamp(previewPositionQN_,previewStartQN_,previewTotalQN_);
+        view_->setPreviewPosition(previewCandidateId_,previewPositionQN_,previewTotalQN_);
+    } else view_->setPreviewPosition({},0,0);
+    const bool available=previewBackend_==harmony::preview::AudioBackend::Host
+        ?hostPreviewFresh(std::chrono::steady_clock::now())
+        :(windowsDeviceConfirmed_&&windowsPreviewFeedbackSeen_&&
+          windowsPreviewFeedback_.error==harmony::preview::AudioError::None);
+    previewAvailable_=available;
+    view_->setPreviewTransport(previewPlaybackState_,previewBackend_==harmony::preview::AudioBackend::Host,
+                               hostPreviewFresh(std::chrono::steady_clock::now()),previewPending_);
+    view_->setPreviewRepeat(previewRepeat_);
+}
+
+void Controller::setPreviewSettings(harmony::preview::PreviewTempoMode mode,double customBPM,
+                                    harmony::preview::PreviewScope scope) noexcept {
+    try {
+        if ((mode!=harmony::preview::PreviewTempoMode::FollowHost&&mode!=harmony::preview::PreviewTempoMode::Custom)||
+            (scope!=harmony::preview::PreviewScope::Full&&scope!=harmony::preview::PreviewScope::Suffix)) return;
+        customBPM=harmony::preview::sanitizeTempo(customBPM);
+        if (mode==previewTempoMode_&&customBPM==customPreviewBPM_&&scope==previewScope_) return;
+        if (previewTransition_.phase==PreviewTransitionPhase::SwitchStop) {
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+        }
+        const auto wasState=previewPlaybackState_;
+        const auto position=currentPreviewPosition();
+        const auto target=previewTarget_;
+        previewTempoMode_=mode;customPreviewBPM_=customBPM;previewScope_=scope;
+        if (target&&preparedPreviewValid_) replayPreview(*target,wasState,position);
+        else updatePreviewUi();
+    } catch (...) { stopPreview(); }
+}
+
+void Controller::playPreview(const PreviewTarget& target,const harmony::preview::BuildResult& built,
+                              harmony::preview::PlaybackState state,std::optional<double> requestedQN) noexcept {
+    try {
+        if (!built) { if(view_)view_->setActionStatus("试听失败："+built.error);return; }
+        if (previewTransition_.phase==PreviewTransitionPhase::SwitchStop) {
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+        }
+        const auto* wish=view_?view_->wishItem(target.id):nullptr;
+        const auto scope=target.kind==PreviewTargetKind::Enrichment||(wish&&!wish->match)?harmony::preview::PreviewScope::Full:previewScope_;
+        auto prepared=harmony::preview::preparePreview(built.sequence,scope);
+        if (!prepared) { if(view_)view_->setActionStatus("试听失败："+prepared.error);return; }
+        const auto range=harmony::preview::previewRange(built.sequence,scope);
+        previewTarget_=target;previewCandidateId_=target.id;preparedPreview_=std::move(prepared.clip);
+        preparedPreviewValid_=true;previewBPMAtStart_=built.sequence.tempoBPM;
+        previewStartQN_=range.startQN;previewTotalQN_=range.endQN;
+        previewPositionQN_=std::clamp(requestedQN.value_or(previewStartQN_),previewStartQN_,previewTotalQN_);
+        if(previewRepeat_&&state!=harmony::preview::PlaybackState::Stopped&&previewPositionQN_>=previewTotalQN_)
+            previewPositionQN_=previewStartQN_;
+        ++previewClipId_;if(!previewClipId_)++previewClipId_;++previewSeekId_;
+        previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
+        if(!previewBackendManual_&&!activePreviewBackendValid_)
+            previewBackend_=hostPreviewFresh(std::chrono::steady_clock::now())?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+        const auto selected=previewBackend_;
+        if (activePreviewBackendValid_&&activePreviewBackend_!=selected) {
+            previewTransition_.phase=PreviewTransitionPhase::SwitchStop;
+            previewTransition_.target=selected;previewTransition_.state=previewPlaybackState_;
+            previewTransition_.positionQN=previewPositionQN_;
+            if (!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,
+                                    currentPreviewPosition(),false)) {
+                previewTransition_={};previewPending_=false;previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+                if(view_)view_->setActionStatus("无法停止当前试听设备；未切换设备");updatePreviewUi();return;
+            }
+            previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostPreviewFeedback_.blocks;
+            previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(1200);
+            previewPending_=true;updatePreviewUi();return;
+        }
+        activePreviewBackend_=selected;activePreviewBackendValid_=true;
+        if (!submitPreviewState(selected,previewPlaybackState_,previewPositionQN_,true)) {
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;previewAvailable_=false;previewPending_=false;
+            if(view_)view_->setActionStatus("试听启动失败；所选设备不可用");updatePreviewUi();return;
+        }
+        previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=selected;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.positionQN=previewPositionQN_;previewTransition_.serial=previewSerial_;
+        previewTransition_.blockBaseline=selected==harmony::preview::AudioBackend::Host?hostCommandBlockBaseline_:0;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);
+        previewPending_=true;updatePreviewUi();
+        if(view_)view_->setActionStatus(selected==harmony::preview::AudioBackend::Host?
+            "正在请求宿主音频输出":"宿主音频处理不可用或已选择系统输出；正在请求 Windows Audio");
+    } catch (const std::exception& e) { if(view_)view_->setActionStatus(std::string("试听失败：")+e.what()); }
+    catch (...) { if(view_)view_->setActionStatus("试听失败"); }
+}
+
+bool Controller::buildPreviewTarget(const std::string& id,PreviewTarget& target,
+                                    harmony::preview::BuildResult& built) const {
+    if(view_)if(const auto* wish=view_->wishItem(id)){
+        const auto& candidate=wish->route.candidate;if(!currentCandidate(candidate))return false;
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate};
+        built=harmony::preview::buildSequence(wish->route.imported,&candidate,effectivePreviewBPM());return bool(built);
+    }
+    if (recommendationResultReady_&&view_) for(const auto* bank:{&activeRecommendations(),
+        sessionState_.inspirationPriority?&exactRecommendations_:&recommendations_})for(const auto& group:bank->groups) for(const auto& candidate:group) {
+        if(candidate.id!=id)continue;
+        if(previewTarget_&&previewTarget_->id==id&&previewTarget_->kind==PreviewTargetKind::Continuation&&
+            (previewTarget_->rankingScore!=candidate.rankingScore||previewTarget_->sourceId!=candidate.primaryTemplate))continue;
+        if(!currentCandidate(candidate))return false;
+        const auto route=view_->continuationRoute(candidate);
+        if(!route){built={{},route.error};return false;}
+        target={candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate};
+        built=harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM());return bool(built);
+    }
+    if (enrichmentResultReady_) for(const auto& group:enrichments_.groups) for(const auto& candidate:group) {
+        if(candidate.id!=id)continue;
+        if(!currentCandidate(candidate))return false;
+        harmony::ImportedProgressionSession transformed;
+        if(!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection))return false;
+        target={candidate.id,PreviewTargetKind::Enrichment,candidate.fingerprint,0};
+        built=harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints);return bool(built);
+    }
+    return false;
+}
+
+void Controller::replayPreview(const PreviewTarget& target,harmony::preview::PlaybackState state,double positionQN) noexcept {
+    try {
+        PreviewTarget current;harmony::preview::BuildResult built;
+        if(!buildPreviewTarget(target.id,current,built)||current.kind!=target.kind||current.fingerprint!=target.fingerprint||
+           current.rankingScore!=target.rankingScore||current.sourceId!=target.sourceId) {
+            if(view_)view_->setActionStatus("试听目标已变化，请重新选择");stopPreview();return;
+        }
+        playPreview(current,built,state,positionQN);
+    } catch (...) { stopPreview(); }
+}
+
+void Controller::audition(const harmony::ContinuationCandidate& candidate) noexcept {
+    try {
+        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("推荐结果已变化，请重新选择");return;}
+        if(previewTarget_&&previewTarget_->kind==PreviewTargetKind::Continuation&&previewCandidateId_==candidate.id&&
+           previewPlaybackState_!=harmony::preview::PlaybackState::Stopped){stopPreview();return;}
+        if(!view_)return;
+        const auto route=view_->continuationRoute(candidate);
+        playPreview({candidate.id,PreviewTargetKind::Continuation,session::continuationFingerprint(candidate),candidate.rankingScore,candidate.primaryTemplate},
+            route?harmony::preview::buildSequence(route.imported,&route.candidate,effectivePreviewBPM()):
+                  harmony::preview::BuildResult{{},route.error},harmony::preview::PlaybackState::Playing,std::nullopt);
+    } catch (...) { if(view_)view_->setActionStatus("试听失败"); }
+}
+
+void Controller::auditionEnrichment(const harmony::enrichment::EnrichmentCandidate& candidate) noexcept {
+    try {
+        if(!currentCandidate(candidate)){if(view_)view_->setActionStatus("推荐结果已变化，请重新选择");return;}
+        if(previewTarget_&&previewTarget_->kind==PreviewTargetKind::Enrichment&&previewCandidateId_==candidate.id&&
+           previewPlaybackState_!=harmony::preview::PlaybackState::Stopped){stopPreview();return;}
+        harmony::ImportedProgressionSession transformed;
+        if(!transformed.replace(candidate.progression,harmony::TimelineCoordinateMode::RelativeToSelection)){
+            if(view_)view_->setActionStatus("试听失败：升级进行时间轴无效");return;}
+        playPreview({candidate.id,PreviewTargetKind::Enrichment,candidate.fingerprint,0},
+            harmony::preview::buildSequence(transformed,nullptr,effectivePreviewBPM(),candidate.constraints),
+            harmony::preview::PlaybackState::Playing,std::nullopt);
+    } catch (...) { if(view_)view_->setActionStatus("试听失败"); }
+}
+
+void Controller::pausePreview() noexcept {
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;}
+    if(previewPlaybackState_!=harmony::preview::PlaybackState::Playing||!activePreviewBackendValid_)return;
+    previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+    previewPending_=true;
+    if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,false)){
+        previewAvailable_=false;if(view_)view_->setActionStatus("暂停试听请求失败");}
+    else {previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+    updatePreviewUi();
+}
+
+void Controller::resumePreview() noexcept {
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;}
+    if(previewPlaybackState_!=harmony::preview::PlaybackState::Paused||!activePreviewBackendValid_||!preparedPreviewValid_)return;
+    previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Playing;
+    previewPending_=true;
+    if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,false)){
+        previewPlaybackState_=harmony::preview::PlaybackState::Paused;previewAvailable_=false;
+        if(view_)view_->setActionStatus("继续试听请求失败");}
+    else {previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+        previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+        previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+    updatePreviewUi();
+}
+
+void Controller::setPreviewBackend(bool host) noexcept {
+    const auto target=host?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+    if(previewTransition_.phase!=PreviewTransitionPhase::None){
+        if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+    }
+    if(host&&!hostPreviewFresh(std::chrono::steady_clock::now())){
+        if(view_)view_->setActionStatus("Host Audio 尚无有效处理回调；请启用宿主监听，当前输出保持不变");return;
+    }
+    previewBackendManual_=true;
+    if(previewBackend_==target)return;
+    if(!activePreviewBackendValid_||previewPlaybackState_==harmony::preview::PlaybackState::Stopped){
+        previewBackend_=target;updatePreviewUi();return;}
+    const auto previousBackend=previewBackend_;
+    const auto state=previewPlaybackState_;const auto position=currentPreviewPosition();
+    previewPlaybackState_=state;previewPositionQN_=position;previewPending_=true;
+    previewTransition_.phase=PreviewTransitionPhase::SwitchStop;previewTransition_.target=target;
+    previewTransition_.state=state;previewTransition_.positionQN=position;
+    if(!submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Stopped,position,false)){
+        previewTransition_={};previewPending_=false;previewPositionQN_=position;previewBackend_=previousBackend;
+        previewAvailable_=false;if(view_)view_->setActionStatus("无法停止当前试听设备；未切换设备");updatePreviewUi();return;
+    }
+    previewBackend_=target;
+    previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostPreviewFeedback_.blocks;
+        previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);
+    updatePreviewUi();
+}
+
+void Controller::seekPreview(const std::string& candidateId,double positionQN) noexcept {
+    try {
+        if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){
+            if(view_)view_->setActionStatus("试听设备切换中，请稍候");return;
+        }
+        if(!std::isfinite(positionQN))return;
+        PreviewTarget target;harmony::preview::BuildResult built;
+        if(!buildPreviewTarget(candidateId,target,built)){if(view_)view_->setActionStatus("试听目标已变化，请重新选择");return;}
+        if(!preparedPreviewValid_||!previewTarget_||previewCandidateId_!=candidateId||
+           previewTarget_->kind!=target.kind||previewTarget_->fingerprint!=target.fingerprint){
+            playPreview(target,built,harmony::preview::PlaybackState::Paused,positionQN);return;
+        }
+        const auto state=previewPlaybackState_==harmony::preview::PlaybackState::Stopped?
+            harmony::preview::PlaybackState::Paused:previewPlaybackState_;
+        previewPositionQN_=std::clamp(positionQN,previewStartQN_,previewTotalQN_);
+        if(previewRepeat_&&previewPositionQN_>=previewTotalQN_)previewPositionQN_=previewStartQN_;
+        previewPlaybackState_=previewPositionQN_>=previewTotalQN_?harmony::preview::PlaybackState::Stopped:state;
+        if(!activePreviewBackendValid_){activePreviewBackend_=previewBackend_;activePreviewBackendValid_=true;}
+        if(!submitPreviewState(activePreviewBackend_,previewPlaybackState_,previewPositionQN_,true)){
+            previewAvailable_=false;if(view_)view_->setActionStatus("定位试听请求失败");}
+        else {previewPending_=true;previewTransition_={};previewTransition_.phase=PreviewTransitionPhase::SwitchStart;
+            previewTransition_.target=activePreviewBackend_;previewTransition_.state=previewPlaybackState_;
+            previewTransition_.serial=previewSerial_;previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+            previewTransition_.deadline=std::chrono::steady_clock::now()+std::chrono::milliseconds(750);}
+        updatePreviewUi();
+    } catch (...) { if(view_)view_->setActionStatus("定位试听失败"); }
+}
+
+void Controller::advancePreviewTransition(std::chrono::steady_clock::time_point now) noexcept {
+    auto hostStoppedAck=[&]{return hostPreviewFeedbackSeen_&&hostPreviewStatusAt_>=previewCommandStarted_&&hostPreviewMuted_&&
+        (!hostPreviewFeedback_.outputActive||
+         (hostPreviewFeedback_.serial>=previewTransition_.serial&&hostPreviewFeedback_.state==harmony::preview::PlaybackState::Stopped)||
+         (!hostPreviewFresh(now)&&hostPreviewQuiescent_));};
+    auto windowsStoppedAck=[&]{return windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewTransition_.serial&&
+        windowsPreviewFeedback_.state==harmony::preview::PlaybackState::Stopped&&!windowsPreviewFeedback_.outputActive&&
+        windowsPreviewFeedback_.error==harmony::preview::AudioError::None;};
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStop){
+        const bool stopped=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostStoppedAck():windowsStoppedAck();
+        if(stopped){
+            activePreviewBackend_=previewTransition_.target;activePreviewBackendValid_=true;
+            const auto state=previewTransition_.state;const auto position=previewTransition_.positionQN;
+            if(!submitPreviewState(activePreviewBackend_,state,position,true)){
+                previewTransition_={};previewPending_=false;previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+                previewAvailable_=false;if(view_)view_->setActionStatus("目标试听设备启动失败；当前试听已暂停");updatePreviewUi();return;}
+            previewTransition_.phase=PreviewTransitionPhase::SwitchStart;previewTransition_.target=activePreviewBackend_;
+            previewTransition_.state=state;previewTransition_.positionQN=position;previewTransition_.serial=previewSerial_;
+            previewTransition_.blockBaseline=hostCommandBlockBaseline_;
+            previewTransition_.deadline=now+std::chrono::milliseconds(750);
+        }
+    }
+    if(previewTransition_.phase==PreviewTransitionPhase::SwitchStart){
+        bool acknowledged=false;
+        if(activePreviewBackend_==harmony::preview::AudioBackend::Host)
+            acknowledged=hostPreviewFeedbackSeen_&&hostPreviewFeedback_.error==harmony::preview::AudioError::None&&hostPreviewFeedback_.serial>=previewTransition_.serial&&
+                hostPreviewFeedback_.state==previewTransition_.state&&
+                (previewTransition_.state==harmony::preview::PlaybackState::Stopped
+                    ?hostPreviewMuted_ :hostPreviewFresh(now)&&hostPreviewFeedback_.blocks>previewTransition_.blockBaseline);
+        else acknowledged=windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.serial>=previewTransition_.serial&&
+            windowsPreviewFeedback_.error==harmony::preview::AudioError::None&&
+            windowsPreviewFeedback_.state==previewTransition_.state&&
+            (previewTransition_.state==harmony::preview::PlaybackState::Stopped?!windowsPreviewFeedback_.outputActive:
+                windowsPreviewFeedback_.outputActive);
+        if(acknowledged){
+            if(previewTransition_.state==harmony::preview::PlaybackState::Stopped)activePreviewBackendValid_=false;
+            previewTransition_={};previewPending_=false;previewAvailable_=true;
+            if(view_)view_->setActionStatus(activePreviewBackend_==harmony::preview::AudioBackend::Host?
+                "宿主音频处理已响应":"Windows 音频输出已确认");}
+    }
+    if((previewTransition_.phase==PreviewTransitionPhase::SwitchStop||previewTransition_.phase==PreviewTransitionPhase::SwitchStart)&&
+       now>=previewTransition_.deadline){
+        const auto phase=previewTransition_.phase;const auto expectedState=previewTransition_.state;previewTransition_={};previewPending_=false;previewAvailable_=false;
+        if(phase==PreviewTransitionPhase::SwitchStop){
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+            if(view_)view_->setActionStatus("旧试听设备未确认静音，未启动新设备");
+        }else if(expectedState!=harmony::preview::PlaybackState::Stopped){
+            const auto pos=currentPreviewPosition();previewPositionQN_=std::clamp(pos,previewStartQN_,previewTotalQN_);
+            previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+            (void)submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Paused,previewPositionQN_,false);
+            if(view_)view_->setActionStatus(activePreviewBackend_==harmony::preview::AudioBackend::Host?
+                "宿主音频处理已停止；试听已暂停，可启用监听或切换 Windows Audio":"Windows 音频设备不可用；试听已暂停");
+        }else{
+            previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPositionQN_=previewTotalQN_;
+            if(view_)view_->setActionStatus("试听已停止");
+        }
+    }
+    if(previewTransition_.phase==PreviewTransitionPhase::StopCurrent){
+        const bool stopped=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostStoppedAck():windowsStoppedAck();
+        if(stopped||now>=previewTransition_.deadline){
+            const bool confirmed=stopped;previewTransition_={};previewPending_=false;
+            if(confirmed)activePreviewBackendValid_=false;
+            preparedPreviewValid_=false;previewTarget_.reset();previewCandidateId_.clear();
+            previewStartQN_=previewTotalQN_=previewBPMAtStart_=0;previewPositionQN_=0;
+            if(!confirmed&&view_)view_->setActionStatus("停止试听尚未得到设备确认");
+        }
+    }
+    if(previewPlaybackState_==harmony::preview::PlaybackState::Playing&&
+       activePreviewBackend_==harmony::preview::AudioBackend::Host&&
+       previewTransition_.phase==PreviewTransitionPhase::None&&!hostPreviewFresh(now)&&
+       now-previewCommandStarted_>std::chrono::milliseconds(750)){
+        previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+        previewPending_=false;previewAvailable_=false;
+        (void)submitPreviewState(activePreviewBackend_,harmony::preview::PlaybackState::Paused,previewPositionQN_,false);
+        if(view_)view_->setActionStatus("宿主音频处理已停止；试听已暂停，可启用监听或切换 Windows Audio");
+    }
+    if(activePreviewBackendValid_&&activePreviewBackend_==harmony::preview::AudioBackend::Windows&&
+       windowsPreviewFeedbackSeen_&&windowsPreviewFeedback_.error!=harmony::preview::AudioError::None&&
+       previewPlaybackState_==harmony::preview::PlaybackState::Playing){
+        previewPositionQN_=currentPreviewPosition();previewPlaybackState_=harmony::preview::PlaybackState::Paused;
+        previewPending_=false;previewAvailable_=false;
+        if(view_)view_->setActionStatus("Windows 音频设备不可用；试听已暂停");
+    }
+    if(preparedPreviewValid_&&previewPlaybackState_==harmony::preview::PlaybackState::Playing){
+        const auto& feedback=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostPreviewFeedback_:windowsPreviewFeedback_;
+        const bool seen=activePreviewBackend_==harmony::preview::AudioBackend::Host?hostPreviewFeedbackSeen_:windowsPreviewFeedbackSeen_;
+        if(seen&&feedback.clipId==previewClipId_&&feedback.state==harmony::preview::PlaybackState::Stopped&&
+           std::isfinite(feedback.positionQN)&&feedback.positionQN>=previewTotalQN_-0.01){
+            previewPositionQN_=previewTotalQN_;previewPlaybackState_=harmony::preview::PlaybackState::Stopped;
+            previewPending_=false;previewAvailable_=false;previewTransition_={};activePreviewBackendValid_=false;
+        } else previewPositionQN_=currentPreviewPosition();
+    }
+    else if(preparedPreviewValid_&&previewPlaybackState_==harmony::preview::PlaybackState::Paused)
+        previewPositionQN_=currentPreviewPosition();
+    updatePreviewUi();
+}
+
+void Controller::pollPreview() noexcept {
+    try {
+        auto poll=owned(allocateMessage());
+        if(poll){poll->setMessageID("HC.PreviewPoll");sendMessage(poll);}
+        if(windowsPreview_){
+            windowsPreviewFeedback_=windowsPreview_->feedback();windowsPreviewFeedbackSeen_=true;
+            if(windowsPreviewFeedback_.error!=harmony::preview::AudioError::None)windowsDeviceConfirmed_=false;
+            else if(windowsPreviewFeedback_.outputActive)windowsDeviceConfirmed_=true;
+        }
+        if(!previewBackendManual_&&!activePreviewBackendValid_&&previewTransition_.phase==PreviewTransitionPhase::None){
+            const auto automatic=hostPreviewFresh(std::chrono::steady_clock::now())?harmony::preview::AudioBackend::Host:harmony::preview::AudioBackend::Windows;
+            if(automatic!=previewBackend_){previewBackend_=automatic;if(view_&&automatic==harmony::preview::AudioBackend::Windows)
+                view_->setActionStatus("未观察到宿主音频处理；使用 Windows Audio，可在启用监听后切回 Host Audio");}
+        }
+        advancePreviewTransition(std::chrono::steady_clock::now());
+    } catch (...) {}
+}
+
+namespace {
+std::string saveMidiSequence(const harmony::preview::Sequence& sequence,
+                             harmony::midi::ExportScope scope,harmony::midi::Meter meter,
+                             std::optional<harmony::KeySignature> key,
+                             std::optional<harmony::PhraseIntent> intent,void* owner) {
+    const auto clip=harmony::midi::buildClip(sequence,harmony::midi::ArrangementMode::VoiceLed,scope,meter,key,intent);
+    if (!clip) return "MIDI 导出失败："+clip.error;
+    const auto name=harmony::midi::suggestedFilename(intent,key,1);
+#if defined(_WIN32)
+    const auto path=savePath(owner,name,L"MIDI files\0*.mid\0\0",L"mid");
+    if (!path) return "已取消 MIDI 导出";
+    const auto payload=harmony::midi::makePayload(clip.sequence,name);
+    std::string error;
+    if (payload.smfBytes.empty() || !harmony::midi::writeToFile(payload.smfBytes,*path,error))
+        return "MIDI 导出失败："+(error.empty()?"文件内容无效":error);
+    return "MIDI 已保存："+path->filename().string();
+#else
+    (void)owner; (void)name;
+    return "当前平台不支持 MIDI 保存对话框";
+#endif
+}
+}
+
+namespace {
+std::string saveCandidatePayload(const harmony::midi::PayloadResult& result,void* owner,harmony::session::Locale locale) {
+    const auto text=[locale](const char* key){return std::string(harmony::localization::text(locale,key));};
+    if(!result)return text("midi.saveFailed");
+#if defined(_WIN32)
+    const auto path=savePath(owner,result.payload.suggestedFilename,L"MIDI files\0*.mid\0\0",L"mid");
+    if(!path)return text("midi.cancelled");
+    std::string error;if(!harmony::midi::writeToFile(result.payload.smfBytes,*path,error))return text("midi.saveFailed");
+    return text("midi.saved");
+#else
+    (void)owner;return text("midi.saveFailed");
+#endif
+}
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::ContinuationCandidate& candidate) const {
+    if(!currentCandidate(candidate))return {{},"Recommendation changed; choose a current result"};
+    if(!view_)return {{},"Recommendation view is unavailable"};
+    const auto route=view_->continuationRoute(candidate);
+    if(!route)return {{},route.error};
+    return harmony::midi::candidatePayload({route.imported,lastTempoBPM_,
+        {route.meterNumerator,route.meterDenominator}},route.candidate);
+}
+harmony::midi::PayloadResult Controller::midiPayload(const harmony::enrichment::EnrichmentCandidate& candidate) const {
+    if(!currentCandidate(candidate))return {{},"Recommendation changed; choose a current result"};
+    const auto key=sessionState_.forcedKey?sessionState_.forcedKey:analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+    return harmony::midi::candidatePayload({importedProgression_,lastTempoBPM_,
+        {sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4)},key},candidate);
+}
+std::string Controller::exportMidi(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
+}
+std::string Controller::exportEnrichmentMidi(const harmony::enrichment::EnrichmentCandidate& candidate,void* owner) noexcept {
+    try{return saveCandidatePayload(midiPayload(candidate),owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
+}
+void Controller::importMidi(bool openEnded,const std::filesystem::path& supplied,void* owner) noexcept {
+    try {const auto path=supplied.empty()?harmony::midi::chooseMidiFile(owner):std::optional(supplied);
+        if(path)importMidiFiles({*path},openEnded);
+    }catch(...){if(view_)view_->setActionStatus("MIDI import failed");}
+}
+void Controller::importMidiFiles(std::vector<std::filesystem::path> paths,bool openEnded) noexcept {
+    try {if(!midiImportWorker_)midiImportWorker_=std::make_unique<io::AsyncMidiImport>();
+        midiImportWorker_->submit(std::move(paths),openEnded);
+        if(view_)view_->setActionStatus(sessionState_.locale==session::Locale::ZhCN?"正在读取 MIDI…":"Reading MIDI…");
+    }catch(...){if(view_)view_->setActionStatus("MIDI import failed");}
+}
+void Controller::pollMidiImport(){
+    if(midiImportWorker_)if(auto ready=midiImportWorker_->takeLatest())applyMidiImport(ready->result);
+}
+void Controller::applyMidiImport(const harmony::midi::ImportResult& loaded){
+        const auto text=[&](const char* key){return std::string(harmony::localization::text(sessionState_.locale,key));};
+        if(!loaded){if(view_){view_->setDropReport(text("midi.failed"),loaded.midi.error+"\n"+loaded.extraction.error,false);view_->setActionStatus(text(loaded.midi.status==harmony::midi::ReadStatus::Unsupported?"midi.unsupported":"midi.failed"));}return;}
+        auto next=sessionState_;if(!harmony::midi::applyImport(loaded,next.imported))return;
+        next.tab=harmony::session::Tab::Recommend;
+        next.meterNumerator.reset();next.meterDenominator.reset();
+        if(const auto meter=harmony::midi::uniformImportedMeter(loaded)) {
+            next.meterNumerator=meter->first;next.meterDenominator=meter->second;
+        }
+        importedProgression_=next.imported;
+        hostEnvironment_.lastDropType="MIDI file import";
+        lastInputDiagnostic_="SMF PPQ="+std::to_string(loaded.midi.file.ppq)+" notes="+std::to_string(loaded.midi.file.notes.size())+
+            " extractedChords="+std::to_string(loaded.extraction.chords.size())+"\n";
+        std::ostringstream original;original<<std::setprecision(17);
+        for(std::size_t i=0;i<std::min<std::size_t>(4096,loaded.midi.file.notes.size());++i) {
+            const auto& n=loaded.midi.file.notes[i];original<<"SMF_NOTE pitch="<<n.pitch<<" startQN="<<n.startQN
+                <<" durationQN="<<n.durationQN<<" velocity="<<n.velocity<<" channel="<<n.channel<<" track="<<n.track<<'\n';
+        }
+        if(loaded.midi.file.notes.size()>4096)original<<"SMF_NOTE truncated after 4096 notes\n";
+        for(const auto& m:loaded.midi.file.meters)original<<"SMF_METER qn="<<m.qn<<" meter="<<m.numerator<<'/'<<m.denominator<<'\n';
+        for(const auto& t:loaded.midi.file.tempos)original<<"SMF_TEMPO qn="<<t.qn<<" bpm="<<t.bpm<<'\n';
+        lastInputDiagnostic_+=original.str();
+        if(view_)view_->setSnapshotMode(false);
+        applySessionState(next);
+        if(view_) {
+            std::string summary=text("midi.recognized")+" "+std::to_string(loaded.extraction.chords.size())+" · "+text("midi.track")+" "+loaded.extraction.selectedTrackName;
+            const auto warnings=loaded.midi.file.warnings.size()+loaded.extraction.warnings.size();
+            if(warnings)summary+=" · "+text("midi.uncertain")+" "+std::to_string(warnings);
+            std::ostringstream details;details<<"SMF "<<loaded.midi.file.format<<" PPQ "<<loaded.midi.file.ppq<<'\n';
+            for(const auto& t:loaded.extraction.tracks)details<<"Track "<<t.track<<" "<<t.name<<" score "<<t.chordLikeness<<'\n';
+            for(const auto& w:loaded.midi.file.warnings)details<<w<<'\n';
+            for(const auto& w:loaded.extraction.warnings)details<<w<<'\n';
+            for(std::size_t i=0;i<std::min<std::size_t>(256,loaded.extraction.slices.size());++i) {
+                const auto& slice=loaded.extraction.slices[i];details<<slice.startQN<<" "<<slice.chord<<" confidence="<<slice.confidence<<'\n';
+            }
+            midiImportSummary_=summary;
+            view_->setDropReport(summary,details.str(),false);view_->setActionStatus(summary);
+        }
+ }
+std::string Controller::saveMidiPayload(const harmony::midi::MidiClipPayload& payload,void* owner) noexcept {
+    try {return saveCandidatePayload({payload,{}},owner,sessionState_.locale);}catch(...){return std::string(harmony::localization::text(sessionState_.locale,"midi.saveFailed"));}
+}
+std::string Controller::exportLibraryMidi(const harmony::ProgressionTemplate& item,void* owner) noexcept {
+    try {
+        const auto key=sessionState_.forcedKey.value_or(analysis_.selectedKey?analysis_.selectedKey->key:
+            harmony::KeySignature{item.mode==harmony::Mode::Major?harmony::PitchClass::C:harmony::PitchClass::A,item.mode});
+        const auto built=harmony::midi::previewFromTemplate(item,key,lastTempoBPM_);
+        if (!built) return "MIDI 导出失败："+built.error;
+        return saveMidiSequence(built.sequence,harmony::midi::ExportScope::CurrentOnly,
+            {item.meterNumerator,item.meterDenominator},key,item.intent,owner);
+    } catch (const std::exception& e) { return std::string("MIDI 导出失败：")+e.what(); }
+    catch (...) { return "MIDI 导出失败"; }
+}
+
+std::string Controller::saveSnapshot(const harmony::ContinuationCandidate& candidate,void* owner) noexcept {
+    try {
+        if(!currentCandidate(candidate)||!view_)return "Recommendation changed; choose a current result";
+        const auto route=view_->continuationRoute(candidate);
+        if(!route)return "快照保存失败："+route.error;
+        const auto* wish=view_->wishItem(candidate.id);
+        const auto sourceMatches=wish?(wish->match?std::vector<harmony::MatchResult>{*wish->match}:std::vector<harmony::MatchResult>{}):matches_;
+        auto snapshot=harmony::snapshot::capture(route.imported,route.candidate,sourceMatches,lastTempoBPM_,
+            route.meterNumerator,route.meterDenominator,
+            wish?std::optional(candidate.key):sessionState_.forcedKey?sessionState_.forcedKey:std::optional(candidate.key),
+            wish?0u:sessionState_.styleMask,wish?std::nullopt:sessionState_.intent);
+        snapshot.factoryLibraryVersion=static_cast<int>(sessionState_.factoryLibraryVersion);
+#if defined(_WIN32)
+        const auto path=savePath(owner,(wish?std::string("HarmonyWish_")+candidate.primaryTemplate:candidate.id)+".hcrec.json",
+            L"Recommendation snapshot\0*.hcrec.json\0JSON files\0*.json\0\0",L"json");
+        if (!path) return "已取消快照保存";
+        std::string error;
+        if (!harmony::snapshot::saveFile(snapshot,*path,error)) return "快照保存失败："+error;
+        return "快照已保存："+path->filename().string();
+#else
+        (void)owner; (void)snapshot;
+        return "当前平台不支持快照保存对话框";
+#endif
+    } catch (const std::exception& e) { return std::string("快照保存失败：")+e.what(); }
+    catch (...) { return "快照保存失败"; }
+}
+
+std::string Controller::saveEnrichmentSnapshot(const harmony::enrichment::EnrichmentCandidate& candidate,
+                                               void* owner) noexcept {
+    try {
+        const auto key=sessionState_.forcedKey?sessionState_.forcedKey:
+            analysis_.selectedKey?std::optional(analysis_.selectedKey->key):std::nullopt;
+        const auto snapshot=harmony::snapshot::captureEnrichment(importedProgression_,candidate,lastTempoBPM_,
+            sessionState_.meterNumerator.value_or(4),sessionState_.meterDenominator.value_or(4),key,sessionState_.styleMask);
+#if defined(_WIN32)
+        const auto path=savePath(owner,candidate.id+".hcenrich.json",
+            L"Enrichment snapshot\0*.hcenrich.json\0JSON files\0*.json\0\0",L"json");
+        if (!path) return "已取消快照保存";
+        std::string error;
+        if (!harmony::snapshot::saveFile(snapshot,*path,error)) return "快照保存失败："+error;
+        return "快照已保存："+path->filename().string();
+#else
+        (void)owner; (void)snapshot;
+        return "当前平台不支持快照保存对话框";
+#endif
+    } catch (const std::exception& e) { return std::string("快照保存失败：")+e.what(); }
+    catch (...) { return "快照保存失败"; }
+}
+
+void Controller::detach(harmony::ui::MainView* view) noexcept {
+    if (view_ == view && view_) {
+        try{editorUiState_=view_->captureEditorUiState();}catch(...){editorUiState_.reset();}
+        hostEnvironment_.editorAttached(false);
+        stopPreview();
+        view_ = nullptr;
+        transportRateChanged_ = {};
+    }
+}
+
+void Controller::receivedDrop(VSTGUI::IDataPackage* package) noexcept {
+    try {
+        auto report = inspectDrop(package, "宿主拖放（VSTGUI IDataPackage）");
+        harmony::Progression chords;
+        std::ostringstream parsed;
+        parsed << "最近一次拖放 / VSTGUI IDataPackage\n数据项数：" << report.itemCount
+               << "；已检查数据项的声明总大小：" << report.payloadBytes << " 字节\n";
+        auto input=hostAdapter_->chordInput(report);chords=std::move(input.chords);parsed << input.details;
+        hostEnvironment_.lastDropType="VST-XML data";
+        if (!chords.empty()) {
+            if(midiImportWorker_)midiImportWorker_->cancel();
+            stopPreview();
+            if (importedProgression_.replace(std::move(chords), harmony::TimelineCoordinateMode::AbsoluteProjectQN)) {
+                sessionState_.imported=importedProgression_;
+                sessionState_.pinnedCandidateIds.clear();
+                // XML contains absolute QN positions, not a meter map. The
+                // current playhead's host meter cannot describe this selection.
+                sessionState_.meterNumerator.reset();sessionState_.meterDenominator.reset();
+                analysis_ = {};
+                matches_.clear();
+                recommendations_ = {};exactRecommendations_={};recommendationResultReady_=false;enrichments_={};editorUiState_.reset();
+                matchStatus_ = "RECOMMEND：后台分析中…";
+                submitRecommendation();
+                if (view_) {
+                    view_->setSessionState(sessionState_);
+                    view_->setAnalysis(analysis_);
+                    view_->setMatches(matches_, matchStatus_);
+                    view_->setRecommendations(activeRecommendations());view_->setEnrichments(enrichments_);
+                }
+            } else {
+                parsed << "\n导入失败：和弦顺序或工程时间无效，保留上一次有效进行。\n";
+            }
+        }
+        lastInputDiagnostic_=report.summary+"\n"+parsed.str();
+        if (view_) view_->setDropReport(std::move(report.summary), parsed.str());
+    } catch (...) {
+        try { if (view_) view_->setDropReport("拖放检查时发生异常。", "拖放失败，请展开诊断面板查看详情。"); }
+        catch (...) {}
+    }
+}
+
+void Controller::inspectClipboard() noexcept {
+    try {
+        std::ostringstream raw;
+        std::ostringstream parsed;
+        harmony::Progression vguiChords;
+        harmony::Progression nativeChords;
+
+        raw << "A. VSTGUI IDataPackage 剪贴板视图\n";
+        auto package = VSTGUI::CClipboard::get();
+        if (!package) {
+            raw << "VSTGUI 未提供可读取的数据项；这不代表 Windows 剪贴板为空。\n";
+            parsed << "VSTGUI 剪贴板：未暴露抽象数据项。\n";
+        } else {
+            auto report = inspectDrop(package, "用户通过 VSTGUI CClipboard 主动检查");
+            raw << report.summary << '\n';
+            parsed << "VSTGUI 剪贴板解析结果：\n"
+                   << CubaseHostAdapter::parseXml(report.items, harmony::ChordSource::Clipboard, vguiChords);
+        }
+
+#if defined(_WIN32)
+        raw << "\nB. Windows 原生剪贴板格式\n";
+        const auto native = windows::inspectNativeClipboard();
+        raw << native.summary << '\n';
+        parsed << "\nWindows 原生剪贴板解析结果：\n"
+               << CubaseHostAdapter::parseClipboard(native, nativeChords);
+#else
+        raw << "\nB. 原生剪贴板检查器：仅支持 Windows。\n";
+#endif
+
+        if (view_) view_->setDropReport(raw.str(), parsed.str(), false);
+    } catch (...) {
+        try { if (view_) view_->setDropReport("剪贴板检查失败。", "剪贴板诊断时发生异常，请查看详细信息。", false); }
+        catch (...) {}
+    }
+}
+
+tresult PLUGIN_API Controller::notify(IMessage* message) {
+    try {
+        if (message&&message->getMessageID()&&std::strcmp(message->getMessageID(),"HC.PreviewStatus")==0) {
+            const void* data{};uint32 size{};int64 muted{},quiescent{};
+            auto* attributes=message->getAttributes();
+            if(!attributes||attributes->getBinary("status",data,size)!=kResultOk||!data||
+               size!=sizeof(harmony::preview::TransportFeedback)||attributes->getInt("muted",muted)!=kResultOk||attributes->getInt("quiescent",quiescent)!=kResultOk)
+                return kResultFalse;
+            harmony::preview::TransportFeedback status{};std::memcpy(&status,data,sizeof(status));
+            if((status.state!=harmony::preview::PlaybackState::Stopped&&status.state!=harmony::preview::PlaybackState::Playing&&
+                status.state!=harmony::preview::PlaybackState::Paused)||
+               (status.error!=harmony::preview::AudioError::None&&status.error!=harmony::preview::AudioError::DeviceUnavailable&&
+                status.error!=harmony::preview::AudioError::InvalidClip&&status.error!=harmony::preview::AudioError::CallbackAbsent)||
+               !std::isfinite(status.positionQN)||!std::isfinite(status.sampleRate)||status.sampleRate<0)return kResultFalse;
+            if(hostPreviewFeedbackSeen_&&status.serial<hostPreviewFeedback_.serial&&status.blocks>=hostPreviewFeedback_.blocks)return kResultOk;
+            const bool advanced=!hostPreviewFeedbackSeen_||status.blocks>hostPreviewFeedback_.blocks;
+            hostPreviewFeedback_=status;hostPreviewFeedbackSeen_=true;hostPreviewMuted_=muted!=0;hostPreviewQuiescent_=quiescent!=0;
+            lastHostBlocks_=status.blocks;hostPreviewStatusAt_=std::chrono::steady_clock::now();
+            if(advanced&&status.outputActive)lastHostOutputBlock_=hostPreviewStatusAt_;
+            return kResultOk;
+        }
+        if (message && message->getMessageID() &&
+            (std::strcmp(message->getMessageID(), "HC.Snapshot") == 0 ||
+             std::strcmp(message->getMessageID(), "HC.TransportSnapshot") == 0)) {
+            const bool manualRefresh = std::strcmp(message->getMessageID(), "HC.Snapshot") == 0;
+            const void* data{};
+            uint32 size{};
+            if (!message->getAttributes() || message->getAttributes()->getBinary("snapshot", data, size) != kResultTrue ||
+                !data || size != sizeof(HostSnapshot)) return kResultFalse;
+            HostSnapshot snapshot{};
+            std::memcpy(&snapshot, data, sizeof(snapshot));
+            const bool changed = snapshot.generation != lastSnapshotGeneration_;
+            if (!manualRefresh && !changed) {
+                if (unchangedTransportPolls_ < 3) ++unchangedTransportPolls_;
+                if (unchangedTransportPolls_ >= 3 && lastPlaying_) {
+                    lastPlaying_ = false;
+                    if (view_) view_->setPlaybackPosition(lastProjectQN_, false);
+                    if (transportRateChanged_) transportRateChanged_(false);
+                }
+                return kResultOk;
+            }
+            if (changed) {
+                unchangedTransportPolls_ = 0;
+                lastSnapshotGeneration_ = snapshot.generation;
+                const auto context=HostContextAdapter::timeline(snapshot);
+                hostEnvironment_.observeTimeline(context);
+                lastProjectQN_=context.projectTimeMusic;
+                hostTempoValid_=context.tempo.has_value();
+                if(context.tempo)lastTempoBPM_=*context.tempo;
+                lastTimeSigNumerator_=context.timeSignature?std::optional(context.timeSignature->first):std::nullopt;
+                lastTimeSigDenominator_=context.timeSignature?std::optional(context.timeSignature->second):std::nullopt;
+                lastPlaying_=context.playing.value_or(false);
+                if (view_) view_->setPlaybackPosition(lastProjectQN_, lastPlaying_);
+                if (transportRateChanged_) transportRateChanged_(lastPlaying_);
+            }
+            if (view_ && manualRefresh) {
+                auto history = HostContextAdapter::summarize(snapshot);
+                view_->setHostText(hostDiagnostics(), std::move(history));
+            }
+            return kResultOk;
+        }
+        return EditController::notify(message);
+    } catch (...) { return kResultFalse; }
+}
+} // namespace harmony::plugin

@@ -1,0 +1,36 @@
+family|title|events|mode|intent|ending|boundary|basis|source|section|case|tonic|meter
+OpenRock|降七和弦的空五摇滚句|C5@8 Bb5@4 F/C@4 C5@4 Gm7@4 Bb@4 F@4 C@8|mixolydian|loop|modal-arrival|yes|C根位和弦回到空五riff起点，C调中心明确；空五段的调式音由旋律补全。|Spicer|chorus|concept-only|C|4/4
+OpenRock|A小调摇滚的自然小调踏步|Am@8 G@4 F@4 G@4 Am@4 Dm@4 F@4 Am@8|aeolian|loop|open|yes|Am为局部主和弦，G-F为自然小调下行平台；尾Am接首Am循环，不将C当主和弦。|Spicer|verse|concept-only|A|4/4
+OpenRock|利底亚亮二级的短句回落|C@8 D@4 Bm@4 F#dim@4 Em@4 Am@4 D@4 C@8|lydian|develop|modal-arrival|no|C根位锚点上以Bm、F#dim和D大和弦显F#利底亚色彩，Am仅作短暂vi；末C无G7解决，非循环。|Ramage|prechorus|concept-only|C|4/4
+OpenRock|A弗里吉亚降二摇滚入口|Am@8 Bb@4 C@4 Gm@4 Bb@4 C@4 Dm@4 Am@8|phrygian|color|modal-arrival|no|Am固定为局部中心，Bb-C并置保留降二与降三色彩，Gm-Dm不构成属终止；末Am一次落点，非循环。|Spicer|bridge|concept-only|A|4/4
+OpenRock|A多利亚四级抬升 riff|Am@8 D@4 G@4 Am@4 Bm@4 D@4 G@4 Am@8|dorian|loop|modal-arrival|yes|Am是局部主和弦，D大三和弦的F#区分多利亚；D-G平台后回Am循环，不引入E7终止。|Duinker|chorus|concept-only|A|4/4
+OpenRock|五度空弦与降七侧门|C5@8 G5@4 Dm@4 F5@4 C5@4 Bb5@4 Gm@4 C5@8|undetermined|loop|open|yes|C低音根音与riff回返可辨中心，但空五和弦无E/Eb，三音留给旋律；无法区分C大/小调式，B级待审，不据兼容性强判Mixolydian。|Spicer|intro|concept-only|C|4/4
+AscendingPlatform|级进上台阶后单次归主|C@8 Dm@4 Em@4 F@4 Dm@4 Em@4 F@4 C@8|ionian|develop|modal-arrival|no|Dm-Em-F三和弦逐级上移形成持续平台，末F-C是下属回归而非属终止；不循环，副歌只用一次。|Duinker|chorus|concept-only|C|4/4
+ModalPlatform|A小调主歌平台与开放尾|Am@8 C@4 Dm@4 Am/C@4 F@4 Em@4 Am@4 Dm@8|aeolian|develop|open|no|Am局部主功能由开头和中段回归辨认，C-Dm-F构成相对稳定小调平台；末落iv而不接回Am，留给预副歌。|Duinker|verse-prechorus|concept-only|A|4/4
+ModalPlatform|利底亚二级平台切回根音|C@8 D@4 C/E@4 D@4 Em@4 F#dim@4 D@4 C@8|lydian|develop|modal-arrival|no|D大三和弦反复构成亮二级平台，C/E中段重申C中心；无G7解决，末C为模态回落并接后段。|Ramage|bridge|concept-only|C|4/4
+ModalPlatform|降七平台与主歌回转|C@8 Bb@4 F@4 Bb@4 F@4 Dm@4 C@4 Bb@8|mixolydian|loop|open|yes|Bb-F反复形成非属功能平台，C只在段首和尾前锚定；末Bb以共同调式音接回C起句，边界开放。|Duinker|verse|concept-only|C|4/4
+ModalPlatform|A小调相对大调侧移|Am@8 Dm@4 C/G@4 G@4 Am@4 F@4 G@4 Am@8|aeolian|loop|modal-arrival|yes|Am局部主中心由开尾两次确认，C/G-G短暂把平台推向相对大调后退回；尾Am回接首Am，不据此声称双主音。|Duinker|postchorus|concept-only|A|4/4
+ModalPlatform|利底亚平台止于二级|C@8 Em@4 D@4 Em@4 D@4 C/E@4 F#dim@4 D@8|lydian|develop|transition|no|Em-D的三音与F#支持C利底亚平台，末D大和弦作为副歌前提亮出口；不回C循环。|Ramage|prechorus|concept-only|C|4/4
+ModalPlatform|弗里吉亚平行平台短暂定心|Am@8 Bb@4 C@4 Bb@4 Am@4 Dm@4 Bb@4 Am@8|phrygian|color|modal-arrival|no|Am与Bb-Am半音回返确立A弗里吉亚局部中心，C大和弦只作平台顶部；尾Am一次性落下，不作主歌循环。|Spicer|bridge|concept-only|A|4/4
+ModalPlatform|多利亚小调副歌的非属抬升|Am@8 F#dim@4 G@4 D@4 Am@4 G@4 D@4 Am@8|dorian|loop|ambiguous|yes|Am为循环中心，F#dim-D-G形成含升六度的浮动平台；无E属确认，尾Am接回开头但主调强度留给旋律。|Duinker|chorus|concept-only|A|4/4
+FragileTonic|E低音主和弦的脆弱主歌|C/E@8 Dm/F@4 G/B@4 C/G@4 Am/C@4 F/A@4 Dm/F@4 Gsus4@8|ionian|develop|open|no|所有C和弦都不以C低音出现，G/B与C/G保留主属关系但弱化根音主和弦；末悬属不回接。|Spicer|verse-prechorus|concept-only|C|4/4
+FragileTonic|转位属主回落后避开根位|F/A@8 C/E@4 Dm/F@4 G7/B@4 C/G@8 F/C@4 G/B@4 C/E@8|ionian|develop|ambiguous|no|G7/B到C/G有主属锚点却始终不落C低音，随后IV再把主音变位；末C/E保持脆弱感，非完整闭合。|Spicer|chorus|concept-only|C|4/4
+FragileTonic|弱主音框住副歌前句|C/G@8 Em/B@4 Dm/F@4 Gsus4@4 G/B@4 C/E@8 Am/C@4 F/A@8|ionian|develop|open|no|C/G与C/E提供同一主和弦的不同低音，属音解决仍落转位；尾F-A作下一句前属，不循环。|Spicer|prechorus|concept-only|C|4/4
+FragileTonic|欺骗后才现主和弦转位|C/E@8 Fm/Ab@4 G/B@4 C/G@4 Am/C@4 Dm/F@4 G7/B@4 Am@8|ionian|color|deceptive|no|前段C始终在转位低音，G7转Am而非C构成真实欺骗；不出现根位C，桥段收在相对小调。|Spicer|bridge|concept-only|C|4/4
+FragileTonic|首拍主音由低音三度托住|C/E@8 F/A@4 Dm/F@4 G/B@4 C/G@4 Am/C@4 F/A@4 Dm/F@8|ionian|loop|open|yes|C始终是和弦根却无根位低音，低音E-A-F-B-G-C形成独立线条；末ii转位可接首C/E，主音保持脆弱。|Spicer|verse|concept-only|C|4/4
+FragileTonic|借用小四后的根位回避|C/G@8 Dm/F@4 Em/G@4 Fm/Ab@4 C/G@4 Am/C@4 G/B@4 Gsus4@8|ionian|color|open|no|主功能只在C/G的共同音与低音G中暗示，iv借用强化不稳定；末挂留V留给副歌，不循环。|Spicer|prechorus|concept-only|C|4/4
+FragileTonic|二级副属指向转位主和弦|Dm/F@8 G/B@4 C/E@4 A7/C#@4 Dm/F@4 G7/B@4 C/G@8 F/A@8|ionian|develop|open|no|Dm-F-A与G-B-C两组ii-V-I经转位呈现，A7/C#是V/ii并解决到Dm/F；C始终不落根位，尾F/A开放，不循环。|Spicer|chorus|concept-only|C|4/4
+PedalRelease|C踏板上的四种上方根音|C@8 G/C@4 F/C@4 Dm7/C@4 Am/C@4 F/C@4 G/B@4 C@8|ionian|develop|modal-arrival|no|低音C持续支撑属、下属、ii与vi色彩，G/B才放开踏板并回C；末段只出现一次不循环。|Uchiyama|verse-chorus|concept-only|C|4/4
+PedalRelease|降七上层和弦压在C踏板|C@8 Bb/C@4 F/C@4 Gm/C@4 Bb/C@4 F/A@4 Gm@4 C@8|mixolydian|color|modal-arrival|no|C踏板让Bb与Gm听作上层摇滚色块，F-A后释放到Gm再回C；无G大属，作为桥段一次性模态落点。|Uchiyama|bridge|concept-only|C|4/4
+PedalRelease|利底亚上层二级与踏板释放|C@8 D/C@4 Em/C@4 G/C@4 F#dim/C@4 D/C@4 C/E@4 C@8|lydian|develop|modal-arrival|no|C低音贯穿利底亚D、Em和升四减和弦，末两拍先移E再落C根音；不重复踏板段。|Uchiyama|intro-verse|concept-only|C|4/4
+PedalRelease|A小调踏板越过自然小调平台|Am@8 C/A@4 Dm/A@4 F/A@4 G/A@4 F/A@4 Am/G@4 Dm@8|aeolian|develop|open|no|低音A托住上层III(C/A)、iv(Dm/A)、VI(F/A)与VII(G/A)，末Am/G才打破踏板；尾iv送往预副歌，不回接。|Uchiyama|verse-prechorus|concept-only|A|4/4
+PedalRelease|多利亚A踏板松至D|Am@8 D/A@4 G/A@4 Bm/A@4 D/A@4 G/A@4 Am/G@4 D@8|dorian|develop|transition|no|低音A横跨D、G与Bm上层多利亚平台；Am/G保留小三和弦并释放踏板，末D只作段落转接，不改称全曲新调。|Uchiyama|prechorus-chorus|concept-only|A|4/4
+PedalRelease|弗里吉亚半音色块释放至属下方|Am@8 Bb/A@4 Gm/A@4 Dm/A@4 Bb/A@4 Gm/A@4 Am/G@4 Dm@8|phrygian|color|transition|no|A踏板承接Bb-A半音摩擦，最后改G低音落Dm供后句接续；局部A弗里吉亚由Am与Bb支持，非整曲调性声明。|Uchiyama|bridge|concept-only|A|4/4
+PedalRelease|C踏板下属平台回到起点|C@8 F/C@4 Dm/C@4 Bb/C@4 F/C@4 Gm/C@4 F/A@4 C@8|mixolydian|loop|open|yes|C低音让IV、ii与bVII共享稳定踏板，尾F-A留共同音接回C踏板起句；循环不以属主终止。|Uchiyama|chorus|concept-only|C|4/4
+PedalRelease|主音踏板被副属打断|C@8 F/C@4 Dm/C@4 G/C@4 F/C@4 G7/B@4 Am@4 Dm@8|ionian|develop|open|no|前五和弦保持C低音，G7/B才解除踏板并转向Am；尾Dm指向下段，踏板不作循环。|Uchiyama|verse-prechorus|concept-only|C|4/4
+FunctionalCross|二级五级与小调五度链交叉|Dm7@4 G7@4 C/E@4 Am@4 Bm7b5@4 E7@4 Am@8 F@8|ionian|develop|transition|no|前半ii-V-I转位，后半Bm半减-E7将局部重心转A小调；末F打开放回C框架，不用卡农下行低音。|Uchiyama|bridge|concept-only|C|4/4
+FunctionalCross|三层副属链跨越主歌边界|C@8 B7@4 Em@4 A7@4 Dm@4 G7@4 C/E@4 Am@8|ionian|develop|ambiguous|no|B7先落iii，A7转ii后由G7到C/E，尾vi形成欺骗式续句；根音链不是Canon的I-V-vi-iii。|Uchiyama|verse-chorus|concept-only|C|4/4
+ModalAnswer|利底亚共同音枢纽转回主和弦|C@8 D@4 Em@4 Bm@4 F#dim@4 G@4 D@4 C@8|lydian|develop|modal-arrival|no|D大和弦与Bm共享升四利底亚音，F#dim-G为抬升后撤回；不经过属七，尾C只作模态到达。|Ramage|prechorus|concept-only|C|4/4
+FunctionalCross|降七摇滚侧门穿过属链|C@8 A7@4 Dm@4 Bb@4 F/A@4 D7@4 Gm@4 C@8|mixolydian|color|modal-arrival|no|A7-Dm与D7-Gm两段属链被Bb-F侧门隔开，C仍由开头结尾锚定；最终模态落C而非照搬卡农轮廓。|Uchiyama|bridge|concept-only|C|4/4
+ModalAnswer|A多利亚的升六度五度应答|Am@8 D@4 G@4 C@4 F#dim@4 Bm@4 Em@4 Am@8|dorian|loop|modal-arrival|yes|Am中心由首尾固定，D与F#dim突出多利亚升六；后一组和弦作为前组应答回Am，边界可循环但非卡农根音序列。|Duinker|chorus|concept-only|A|4/4
+ModalAnswer|弗里吉亚局部中心的降二回环|Am@8 Bb@4 C@4 Dm@4 Bb@4 Gm@4 Am@4 Dm@8|phrygian|develop|open|no|Am-Bb-C显出A弗里吉亚，Gm-Am回句维持局部中心；末Dm转向下一段，避免全曲调性外推。|Spicer|prechorus|concept-only|A|4/4

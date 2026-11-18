@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<vst-xml version="1.3">
+  <sourceApp>ParserTestFixture</sourceApp>
+  <chord id="solo"><name>D♭m7 &amp; color</name><projectTime domain="quarterNotes">12.5</projectTime><pitches>D♭1;F♭2;A♭2;C♭3;</pitches><keyNote>61</keyNote><bassNote>25</bassNote><mask>0xFFFFFFFF</mask></chord>
+</vst-xml>

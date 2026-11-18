@@ -1,0 +1,29 @@
+{
+  "name": "Case B · C-Am-A7-Dm",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "C",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "Am",
+      "start": 4,
+      "duration": 2
+    },
+    {
+      "name": "A7",
+      "start": 6,
+      "duration": 1
+    },
+    {
+      "name": "Dm",
+      "start": 7
+    }
+  ]
+}

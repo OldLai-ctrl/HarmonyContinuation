@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "reviews": [
+    {
+      "id": "V8_01_009",
+      "musicSignature": "4/4|9:9:5:0xa91@4.000|5:5:4:0x231@4.000|8:8:4:0x189@4.000|10:10:1:0x4a4@4.000|0:0:5:0x48d@4.000|3:3:4:0x48c@4.000|5:5:5:0x1a9@4.000|8:8:4:0x189@4.000",
+      "ending": "center_transition",
+      "continuingTail": true,
+      "groupingQN": [],
+      "purpose": "Continue the chromatic-mediant bridge as a center transition. Use the next phrase to test or establish the destination rather than treating the Abmaj7 tail as a standalone closed section.",
+      "reason": "The authored eight-event source and its original ending are preserved, but the even four-QN motion continues through Fm9–Abmaj7 and the current review gives no independent musical reason for an event-8 boundary. Treat this as continuing development pending the following context. This is original editorial design, not a commercial-song excerpt, and does not represent a user-audition pass.",
+      "reviewStatus": "primary-editorial-review-human-pending"
+    },
+    {
+      "id": "V8_01_010",
+      "musicSignature": "4/4|2:2:5:0x235@4.000|4:4:5:0x894@4.000|5:5:4:0x2b1@4.000|7:7:1:0x894@4.000|9:9:5:0xa91@4.000|11:11:8:0xa24@4.000|0:4:4:0x895@4.000|5:9:4:0x2b1@4.000",
+      "ending": "open_unresolved",
+      "continuingTail": true,
+      "groupingQN": [],
+      "purpose": "Keep the ascending-bass sequence available for further development after this source instead of treating Fmaj9/A as a conclusive phrase boundary.",
+      "reason": "The original eight events are preserved. The tail Bm7b5–Cmaj9/E–Fmaj9/A continues in four-QN motion with bass B–E–A, while the current review gives no independent reason for ending at event 8. Keep the endpoint open and require later context to confirm the larger phrase. This is original editorial design, not a commercial-song excerpt, and does not represent a user-audition pass.",
+      "reviewStatus": "primary-editorial-review-human-pending"
+    },
+    {
+      "id": "V7_04_044",
+      "musicSignature": "4/4|0:0:5:0x489@4.000|5:0:1:0x221@4.000|10:0:1:0x425@4.000|0:0:5:0x489@4.000|3:7:1:0x488@4.000|2:9:2:0x224@4.000|5:9:1:0x221@8.000",
+      "ending": "modal_development",
+      "continuingTail": false,
+      "groupingQN": [
+        16,
+        16
+      ],
+      "purpose": "Present a two-part modal-development unit that can continue into later modal or subdominant material; treat its endpoint as a sectional pause, not a cadence.",
+      "reason": "The first 16 QN establish the C pedal and modal center. The second 16 QN release the pedal into G–A bass motion and finish on F/A held for 8 QN, a stable Dorian IV6 sonority. This supports a phase pause with further material expected afterward. This is original editorial design, not a commercial-song excerpt, and does not represent a user-audition pass.",
+      "reviewStatus": "primary-editorial-review-human-pending"
+    },
+    {
+      "id": "V7_04_052",
+      "musicSignature": "4/4|0:0:5:0x489@8.000|1:0:1:0x123@4.000|0:0:5:0x489@4.000|10:10:5:0x522@4.000|8:8:4:0x189@4.000|1:1:1:0x122@4.000|0:7:5:0x489@4.000",
+      "ending": "loop_return",
+      "continuingTail": false,
+      "groupingQN": [
+        16,
+        16
+      ],
+      "purpose": "Support a purposeful loop return to the same-tonic background; do not expose it as an independent open sequence with no return.",
+      "reason": "The first 16 QN establish Cm with long values and a Db/C pedal color. The next 16 QN move through Bbm–Ab–Db and return through Cm/G to the same-C-minor background, giving a repeatable loop boundary rather than an independent open ending. This is original editorial design, not a commercial-song excerpt, and does not represent a user-audition pass.",
+      "reviewStatus": "primary-editorial-review-human-pending"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+family|title|events|mode|intent|ending|boundary|basis|source|section|case|meter
+JapaneseSixth|半音反向六度回主后再开放|C@8 Am@4 F@4 Daug/Ab@4 C/G@4 Dm7@4 Gsus4@8|ionian|color|open|no|D-F#-A#上方增三配Ab低音，Ab与F#可趋向G，回C/G后ii-悬V重开；具体声部分配需配器决定。|Nazare|bridge-prechorus|Japanese Sixth; mechanism-only|4/4
+JapaneseSixth|王道尾部的增三低音门|Cmaj7@4 Fmaj7@4 G@4 Em7@4 Am@4 Daug/Ab@4 C@4 F@8|ionian|loop|open|yes|王道vi后Daug/Ab的四音张力回C，再F长平台；F到首C下属回接，增和弦承担真实返回功能。|Nazare|chorus|Japanese Sixth; mechanism-only|4/4
+JapaneseSixth|主音踏板解除后的增六色彩|C@4 F/C@4 G/C@4 C@4 Fm@4 Daug/Ab@4 C/E@4 E7@8|ionian|color|transition|no|C踏板与借Fm积累Ab色彩，Daug/Ab回C/E后E7指向下一Am段；末属不算C解决。|Nazare|chorus-bridge|Japanese Sixth; mechanism-only|4/4
+JapaneseSixth|降三转调回程的增六桥|C@8 Ab@4 Bb7@4 Eb@8 Fm7@4 Daug/Ab@4 C@4 Dm7@4 G@8|ionian|develop|open|no|Ab-Bb-Eb确认降三局部中心，Fm后增三复合把Ab低音导回原主，ii-V再启动下一轮。|Nazare|postchorus|Japanese Sixth; editorial return application|4/4
+JapaneseSixth|半音低音下降中的增三复合|Cmaj7@4 Am@4 Am/G@4 D/F#@4 F@4 Daug/Ab@4 C/G@4 Fmaj7@8|ionian|color|open|no|A-G-F#-F前线与Ab-G后线分成两次手势，增三上方F#/A#加强回C/G的色彩，末F保持开放。|Nazare|bridge|Japanese Sixth; mechanism-only|4/4
+JapaneseSixth|同主小调的增六回归|Cm@8 Ab@4 Fm@4 Daug/Ab@4 Cm/G@4 Bb@4 Fm@8|aeolian|loop|open|yes|Cm长驻定中心，增三复合的D/F#/A#是外来导向，落Cm/G再Bb-Fm；Fm回Cm为模态下属回接。|Nazare|bridge|Japanese Sixth; original minor extension not source example|4/4
+JapaneseSixth|增六色彩后借小四的双延迟|C@8 F@4 Daug/Ab@4 Fm6@4 C/E@4 Dm7@4 G7@8|ionian|color|open|no|增六复合没有立刻归主而留Ab于Fm6，再C/E短驻；ii-V终点是段落准备，声部目标有延迟。|Nazare|prechorus|Japanese Sixth; original delayed-resolution extension|4/4
+JapaneseSixth|副歌中段主功能改作开放尾声|Cmaj7@4 E7@4 Am@8 Dm7@4 G7@4 C@4 Daug/Ab@4 C/G@4 F@8|ionian|loop|open|yes|前句真实ii-V-I只居中，增六回主转位后F长平台使整句保持循环；F到C边界有主下属共享音。|Nazare|chorus-postchorus|Japanese Sixth; mechanism-only|4/4

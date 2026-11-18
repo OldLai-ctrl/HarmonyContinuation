@@ -1,0 +1,88 @@
+#include "DemoScenario.h"
+#include "ProgressionJson.h"
+#include "benchmark/BenchJson.h"
+#include <fstream>
+#include <iterator>
+#include <regex>
+#include <stdexcept>
+
+namespace harmony::demo {
+ScenarioResult loadScenario(const std::filesystem::path& path) {
+    ScenarioResult result;
+    try {
+        std::ifstream file(path,std::ios::binary);
+        if (!file) throw std::runtime_error("cannot open demo scenario");
+        const std::string data(std::istreambuf_iterator<char>{file},{});
+        if (data.size()>65536) throw std::runtime_error("demo scenario too large");
+        auto field=[&](const char* key)->std::optional<std::string> {
+            std::smatch m; const std::regex re(std::string("\"")+key+"\"\\s*:\\s*\"([^\"]+)\"");
+            if (std::regex_search(data,m,re)) return m[1].str(); return std::nullopt;
+        };
+        result.scenario.name=field("name").value_or(path.stem().string());
+        std::smatch m;
+        if (std::regex_search(data,m,std::regex("\"tempo\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)")))
+            result.scenario.tempo=std::stod(m[1].str());
+        if (result.scenario.tempo<30 || result.scenario.tempo>300) throw std::runtime_error("invalid demo tempo");
+        if (std::regex_search(data,m,std::regex("\"meter\"\\s*:\\s*\\[\\s*([0-9]+)\\s*,\\s*([0-9]+)\\s*\\]"))) {
+            result.scenario.meterNumerator=std::stoi(m[1].str()); result.scenario.meterDenominator=std::stoi(m[2].str());
+        }
+        if (result.scenario.meterNumerator<1 || result.scenario.meterNumerator>32 ||
+            result.scenario.meterDenominator<1 || result.scenario.meterDenominator>32) throw std::runtime_error("invalid demo meter");
+        const auto chordKey=data.find("\"chords\"");
+        if (chordKey==std::string::npos) throw std::runtime_error("missing chords");
+        const auto begin=data.find('[',chordKey);
+        if (begin==std::string::npos) throw std::runtime_error("missing chord array");
+        const auto end=data.find(']',begin);
+        if (end==std::string::npos) throw std::runtime_error("unclosed chord array");
+        auto parsed=dev::parseProgressionJson(std::string_view(data).substr(begin,end-begin+1));
+        if (!parsed) throw std::runtime_error(parsed.error);
+        result.scenario.chords=std::move(parsed.events);
+        if (result.scenario.chords.size()>maxImportedChordEvents || !sortAndInferDurations(result.scenario.chords)) throw std::runtime_error("invalid demo chords");
+        if (auto value=field("forcedKey")) {
+            constexpr const char* names[]{"C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"};
+            bool found{};
+            for (int i=0;i<12;++i) for (int mode=0;mode<2;++mode) {
+                const auto label=std::string(names[i])+(mode?":minor":":major");
+                if (*value==label) { result.scenario.forcedKey=KeySignature{static_cast<PitchClass>(i),mode?Mode::Minor:Mode::Major}; found=true; }
+            }
+            if (!found) throw std::runtime_error("invalid forcedKey");
+        }
+        if (auto value=field("style")) {
+            if (const auto parsed=styleFromSlug(*value)) result.scenario.style=*parsed;
+            else throw std::runtime_error("invalid style");
+        }
+        if (auto value=field("intent")) {
+            for (const auto& [name,intent]:std::initializer_list<std::pair<const char*,PhraseIntent>>{
+                {"develop",PhraseIntent::Develop},{"resolve",PhraseIntent::Resolve},{"loop",PhraseIntent::Loop},{"color",PhraseIntent::Color}})
+                if (*value==name) result.scenario.intent=intent;
+            if (!result.scenario.intent) throw std::runtime_error("invalid intent");
+        }
+        if(auto tendency=field("tendency")) {
+            if(*tendency=="conservative")result.scenario.tendency=HarmonicTendency::Conservative;
+            else if(*tendency=="bold")result.scenario.tendency=HarmonicTendency::Bold;
+            else if(*tendency!="balanced")throw std::runtime_error("invalid tendency");
+        }
+        if(data.find("\"melody\"")!=std::string::npos) {
+            const auto json=benchmark::json::parse(data);
+            for(const auto& item:json.at("melody").items()) {
+                auto event=parseMelodyNote(item.at("note").text());
+                if(!event)throw std::runtime_error("invalid melody note");
+                event->startQN=item.at("startQN").finite();event->durationQN=item.at("durationQN").finite();
+                if(item.object.contains("role")) {
+                    const auto& role=item.at("role").text();
+                    if(role=="top")event->role=ConstraintRole::TopVoice;
+                    else if(role!="present")throw std::runtime_error("invalid melody role");
+                }
+                if(item.object.contains("strictness")) {
+                    const auto& strictness=item.at("strictness").text();
+                    if(strictness=="hard")event->strictness=ConstraintStrictness::Hard;
+                    else if(strictness!="soft")throw std::runtime_error("invalid melody strictness");
+                }
+                result.scenario.constraints.melody.push_back(*event);
+            }
+            if(!validConstraints(result.scenario.constraints))throw std::runtime_error("invalid melody constraints");
+        }
+    } catch (const std::exception& e) { result.scenario={}; result.error=e.what(); }
+    return result;
+}
+} // namespace harmony::demo

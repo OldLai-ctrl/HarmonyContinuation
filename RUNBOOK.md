@@ -1,0 +1,318 @@
+# 按任务运行步骤
+
+先搜索所需标题，只读取对应步骤。以下命令是未在本轮执行的模板，需结合已配置方法与本机环境核实；列出命令不代表执行成功，也不授予安装、提交或发布权限。实际对象按 [MAP.md](MAP.md) 核实，任务允许对应操作后再执行。
+
+## 接手与切换
+
+在目标 checkout 执行 `git status -sb`、`git remote -v`、`git log -1 --oneline`；搜索 NOW 的当前任务。对不上基线先定位分支、未提交内容或待同步提交，不能由目录名推断版本。切换分支、清理目录或恢复旧产物前读 RISKS 的对应条目；保留开发者未提交文件。
+
+## 构建
+
+前置：CMake 3.25+、C++20/MSVC x64、完整离线 VST3 SDK 3.8.x（当前基线使用 3.8.1）。在已初始化 MSVC x64 的开发终端使用本机 CMake / Ninja。用全新或匹配此 checkout 的构建目录；已有缓存不得直接改生成器。
+
+```powershell
+# 先配置本机已核实的 SDK 环境变量；缺失时停止配置。
+$hcSdk = $env:VST3_SDK_ROOT
+if ([string]::IsNullOrWhiteSpace($hcSdk)) { throw 'VST3_SDK_ROOT 待配置并核实' }
+cmake -S . -B build-v09 -G "Ninja Multi-Config" -DVST3_SDK_ROOT="$hcSdk" -DHC_PRERELEASE= -DSMTG_RUN_VST_VALIDATOR=OFF
+cmake --build build-v09 --config Release --target HarmonyContinuation library_manager -j 6
+```
+
+多配置构建使用 `Release/library_manager.exe`；`tools/build-installer.ps1` 也支持元数据为 Release 的单配置 Ninja 根目录 `library_manager.exe`，VST3 bundle 仍在 `VST3/Release/`。子进程无法读 Git 时可传当前 `git rev-parse --short=7 HEAD` 到 `HC_GIT_COMMIT_OVERRIDE`；不能沿用旧覆盖值。验证生成的 `ProductVersionGenerated.h` 与 `moduleinfo.json`；构建后置 Validator 结果也要记录，避免重复运行。
+
+### dev.3 Cubase 输入可靠性构建
+
+使用独立 `build-v4-dev3`，Release / Ninja，配置 `-DHC_PRERELEASE=dev.3 -DHC_FACTORY_LIBRARY_VERSION=4 -DSMTG_RUN_VST_VALIDATOR=OFF -DSMTG_CREATE_PLUGIN_LINK=OFF`。从源码提交构建 HarmonyContinuation、library_manager 和直接相关测试；源码版本写入 ProductVersionGenerated.h，包内 Build ID 必须与源码一致。统一包由 `tools/build-installer.ps1 -BuildDirectory build-v4-dev3 -OutputDirectory build-installer/v4-0.10.0-dev.3 -Iscc <已核实ISCC>` 生成。保留旧 dev.1/dev.2 与 v0.9.0 产物。
+
+只运行相关 12 项检查，具体名称及证据见 [dev.3 报告](docs/DEV3_CUBASE_RELIABILITY_FIX.md)。新 CubaseReliabilityTests 生成明确标记的模拟字段冲突对照；不可替代真实宿主。真实采集操作见 [人工清单](docs/V4_DAW_ACCEPTANCE.md)。诊断只有用户主动导出才写本地文件。
+
+安装检查复用 `tools/test-dev2-upgrade.ps1 -ProductVersion 0.10.0-dev.3 -PackageDirectory build-installer/v4-0.10.0-dev.3 -TestRoot <工作区内全新隔离目录> -Iscc <已核实ISCC> -Cases fresh,official-v09,rc-manual,unknown,official-content-layout`。旧版本夹具和 RC 参考须已核实；不得指向生产安装。受限环境如禁止独立随机 HKCU 测试登记，应保留回滚日志，在获准的隔离环境重跑，不通过关闭保护判断绕过。当前这 5 类共 413 检查通过，日志随包保存；dev.2 历史安装证据见 [升级修复](docs/INSTALLER_DEV2_UPGRADE_FIX.md)。
+
+## 局部自动验收
+
+### Factory V9-B 建库与独立回放
+
+按 [MAP](MAP.md#v9-b-外部证据身份) 核对现有输入及已完成输出。本轮复用正式 V8、冻结 V9-A 和既有 RS200。Jazzomat 原始 DB 来自 [官方下载页](https://jazzomat.hfm-weimar.de/download/download.html)。仅在本地研究环境使用原标注。下列命令使用 Python 3.12+、MSVC x64 开发终端和 CMake/Ninja；Worker 和编库输出路径须全新。已有完整结果时从汇总步骤恢复。
+
+```powershell
+$e = "../HarmonyContinuation-v9-b-evidence"
+$a = "../HarmonyContinuation-v9-a-evidence"
+$b5 = "../HarmonyContinuation-b5-evidence"
+$v8 = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$v9a = "$a/library/factory.db"
+python -B tools/v9b/diagnose_v9a.py --v9a $a --output "$e/diagnosis.json"
+python -B tools/v9b/freeze_confirmation.py --v9a $a --b5 $b5 --wjazzd "$e/confirmation/sources/wjazzd-range.db" --output "$e/confirmation"
+python -B tools/v9a/encode.py --edition B --a2 "$a/sources/a2-candidate-v8-comparison.csv" --catalog "$a/confirmation-v9/factory_catalog.jsonl" --output "$e/materials"
+cmake -S tools/b5/factory -B "$e/replay-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$e/replay-build" --target b5_factory_replay factory_v6_compiler
+New-Item -ItemType Directory -Force "$e/library" | Out-Null
+$compiler = "$e/replay-build/formal-source/factory_v6_compiler.exe"
+$replay = "$e/replay-build/b5_factory_replay.exe"
+$v9b = "$e/library/factory.db"
+$functions = "$e/library/factory-functions.db"
+& $compiler --v9-b-incremental $v9a "$e/materials/candidates.json" $v9b
+& $compiler --v9-b-incremental $v9a "$e/materials/candidates.json" $functions --complete-functions
+# 对照 MAP 核验库哈希，用同一程序按序回放
+foreach ($cohort in @("rock","jazz")) {
+    foreach ($entry in @(@("v8",$v8,8,1288),@("v9a",$v9a,9,1312),@("v9b",$v9b,9,1332),@("v9b-functions",$functions,9,1332))) {
+        $sha = (Get-FileHash $entry[1]).Hash.ToLower()
+        & $replay $entry[1] "$e/confirmation/$cohort.jsonl" "$e/$cohort-$($entry[0])" --expect $entry[2] $entry[3] $sha
+        if ($LASTEXITCODE -ne 0) { throw "回放失败 $cohort $($entry[0])" }
+    }
+}
+$shaB = (Get-FileHash $v9b).Hash.ToLower()
+$shaFunctions = (Get-FileHash $functions).Hash.ToLower()
+& $replay $v9b "$e/materials/controls.jsonl" "$e/controls-v9b" --expect 9 1332 $shaB
+& $replay $functions "$e/materials/controls.jsonl" "$e/controls-v9b-functions" --expect 9 1332 $shaFunctions --check-snapshots
+python -B tools/v9b/evaluate.py --evidence $e --output "$e/materials/hard-control-both.jsonl" --prepare-hard-control
+& $replay $functions "$e/materials/hard-control-both.jsonl" "$e/hard-both-v9b-functions" --expect 9 1332 $shaFunctions
+python -B tools/v9b/evaluate.py --evidence $e --v9a $a --cohort rock --cohort jazz --output "$e/evaluation.json"
+```
+
+核对硬约束探针的 `V9B_004 / key=0 / next=3` 为 Exact `melody_constraint` 和 Contextual `hard-constraints`。V9-A 重投影反事实可使用已存的原始回放，执行 `diagnose_v9a.py` 时增加 `--projection-dir` 指向 B 证据根，输出至 `diagnosis_projection_summary.json`。底层原始数据和生成快照留在外部，任何跨设备使用都依照 [MAP](MAP.md#v9-b-外部证据身份)。Worker 计时随复现环境变化。
+
+### Factory V9-A 建库与独立回放
+
+先按 [MAP](MAP.md#v9-a-外部证据身份) 校验 V8、RS200、A2 和 B5 文件身份。取得原数据时从 [Rock Corpus 官方分析](https://rockcorpus.midside.com/harmonic_analyses.html) 下载 expanded ZIP，作品索引用 [RS200 官方表](https://rockcorpus.midside.com/overview/rs200.txt)。下列为 Python 3.12+ 和已初始化 MSVC x64 的 CMake/Ninja。使用独立全新输出目录。
+
+```powershell
+$e = "../HarmonyContinuation-v9-a-evidence"
+$b5 = "../HarmonyContinuation-b5-evidence"
+$db8 = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$a2 = "$e/sources/a2-candidate-v8-comparison.csv"
+cmake -S tools/b5/factory -B "$e/replay-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$e/replay-build" --target b5_factory_replay factory_v6_compiler
+$replay = "$e/replay-build/b5_factory_replay.exe"
+python -B tools/v9a/freeze_rock.py --sources "$e/sources" --b5 $b5 --a2 $a2 --output "$e/confirmation"
+& $replay $db8 "$e/confirmation/confirmation.jsonl" "$e/confirmation-v8"
+python -B tools/v9a/encode.py --a2 $a2 --catalog "$e/confirmation-v8/factory_catalog.jsonl" --output "$e/materials"
+New-Item -ItemType Directory -Force "$e/library" | Out-Null
+$db9 = "$e/library/factory.db"
+& "$e/replay-build/formal-source/factory_v6_compiler.exe" --v9-a-incremental $db8 "$e/materials/candidates.json" $db9
+$sha = (Get-FileHash $db9).Hash.ToLower()
+# 与 MAP 中实验库哈希核对后再回放
+& $replay $db9 "$e/confirmation/confirmation.jsonl" "$e/confirmation-v9" --expect 9 1312 $sha
+& $replay $db9 "$e/materials/controls.jsonl" "$e/controls-v9" --expect 9 1312 $sha
+python -B tools/v9a/evaluate.py --evidence $e --prepare-trace --output "$e/confirmation/trace.jsonl"
+& $replay $db9 "$e/confirmation/trace.jsonl" "$e/confirmation-v9-trace" --expect 9 1312 $sha
+python -B tools/v9a/evaluate.py --evidence $e --trace "$e/confirmation-v9-trace" --output "$e/evaluation.json"
+```
+
+正式 V8 目录导出在现有 `smoke-v8-traced/` 与 `confirmation-v8/` 一致，编库可从现有导出继续。检查各输出目录的 `factory_identity.json` 与行数，已完成的回放可直接复用。硬旋律探针由 `materials/hard-melody.jsonl` 提供，以相同 V9 参数回放并核对指定来源的两路硬约束。计时和 JSON 的相应字节以本机实际回放为准。离线 Worker 使用隔离用户路径。实验库只有推荐回放验收，正式安装及 Wish/HCA 另行决定。
+
+### B7 Factory 覆盖与时值
+
+核对 [MAP](MAP.md#b7-外部证据身份) 的 B5/B6 冻结数据及正式 DB/HCA。复用 B6 Release 回放工具，跨设备按下方 B6 步骤重新构建。Python 用 3.12+。下方命令使用同级目录；每个 Worker 输出目录须全新。B7 重建输出的耗时字段随机器和负载变化。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+$b6 = "../HarmonyContinuation-b6-evidence"
+$b7 = "../HarmonyContinuation-b7-evidence"
+$db = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+$worker = "$b6/factory-clean-build/b5_factory_replay.exe"
+python -B tools/b7/b7_timing.py prepare --benchmark "$b5/benchmark" --b6 $b6 --output "$b7/cohorts-final"
+python -B tools/b7/b7_timing.py prepare --split validation --benchmark "$b5/benchmark" --b6 $b6 --output "$b7/cohorts-replication"
+New-Item -ItemType Directory -Force "$b7/replay","$b7/replication" | Out-Null
+foreach ($condition in @("real","grid","equal_span","open")) {
+    & $worker $db "$b7/cohorts-final/$condition.jsonl" "$b7/replay/$condition"
+    if ($LASTEXITCODE -ne 0) { throw "回放失败 $condition" }
+}
+& $worker $db "$b7/cohorts-final/real.jsonl" "$b7/replay/b6_on" --recover-consumed-tail
+foreach ($condition in @("real","grid")) {
+    & $worker $db "$b7/cohorts-replication/$condition.jsonl" "$b7/replication/$condition"
+    if ($LASTEXITCODE -ne 0) { throw "回放失败 $condition" }
+}
+python -B tools/b7/b7_timing.py compare --benchmark "$b5/benchmark" --b6 $b6 --cohorts "$b7/cohorts-final" --replays "$b7/replay" --output "$b7/timing-results.json"
+python -B tools/b7/b7_timing.py compare --benchmark "$b5/benchmark" --b6 $b6 --cohorts "$b7/cohorts-replication" --replays "$b7/replication" --output "$b7/replication-results.json"
+python -B tools/b7/b7_timing.py trace_inputs --cohorts "$b7/cohorts-final" --replays "$b7/replay" --output "$b7/trace-inputs.jsonl"
+& $worker $db "$b7/trace-inputs.jsonl" "$b7/trace-replay"
+python -B tools/b7/b7_timing.py diagnose --queries "$b7/trace-inputs.jsonl" --replay "$b7/trace-replay" --output "$b7/trace-summary.json"
+python -B tools/b7/b7_content.py --b5 $b5 --b6 $b6 --factory $db --output "$b7/content" --replay-queries "$b7/cohorts-final/real.jsonl" --replication-queries "$b7/cohorts-replication/real.jsonl"
+python -B "$b7/time-audit/timing_audit.py" --b5 $b5 --queries "$b7/cohorts-final/real.jsonl" --output "$b7/time-audit/timing_audit.json"
+```
+
+回放使用已核验的 B6 程序，重复利用已有结果时从相应 `compare`、`trace_inputs` 或 `diagnose` 命令开始。原始符号时值检查脚本随外部证据保留。分析的 V9 规格见 [B7 报告](docs/B7_FACTORY_COVERAGE.md#factory-v9-首批建设规格)，后续制库需新任务。
+
+### B6 Factory 检索与统计适配
+
+以 [MAP](MAP.md) 指定的 B5 冻结输入和正式 Factory V8 DB/HCA 为基础。以下命令在 B6 checkout 的 MSVC x64 开发终端执行，离线回放目录须全新。重跑 ON/OFF 计时按顺序执行。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+$b6 = "../HarmonyContinuation-b6-evidence"
+$db = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+python -B tools/b6/b6_factory.py prepare --benchmark "$b5/benchmark" --b5-replay "$b5/factory-replay" --output "$b6/cohorts"
+python -B tools/b6/b6_reliability.py --benchmark "$b5/benchmark" --output "$b6/reliability"
+cmake -S tools/b5/factory -B "$b6/factory-clean-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$b6/factory-clean-build" --target b5_factory_replay
+$replay = "$b6/factory-clean-build/b5_factory_replay.exe"
+& $replay $db "$b6/cohorts/diagnostic.jsonl" "$b6/diagnostic-off"
+python -B tools/b6/b6_factory.py diagnose --queries "$b6/cohorts/diagnostic.jsonl" --replay "$b6/diagnostic-off" --output "$b6/diagnosis.json"
+& $replay $db "$b6/cohorts/confirmation.jsonl" "$b6/holdout-off"
+& $replay $db "$b6/cohorts/confirmation.jsonl" "$b6/holdout-on" --recover-consumed-tail
+python -B tools/b6/b6_factory.py compare --queries "$b6/cohorts/confirmation.jsonl" --benchmark "$b5/benchmark" --baseline "$b6/holdout-off" --replay "$b6/holdout-on" --reliability "$b6/reliability" --output "$b6/holdout-comparison.json"
+```
+
+开发对照将最后三行的输入改为 `$b5/benchmark/factory_queries.jsonl`，回放目录改为 `development-off`、`development-on`，汇总名改为 `development-comparison.json`。工具读取 Worker 的实际顺序，统计排序在回放之后离线运行。复查硬约束时用外部 `sample-986-hard.jsonl` 运行同一回放并开启 `--recover-consumed-tail`，核对 `V3_HOME_055`、`key=4`、`next=3` 的 `melody_constraint`。
+
+另有 [MAP](MAP.md#b6-外部证据身份) 指定的定点端点探针，依赖 B5 构建库，探针目录内的 `run.cmd` 包含本机工具路径，迁移后先核对并调整再运行。新设备用新构建目录。当前证据的耗时可随机器、构建与负载变化。
+
+### B5 真实音乐续接统计
+
+本节已在 B5 工作树运行。离线工具使用 Python 3.12+ 标准库，本轮为 3.14.7。先从 [语料清单](docs/B5_CORPORA.md) 核对版本、使用权限及 SHA-256。证据根按 [MAP](MAP.md) 定位，以下为同级目录示例。
+
+```powershell
+$b5 = "../HarmonyContinuation-b5-evidence"
+python -B tools/b5/b5_benchmark.py prepare --sources "$b5/sources" --output "$b5/benchmark"
+python -B tools/b5/b5_benchmark.py fit --output "$b5/benchmark"
+python -B tools/b5/b5_benchmark.py test --output "$b5/benchmark"
+python -B tools/b5/b5_beat.py "$b5/benchmark"
+```
+
+`prepare` 读取复用的 G13.1 `billboard_events.jsonl` 和固定版 MPB CSV，保存归一化、固定作品组和候选，写 `freeze.json`。`fit` 读取训练和验证样本，保存压缩模型及 `selection.json`。`test` 校验冻结哈希后评估两个独立测试集。接手中断从第一个缺少完整输出的阶段续跑，已有 `freeze.json` 时可直接续跑拟合或测试。查看 `validation_metrics.json`、`test_metrics.json` 和 `beat_metrics.json`。先验模型身份以 `selection.json` 和 SHA-256 为准，本轮模型为离线研究制品。
+
+Factory 离线回放使用已初始化 MSVC x64 和 CMake/Ninja。保留正式 `factory.db` 与同目录 `factory.hca`，核对 [MAP](MAP.md) 的发布构建清单。运行前确认回放输出目录是新目录。
+
+```powershell
+$factoryDb = "../HarmonyContinuation-v011-delivery-20261110/stage-8/factory.db"
+cmake -S tools/b5/factory -B "$b5/factory-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$b5/factory-build" --target b5_factory_replay
+& "$b5/factory-build/b5_factory_replay.exe" $factoryDb "$b5/benchmark/factory_queries.jsonl" "$b5/factory-replay"
+python -B tools/b5/b5_factory.py --queries "$b5/benchmark/factory_queries.jsonl" --replay "$b5/factory-replay" --selection "$b5/benchmark/selection.json"
+```
+
+已有回放可复用，重跑时给新输出目录。回放调用正式 Worker 的灵感优先列表排序，并使用隔离路径。当前 B5 产品实验入口须等待 [D18](DECISIONS.md#d18-b5-用独立作品评估完整后句) 门槛通过后另行实现。
+
+### G13-C 产品集成定向检查
+
+当前可用包及最少宿主操作见同级 `HarmonyContinuation-g13c-test-20261110/README.md`，身份见 `BUILD_INFO.json`。当前构建为dev.16，BuildCommit `7b4000e364dc3506bd097f07319e7e67c2b67054`。产品固定编译仓库Billboard CC0表；研究profile继续用下方独立CLI。
+
+仅出现相关新增改动或失败时复用以下入口，不为接手续跑已通过检查：
+
+```powershell
+cmake --build build-g13 --target HarmonyContinuation HarmonyContinuationDemo GenerationIntegrationTests MidiExportTests LibraryCompatibilityTests
+./build-g13/GenerationIntegrationTests.exe <冻结FactoryV8.db> ../G13_GENERATED_LISTENING ../HarmonyContinuation-g13c-evidence
+./build-g13/MidiExportTests.exe
+./build-g13/LibraryCompatibilityTests.exe snapshot
+./build-g13/HarmonyContinuationDemo.exe --g13c-ui-smoke ../HarmonyContinuation-g13c-evidence/generated-ui-fg-em-am.txt --midi-smoke-input ../HarmonyContinuation-g13c-evidence/01-Open-Development-INPUT.mid
+```
+
+原生检查使用真实窗口与离屏上下文；后台执行应使用隐藏窗口。`--g13c-ui-smoke`只覆盖本轮Browse/生成来源/操作，历史 `--midi-workflow-smoke`继续保留原完整语义，其旧导航检查不在本轮宣称通过的范围。不要重复全量CTest、RCR、音乐基准或安装生命周期。详见[有效证据与修复](docs/G13C_PRODUCT_INTEGRATION.md)。
+
+### G13.1 三档语法实验
+
+沿用下方已配置的MSVC x64 Release `build-g13`，只增量构建 `phrase_generate` 和 `PhraseGenerationTests`。本轮当前先验是IdolSongsJp明确大调段的连接统计，加Billboard符号节奏/句尾回退；仅按已确认的非商业研究用途使用。纯Billboard CC0先验另存 `data/generation-priors/billboard-cc0.tsv`。
+
+```powershell
+./build-g13/PhraseGenerationTests.exe --g131 ../HarmonyContinuation-g131-corpus/derived/idol_nc_research/idol-research.tsv
+./build-g13/phrase_generate.exe ../G13_GENERATED_LISTENING/01-Open-Development/INPUT.json ../G13_1_GENERATED_LISTENING/conventional --style ../HarmonyContinuation-g131-corpus/derived/idol_nc_research/idol-research.tsv conventional
+# 另外两档使用 rich / bold，分别指定自己的输出目录。
+./build-g13/PhraseGenerationTests.exe --g131-media ../G13_1_GENERATED_LISTENING
+```
+
+交付目录含可直接运行CLI、研究先验和许可副本，最短运行方法见其README。三档均导出正常首选，不手改音符；实际低音必须沿用 `buildPerformance`。检查已通过时复用当前[证据](docs/G131_PHRASE_GRAMMAR_REVIEW.md)，不为接手重复运行。源码基线加文件哈希识别未提交构建，不把基线HEAD当作新二进制完整身份。
+
+### G13 独立生成入口
+
+在已初始化MSVC x64的终端配置独立Release目录，确认优化项为 `/O2 /Ob2 /DNDEBUG`：
+
+```powershell
+cmake -S . -B build-g13 -G Ninja -DCMAKE_BUILD_TYPE=Release -DHC_BUILD_PLUGIN=OFF -DHC_BUILD_GENERATION_EXPERIMENT=ON -DBUILD_TESTING=ON
+cmake --build build-g13 --target phrase_generate PhraseGenerationTests VoiceLeadingMetricsTests
+./build-g13/phrase_generate.exe ./input.json ./output bass-line
+# 可追加 2，选择该意图正常返回的第2条；省略意图则输出五种意图。
+./build-g13/PhraseGenerationTests.exe <已冻结FactoryV8.db> <检查输出目录>
+./build-g13/PhraseGenerationTests.exe --media ../G13_GENERATED_LISTENING
+```
+
+CLI输入为现有窄格式JSON和弦数组；保留start/duration/mask，缺duration为OPEN。当前CLI使用4/4、120BPM。音区计划须通过 `generation::buildPerformance` 同时送入Preview/MIDI；单用通用候选适配器不能保留它。新Recipe只用于实验，不送入旧Snapshot/Session。已通过证据见[G13报告](docs/G13_RELATION_GENERATION_REVIEW.md)，不要为接手重复整批检查。
+
+Factory V4 产品化：在 `build-v4-dev` 配置 `-DHC_FACTORY_LIBRARY_VERSION=4 -DHC_PRERELEASE=dev.1 -DSMTG_RUN_VST_VALIDATOR=OFF`，沿用已核实离线 SDK。从实现提交构建 Release 的 `HarmonyContinuation`、`library_manager`、`FactoryV4Tests`；运行 `FactoryV4Tests <证据目录>` 得到 28 条可发现性 TSV 和 4 份 MIDI，再运行无参数契约。必要时只运行相关 Matcher / Continuation / Enrichment 检查，TEMP/TMP 指向工作区测试目录。版本 0.10.0-dev.1，默认 Factory 4；V3 源数据与正式 staging 不改。用 `tools/build-installer.ps1 -BuildDirectory build-v4-dev -OutputDirectory build-installer/v4-0.10.0-dev.1 -RuntimeDirectory <已核实CRT> -Iscc <已核实ISCC>` 制作统一包，复制 MIDI/证据和人工清单，记录构建提交与哈希。使用 `tools/test-v4-installer.ps1` 的全新隔离路径验证此次兼容拦截与独立组件保护；不操作生产安装。详见 [产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)。
+
+v0.9.0 正式发布：从最终待 Tag 的干净 main 提交，仅构建一次 Release 插件与 library_manager，显式清空 HC_PRERELEASE / Git override 并关闭 Validator；打包一次到独立 release-0.9.0 目录，输出 HarmonyContinuation-0.9.0-Setup.exe，检查版本、Build ID、Factory、依赖与哈希。复用 RC3 28 项及 RC4 显示证据，不重复生命周期；main/Tag/构建提交一致后按授权推送，不创建 GitHub Release 页面。
+
+前置：相关测试目标已构建。搜索 `CMakeLists.txt` 的 `add_test` 获取真实测试名，先 `ctest --test-dir build-v09 -C Release -N`，再按修改选择 `-R`。例如：
+
+Factory V3 兼容桥只构建 `LibraryCompatibilityTests`，运行 `ctest --test-dir <build> -R '^LibraryV3_' --output-on-failure`。Library 2/3 数据 fixture 和 user.db 均在该测试独有的临时目录内创建、关闭、重新打开及清理，不读生产用户目录。具体格式、降级和测试边界见 [V3 契约](docs/LIBRARY_V3_COMPATIBILITY.md)。正式 main 默认 Library 3；当前 library/v4 默认 Library 4。`factory_legacy_database` 只用于历史 Library 2 测试。
+
+V3 收口只运行一次已有编译器：`db_compiler data/factory <build>/factory.db 3 data/factory-v3 LIBRARY_V3_SUMMARY.md`。它校验字段、和弦、统一音乐去重、元数据合并和 DB 读回，并输出短统计；不要另跑相同 lint。必要的新增内容冒烟运行 `FactoryCatalogTests --smoke`，仅两条代表案例走加载→推荐→MIDI；低音/转位/扩展音路径未改时复用已有 18 类证据。此前全新增内容消费者检查已通过，不因入口存在而重跑 `FactoryV3Catalog`、兼容桥四组或音乐基准。失败只修复受影响内容，再按当前任务授权校验。
+
+```powershell
+ctest --test-dir build-v09 -C Release -R '^(HostContractFLStudio|HostContractGeneric|HostContractCubase|EditorHostSmoke)$' --output-on-failure
+```
+
+其他阶段按任务授权选择 MIDI、状态或 UI 的定向入口；未改音乐算法时不因文档或名称变化重跑音乐基线。完整 CTest、Validator、42 例续写、30 例升级及其他全量回归统一留到 v1.0 正式发布前，不作为 v0.9 的关口。续写基准原有 3 处结构提示可能导致非零退出，不能自动调权重消除它们。命令参数搜索对应 CLI 的 usage。
+
+### Factory V7 隔离内容编译与窄验证
+
+仅用于独立V7内容工作树。当前已执行的工具配置为`HC_BUILD_PLUGIN=OFF`、`HC_BUILD_FACTORY_V6_EXPERIMENT=ON`，既有工具目标名仍为`factory_v6_compiler`/`FactoryV6Tests`；不因此切换插件或活动库版本。构建目录须对应当前checkout，冻结输入采用已核实的G5 Factory6/1016 DB/HCA。
+
+```text
+factory_v6_compiler --v7-incremental <g5.db> data/factory-v7/candidates.json data/factory-v7/metadata.json data/factory-v7/approved-ids.txt <proposal.db> <experiment.db> <g5.hca> <v7.hca> <summary.txt>
+FactoryV6Tests --v7-incremental <g5.db> data/factory-v7/candidates.json data/factory-v7/metadata.json data/factory-v7/approved-ids.txt <proposal.db> <experiment.db> <g5.hca> <v7.hca> <media-dir>
+```
+
+所有输出使用独立路径；第二条会执行新内容身份、6代表查询、4媒体、Wish正负例、Enrich与一次计时，不运行默认V6全量分支。已通过证据在输入、相关代码未变时继续有效，只有具体失败或新增改动才重跑受影响部分。[本轮范围、发现性限制与哈希](docs/FACTORY_V7_REVIEW.md)。安装与DAW留待后续集成授权。
+
+## 真机验收
+
+Phase4D dev.4：使用 [中文清单](docs/PHASE4D_CUBASE_ACCEPTANCE.md) 与 [修复报告](docs/PHASE4D_CUBASE_FEEDBACK_FIX_20261012.md)。工程拍号可变，XML输入不以当前宿主拍号覆盖Session；时值比例由对齐输入duration/onset估计，拍号meta不等于实际时间适配。ON/OFF是独立编译包，高级分析显示实际结果模式，宿主诊断显示编译状态；两包Phase3A均OFF。R01/R02需主动导出本地输入与推荐诊断，再与模拟证据比较。该轮完整OFF/ON回归已获用户授权并完成，历史“留到v1.0”范围不限制本轮已授权门禁。
+
+前置：宿主已关闭并安装正确包，确认版本/提交/哈希与 Factory 版本。FL 使用 `docs/FL_STUDIO_TEST_GUIDE.md`；Cubase 按需求搜索 `docs/CUBASE_TIMELINE_SYNC_TEST.md` 和版本验收文档。记录宿主完整版本、操作、结果及最小复现，区分通过/失败/未测。模拟宿主、Demo、内存往返不能证明真实项目重开。更新 NOW 的待验收项，持久风险更新 RISKS。
+
+## 打包与安装
+
+前置：已确认的 Release 构建、Inno Setup 6.7+、可分发的 MSVC x64 CRT、有效 factory.db。搜索并读取 `tools/build-installer.ps1` 的参数段，再显式传 `-BuildDirectory build-v3-plugin -Iscc <本机ISCC> -RuntimeDirectory <本机CRT>`。只更新库由同一 Setup 选择 Factory Library 组件，脚本不再生成独立库安装器。
+
+统一安装逻辑变动时按 `tools/test-unified-installer.ps1` 的隔离包前置条件验收；需要新的工作区内隔离路径，禁止当成生产安装器测试。生产安装先关闭宿主，需要管理员写入标准目录；保留用户库和历史 Factory。`verify-installed-build.ps1` 的默认路径来自旧 build-vst3 和随包 DB，使用独立库时须显式指定实际工作区/安装二进制及实际活动库路径；完整包另核对语言与模块元数据哈希。
+
+正式包复用的 RC3 28 项安装结果保留于 `build-installer/release-0.9.0/evidence/`，旧 V3 过程记录可查 Git 历史。安装维护逻辑未改时复用，不重复生命周期；本轮正式版只版本化输出文件名。从干净提交构建一次 Release，关闭 Validator、清除旧 Git override；正式版只生成 `HarmonyContinuation-0.9.0-Setup.exe` 及 `SHA256SUMS.txt`。核对插件、Library 3 / Schema 2、版本和 Git 标识；完整提交及证据随包记录在 `BUILD_INFO.json`。通过后停止，不进入音乐回归。
+
+## 交付与同步
+
+### Phase6 dev.7 另一设备接手
+
+1. 核实并保管当前目录的未提交改动。当前主 checkout 分支名为 `development/phase5-20261013`；Phase6 插件 BuildCommit 为 `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。换设备先核对远端、分支、HEAD 与工作区差异，按 [MAP](MAP.md) 的同步边界接续，不强制 reset。
+2. 从既有未发布 GitHub 草稿取得 Phase6 Test Handoff，按 `HANDOFF_PHASE6_SHA256SUMS.txt` 核验。交付目录为同级 `HarmonyContinuation-phase6-delivery-20261014/`；原始验证材料为同级 `HarmonyContinuation-phase6-validation-20261014/`。在 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 及包内证明核对最终门禁和 Setup SHA，不复用旧包身份。
+3. 安装时只使用 Phase6 的单一 Setup，确认 About 显示 `0.10.0-dev.7` 和 BuildCommit `8c27c27a0c50da7fb0cf991f60ecde66890116f0`。该包提供一个 VST3 插件内的 Legacy、HarmonyFirst、Abstract 三种运行时模式；关闭并重新打开宿主工程后模式恢复 Legacy，需重新选择测试模式。Phase3A 保持 OFF。
+4. 确认 Factory V4 未改（SHA-256 `74C529828F8C4B934BBAF4ADA719AA95491AB498B58885522124FF6505671534`）；不启用 V5，隔离评估 MIDI/证据另附，无 Phase6 Candidate 预设。随后按 [Phase 6 中文验收清单](docs/PHASE6_CUBASE_ACCEPTANCE.md) 逐项记录真实 Cubase 与试听结果，覆盖 R01/R02、拍号、FULL/SKELETON、Preview/MIDI、工程保存重开、User Library 和诊断导出。模拟宿主不能代替真实 Cubase。
+5. Phase5、Phase5.1 的旧报告、验收清单和增补包保持历史状态，分别见 [Phase 5 报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[Phase 5.1 收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [MAP](MAP.md)。Phase6 正式发布未授权。
+
+### Phase5 dev.6 另一设备接手
+
+1. 核实并保管现有未提交文件。新目录可 `git clone --branch development/phase5-20261013 https://github.com/OldLai-ctrl/HarmonyContinuation.git HarmonyContinuation-release`；已有目录 fetch 后切分支并 `git pull --ff-only`，不强制reset。GitHub推送仍须核实本机代理。
+2. 读取 AGENTS、NOW、[Phase5报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[Phase5中文清单](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [Phase5.1收尾报告](docs/PHASE51_CLOSEOUT_20261014.md)。插件构建提交仍是 `3a582e4`；Phase5.1 接续包含测试与文档改动，不是仅文档。以冻结后的 Git proof 核对 BuildCommit 与最终 Handoff HEAD 的差异范围；资产同步以独立上传读回 proof 为准。已验证结果按其记录的范围复用。
+3. 从本轮交付目录或既有未发布开发草稿取得 `HarmonyContinuation-Phase5-Handoff.zip` 与独立校验文件；先核验ZIP SHA，再核验包内清单。草稿实际上传状态与远端digest需查本轮proof，不凭历史dev.5上传记录推断。
+4. 默认OFF Setup/便携包、HF-ON及ABSTRACT-ON共用VST3身份，关闭宿主并备份旧完整bundle，只保留一个扫描版本。About核对dev.6、`3a582e4`、HF/P3/Abstract真实状态；分析前PENDING。旧ON安装曾被UAC取消，不能假定安装已完成。
+5. V5/658评审包独立于默认V4/657，不覆盖正式Factory或user.db。个人库、宿主工程、SDK、工具链不在同步包内。按中文清单集中记录真实宿主与音乐结果，R02根因仍UNKNOWN，正式发布另行决策。
+
+Phase5构建沿用dev.5 Release/Ninja方法，`HC_PRERELEASE=dev.6`、Factory4、清空Git override。三个目录分别配置 `HC_EXPERIMENT_HARMONY_FIRST_PLUGIN` / `HC_EXPERIMENT_ABSTRACT_RETRIEVAL_PLUGIN` 为 OFF/OFF、ON/OFF、OFF/ON；P3默认OFF。每模式执行全CTest、实际VST3 validator及既有Phase4D候选模式。额外A/B/C入口为 `Phase4DTests <输出目录> <候选DB> phase5`；只读隔离候选，worker每组10。性能测量与大型构建/压缩分开。所有生成Factory先核对V4原哈希，再进入打包。
+
+### Phase5.1 验收增补
+
+读取 [Phase5.1收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 与 [Cubase验收清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)。离线诊断 713/713（R02 200、音乐/映射 513），UserLibrary 定向回归 283 checks；本阶段仅增加测试和文档，插件 production 与 dev.6 BuildCommit `3a582e4` 不变。用户验收仅覆盖 DEFAULT-OFF、HF-ON、ABSTRACT-ON 三包，其余组合为 core 实验。证据从同级 `HarmonyContinuation-phase51-validation-20261014/` 读取；冻结后只制作一个 supplement 到同级 `HarmonyContinuation-phase51-delivery-20261014/`，顶层目录为 `proofs/`、`safety/`、`blind/`、`answer-key/`、`diagnostics/`、`docs/`。保持 blind 与答案/mapping 分离。已有冻结增补包不重复压缩；无需重做 Phase5 三包、Setup 或全回归。
+
+### dev.5 收尾验证
+
+使用独立 Release OFF/ON 构建，Factory 4、`HC_PRERELEASE=dev.5`，保留 dev.4 包。先初始化本机 MSVC x64 环境；核对缓存中 `CMAKE_CXX_FLAGS_RELEASE` 确实包含 `/O2 /Ob2 /DNDEBUG`，不能把空优化参数的缓存当最终性能基线。关闭自动安装链接和构建后 Validator，从实际源码提交生成 Build ID。
+
+最终运行所有已注册 CTest；33 项包含 1440 严格矩阵及 33×四组合专项。可选候选门禁复用 `Phase4DTests <独立证据目录> <隔离候选DB>`，插件默认仍使用 V4/657。候选 DB 编译方法见 `data/factory-proposals/20261012/README.md`。主报告与包内证据记录最终源码提交、逐项结果和已知限制；真实宿主清单见 `docs/DEV5_CUBASE_ACCEPTANCE.md`。
+
+本机MSVC PDB工具不匹配时，构建进程设置 `_CL_=/Z7`，使用对象内调试信息；无需修改离线SDK。测试将TEMP/TMP设为独立工作区目录，避开沙箱临时目录的原子替换权限限制。当前构建提交、完整33项结果、21项隔离安装结果及日志入口见 [dev.5收尾报告](docs/DEV5_CLOSEOUT_20261012.md)。
+
+### dev.5 另一设备接手
+
+1. 源码使用 `development/dev5-closeout-20261012`。新目录可运行 `git clone --branch development/dev5-closeout-20261012 https://github.com/OldLai-ctrl/HarmonyContinuation.git HarmonyContinuation-release`。已有checkout先确认并保管未提交内容，再fetch、切换该分支和 `git pull --ff-only`；不强制reset。
+2. 登录有仓库权限的账号，从 [既有未发布开发草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1) 下载 `HarmonyContinuation-dev5-Handoff-20261012.zip` 和 `HANDOFF_DEV5_SHA256SUMS.txt`。ZIP SHA-256为 `6c201735e87c34b6c6f967f70a9b717ce8070909bb1fbf82cebc7e82cefa65de`；解压后再核验内部 `SHA256SUMS.txt`。草稿继续保持未发布。
+3. 先读 AGENTS、NOW、`docs/DEV5_CLOSEOUT_20261012.md` 和 `docs/DEV5_CUBASE_ACCEPTANCE.md`。包内含OFF Setup、OFF/ON便携ZIP、原V4/657、候选V5/658、源码和811项交接文件及证据；二进制BuildCommit为 `730e819`，包内文档冻结于 `c117163`。最新设备接续记录通过Git补充，不改变冻结二进制身份。
+4. 本机ON安装被UAC取消，不能当作已经安装。新设备关闭宿主后备份完整旧bundle，只安装一个同身份OFF/ON版本；About核对dev.5 / `730e819` / HF实际状态 / P3 OFF，再按中文清单验收。现有个人库、真实工程、SDK与工具链不在包内，也不随Git同步；需要迁移个人数据时由用户单独处理。
+5. 当前自动化门禁已通过，不因换设备机械重跑。继续开发时重新核实本机MSVC/CMake/Ninja、Inno、CRT及离线SDK路径，使用独立构建目录；下一工作包以真实Cubase、R02两组本地诊断及音乐试听为主，不自动合并main、创建正式Tag或发布。
+
+### 历史 Factory V4/dev.1 另一设备接手
+
+1. 登录有仓库写权限的 GitHub 账号，打开 [未发布的 V4 交付草稿](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/untagged-45999c0f91b6f2bf11c1)。下载 `HarmonyContinuation-0.10.0-dev.1-Handoff.zip`、`HANDOFF_SHA256SUMS.txt`；只需人工安装时也可单独下载同页 Setup。保持草稿未发布。
+2. 用 SHA-256 对照外层校验文件验证 ZIP；解压到新目录，再按包内 `SHA256SUMS.txt` 校验文件。包内含 Setup、`stage-4` 的 VST3/Factory DB、`midi`、`evidence`、BUILD_INFO 和人工清单。原始产品交付源码提交 `963c9c7`，实际插件/Setup 构建提交 `86a8641`，版本 `0.10.0-dev.1`；后续交接提交不改变二进制身份。
+3. 新设备克隆现有仓库或先处理已有工作区未提交改动，再切到 `library/v4` 并 fast-forward 更新；核对 `git status -sb`、`git log -1` 和远端。不要强制重置或覆盖另一设备未提交内容。读取 NOW 的当前任务及 V4 人工清单；当前下一步只有 Cubase/FL Studio 人工验收，两者对此构建均 Pending。
+4. 直接验收使用统一 Setup，无需重编译。需要继续开发时按本 RUNBOOK 构建章节在该设备重新核实 MSVC/CMake/Ninja、Inno Setup、CRT 和离线 SDK 路径；SDK、工具链与本机构建缓存不在交接包内，不复制缓存来冒充可复现构建。不要为接手续跑全量回归；main/v0.9.0 和个人数据继续保护。
+
+明确源码 HEAD 与生成包的编译提交；包附版本、提交、配置、测试范围、SHA-256 和待测项。打包脚本生成 Setup 校验文件，分发 ZIP 还需自己的清单。未执行的步骤写未测。查 NOW 的授权与待同步状态后再提交/推送指定分支；发布、merge、tag 或正式升级需当前任务授权。完成后精简 NOW，按 AGENTS 规则更新相关记录。

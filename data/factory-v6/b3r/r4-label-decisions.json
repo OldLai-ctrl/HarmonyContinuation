@@ -1,0 +1,16 @@
+[
+  {
+    "id": "V6_B1_025",
+    "fromGrade": "B",
+    "toGrade": "A",
+    "noteChange": false,
+    "reason": "unsupported genre removed; functional/contextual application retained"
+  },
+  {
+    "id": "V6_B1_052",
+    "fromGrade": "B",
+    "toGrade": "A",
+    "noteChange": false,
+    "reason": "unsupported genre removed; functional/contextual application retained"
+  }
+]

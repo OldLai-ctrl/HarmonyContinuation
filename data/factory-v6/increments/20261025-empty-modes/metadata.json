@@ -1,0 +1,45 @@
+{
+  "version": 6,
+  "baseline": "5ae1b5a",
+  "scope": "Independent candidate increment; does not alter or activate dev.4",
+  "candidates": [
+    {
+      "id": "V6_EMPTY_LOCRIAN_001",
+      "status": "independent-reviewed-candidate",
+      "source": "Original primary-agent composition; not a transcription",
+      "auditionStatus": "pending-human",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "locrian",
+          "usage": "unrated",
+          "usageBasis": "原创练习，无发表作品或使用频率统计；结构审校不代表常用程度或人工听评。",
+          "musicalEvidence": "原创C洛克里亚踏板练习。全句低音始终为C；Cdim占24/32QN且三次在强结构点回返。Db/C与Gb/C各4QN仅作短时邻接色彩，均不获得根位终止；没有Bbm归宿或F7到Bb的功能链。实际音集C Db Eb F Gb Ab Bb，b2与b5完整出现。归属依据是持续C低音、减主和弦的时值/反复和非功能回返共同建立中心，不因单个半减和弦自动判断。人工中心听评仍待。",
+          "review": "reviewed",
+          "reviewer": "Primary-agent compositional and full-phrase structural review, 2026-10-25; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "sourceFingerprint": "source-v1:200:1:4/4|1,0:6:-:0:0:73:0:0x1.0000000000000p+3|2,-1:1:-:0:11:145:0:0x1.0000000000000p+2|1,0:6:-:0:0:73:0:0x1.0000000000000p+2|5,-1:1:-:0:6:145:0:0x1.0000000000000p+2|1,0:6:-:0:0:73:0:0x1.8000000000000p+3:performance-v1:4/4|0:0:6:73:0:1@0x0.0000000000000p+0+0x1.0000000000000p+3^-1|1:0:1:145:0:1@0x1.0000000000000p+3+0x1.0000000000000p+2^-1|0:0:6:73:0:1@0x1.8000000000000p+3+0x1.0000000000000p+2^-1|6:0:1:145:0:1@0x1.0000000000000p+4+0x1.0000000000000p+2^-1|0:0:6:73:0:1@0x1.4000000000000p+4+0x1.8000000000000p+3^-1"
+    },
+    {
+      "id": "V6_EMPTY_LOCRIAN_002",
+      "status": "independent-reviewed-candidate",
+      "source": "Original primary-agent composition; not a transcription",
+      "auditionStatus": "pending-human",
+      "memberships": [
+        {
+          "tonicOffset": 0,
+          "mode": "locrian",
+          "usage": "unrated",
+          "usageBasis": "原创练习，无发表作品或使用频率统计；结构审校不代表常用程度或人工听评。",
+          "musicalEvidence": "原创C洛克里亚侧向拱形。五个和弦全部保留C低音；首尾Cm7b5合计20/32QN。Ab7/C不按属功能解到Db，而经Fm/C、Gb/C回Cm7b5，短时上层根音Ab-F-Gb形成与第一条不同的句法。实际音集C Db Eb F Gb Ab Bb；C为持久音高中心，Db与Gb为特征色彩，没有以Bb或Db作主和弦的终止。此为作曲规定并由低音与句法支持的Locrian中心，不宣称唯一听觉解释或普遍用法。人工中心听评仍待。",
+          "review": "reviewed",
+          "reviewer": "Primary-agent compositional and full-phrase structural review, 2026-10-25; human audition pending",
+          "melodicContext": ""
+        }
+      ],
+      "sourceFingerprint": "source-v1:204:1:4/4|1,0:8:-:0:0:1097:0:0x1.0000000000000p+3|6,0:3:-:0:4:1169:0:0x1.0000000000000p+2|4,0:2:-:0:7:137:0:0x1.0000000000000p+2|5,-1:1:-:0:6:145:0:0x1.0000000000000p+2|1,0:8:-:0:0:1097:0:0x1.8000000000000p+3:performance-v1:4/4|0:0:8:1097:0:1@0x0.0000000000000p+0+0x1.0000000000000p+3^-1|8:0:3:1169:0:1@0x1.0000000000000p+3+0x1.0000000000000p+2^-1|5:0:2:137:0:1@0x1.8000000000000p+3+0x1.0000000000000p+2^-1|6:0:1:145:0:1@0x1.0000000000000p+4+0x1.0000000000000p+2^-1|0:0:8:1097:0:1@0x1.4000000000000p+4+0x1.8000000000000p+3^-1"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "Case F · A minor",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Am",
+      "start": 0,
+      "duration": 4
+    },
+    {
+      "name": "F",
+      "start": 4,
+      "duration": 4
+    },
+    {
+      "name": "Dm",
+      "start": 8,
+      "duration": 4
+    },
+    {
+      "name": "E7",
+      "start": 12
+    }
+  ],
+  "forcedKey": "A:minor"
+}

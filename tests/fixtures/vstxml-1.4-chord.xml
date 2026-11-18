@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vst-xml version="1.4">
+  <chord id="158447848">
+    <name>Cmaj7</name>
+    <color>#91959bff</color>
+    <projectTime domain="quarterNotes">0</projectTime>
+    <pitches>C1;E2;G2;B2;</pitches>
+    <keyNote>60</keyNote>
+    <bassNote>24</bassNote>
+    <mask>0x891</mask>
+  </chord>
+  <sourceApp>Cubase</sourceApp>
+</vst-xml>

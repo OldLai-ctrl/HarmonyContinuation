@@ -1,0 +1,257 @@
+Test project D:/VibeCoding/HarmonyContinuation/build
+      Start  1: LibraryV3_resolver
+ 1/35 Test  #1: LibraryV3_resolver .................   Passed    0.19 sec
+      Start  2: LibraryV3_snapshot
+ 2/35 Test  #2: LibraryV3_snapshot .................   Passed    0.19 sec
+      Start  3: LibraryV3_user
+ 3/35 Test  #3: LibraryV3_user .....................   Passed    0.20 sec
+      Start  4: LibraryV3_factory
+ 4/35 Test  #4: LibraryV3_factory ..................   Passed    0.55 sec
+      Start  5: LibraryStoreTests
+ 5/35 Test  #5: LibraryStoreTests ..................   Passed    0.75 sec
+      Start  6: ConstraintBenchmark
+ 6/35 Test  #6: ConstraintBenchmark ................***Failed    1.40 sec
+ConstraintBenchmark: hard filters conflicts
+
+      Start  7: TendencyTests
+ 7/35 Test  #7: TendencyTests ......................   Passed    1.52 sec
+      Start  8: EnrichmentTests
+ 8/35 Test  #8: EnrichmentTests ....................   Passed    0.09 sec
+      Start  9: BenchmarkTests
+ 9/35 Test  #9: BenchmarkTests .....................   Passed    0.08 sec
+      Start 10: UILayoutTests
+10/35 Test #10: UILayoutTests ......................   Passed    0.02 sec
+      Start 11: IntentCompletionTests
+11/35 Test #11: IntentCompletionTests ..............   Passed    0.02 sec
+      Start 12: VoiceLeadingMetricsTests
+12/35 Test #12: VoiceLeadingMetricsTests ...........   Passed    0.02 sec
+      Start 13: MidiExportTests
+13/35 Test #13: MidiExportTests ....................   Passed    0.11 sec
+      Start 14: WishCoreFocused
+14/35 Test #14: WishCoreFocused ....................***Failed    0.74 sec
+FAIL WishCoreFocused: real V5 Factory database loads 658 templates
+
+      Start 15: MidiImportTests
+15/35 Test #15: MidiImportTests ....................   Passed    0.05 sec
+      Start 16: MidiProfileTests
+16/35 Test #16: MidiProfileTests ...................   Passed    0.03 sec
+      Start 17: PreviewTests
+17/35 Test #17: PreviewTests .......................   Passed    0.13 sec
+      Start 18: ProductizationTests
+18/35 Test #18: ProductizationTests ................***Failed    5.17 sec
+ProductizationTests FAIL: worker timeout
+
+      Start 19: WeightBarGeometryTests
+19/35 Test #19: WeightBarGeometryTests .............   Passed    0.01 sec
+      Start 20: CoreTimelineTests
+20/35 Test #20: CoreTimelineTests ..................   Passed    0.03 sec
+      Start 21: HarmonyAnalysisTests
+21/35 Test #21: HarmonyAnalysisTests ...............   Passed    0.02 sec
+      Start 22: ProgressionMatcherTests
+22/35 Test #22: ProgressionMatcherTests ............   Passed    0.04 sec
+      Start 23: ContinuationEngineTests
+Could not find executable D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe
+Looked in the following places:
+D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe
+D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe.exe
+D:/VibeCoding/HarmonyContinuation/build/Release/Release/ContinuationEngineTests.exe
+D:/VibeCoding/HarmonyContinuation/build/Release/Release/ContinuationEngineTests.exe.exe
+Release/D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe
+Release/D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe.exe
+Unable to find executable: D:/VibeCoding/HarmonyContinuation/build/Release/ContinuationEngineTests.exe
+23/35 Test #23: ContinuationEngineTests ............***Not Run   0.00 sec
+      Start 24: VstXmlParserTests
+24/35 Test #24: VstXmlParserTests ..................   Passed    0.03 sec
+      Start 25: VstXmlChordParserTests
+25/35 Test #25: VstXmlChordParserTests .............   Passed    0.04 sec
+      Start 26: HostContractFLStudio
+26/35 Test #26: HostContractFLStudio ...............***Failed   44.50 sec
+PASS 01 standard host name classification
+PASS 02 host name does not invent capabilities
+PASS 03 diagnostics privacy
+PASS 04 bilingual wrapper help
+PASS 05 complete context
+PASS 06 missing meter retains QN and tempo
+PASS 07 missing QN retains tempo and meter
+PASS 08 stop play and seek
+PASS 09 tempo and meter change
+PASS 10 null context
+PASS 11 invalid optional fields isolated
+PASS 12 MIDI filepath routing
+PASS 13 unsupported files and embedded null rejected
+PASS 14 bounded multi-file routing
+PASS 15 async valid import
+PASS 16 missing malformed multi-file first valid
+PASS 17 cancel and superseded job
+PASS 18 async OPEN
+PASS 19 unique minimal MIDI drag files
+PASS 20 drag preparation failure safe
+PASS 21 preview ownership 2 4 8
+PASS 22 DPI user zoom layout matrix 36
+PASS 23 Cubase XML and Generic capability fallback
+PASS 24 actual SDK initialize state without view
+Host process stress channels=1 bits=32 blocks=4000 averageMs=0.0244797 maximumMs=0.3421 budgetMs=5.33333
+Host process stress channels=1 bits=64 blocks=4000 averageMs=0.0257323 maximumMs=0.3463 budgetMs=5.33333
+Host process stress channels=2 bits=32 blocks=4000 averageMs=0.0258633 maximumMs=0.3654 budgetMs=5.33333
+Host process stress channels=2 bits=64 blocks=4000 averageMs=0.0259951 maximumMs=0.3448 budgetMs=5.33333
+PASS 24a existing bus host preview mono/stereo float/double pause resume seek
+PASS 24b actual SDK editor mouse transport gates host audio
+PASS 25 state before view attach
+PASS 26 view before setState
+PASS 27 remove reattach recreated parent
+PASS 28 resize before attach
+PASS 29 host resize rejected rollback
+PASS 30 host resize accepted returned geometry
+PASS 31 resize repeated and reentry bounded
+PASS 32 actual editor content scale and user zoom matrix
+PASS 33 deactivate activate processor state and recreate
+PASS 34 corrupt state preserves phrase
+PASS 35 two actual plugin instances
+PASS 36 four actual plugin instances
+PASS 37 eight actual plugin instances
+PASS 38 isolated jobs shared read-only factory and user DB
+PASS 39 focus ESC persistent compare host shortcuts
+Compact smoke: six tabs and default cards across zoom levels
+FAIL 40 current compact browser MIDI identities and UI restore: current compact interaction contract
+RESULT 41/42 (standard SDK simulation; real FL pending)
+
+      Start 27: HostContractGeneric
+27/35 Test #27: HostContractGeneric ................***Failed   44.42 sec
+PASS 01 standard host name classification
+PASS 02 host name does not invent capabilities
+PASS 03 diagnostics privacy
+PASS 04 bilingual wrapper help
+PASS 05 complete context
+PASS 06 missing meter retains QN and tempo
+PASS 07 missing QN retains tempo and meter
+PASS 08 stop play and seek
+PASS 09 tempo and meter change
+PASS 10 null context
+PASS 11 invalid optional fields isolated
+PASS 12 MIDI filepath routing
+PASS 13 unsupported files and embedded null rejected
+PASS 14 bounded multi-file routing
+PASS 15 async valid import
+PASS 16 missing malformed multi-file first valid
+PASS 17 cancel and superseded job
+PASS 18 async OPEN
+PASS 19 unique minimal MIDI drag files
+PASS 20 drag preparation failure safe
+PASS 21 preview ownership 2 4 8
+PASS 22 DPI user zoom layout matrix 36
+PASS 23 Cubase XML and Generic capability fallback
+PASS 24 actual SDK initialize state without view
+Host process stress channels=1 bits=32 blocks=4000 averageMs=0.0262173 maximumMs=0.1399 budgetMs=5.33333
+Host process stress channels=1 bits=64 blocks=4000 averageMs=0.0272987 maximumMs=0.1977 budgetMs=5.33333
+Host process stress channels=2 bits=32 blocks=4000 averageMs=0.0283569 maximumMs=0.1683 budgetMs=5.33333
+Host process stress channels=2 bits=64 blocks=4000 averageMs=0.0286858 maximumMs=0.1132 budgetMs=5.33333
+PASS 24a existing bus host preview mono/stereo float/double pause resume seek
+PASS 24b actual SDK editor mouse transport gates host audio
+PASS 25 state before view attach
+PASS 26 view before setState
+PASS 27 remove reattach recreated parent
+PASS 28 resize before attach
+PASS 29 host resize rejected rollback
+PASS 30 host resize accepted returned geometry
+PASS 31 resize repeated and reentry bounded
+PASS 32 actual editor content scale and user zoom matrix
+PASS 33 deactivate activate processor state and recreate
+PASS 34 corrupt state preserves phrase
+PASS 35 two actual plugin instances
+PASS 36 four actual plugin instances
+PASS 37 eight actual plugin instances
+PASS 38 isolated jobs shared read-only factory and user DB
+PASS 39 focus ESC persistent compare host shortcuts
+Compact smoke: six tabs and default cards across zoom levels
+FAIL 40 current compact browser MIDI identities and UI restore: current compact interaction contract
+RESULT 41/42 (standard SDK simulation; real FL pending)
+
+      Start 28: HostContractCubase
+28/35 Test #28: HostContractCubase .................***Failed   43.85 sec
+PASS 01 standard host name classification
+PASS 02 host name does not invent capabilities
+PASS 03 diagnostics privacy
+PASS 04 bilingual wrapper help
+PASS 05 complete context
+PASS 06 missing meter retains QN and tempo
+PASS 07 missing QN retains tempo and meter
+PASS 08 stop play and seek
+PASS 09 tempo and meter change
+PASS 10 null context
+PASS 11 invalid optional fields isolated
+PASS 12 MIDI filepath routing
+PASS 13 unsupported files and embedded null rejected
+PASS 14 bounded multi-file routing
+PASS 15 async valid import
+PASS 16 missing malformed multi-file first valid
+PASS 17 cancel and superseded job
+PASS 18 async OPEN
+PASS 19 unique minimal MIDI drag files
+PASS 20 drag preparation failure safe
+PASS 21 preview ownership 2 4 8
+PASS 22 DPI user zoom layout matrix 36
+PASS 23 Cubase XML and Generic capability fallback
+PASS 24 actual SDK initialize state without view
+Host process stress channels=1 bits=32 blocks=4000 averageMs=0.026267 maximumMs=0.1105 budgetMs=5.33333
+Host process stress channels=1 bits=64 blocks=4000 averageMs=0.0288335 maximumMs=0.2251 budgetMs=5.33333
+Host process stress channels=2 bits=32 blocks=4000 averageMs=0.0305963 maximumMs=0.196 budgetMs=5.33333
+Host process stress channels=2 bits=64 blocks=4000 averageMs=0.0288924 maximumMs=0.193 budgetMs=5.33333
+PASS 24a existing bus host preview mono/stereo float/double pause resume seek
+PASS 24b actual SDK editor mouse transport gates host audio
+PASS 25 state before view attach
+PASS 26 view before setState
+PASS 27 remove reattach recreated parent
+PASS 28 resize before attach
+PASS 29 host resize rejected rollback
+PASS 30 host resize accepted returned geometry
+PASS 31 resize repeated and reentry bounded
+PASS 32 actual editor content scale and user zoom matrix
+PASS 33 deactivate activate processor state and recreate
+PASS 34 corrupt state preserves phrase
+PASS 35 two actual plugin instances
+PASS 36 four actual plugin instances
+PASS 37 eight actual plugin instances
+PASS 38 isolated jobs shared read-only factory and user DB
+PASS 39 focus ESC persistent compare host shortcuts
+Compact smoke: six tabs and default cards across zoom levels
+FAIL 40 current compact browser MIDI identities and UI restore: current compact interaction contract
+RESULT 41/42 (standard SDK simulation; real FL pending)
+
+      Start 29: EditorHostSmoke
+29/35 Test #29: EditorHostSmoke ....................   Passed    5.75 sec
+      Start 30: RecommendationReliabilityFocused
+30/35 Test #30: RecommendationReliabilityFocused ...   Passed  112.09 sec
+      Start 31: RecommendationRhythmDecoupling
+31/35 Test #31: RecommendationRhythmDecoupling .....   Passed   11.46 sec
+      Start 32: CubaseReliabilityFocused
+32/35 Test #32: CubaseReliabilityFocused ...........   Passed   60.00 sec
+      Start 33: Phase4DCubaseFeedback
+33/35 Test #33: Phase4DCubaseFeedback ..............***Failed    0.43 sec
+UnifiedIntegration FAIL after 21: read-only Factory 5/658
+
+      Start 34: CompactEditorUI
+34/35 Test #34: CompactEditorUI ....................***Failed    2.67 sec
+Compact smoke: six tabs and default cards across zoom levels
+Compact UI smoke failure: compact UI interaction smoke failed
+
+      Start 35: WishEditorUI
+35/35 Test #35: WishEditorUI .......................***Failed    0.76 sec
+Wish UI smoke failure: wish UI requires current real Factory V5
+
+
+71% tests passed, 10 tests failed out of 35
+
+Total Test time (real) = 337.42 sec
+
+The following tests FAILED:
+	  6 - ConstraintBenchmark (Failed)
+	 14 - WishCoreFocused (Failed)
+	 18 - ProductizationTests (Failed)
+	 23 - ContinuationEngineTests (Not Run)
+	 26 - HostContractFLStudio (Failed)
+	 27 - HostContractGeneric (Failed)
+	 28 - HostContractCubase (Failed)
+	 33 - Phase4DCubaseFeedback (Failed)
+	 34 - CompactEditorUI (Failed)
+	 35 - WishEditorUI (Failed)
+Errors while running CTest

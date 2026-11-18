@@ -1,0 +1,56 @@
+# HarmonyContinuation 项目入口
+
+Windows x64 VST3 和声创作助手：分析已有进行、检索曲库、继续发展或升级进行，并提供 MIDI 文件输入输出与本地试听。默认简中。用户教程在 [README.md](README.md)；AI 接手必须先遵守 [AGENTS.md](AGENTS.md)。
+
+## 当前摘要
+
+本工作树为 Factory V9-B 路线扩建与独立验证。现状见 [NOW](NOW.md)，制库及回放见 [V9-B 复现入口](RUNBOOK.md#factory-v9-b-建库与独立回放)。
+
+v0.10.0 正式版入口：[发布说明](docs/V0_10_RELEASE_NOTES.md)、[GitHub Release](https://github.com/OldLai-ctrl/HarmonyContinuation/releases/tag/v0.10.0)。统一推荐、完整列表/总览、真实匹配对齐及双音频预览；Factory V5 / 658。用户已确认 RC1 Cubase、FL Studio 实机全部通过；正式包复用该证据并另行执行正式构建与安装验证。精确源码以 v0.10.0 Tag 和 Release 中 BuildCommit 为准。
+
+当前状态、证据与下一步在 [NOW.md](NOW.md)，分支、工作树与同步边界在 [MAP.md](MAP.md)。正式版本与历史过程引用的恢复入口见MAP；独立开发分支以实时Git为准。版本、源码提交、插件构建和安装对象分别核实。Factory V4 新增数据位于 `data/factory-v4/`；V3 与历史 Library 2 源数据保留。
+
+Phase7入口为 [A3密度微调与审计](design/phase7/README.md) 和 [原型](design/phase7/index.html)。正式800×780界面已与统一引擎合入dev.12，dev.13增加同级升级入口与完整来源试听/MIDI，dev.14增加完整分页推荐列表、同序总览及Matcher轨迹对齐；Factory V5变体提案保留在 `data/factory-proposals/20261019-pop-variants/`，构建身份及验收以 NOW 为准。
+
+Phase6 接续入口为 [综合报告](docs/PHASE6_ENGINEERING_20261014.md) 与 [中文验收](docs/PHASE6_CUBASE_ACCEPTANCE.md)；完整质量分析在交付包 `benchmark/RESULTS_ANALYSIS.md`，验证/交付路径见 MAP，最终门禁和 Setup SHA 以综合报告及包内证明为准。
+
+Phase5 / dev.6 的历史入口为 [综合报告](docs/PHASE5_COMPREHENSIVE_20261013.md)、[中文验收](docs/PHASE5_CUBASE_ACCEPTANCE.md) 与 [交付词](docs/PHASE5_HANDOFF_PROMPT.md)。Phase5.1 历史收尾与验收见 [收尾报告](docs/PHASE51_CLOSEOUT_20261014.md) 和 [Cubase清单](docs/PHASE51_CUBASE_ACCEPTANCE.md)；当时离线门禁 713/713、UserLibrary 定向测试 283 checks，三种既有包为该轮用户验收范围。详见各阶段报告。
+
+## 按任务定位
+
+| 当前需要 | 首选位置 | 搜索词示例 |
+| --- | --- | --- |
+| 接续进度、待验收、安排下一步 | [NOW.md](NOW.md) 的对应章节 | `当前任务`、`待验收`、`证据` |
+| RC 说明与六项真实 DAW 人工验收 | [版本记录](docs/V0_9_RELEASE_NOTES.md)、[人工清单](docs/RC_DAW_ACCEPTANCE.md) | `rc.1`、`Pending` |
+| 冻结 Factory V3 的内容覆盖 | [LIBRARY_V3_SUMMARY.md](LIBRARY_V3_SUMMARY.md) | `Total`、`Major`、`Missing Metadata` |
+| Factory V4 开发、dev.2 可靠性修复及人工验收 | [核心修复报告](docs/DEV2_CORE_RELIABILITY_FIX.md)、[产品化说明](docs/FACTORY_V4_PRODUCTIZATION.md)、[V4 人工清单](docs/V4_DAW_ACCEPTANCE.md) | `短前缀`、`MIDI 导入`、`可发现性` |
+| 设备路径、分支、产物及同步边界 | [MAP.md](MAP.md) | `本机`、`同步`、`构建` |
+| 构建、运行、局部测试、安装、交付 | [RUNBOOK.md](RUNBOOK.md) | `构建`、`验收`、`交付` |
+| 设计取舍或已有约束冲突 | [DECISIONS.md](DECISIONS.md) | 决策 ID、模块名 |
+| 覆盖安装、库迁移、回滚、真实宿主结论 | [RISKS.md](RISKS.md) | `安装`、`数据`、`宿主` |
+| 查找过去解决过的具体问题 | [history/](history/README.md) | 错误文本、模块、提交 |
+
+## 代码与专题路由
+
+| 范围 | 代码入口 | 按需查阅的专题 |
+| --- | --- | --- |
+| 宿主、窗口、生命周期与诊断 | `src/host/`、`src/plugin/`、`src/ui/EffectiveScale.h` | `docs/V0_9_HOST_ARCHITECTURE.md`、`docs/FL_STUDIO_COMPATIBILITY.md` |
+| MIDI 读取、识别、输出及拖放 | `src/midi/`、`src/io/` | `docs/V0_8_DEV2.md`、`docs/MIDI_EXPORT.md` |
+| 分析、匹配、续写、约束与倾向 | `src/core/` | `docs/HARMONIC_MODEL.md`、`docs/CONTINUATION_ENGINE.md`、`docs/DEV3_CUBASE_RELIABILITY_FIX.md` |
+| B5 统计续接与 Factory 离线回放 | `tools/b5/` | [评估报告](docs/B5_CORPUS_STATISTICS.md)、[语料清单](docs/B5_CORPORA.md) |
+| B6 来源落点、概率回退与联合评估 | `src/core/ProgressionMatcher.cpp`、`tools/b6/` | [B6 报告](docs/B6_RETRIEVAL_STATISTICS.md) |
+| B7 完整尾段覆盖、符号时值及 V9 规格 | `tools/b7/` | [B7 报告](docs/B7_FACTORY_COVERAGE.md) |
+| V9-A 原创长后句和独立回放 | `data/factory-v9-a/phrases.tsv`、`tools/v9a/` | [建设与独立验证](docs/FACTORY_V9_A.md) |
+| V9-B 完整发展、接缝诊断及扩建对照 | `data/factory-v9-b/phrases.tsv`、`tools/v9b/` | [建设与独立验证](docs/FACTORY_V9_B.md) |
+| 继续发展与升级进行色彩偏好展示排序 | `src/color/ColorPreferenceReranker.*` | `docs/COLOR_PREFERENCE_RERANKER.md` |
+| 卡片、Why? V2 与色彩控件 | `src/ui/ColorHint.h`、`src/ui/WhyExplanation.h`、`src/ui/MainView.cpp` | `docs/WHY_V2.md` |
+| 只读色彩分析 | `src/color/`、`src/ui/ColorHint.h` | `docs/COLOR_ANALYSIS_V1.md` |
+| 升级进行、试听与声部进行 | `src/enrichment/`、`src/preview/` | 对应 `tests/EnrichmentTests.cpp`、`tests/VoiceLeadingMetricsTests.cpp` |
+| 状态、曲库及快照 | `src/session/`、`src/library/`、`src/snapshot/`、`src/persistence/` | `docs/LIBRARY_V3_COMPATIBILITY.md`；安装查 `docs/INSTALLER_AND_LIBRARY.md` |
+| UI、Demo、安装及测试工具 | `src/ui/`、`src/demo/`、`packaging/`、`tools/`、`tests/` | `docs/RESPONSIVE_UI.md`、`docs/DEMO_HARNESS.md`、`RUNBOOK.md` |
+
+## 阅读与记录边界
+
+索引是条件路由，不是必读清单。需要定位时搜索相关路由，再定位目标文件中的章节、符号或关键词；规则以 [AGENTS.md](AGENTS.md) 为权威来源。禁止因为这里有链接就通读目标文件。信息不足或冲突才扩大范围，信息足够即停止；不连续分段读取无关全文。旧 Phase 文档是版本上下文，若与当前代码冲突，核对代码和有效决定。
+
+保持单一事实位置：当前状态归 NOW，有效路径归 MAP，操作归 RUNBOOK，持久取舍归 DECISIONS，未解决风险归 RISKS；已结束但有复用价值的过程归 history。其他位置放链接。仅在状态或内容改变时更新，不机械刷新日期，不复制整段聊天。

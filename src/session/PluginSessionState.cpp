@@ -1,0 +1,209 @@
+#include "PluginSessionState.h"
+#include "ProductServices.h"
+#include "library/LegacyFactoryIdResolver.h"
+#include <algorithm>
+#include <bit>
+#include <cmath>
+#include <stdexcept>
+
+namespace harmony::session {
+bool PluginSessionState::pin(const std::string& id, const std::string& fingerprint) {
+    if (id.empty() || pinnedCandidateIds.size() >= 3 ||
+        std::find(pinnedCandidateIds.begin(), pinnedCandidateIds.end(), id) != pinnedCandidateIds.end()) return false;
+    pinnedCandidateIds.push_back(id); pinnedFingerprints.push_back(fingerprint); return true;
+}
+bool PluginSessionState::unpin(const std::string& id) {
+    const auto it=std::find(pinnedCandidateIds.begin(),pinnedCandidateIds.end(),id);
+    if (it==pinnedCandidateIds.end()) return false;
+    const auto index=static_cast<std::size_t>(it-pinnedCandidateIds.begin());
+    pinnedCandidateIds.erase(it);
+    if (index<pinnedFingerprints.size()) pinnedFingerprints.erase(pinnedFingerprints.begin()+index);
+    return true;
+}
+void PluginSessionState::resolvePins(const RecommendationSet& set) {
+    std::vector<std::string> ids, fingerprints;
+    for (std::size_t pin=0;pin<pinnedFingerprints.size();++pin) {
+        const auto fingerprint=library::resolveFingerprint(pinnedFingerprints[pin],static_cast<int>(factoryLibraryVersion));
+        if (fingerprint.empty()) continue;
+        for (const auto& group:set.groups) for (const auto& candidate:group) {
+            if (!continuationReferenceMatches(candidate,fingerprint)) continue;
+            if (std::find(ids.begin(),ids.end(),candidate.id)==ids.end()) {
+                ids.push_back(candidate.id); fingerprints.push_back(continuationFingerprint(candidate));
+            }
+            goto matched;
+        }
+        // A missing reference must not discard the rest of the saved state.
+        if(pin<pinnedCandidateIds.size()) {
+            const auto id=factoryLibraryVersion>=3?library::canonicalFactoryId(pinnedCandidateIds[pin]):pinnedCandidateIds[pin];
+            bool changedPath{};
+            for(const auto& group:set.groups)for(const auto& c:group)if(c.id==id)changedPath=true;
+            if(!changedPath&&std::find(ids.begin(),ids.end(),id)==ids.end()){ids.push_back(id);fingerprints.push_back(fingerprint);}
+        }
+        matched:;
+    }
+    pinnedCandidateIds=std::move(ids); pinnedFingerprints=std::move(fingerprints);
+}
+AnalysisContext PluginSessionState::analysisContext() const {
+    AnalysisContext context;
+    context.forcedKey = forcedKey;
+    context.timeSigNumerator = meterNumerator;
+    context.timeSigDenominator = meterDenominator;
+    return context;
+}
+RecomputeScope recomputeScope(const PluginSessionState& old,const PluginSessionState& next) noexcept {
+    const bool key=old.forcedKey.has_value()!=next.forcedKey.has_value() ||
+        (old.forcedKey && next.forcedKey && (old.forcedKey->tonic!=next.forcedKey->tonic || old.forcedKey->mode!=next.forcedKey->mode));
+    if (key || old.imported.revision!=next.imported.revision ||
+        old.meterNumerator!=next.meterNumerator || old.meterDenominator!=next.meterDenominator) return RecomputeScope::Analysis;
+    if (old.styleMask!=next.styleMask || old.intent!=next.intent || old.constraints!=next.constraints ||
+        old.tendency!=next.tendency) return RecomputeScope::Ranking;
+    return RecomputeScope::None;
+}
+namespace {
+struct Writer {
+    std::string bytes{"HCS5"};
+    void u8(std::uint8_t n) { bytes.push_back(static_cast<char>(n)); }
+    void u32(std::uint32_t n) { for (int i=0;i<4;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
+    void u64(std::uint64_t n) { for (int i=0;i<8;++i) u8(static_cast<std::uint8_t>(n >> (8*i))); }
+    void dbl(double n) { if (!std::isfinite(n)) throw std::runtime_error("nonfinite session time"); u64(std::bit_cast<std::uint64_t>(n)); }
+    void str(const std::string& s,std::size_t limit=8192) { if (s.size()>limit) throw std::runtime_error("session string too long"); u32(static_cast<std::uint32_t>(s.size())); bytes += s; }
+    void optionalString(const std::optional<std::string>& s) { u8(s.has_value()); if (s) str(*s); }
+    void optionalInt(const std::optional<std::int32_t>& n) { u8(n.has_value()); if (n) u32(static_cast<std::uint32_t>(*n)); }
+};
+struct Reader {
+    std::string_view bytes; std::size_t at{};
+    std::uint8_t u8() { if (at>=bytes.size()) throw std::runtime_error("truncated session state"); return static_cast<std::uint8_t>(bytes[at++]); }
+    std::uint32_t u32() { std::uint32_t n{}; for (int i=0;i<4;++i) n |= std::uint32_t(u8()) << (8*i); return n; }
+    std::uint64_t u64() { std::uint64_t n{}; for (int i=0;i<8;++i) n |= std::uint64_t(u8()) << (8*i); return n; }
+    double dbl() { const auto n=std::bit_cast<double>(u64()); if (!std::isfinite(n)) throw std::runtime_error("invalid session time"); return n; }
+    std::string str(std::size_t limit=8192) { const auto len=u32(); if (len>limit || len>bytes.size()-at) throw std::runtime_error("invalid session string"); std::string s(bytes.substr(at,len)); at+=len; return s; }
+    std::optional<std::string> optionalString() { return u8() ? std::optional<std::string>(str()) : std::nullopt; }
+    std::optional<std::int32_t> optionalInt() { return u8() ? std::optional<std::int32_t>(static_cast<std::int32_t>(u32())) : std::nullopt; }
+};
+}
+std::string serialize(const PluginSessionState& input) {
+    auto state=input;
+    if(state.factoryLibraryVersion>=3) {
+        for(auto& id:state.pinnedCandidateIds)id=library::canonicalFactoryId(id);
+        for(auto& value:state.pinnedFingerprints)value=library::resolveFingerprint(value,static_cast<int>(state.factoryLibraryVersion));
+        for(std::size_t i=0;i<state.pinnedCandidateIds.size();++i)
+            for(std::size_t j=i+1;j<state.pinnedCandidateIds.size();) {
+                if(state.pinnedCandidateIds[i]==state.pinnedCandidateIds[j]) {
+                    state.pinnedCandidateIds.erase(state.pinnedCandidateIds.begin()+j);
+                    if(j<state.pinnedFingerprints.size())state.pinnedFingerprints.erase(state.pinnedFingerprints.begin()+j);
+                }else ++j;
+            }
+    }
+    if (state.imported.events.size()>maxImportedChordEvents || state.pinnedCandidateIds.size()>3) throw std::runtime_error("session limit exceeded");
+    if (state.editorWidth<800 || state.editorWidth>2200 || state.editorHeight<640 || state.editorHeight>1400)
+        throw std::runtime_error("invalid editor size");
+    Writer w;
+    w.u32(PluginSessionState::currentSchemaVersion);
+    w.u32(state.factoryLibraryVersion);
+    w.u8(static_cast<std::uint8_t>(state.imported.coordinateMode));
+    w.u64(state.imported.revision);
+    w.u8(state.forcedKey.has_value());
+    if (state.forcedKey) { w.u8(static_cast<std::uint8_t>(state.forcedKey->tonic)); w.u8(static_cast<std::uint8_t>(state.forcedKey->mode)); }
+    w.u8(state.styleMask!=0); if (state.styleMask) w.u32(state.styleMask);
+    w.u8(state.intent.has_value()); if (state.intent) w.u8(static_cast<std::uint8_t>(*state.intent));
+    w.u8(state.skeletonView); w.u8(static_cast<std::uint8_t>(state.tab)); w.u8(state.debugExpanded);
+    w.u8(static_cast<std::uint8_t>(state.pinnedCandidateIds.size()));
+    for (std::size_t i=0;i<state.pinnedCandidateIds.size();++i) {
+        w.str(state.pinnedCandidateIds[i],16384);
+        w.str(i<state.pinnedFingerprints.size()?state.pinnedFingerprints[i]:std::string{},16384);
+    }
+    w.optionalInt(state.meterNumerator); w.optionalInt(state.meterDenominator);
+    w.u8(static_cast<std::uint8_t>(state.imported.events.size()));
+    for (const auto& chord : state.imported.events) {
+        w.str(chord.name); w.dbl(chord.startQN); w.u8(chord.durationQN.has_value()); if (chord.durationQN) w.dbl(*chord.durationQN);
+        w.u8(chord.openEnded); w.u8(static_cast<std::uint8_t>(chord.quality)); w.u8(static_cast<std::uint8_t>(chord.source));
+        w.optionalInt(chord.keyNoteValue); w.optionalInt(chord.bassNoteValue);
+        w.u8(chord.root.has_value()); if (chord.root) w.u8(static_cast<std::uint8_t>(*chord.root));
+        w.u8(chord.bass.has_value()); if (chord.bass) w.u8(static_cast<std::uint8_t>(*chord.bass));
+        w.optionalString(chord.extensions.mask); w.optionalString(chord.extensions.pitches);
+        w.optionalString(chord.extensions.type); w.optionalString(chord.extensions.color);
+    }
+    w.u32(state.editorWidth); w.u32(state.editorHeight);
+    w.u8(static_cast<std::uint8_t>(state.productMode));
+    w.u8(static_cast<std::uint8_t>(state.locale));
+    if(!validConstraints(state.constraints)||static_cast<unsigned>(state.tendency)>2||
+       (state.uiZoomPercent!=100&&state.uiZoomPercent!=125&&state.uiZoomPercent!=150))
+        throw std::runtime_error("invalid harmony preferences");
+    w.u8(static_cast<std::uint8_t>(state.tendency));w.u32(state.uiZoomPercent);
+    w.u8(static_cast<std::uint8_t>(state.constraints.melody.size()));
+    for(const auto& event:state.constraints.melody) {
+        w.dbl(event.startQN);w.dbl(event.durationQN);w.optionalInt(event.pitch);
+        w.u8(static_cast<std::uint8_t>(event.pitchClass));w.u8(static_cast<std::uint8_t>(event.role));
+        w.u8(static_cast<std::uint8_t>(event.strictness));
+    }
+    if (w.bytes.size()>1024*1024) throw std::runtime_error("session state too large");
+    return w.bytes;
+}
+DecodeResult deserialize(std::string_view bytes) {
+    DecodeResult result;
+    try {
+        if (bytes.size()<4 || bytes.size()>1024*1024 || bytes.substr(0,3)!="HCS") throw std::runtime_error("unsupported session state");
+        const bool legacy=bytes[3]=='1';
+        const bool version2=bytes[3]=='2', version3=bytes[3]=='3', version4=bytes[3]=='4',version5=bytes[3]=='5';
+        if (!legacy && !version2 && !version3 && !version4 && !version5) throw std::runtime_error("UnsupportedVersion");
+        Reader r{bytes,4}; auto& s=result.state;
+        if (!legacy) {
+            const auto version=r.u32();
+            if (version!=(version2?2u:version3?3u:version4?4u:5u)) throw std::runtime_error("UnsupportedVersion");
+        }
+        s.schemaVersion=PluginSessionState::currentSchemaVersion;
+        s.factoryLibraryVersion=r.u32();
+        const auto coordinate=r.u8(); if (coordinate>2) throw std::runtime_error("invalid coordinate mode");
+        s.imported.coordinateMode=static_cast<TimelineCoordinateMode>(coordinate); s.imported.revision=r.u64();
+        if (r.u8()) { const auto tonic=r.u8(), mode=r.u8(); if (tonic>11 || mode>1) throw std::runtime_error("invalid key"); s.forcedKey=KeySignature{static_cast<PitchClass>(tonic),static_cast<Mode>(mode)}; }
+        if (r.u8()) { const auto style=r.u32(); if (!style || (style&~kAllStyles)) throw std::runtime_error("invalid style"); s.styleMask=style; }
+        if (r.u8()) { const auto intent=r.u8(); if (intent<1 || intent>4) throw std::runtime_error("invalid intent"); s.intent=static_cast<PhraseIntent>(intent); }
+        s.skeletonView=r.u8()!=0; const auto tab=r.u8(); if (tab>3) throw std::runtime_error("invalid tab"); s.tab=static_cast<Tab>(tab); s.debugExpanded=r.u8()!=0;
+        const auto pins=r.u8(); if (pins>3) throw std::runtime_error("too many pins");
+        for (int i=0;i<pins;++i) {
+            const auto id=r.str(16384); const auto fingerprint=legacy?std::string{}:r.str(16384);
+            if (!s.pin(id,fingerprint)) throw std::runtime_error("invalid pin");
+        }
+        s.meterNumerator=r.optionalInt(); s.meterDenominator=r.optionalInt();
+        const auto count=r.u8(); if (count>maxImportedChordEvents) throw std::runtime_error("too many chords");
+        for (int i=0;i<count;++i) {
+            ChordEvent c; c.name=r.str(); c.startQN=r.dbl(); if (r.u8()) c.durationQN=r.dbl(); c.openEnded=r.u8()!=0;
+            const auto quality=r.u8(), source=r.u8(); if (quality>static_cast<int>(ChordQuality::Augmented) || source>2) throw std::runtime_error("invalid chord enum");
+            c.quality=static_cast<ChordQuality>(quality); c.source=static_cast<ChordSource>(source);
+            c.keyNoteValue=r.optionalInt(); c.bassNoteValue=r.optionalInt();
+            if (r.u8()) { const auto v=r.u8(); if (v>11) throw std::runtime_error("invalid root"); c.root=static_cast<PitchClass>(v); }
+            if (r.u8()) { const auto v=r.u8(); if (v>11) throw std::runtime_error("invalid bass"); c.bass=static_cast<PitchClass>(v); }
+            c.extensions.mask=r.optionalString(); c.extensions.pitches=r.optionalString(); c.extensions.type=r.optionalString(); c.extensions.color=r.optionalString();
+            if (c.name.empty() || (c.durationQN && *c.durationQN<=0)) throw std::runtime_error("invalid chord data");
+            s.imported.events.push_back(std::move(c));
+        }
+        if (version3 || version4 || version5) {
+            s.editorWidth=r.u32(); s.editorHeight=r.u32();
+            if (s.editorWidth<800 || s.editorWidth>2200 || s.editorHeight<640 || s.editorHeight>1400)
+                throw std::runtime_error("invalid editor size");
+        } else { s.editorWidth=1100; s.editorHeight=900; } // Preserve the historical migration for states without a window size.
+        if (version4 || version5) {
+            const auto mode=r.u8(), locale=r.u8();
+            if (mode>1 || locale>1) throw std::runtime_error("invalid product preferences");
+            s.productMode=static_cast<ProductMode>(mode);
+            s.locale=static_cast<Locale>(locale);
+        }
+        if(version5) {
+            const auto tendency=r.u8();s.uiZoomPercent=r.u32();
+            if(tendency>2||(s.uiZoomPercent!=100&&s.uiZoomPercent!=125&&s.uiZoomPercent!=150))
+                throw std::runtime_error("invalid harmony preferences");
+            s.tendency=static_cast<HarmonicTendency>(tendency);
+            const auto melodies=r.u8();if(melodies>128)throw std::runtime_error("too many melody events");
+            for(int i=0;i<melodies;++i) {
+                MelodyConstraint e;e.startQN=r.dbl();e.durationQN=r.dbl();e.pitch=r.optionalInt();
+                e.pitchClass=r.u8();e.role=static_cast<ConstraintRole>(r.u8());
+                e.strictness=static_cast<ConstraintStrictness>(r.u8());s.constraints.melody.push_back(e);
+            }
+            if(!validConstraints(s.constraints))throw std::runtime_error("invalid melody constraints");
+        }
+        if (r.at!=bytes.size() || (count && coordinate==0) || !std::is_sorted(s.imported.events.begin(),s.imported.events.end(),
+            [](const auto& a,const auto& b){return a.startQN<b.startQN;})) throw std::runtime_error("invalid session order");
+    } catch (const std::exception& e) { result.state={}; result.error=e.what(); }
+    return result;
+}
+} // namespace harmony::session

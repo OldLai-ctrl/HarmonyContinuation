@@ -1,0 +1,285 @@
+#pragma once
+
+#include "HarmonyAnalysis.h"
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace harmony {
+
+using TemplateID = std::string;
+enum class PhraseIntent : std::uint8_t { Neutral, Develop, Resolve, Loop, Color };
+enum class CadenceType : std::uint8_t {
+    None, Authentic, PerfectAuthentic, ImperfectAuthentic, Plagal, Half,
+    Deceptive, Modal, LoopClosure, Unknown
+};
+using StyleFlags = std::uint32_t;
+// Bit values 0-5 are frozen: every library built before v0.12 stores them.
+// New categories append bits; a style set is a mask, because one progression is
+// commonly idiomatic in several of them at once.
+enum class Style : StyleFlags {
+    Pop=1u<<0, Rock=1u<<1, Rnb=1u<<2, Jazz=1u<<3, CityPop=1u<<4, Functional=1u<<5,
+    Folk=1u<<6, Electronic=1u<<7, Cinematic=1u<<8, LatinWorld=1u<<9,
+    BluesGospel=1u<<10, Anime=1u<<11, Experimental=1u<<12
+};
+struct StyleInfo { Style id; std::string_view slug; std::string_view label; };
+inline constexpr StyleInfo kStyleTable[] = {
+    {Style::Pop,"pop","Pop"}, {Style::Rock,"rock","Rock"}, {Style::Rnb,"rnb","R&B"},
+    {Style::Jazz,"jazz","Jazz"}, {Style::CityPop,"citypop","City Pop"},
+    {Style::Functional,"functional","Functional"}, {Style::Folk,"folk","Folk"},
+    {Style::Electronic,"electronic","Electronic"}, {Style::Cinematic,"cinematic","Cinematic"},
+    {Style::LatinWorld,"latin","Latin"}, {Style::BluesGospel,"blues","Blues/Gospel"},
+    {Style::Anime,"anime","ACG"}, {Style::Experimental,"experimental","Experimental"}
+};
+inline constexpr StyleFlags kAllStyles = (1u << 13) - 1;
+inline StyleFlags styleBit(Style s) { return static_cast<StyleFlags>(s); }
+inline std::string_view styleSlug(Style s) {
+    for (const auto& i : kStyleTable) if (i.id == s) return i.slug;
+    return {};
+}
+inline std::string_view styleLabel(Style s) {
+    for (const auto& i : kStyleTable) if (i.id == s) return i.label;
+    return {};
+}
+inline std::optional<Style> styleFromSlug(std::string_view slug) {
+    for (const auto& i : kStyleTable) if (i.slug == slug) return i.id;
+    return std::nullopt;
+}
+enum class ComplexityLevel : std::uint8_t { Basic, Rich, Advanced };
+
+// No absolute pitch class is stored in a template. Durations are relative QN
+// values; the matcher normalizes them independently for each sequence.
+struct MatchEvent {
+    std::optional<ScaleDegree> degree;
+    std::optional<ScaleDegree> target;
+    ChordQuality quality{ChordQuality::Unknown};
+    HarmonicFunction function{HarmonicFunction::Unknown};
+    RoleFlags roles{};
+    float structuralWeight{0.7f};
+    std::optional<double> durationQN;
+    std::size_t sourceIndex{};
+    // Optional exact realization; explicit template values also guide matching.
+    std::optional<int> bassInterval;
+    std::uint16_t intervalMask{}, colorMask{};
+    std::string displaySuffix;
+    float sourceUncertainty{}; // small compatibility cost for contradictory host fields
+};
+
+struct ProgressionFingerprint {
+    Mode mode{Mode::Major};
+    std::size_t skeletonLength{};
+    std::vector<int> skeletonDegrees;
+    std::vector<int> skeletonBigrams;
+    HarmonicFunction endingFunction{HarmonicFunction::Unknown};
+    CadenceType cadence{CadenceType::None};
+    std::vector<std::uint8_t> rhythmShape;
+    std::size_t structuralCount{};
+    RoleFlags roleSummary{};
+};
+
+struct ProgressionTemplate {
+    TemplateID id;
+    std::string name;
+    std::string nameZh, nameEn, description, note, createdAt, updatedAt;
+    std::vector<std::string> aliases, builtInTags, techniques;
+    ComplexityLevel complexityLevel{ComplexityLevel::Basic};
+    bool favorite{};
+    Mode mode{Mode::Major};
+    std::vector<MatchEvent> full;
+    std::vector<std::size_t> skeletonIndices;
+    PhraseIntent intent{PhraseIntent::Neutral};
+    StyleFlags secondaryIntents{};
+    CadenceType cadence{CadenceType::None};
+    StyleFlags styles{};
+    std::vector<std::pair<Style, float>> styleWeights;
+    bool loopable{};
+    int meterNumerator{4};
+    int meterDenominator{4};
+    std::size_t phraseLength{};
+    float complexity{0.5f};
+    std::string sourceType{"factory"};
+    float priorWeight{0.5f};
+    std::vector<std::string> tags;
+    int version{1};
+    ProgressionFingerprint fingerprint;
+    // Exact imported chords, alongside the frozen matching projection.
+    Progression rawChords;
+    std::optional<KeySignature> rawChordKey;
+};
+
+struct KeyInterpretation {
+    KeyCandidate key;
+    std::vector<MatchEvent> full;
+    std::vector<std::size_t> skeletonIndices;
+    ProgressionFingerprint fingerprint;
+};
+struct MatchQuery {
+    std::vector<KeyInterpretation> interpretations;
+    std::optional<int> timeSigNumerator;
+    std::optional<int> timeSigDenominator;
+    std::optional<StyleFlags> styleHint;
+    bool forcedKey{};
+    Progression source;
+    RetrievalTimingMode retrievalTimingMode{RetrievalTimingMode::Unified};
+};
+
+// All score-affecting constants live here. Values are dimensionless costs.
+struct MatchWeights {
+    std::size_t maxKeyCandidates{3};
+    std::size_t shortPrefixKeyCandidates{24};
+    float minKeyConfidence{0.005f};
+    float degreeDifference{0.9f};
+    float alteredDegree{0.28f};
+    float enharmonicDegreeDifference{0.06f};
+    float qualityDifference{0.25f};
+    float qualityExtensionDifference{0.07f};
+    float functionDifference{0.48f};
+    float sameFunctionDegreeFactor{0.52f};
+    float roleDifference{0.22f};
+    float secondaryTargetDifference{0.34f};
+    float explicitBassDifference{0.45f};
+    float explicitPitchSetDifference{0.30f};
+    float borrowedVariantFactor{0.58f};
+    float substitutionMaxCost{1.30f};
+    float rhythmWeight{0.18f};
+    float gapBase{0.35f};
+    float structuralImportanceWeight{0.44f};
+    float passingGapFactor{0.36f};
+    float approachGapFactor{0.55f};
+    float secondaryGapFactor{0.72f};
+    float tonicProlongationGapFactor{0.85f};
+    float predominantGapFactor{1.30f};
+    float dominantGapFactor{1.75f};
+    float cadentialGapFactor{1.55f};
+    float cadentialTonicGapFactor{1.35f};
+    float queryTailStructuralFactor{1.85f};
+    float templatePrefixSkipCost{0.05f};
+    float skeletonWeight{0.68f};
+    float fullWeight{0.32f};
+    float keyPriorWeight{0.025f};
+    float similarityScale{0.75f};
+    float minimumMatchedFraction{0.75f};
+    float lowCoveragePenalty{0.80f};
+    std::size_t shortlistLimit{}; // 0 scans the full index; positive values cap fingerprint preselection
+    bool recoverConsumedFactoryTail{}; // opt-in continuation retrieval for a nonlooping source
+    bool abstractChordCompatibility{false}; // directional explicit pitch-set experiment; default off
+};
+
+enum class AlignmentOp : std::uint8_t { Match, Substitute, QueryInsertion, TemplateDeletion };
+enum class MatchReason : std::uint32_t {
+    SameDegree = 1u << 0, SameBaseDegree = 1u << 1, SameFunction = 1u << 2,
+    QualityVariant = 1u << 3, BorrowedVariant = 1u << 4, SameRole = 1u << 5,
+    SecondaryTargetMatch = 1u << 6, SecondaryTargetMismatch = 1u << 7,
+    EmbellishingInsertion = 1u << 8, StructuralInsertion = 1u << 9,
+    EmbellishingDeletion = 1u << 10, StructuralDeletion = 1u << 11,
+    RhythmMismatch = 1u << 12, CadentialImportance = 1u << 13,
+    LowStructuralPenalty = 1u << 14, ResolvesToMatchedTarget = 1u << 15,
+    EnharmonicDegree = 1u << 16, AbstractExtensionCompatibility = 1u << 17
+};
+using MatchReasonFlags = std::uint32_t;
+constexpr MatchReasonFlags flag(MatchReason reason) noexcept { return static_cast<MatchReasonFlags>(reason); }
+constexpr bool hasReason(MatchReasonFlags flags, MatchReason reason) noexcept { return (flags & flag(reason)) != 0; }
+
+struct AlignmentStep {
+    std::optional<std::size_t> queryIndex;
+    std::optional<std::size_t> templateIndex;
+    AlignmentOp operation{AlignmentOp::Match};
+    float cost{};
+    MatchReasonFlags reasons{};
+};
+struct MatchSubScores {
+    float skeletonHarmony{};
+    float fullHarmony{};
+    float functionSimilarity{};
+    float roleSimilarity{};
+    float rhythmSimilarity{};
+    float keyCompatibility{};
+};
+struct MatchResult {
+    TemplateID templateId;
+    std::string templateName;
+    float similarity{}; // 0..1 similarity, not a probability
+    float rawCost{};
+    std::string disposition; // diagnostic only, never persisted
+    std::string timingSource; // effective output timing evidence, never persisted
+    float candidateRankingScore{-1.f};
+    float candidateEligibilityScore{-1.f};
+    KeySignature key;
+    float keyPrior{};
+    std::size_t templateMatchStart{};
+    std::size_t templateMatchEnd{}; // inclusive
+    std::size_t continuationStartIndex{};
+    bool hasContinuation{};
+    std::size_t continuationLength{};
+    std::vector<AlignmentStep> alignmentTrace;
+    std::vector<std::string> templateLabels;
+    MatchSubScores subScores;
+};
+
+struct MatchRunStats {
+    std::size_t imported{}, analyzed{}, keys{}, aligned{}, similarityPassed{}, tailPassed{},
+        realizationPassed{}, pathPassed{}, distinct{}, scorePassed{}, output{};
+    double prefilterMs{};
+    double alignmentMs{};
+    double totalMs{};
+    std::size_t shortlistSize{};
+};
+
+MatchQuery makeMatchQuery(const Progression&, const AnalysisContext& = {}, const MatchWeights& = {});
+ProgressionFingerprint makeFingerprint(Mode, const std::vector<MatchEvent>&,
+                                       const std::vector<std::size_t>&, CadenceType);
+void prepareTemplate(ProgressionTemplate&);
+void applyPhraseBoundaryReview(ProgressionTemplate&); // runtime metadata; source music stays frozen
+
+// Offline-capable source index. One record per internal anchor or admitted phrase
+// entry/terminal prototype, never a Cartesian product of catalogue phrases.
+struct ContextAnchor {
+    std::size_t templateIndex{}, continuationStart{};
+    std::optional<MatchEvent> terminalPrototype; // phrase seam only; relative to target center
+    std::string basis;
+};
+struct PhraseLink {
+    std::size_t sourceTemplate{}, nextTemplate{};
+    float boundaryScore{};
+    std::string basis;
+};
+std::vector<ContextAnchor> buildContextAnchors(const std::vector<ProgressionTemplate>&);
+std::vector<PhraseLink> buildDevelopmentLinks(const std::vector<ProgressionTemplate>&);
+struct ContinuationLink {
+    std::size_t sourceTemplate{}, nextTemplate{};
+    KeySignature sourceKey, nextKey;
+    float boundaryScore{};
+    std::optional<KeySignature> nextCenter; // supported explanation; unset while the source remains in transition
+};
+class CandidateIndex;
+std::vector<ContinuationLink> buildContinuationLinks(const CandidateIndex&);
+class CandidateIndex {
+public:
+    explicit CandidateIndex(std::vector<ProgressionTemplate> templates = {});
+    const std::vector<ProgressionTemplate>& templates() const noexcept { return templates_; }
+    const std::vector<ContextAnchor>& contextAnchors() const noexcept { return contextAnchors_; }
+    const std::vector<PhraseLink>& developmentLinks() const noexcept { return developmentLinks_; }
+    const std::vector<ContinuationLink>& continuationLinks() const noexcept { return continuationLinks_; }
+    std::vector<std::size_t> shortlist(const MatchQuery&, const MatchWeights& = {}) const;
+private:
+    std::vector<ProgressionTemplate> templates_;
+    std::vector<ContextAnchor> contextAnchors_;
+    std::vector<PhraseLink> developmentLinks_;
+    std::vector<ContinuationLink> continuationLinks_; // bounded one-step, qualified full-source possibilities
+};
+
+std::vector<MatchResult> matchProgression(const MatchQuery&, const CandidateIndex&,
+                                          const MatchWeights& = {}, std::size_t topN = 5,
+                                          MatchRunStats* stats = nullptr,
+                                          bool retainKeyInterpretations = false);
+
+const char* alignmentOpName(AlignmentOp) noexcept;
+std::string reasonNames(MatchReasonFlags);
+std::string formatMatchEvent(const MatchEvent&);
+
+} // namespace harmony

@@ -1,0 +1,19 @@
+{
+  "name": "Case C · Dm7-G7",
+  "tempo": 120,
+  "meter": [
+    4,
+    4
+  ],
+  "chords": [
+    {
+      "name": "Dm7",
+      "start": 0,
+      "duration": 2
+    },
+    {
+      "name": "G7",
+      "start": 2
+    }
+  ]
+}

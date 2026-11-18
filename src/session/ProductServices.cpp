@@ -1,0 +1,310 @@
+#include "ProductServices.h"
+#include "persistence/ChordData.h"
+#include "core/ContextualContinuation.h"
+#include <algorithm>
+#include <atomic>
+#include <bit>
+#include <chrono>
+#include <charconv>
+#include <cmath>
+#include <sstream>
+#include <iomanip>
+
+namespace harmony::session {
+ContinuationAccess continuationAccess(const std::vector<ContinuationCandidate>& group) {
+    ContinuationAccess access;
+    for(std::size_t i=0;i<group.size();++i) {
+        const auto& c=group[i];
+        if(!c.hardConstraintsPassed||!c.baseQualified||!std::isfinite(c.rankingScore))continue;
+        access.more.push_back(i);
+        access.exploratory+=c.exploratory;
+    }
+    return access;
+}
+std::string recommendationDiagnostics(const Progression& p,const AnalysisContext& ctx,
+    const RecommendationRequest& request,const RecommendationSet& set) {
+    std::ostringstream out;out<<std::setprecision(17);
+    out<<"\nRECOMMENDATION_DIAGNOSTICS_V1\nOrigin: current instance input; synthetic status is not inferred from XML sourceApp.\n";
+    out<<"ACTUAL retrievalMode="<<int(set.retrievalTimingMode)<<" HarmonyFirst="
+        <<(set.retrievalTimingMode==RetrievalTimingMode::HarmonyFirst)<<" Phase3A="<<set.phase3aEnabled
+        <<" Abstract="<<set.abstractChordCompatibility
+        <<" contextMode="<<int(ctx.retrievalTimingMode)<<" meter="<<ctx.timeSigNumerator.value_or(0)<<'/'<<ctx.timeSigDenominator.value_or(0)
+        <<" timingPolicy=matched input QN, then uniform session meter when no QN evidence, then prototype; live host meter is reference only; beat grouping unknown\n";
+    const auto analysis=analyzeHarmony(p,ctx);
+    out<<"SELECTED_KEY "<<(analysis.selectedKey?formatKey(analysis.selectedKey->key):"UNKNOWN")<<'\n';
+    for(const auto& k:analysis.keyCandidates)out<<"KEY "<<formatKey(k.key)<<" score="<<k.score<<" confidence="<<k.confidence<<'\n';
+    for(std::size_t i=0;i<analysis.full.size();++i) {
+        const auto& e=analysis.full[i];
+        out<<"STRUCTURE "<<i<<" weight="<<e.structuralWeight<<" retrievalWeight="<<e.retrievalStructuralWeight
+            <<" roles="<<e.roles<<" retrievalRoles="<<e.retrievalRoles<<" skeleton="
+            <<(std::find(analysis.skeletonIndices.begin(),analysis.skeletonIndices.end(),i)!=analysis.skeletonIndices.end())<<'\n';
+    }
+    std::string styleText="AUTO";
+    if (request.styleMask) { styleText.clear();
+        for (const auto& info : kStyleTable) if (request.styleMask & styleBit(info.id)) {
+            if (!styleText.empty()) styleText+='+'; styleText+=info.slug; } }
+    out<<"Key="<<(ctx.forcedKey?formatKey(*ctx.forcedKey):"AUTO")<<" Style="<<styleText
+        <<" Intent="<<(request.preferredIntent?std::to_string(int(*request.preferredIntent)):"AUTO")<<" Tendency="<<int(request.tendency)
+        <<" Inspiration="<<request.inspirationPriority<<'\n';
+    for(std::size_t i=0;i<p.size();++i) {
+        const auto& e=p[i];const auto n=normalizeChord(e);
+        out<<"INPUT "<<i<<" source="<<int(e.source)<<" name="<<std::quoted(e.name)<<" rawName="<<std::quoted(e.rawName.value_or(""))
+            <<" keyNote="<<std::quoted(e.rawKeyNote.value_or(""))<<" bassNote="<<std::quoted(e.rawBassNote.value_or(""))
+            <<" pitches="<<std::quoted(e.extensions.pitches.value_or(""))<<" mask="<<std::quoted(e.extensions.mask.value_or(""))
+            <<" projectTime="<<std::quoted(e.rawProjectTime.value_or(""))<<" domain="<<std::quoted(e.rawTimeDomain.value_or(""))
+            <<" root="<<(n.root?int(*n.root):-1)<<" quality="<<int(n.quality)<<" bass="<<(n.bass?int(*n.bass):-1)
+            <<" intervalMask="<<n.intervalMask<<" colorMask="<<n.colorMask<<" matchingMask="<<n.matchingIntervalMask
+            <<" startQN="<<e.startQN<<" durationQN="<<e.durationQN.value_or(-1)<<" OPEN="<<e.openEnded
+            <<" symbolic="<<n.symbolicHarmony<<" rootSource="<<int(n.rootSource)<<" qualitySource="<<int(n.qualitySource)
+            <<" bassSource="<<int(n.bassSource)<<" performedBass="<<(n.performedBass?int(*n.performedBass):-1)
+            <<" confidence="<<n.confidence<<" uncertaintyCost="<<n.compatibilityUncertainty<<" conflict="<<n.fieldConflict<<'\n';
+        for(const auto& d:n.diagnostics)out<<"  warning="<<std::quoted(d)<<'\n';
+    }
+    const auto& s=set.stats;
+    out<<"STAGES imported="<<s.imported<<" analyzed="<<s.analyzed<<" keys="<<s.keys<<" shortlist="<<s.shortlistSize
+       <<" aligned="<<s.aligned<<" similarity="<<s.similarityPassed<<" tail="<<s.tailPassed<<" realization="<<s.realizationPassed
+       <<" path="<<s.pathPassed<<" distinct="<<s.distinct<<" score="<<s.scorePassed<<" workerOutput="<<s.output<<'\n';
+    for(const auto& m:set.matches) {
+        out<<"MATCH "<<m.templateId<<" key="<<formatKey(m.key)<<" similarity="<<m.similarity<<" rawCost="<<m.rawCost
+           <<" rhythmScore="<<m.subScores.rhythmSimilarity<<" continuationStartIndex="<<m.continuationStartIndex
+           <<" candidateScore="<<m.candidateRankingScore<<" eligibility="<<m.candidateEligibilityScore
+           <<" full="<<m.subScores.fullHarmony<<" skeleton="<<m.subScores.skeletonHarmony<<" disposition="<<m.disposition
+           <<" timingSource="<<m.timingSource<<'\n';
+        for(const auto& a:m.alignmentTrace)out<<"  ALIGN q="<<(a.queryIndex?int(*a.queryIndex):-1)<<" t="<<(a.templateIndex?int(*a.templateIndex):-1)
+            <<" op="<<alignmentOpName(a.operation)<<" cost="<<a.cost<<" reasons="<<reasonNames(a.reasons)<<'\n';
+    }
+    const auto shown=presentationIndices(set,{});
+    for(std::size_t g=0;g<set.groups.size();++g)for(std::size_t i=0;i<set.groups[g].size();++i) {
+        const auto& c=set.groups[g][i];out<<"CANDIDATE group="<<g<<" rank="<<i+1<<" primary="<<c.primaryTemplate
+          <<" key="<<formatKey(c.key)<<" score="<<c.rankingScore<<" eligibility="<<c.eligibilityScore
+          <<" channel="<<recommendationChannelName(c.channel)<<" provenance="<<int(c.provenance)
+          <<" direction="<<int(c.direction)<<" qualityTier="<<c.creativeQuality.tier<<" connection="<<std::quoted(c.connectionReason)
+          <<" hard="<<c.hardConstraintsPassed<<" qualified="<<c.baseQualified<<" exploratory="<<c.exploratory
+          <<" rhythm="<<c.subscores.rhythm<<" DEFAULT_VISIBLE="
+          <<(std::find(shown[g].begin(),shown[g].end(),i)!=shown[g].end())
+          // Show More lists every retained worker candidate (MainView), without
+          // the default presentation's score/diversity/path filtering.
+          <<" MORE_ACCESSIBLE="<<(c.hardConstraintsPassed&&c.baseQualified&&std::isfinite(c.rankingScore))<<" sources=";
+        for(const auto& id:c.supportingTemplates)out<<id<<',';
+        out<<" rhythmScale="<<c.rhythmScale<<" rhythmConfidence="<<c.rhythmConfidence<<" OPENhold="<<c.suggestedCurrentChordDurationQN.value_or(-1)
+            <<" path=";for(const auto& e:c.continuation)out<<e.label<<'@'<<e.durationQN<<"QN -> ";out<<'\n';
+    }
+    return out.str();
+}
+std::string continuationFingerprint(const ContinuationCandidate& c) {
+    return "music-v1:"+continuationMusicFingerprint(c);
+}
+std::string legacyContinuationFingerprint(const ContinuationCandidate& c) {
+    std::ostringstream out;
+    const auto sized=[&](const std::string& value){out << value.size() << ':' << value;};
+    out << static_cast<int>(c.key.tonic) << ':' << static_cast<int>(c.key.mode) << ':'
+        << static_cast<int>(c.intent) << ':' << static_cast<int>(c.cadence) << ':';
+    sized(c.primaryTemplate); out << ':';
+    if (c.suggestedCurrentChordDurationQN) out << std::bit_cast<std::uint64_t>(*c.suggestedCurrentChordDurationQN);
+    else out << '-';
+    out << ':' << c.continuation.size() << ':';
+    for (const auto& event : c.continuation) {
+        out << event.degree.degree << ':' << event.degree.alteration << ':';
+        sized(event.label);
+        out << ':' << static_cast<int>(event.quality) << ':'
+            << std::bit_cast<std::uint64_t>(event.durationQN) << ';';
+        if(event.harmonicData)sized(persistence::encodeChords({*event.harmonicData}));
+    }
+    return out.str();
+}
+bool continuationReferenceMatches(const ContinuationCandidate& c, std::string_view reference) {
+    if (reference.starts_with("music-v1:")) return reference==continuationFingerprint(c);
+    // Legacy pins did not store realization constraints, so cannot certify them.
+    if (!c.constraints.melody.empty()) return false;
+    // Recover complete legacy music, never rebind by source ID or a partial parse.
+    try {
+        if (reference.size()>8192) return false;
+        std::size_t at{};
+        const auto token = [&](char separator) {
+            const auto end=reference.find(separator,at);
+            if(end==reference.npos) throw std::runtime_error("reference separator");
+            const auto value=reference.substr(at,end-at); at=end+1; return value;
+        };
+        const auto integer = [](std::string_view value) {
+            std::uint64_t result{};
+            const auto parsed=std::from_chars(value.data(),value.data()+value.size(),result);
+            if(parsed.ec!=std::errc{}||parsed.ptr!=value.data()+value.size()) throw std::runtime_error("reference number");
+            return result;
+        };
+        const auto sized = [&] {
+            const auto count=integer(token(':'));
+            if(count>reference.size()-at) throw std::runtime_error("reference length");
+            const auto value=reference.substr(at,static_cast<std::size_t>(count)); at+=count; return value;
+        };
+        for(int i=0;i<4;++i) (void)integer(token(':'));
+        (void)sized();
+        if(at>=reference.size()||reference[at++]!=':') return false;
+        ContinuationCandidate old;
+        const auto hold=token(':');
+        if(hold!="-") {
+            const auto duration=std::bit_cast<double>(integer(hold));
+            if(!std::isfinite(duration)||duration<=0) return false;
+            old.suggestedCurrentChordDurationQN=duration;
+        }
+        const auto count=integer(token(':'));
+        if(count==0||count>64) return false;
+        for(std::size_t i=0;i<count;++i) {
+            (void)token(':'); (void)token(':'); // signed, explanatory scale degrees
+            ConcreteChordEvent event; event.label=std::string(sized());
+            if(at>=reference.size()||reference[at++]!=':') return false;
+            const auto quality=integer(token(':'));
+            if(quality>static_cast<unsigned>(ChordQuality::Augmented)) return false;
+            event.quality=static_cast<ChordQuality>(quality);
+            event.durationQN=std::bit_cast<double>(integer(token(';')));
+            if(!std::isfinite(event.durationQN)||event.durationQN<=0) return false;
+            const auto colon=reference.find(':',at);
+            if(colon!=reference.npos&&colon+1<reference.size()&&reference[colon+1]=='[') {
+                const auto chords=persistence::decodeChords(sized());
+                if(chords.size()!=1) return false;
+                event.harmonicData=chords.front();
+            }
+            old.continuation.push_back(std::move(event));
+        }
+        return at==reference.size()&&continuationMusicFingerprint(old)==continuationMusicFingerprint(c);
+    } catch(const std::exception&) { return false; }
+}
+namespace {
+float chordDistance(const ConcreteChordEvent& x,const ConcreteChordEvent& y) {
+    const auto px=x.harmonicData?chordPitches(*x.harmonicData):chordPitches(x.label,x.quality);
+    const auto py=y.harmonicData?chordPitches(*y.harmonicData):chordPitches(y.label,y.quality);
+    float diff{};
+    if (px.root!=py.root || px.bass!=py.bass) diff+=0.65f;
+    if (px.quality!=py.quality || px.intervals!=py.intervals || px.exactIntervals!=py.exactIntervals) diff+=0.2f;
+    const auto ratio=std::min(x.durationQN,y.durationQN)/std::max(0.001,std::max(x.durationQN,y.durationQN));
+    return diff+static_cast<float>((1.0-ratio)*0.15);
+}
+// Compare the part the two paths actually share, from either end: a two-chord answer that
+// restates the opening of a four-chord answer is the same idea, not a second one.
+float pathDistance(const ContinuationCandidate& a,const ContinuationCandidate& b) {
+    const auto na=a.continuation.size(), nb=b.continuation.size();
+    const auto overlap=std::min(na,nb);
+    if (!overlap) return 0.f;
+    float head{}, tail{};
+    for (std::size_t k=0;k<overlap;++k) {
+        head+=chordDistance(a.continuation[k],b.continuation[k]);
+        tail+=chordDistance(a.continuation[na-1-k],b.continuation[nb-1-k]);
+    }
+    return std::min(head,tail)/static_cast<float>(overlap);
+}
+}
+std::vector<std::size_t> RecommendationVisibilityPolicy::visibleIndices(const std::vector<ContinuationCandidate>& group) const {
+    std::vector<std::size_t> visible;
+    if (group.empty() || maxPerGroup==0) return visible;
+    std::array<float,5> best{};
+    for (const auto& candidate:group)best[std::size_t(candidate.channel)]=std::max(best[std::size_t(candidate.channel)],candidate.rankingScore);
+    for (std::size_t i=0;i<group.size() && visible.size()<maxPerGroup;++i) {
+        const auto& c=group[i];
+        if (!c.hardConstraintsPassed || !c.baseQualified || (c.exploratory&&!includeExploratory) || !std::isfinite(c.rankingScore) ||
+            (relativeToGroupBest>0 && c.rankingScore<best[std::size_t(c.channel)]-relativeToGroupBest)) continue;
+        if (minimumDiversityDistance>0 && std::any_of(visible.begin(),visible.end(),[&](std::size_t chosen){
+            return pathDistance(c,group[chosen])<minimumDiversityDistance; })) continue;
+        visible.push_back(i);
+    }
+    return visible;
+}
+namespace {
+bool sameContinuationPath(const ContinuationCandidate& a,const ContinuationCandidate& b) {
+    return continuationMusicFingerprint(a)==continuationMusicFingerprint(b);
+}
+}
+RecommendationPresentation presentationIndices(const RecommendationSet& set,
+    const RecommendationVisibilityPolicy& policy) {
+    RecommendationPresentation shown;
+    std::array<std::size_t,4> order{0,1,2,3};
+    const bool creative=std::any_of(set.groups.begin(),set.groups.end(),[](const auto& group) {
+        return std::any_of(group.begin(),group.end(),[](const auto& c){return c.channel!=RecommendationChannel::Exact;});
+    });
+    std::stable_sort(order.begin(),order.end(),[&](std::size_t a,std::size_t b) {
+        if(creative) {
+            const auto tier=[&](auto g){return set.groups[g].empty()?-1:recommendationQualityTier(set.groups[g].front());};
+            return tier(a)>tier(b);
+        }
+        const auto score=[&](std::size_t group) {
+            return set.groups[group].empty()?-1.f:set.groups[group].front().rankingScore;
+        };
+        return score(a)>score(b);
+    });
+    auto all=policy; all.maxPerGroup=100;
+    for(const auto group:order) {
+        const auto eligible=all.visibleIndices(set.groups[group]);
+        for(const auto index:eligible) {
+            const auto& candidate=set.groups[group][index];
+            const bool sameGroup=std::any_of(shown[group].begin(),shown[group].end(),[&](std::size_t chosen) {
+                return sameContinuationPath(candidate,set.groups[group][chosen]);
+            });
+            if(sameGroup)continue;
+            bool inOtherGroup{};
+            for(std::size_t other=0;other<shown.size();++other)if(other!=group)
+                for(const auto chosen:shown[other])
+                    if(sameContinuationPath(candidate,set.groups[other][chosen]))inOtherGroup=true;
+            if(inOtherGroup)continue;
+            shown[group].push_back(index);
+            if(shown[group].size()>=policy.maxPerGroup)break;
+        }
+    }
+    return shown;
+}
+SaveResult makeUserProgression(const ImportedProgressionSession& session,
+                               const ContinuationCandidate& candidate, const SaveMetadata& metadata) {
+    SaveResult result;
+    if (session.events.empty() || candidate.continuation.empty() || metadata.name.empty() || metadata.name.size()>128 ||
+        session.events.size()+candidate.continuation.size()>64) { result.error="invalid recommendation or name"; return result; }
+    try {
+        Progression phrase=session.events;
+        const auto anchor=phrase.front().startQN;
+        for (auto& event:phrase) event.startQN-=anchor;
+        auto& open=phrase.back();
+        double hold=(!open.openEnded&&open.durationQN)?*open.durationQN:
+            candidate.suggestedCurrentChordDurationQN.value_or(4.0);
+        if (!std::isfinite(hold) || hold<=0 || hold>128) { result.error="invalid OPEN hold"; return result; }
+        open.durationQN=hold; open.openEnded=false;
+        double cursor=open.startQN+hold;
+        for (const auto& suggested:candidate.continuation) {
+            if (!std::isfinite(suggested.durationQN) || suggested.durationQN<=0 || suggested.durationQN>128) {
+                result.error="invalid continuation duration"; return result;
+            }
+            ChordEvent event=suggested.harmonicData.value_or(ChordEvent{}); event.name=suggested.label; event.startQN=cursor;
+            event.durationQN=suggested.durationQN; event.openEnded=false;
+            event.quality=suggested.quality; phrase.push_back(std::move(event)); cursor+=suggested.durationQN;
+        }
+        AnalysisContext context; context.forcedKey=candidate.key;
+        const auto query=makeMatchQuery(phrase,context);
+        if (query.interpretations.empty()) { result.error="cannot analyze saved phrase"; return result; }
+        static std::atomic<std::uint64_t> sequence{0};
+        const auto ticks=std::chrono::steady_clock::now().time_since_epoch().count();
+        auto& item=result.item;
+        item.id="USER_"+std::to_string(ticks)+"_"+std::to_string(++sequence);
+        item.name=metadata.name; item.sourceType="user"; item.mode=candidate.key.mode;
+        item.full=query.interpretations.front().full;
+        item.skeletonIndices=query.interpretations.front().skeletonIndices;
+        item.phraseLength=item.full.size(); item.intent=metadata.intent;
+        item.cadence=candidate.cadence; item.loopable=candidate.intent==PhraseIntent::Loop;
+        if (metadata.style) { item.styles=static_cast<StyleFlags>(*metadata.style); item.styleWeights.emplace_back(*metadata.style,1.f); }
+        item.tags=metadata.tags;
+        item.note=metadata.note;
+        item.rawChords=phrase; item.rawChordKey=candidate.key;
+        for (std::size_t i=0;i<item.full.size();++i) {
+            auto& event=item.full[i];event.durationQN=phrase[i].durationQN;
+            const auto chord=chordPitches(phrase[i]);
+            if(chord.root<0||chord.bass<0||!chord.intervals)throw std::runtime_error("unsupported saved chord");
+            event.bassInterval=(chord.bass-chord.root+12)%12;event.intervalMask=chord.intervals;event.colorMask=chord.colorMask;
+            auto name=phrase[i].name.substr(0,phrase[i].name.find('/'));
+            std::size_t rootLength=1;if(name.size()>1&&(name[1]=='#'||name[1]=='b'))rootLength=2;
+            if(name.size()>=rootLength)event.displaySuffix=name.substr(rootLength);
+        }
+        prepareTemplate(item);
+    } catch (const std::exception& e) { result.error=e.what(); result.item={}; }
+    return result;
+}
+bool saveRecommendation(library::UserLibrary& library, const ImportedProgressionSession& session,
+                        const ContinuationCandidate& candidate, const SaveMetadata& metadata, std::string& error) {
+    auto converted=makeUserProgression(session,candidate,metadata);
+    if (!converted) { error=converted.error; return false; }
+    return library.addProgression(converted.item,error);
+}
+} // namespace harmony::session

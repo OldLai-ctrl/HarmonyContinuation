@@ -1,0 +1,7 @@
+id	verdict	mode	sequence	reason
+V3_DRAFT_001	QUESTIONABLE	major	Imaj9 vi9 ii9 V13 Imaj9	Seed notation cannot encode ninth/thirteenth pitch sets; explicit typed masks and voicings need editorial confirmation.
+V3_DRAFT_002	QUESTIONABLE	minor	imaj7 ivm9 V7alt imaj7	Minor-major seventh and altered dominant colors need explicit verified quality and pitch sets.
+V3_DRAFT_003	QUESTIONABLE	major	I/E IV/F# V/G I	Numeric bass intervals must be authored explicitly; slash notation currently means secondary target rather than bass.
+V3_DRAFT_004	QUESTIONABLE	major	Isus ii7 Vsus I	Sus is ambiguous between sus2 and sus4; do not guess quality.
+V3_DRAFT_005	QUESTIONABLE	major	Imaj7 bII7 Imaj7	Tritone substitution role and intended voice leading need editorial confirmation before catalogue inclusion.
+V3_DRAFT_006	QUESTIONABLE	minor	i It+6 V i	Augmented-sixth spelling and exact pitch set are not represented by seed notation.

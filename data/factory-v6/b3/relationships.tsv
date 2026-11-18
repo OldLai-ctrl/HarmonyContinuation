@@ -1,0 +1,23 @@
+scope	candidate	source	relations	exactComplete	rhythmless	sameCoreFamily	extensionOnly	nearRoot	rootMatches	rootDifferences	bassContourSame
+withinB3	V6_B3_01_014	V6_B3_01_067	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+withinB3	V6_B3_01_014	V6_B3_01_068	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+withinB3	V6_B3_01_050	V6_B3_01_090	"[""near_root_cousin""]"	False	False	False	False	True	5	"[{""event"": 4, ""leftInterval"": 5, ""rightInterval"": 2}]"	True
+againstV5AndB1	V6_B3_01_001	V5:COMMON_MAJOR_003	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:COMMON_MAJOR_016	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:JAZZ_003	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:JAZZ_004	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:RNB_SOUL_001	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:RNB_SOUL_013	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:V3_HOME_007	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:V3_VELVET_007	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_001	V5:V3_VELVET_052	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 2, ""leftInterval"": 5, ""rightInterval"": 9}]"	True
+againstV5AndB1	V6_B3_01_014	V5:FUNCTIONAL_020	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_014	V5:RNB_SOUL_020	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_014	V5:V3_BLUE_006	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_014	V5:V3_DUSK_006	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_014	V5:V3_HOME_001	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_014	V5:V3_SHADE_025	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 10, ""rightInterval"": 5}]"	True
+againstV5AndB1	V6_B3_01_073	B1:V6_B1_039	"[""extension_only""]"	False	False	True	True	False	6	[]	True
+againstV5AndB1	V6_B3_01_079	V5:V3_BLUE_007	"[""extension_only""]"	False	False	True	True	False	5	[]	True
+againstV5AndB1	V6_B3_01_081	V5:V3_SHADE_018	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 5, ""rightInterval"": 8}]"	True
+againstV5AndB1	V6_B3_01_081	B1:V6_B1_050	"[""near_root_cousin""]"	False	False	False	False	True	4	"[{""event"": 3, ""leftInterval"": 5, ""rightInterval"": 8}]"	True

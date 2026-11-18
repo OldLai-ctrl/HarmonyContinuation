@@ -1,0 +1,2532 @@
+适用于 .NET Framework MSBuild 版本 17.13.15+18b3035f6
+
+  Checking File Globs
+  harmony_core.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_core.lib
+  harmony_dev_json.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_dev_json.lib
+  harmony_library.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_library.lib
+  factory_v4_compiler.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\factory_v4_compiler.exe
+  harmony_preview.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_preview.lib
+  harmony_color.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_color.lib
+  harmony_wish.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_wish.lib
+  factory_v6_compiler.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\factory_v6_compiler.exe
+  Compile complete reviewed open-phrase increment; preserve V7 and existing mode annotations
+  Factory V8 increment PASS schema=2 baseline=1272 added=16 families=13 total=1288; V7 performances preserved; no invented mode membership
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  base.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\base.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_enrichment.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_enrichment.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  ProductGeneration.cpp
+  harmony_generation.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_generation.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_host.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_host.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_midi.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_midi.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_io.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_io.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_product.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_product.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_snapshot.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_snapshot.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  hc_embedded_expat.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\hc_embedded_expat.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_xml.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_xml.lib
+  pluginterfaces.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\pluginterfaces.lib
+  sdk_common.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\sdk_common.lib
+  sdk_hosting.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\sdk_hosting.lib
+  moduleinfotool.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\bin\Release\moduleinfotool.exe
+  sdk.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\sdk.lib
+  vstgui.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\vstgui.lib
+  vstgui_uidescription.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\vstgui_uidescription.lib
+  vstgui_support.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\vstgui_support.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  Controller.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(86,50): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(86,31): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(87,28): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(88,27): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(89,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(90,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(91,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(92,45): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(92,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(101,40): warning C4100: “event”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(101,27): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(111,65): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(111,47): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(112,67): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(112,49): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(113,73): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(113,55): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(114,54): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,43): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,25): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,12): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,73): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,55): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,42): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,76): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,58): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,45): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(158,46): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(159,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(160,33): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(161,45): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(161,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(19,75): warning C4100: “button”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(19,52): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(20,43): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(21,41): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(22,47): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(23,46): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\malloc.h(16,44): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\itextlabellistener.h(26,52): warning C4100: “label”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,109): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,79): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,60): warning C4100: “axis”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,30): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextedit.h(73,31): warning C4100: “angle”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(131,45): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,72): warning C4100: “maxWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,54): warning C4100: “minWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,39): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(136,46): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(135,61): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(135,40): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,75): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,54): warning C4100: “color”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,39): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(145,35): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,87): warning C4100: “flags”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,71): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,57): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,35): warning C4100: “context”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(146,33): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(147,32): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(149,65): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(149,43): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,93): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,76): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,49): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(154,66): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(154,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,94): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,77): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,50): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(159,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(159,41): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,91): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,74): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,47): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(163,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(163,43): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(164,62): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(164,42): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(166,69): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(166,49): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,78): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,56): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,43): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(171,70): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(171,50): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,79): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,57): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,44): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(176,39): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,68): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,46): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,33): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(180,37): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,87): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,66): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,31): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(184,41): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(186,40): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,69): warning C4100: “newText”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,47): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,34): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(190,42): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,68): warning C4100: “textEditControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,49): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,36): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(202,72): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(202,49): warning C4100: “keyCode”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(21,82): warning C4100: “source”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(21,41): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(52,41): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(54,45): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,72): warning C4100: “maxWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,54): warning C4100: “minWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,39): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(60,46): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(59,61): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(59,40): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(74,66): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(74,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,94): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,77): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,50): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(79,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(79,41): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,91): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,74): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,47): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(87,40): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,69): warning C4100: “newText”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,47): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,34): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(91,42): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,68): warning C4100: “textEditControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,49): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,36): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icommandmenuitemtarget.h(28,50): warning C4100: “item”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icommandmenuitemtarget.h(29,52): warning C4100: “item”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(40,42): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(41,43): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(43,19): warning C4100: “selectedIndex”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(42,67): warning C4100: “selectedMenu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(42,48): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\coptionmenu.h(307,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\coptionmenu.h(309,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cvumeter.h(35,43): warning C4458: “value”的声明隐藏了类成员 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+      D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ccontrol.h(125,8):
+      参见“VSTGUI::CControl::value”的声明
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cxypad.h(56,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cxypad.h(57,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/Controller.cpp”)
+  
+  PluginEntry.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginEntry.cpp”)
+  
+  PluginView.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(86,50): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(86,31): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(87,28): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(88,27): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(89,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(90,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(91,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(92,45): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(92,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(101,40): warning C4100: “event”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(101,27): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(111,65): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(111,47): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(112,67): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(112,49): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(113,73): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(113,55): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(114,54): warning C4100: “container”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,43): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,25): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(148,12): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,73): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,55): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(150,42): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,76): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,58): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(154,45): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(158,46): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(159,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(160,33): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(161,45): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\iviewlistener.h(161,34): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(19,75): warning C4100: “button”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(19,52): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(20,43): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(21,41): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(22,47): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icontrollistener.h(23,46): warning C4100: “pControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\malloc.h(16,44): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\itextlabellistener.h(26,52): warning C4100: “label”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,109): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,79): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,60): warning C4100: “axis”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,30): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextedit.h(73,31): warning C4100: “angle”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(131,45): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,72): warning C4100: “maxWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,54): warning C4100: “minWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(130,39): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(136,46): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(135,61): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(135,40): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,75): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,54): warning C4100: “color”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(140,39): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(145,35): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,87): warning C4100: “flags”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,71): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,57): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(144,35): warning C4100: “context”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(146,33): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(147,32): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(149,65): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(149,43): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,93): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,76): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(148,49): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(154,66): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(154,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,94): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,77): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(153,50): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(159,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(159,41): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,91): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,74): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(158,47): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(163,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(163,43): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(164,62): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(164,42): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(166,69): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(166,49): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,78): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,56): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(165,43): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(171,70): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(171,50): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,79): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,57): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(170,44): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(176,39): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,68): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,46): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(175,33): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(180,37): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,87): warning C4100: “drag”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,66): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(179,31): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(184,41): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(186,40): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,69): warning C4100: “newText”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,47): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(185,34): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(190,42): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,68): warning C4100: “textEditControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,49): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(189,36): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(202,72): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\idatabrowserdelegate.h(202,49): warning C4100: “keyCode”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(21,82): warning C4100: “source”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(21,41): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(52,41): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(54,45): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,72): warning C4100: “maxWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,54): warning C4100: “minWidth”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(53,39): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(60,46): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(59,61): warning C4100: “width”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(59,40): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(74,66): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(74,44): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,94): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,77): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(73,50): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(79,63): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(79,41): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,91): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,74): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(78,47): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(87,40): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,69): warning C4100: “newText”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,47): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(86,34): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(91,42): warning C4100: “browser”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,68): warning C4100: “textEditControl”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,49): warning C4100: “column”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\genericstringlistdatabrowsersource.h(90,36): warning C4100: “row”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icommandmenuitemtarget.h(28,50): warning C4100: “item”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\icommandmenuitemtarget.h(29,52): warning C4100: “item”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(40,42): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(41,43): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(43,19): warning C4100: “selectedIndex”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(42,67): warning C4100: “selectedMenu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ioptionmenulistener.h(42,48): warning C4100: “menu”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\coptionmenu.h(307,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\coptionmenu.h(309,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cvumeter.h(35,43): warning C4458: “value”的声明隐藏了类成员 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+      D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ccontrol.h(125,8):
+      参见“VSTGUI::CControl::value”的声明
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cxypad.h(56,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\cxypad.h(57,21): warning C4100: “val”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/plugin/PluginView.cpp”)
+  
+  MainView.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\malloc.h(16,44): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\itextlabellistener.h(26,52): warning C4100: “label”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,109): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,79): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,60): warning C4100: “axis”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,30): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextedit.h(73,31): warning C4100: “angle”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+  MainViewCompact.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(532,41): warning C4456: “gaps”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(495,20):
+      参见“gaps”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(681,25): warning C4456: “candidate”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(679,20):
+      参见“candidate”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(1013,24): warning C4456: “insertion”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(918,20):
+      参见“insertion”的声明
+  
+  MainViewPreview.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+  MainViewWish.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(254,33): warning C4456: “source”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuation.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(180,17):
+      参见“source”的声明
+  
+  正在生成代码...
+    正在创建库 D:/VibeCoding/HarmonyContinuation/build/Release/HarmonyContinuation.lib 和对象 D:/VibeCoding/HarmonyContinuation/build/Release/HarmonyContinuation.exp
+  HarmonyContinuation.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\VST3\Release\HarmonyContinuation.vst3\Contents\x86_64-win\HarmonyContinuation.vst3
+  [SMTG] Copy PlugIn.ico and desktop.ini and change their attributes.			
+  db_compiler.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\db_compiler.exe
+  Generating factory-v2.db
+  factory.db READY templates=161 near_skeleton_variants=19
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  DemoScenario.cpp
+  harmony_demo_scenarios.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_demo_scenarios.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  Benchmark.cpp
+  harmony_benchmark.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_benchmark.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  BenchmarkTests.cpp
+  BenchmarkTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\BenchmarkTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  ContinuationEngineTests.cpp
+  RecommendationWorker.cpp
+  正在生成代码...
+RecommendationWorker.obj : error LNK2019: 无法解析的外部符号 "void __cdecl harmony::generation::appendProductGeneration(struct harmony::RecommendationSet &,class std::vector<struct harmony::ChordEvent,class std::allocator<struct harmony::ChordEvent> > const &,struct harmony::AnalysisContext const &,struct harmony::RecommendationRequest const &,class std::function<bool __cdecl(void)> const &)" (?appendProductGeneration@generation@harmony@@YAXAEAURecommendationSet@2@AEBV?$vector@UChordEvent@harmony@@V?$allocator@UChordEvent@harmony@@@std@@@std@@AEBUAnalysisContext@2@AEBURecommendationRequest@2@AEBV?$function@$$A6A_NXZ@5@@Z)，函数 "private: void __cdecl harmony::plugin::RecommendationWorker::run(void)" (?run@RecommendationWorker@plugin@harmony@@AEAAXXZ) 中引用了该符号 [D:\VibeCoding\HarmonyContinuation\build\ContinuationEngineTests.vcxproj]
+D:\VibeCoding\HarmonyContinuation\build\Release\ContinuationEngineTests.exe : fatal error LNK1120: 1 个无法解析的外部命令 [D:\VibeCoding\HarmonyContinuation\build\ContinuationEngineTests.vcxproj]
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  CoreTimelineTests.cpp
+  CoreTimelineTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\CoreTimelineTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  CubaseReliabilityTests.cpp
+  RecommendationWorker.cpp
+  正在生成代码...
+  CubaseReliabilityTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\CubaseReliabilityTests.exe
+  Building Custom Rule D:/VibeCoding/VST_SDK/vst3sdk/public.sdk/samples/vst-hosting/editorhost/CMakeLists.txt
+  plugprovider.cpp
+  editorhost.cpp
+  usediids.cpp
+  platform.cpp
+  window.cpp
+  module_win32.cpp
+  editorhost.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\bin\Release\editorhost.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  EditorHostSmoke.cpp
+  EditorHostSmoke.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\EditorHostSmoke.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  EnrichmentTests.cpp
+  EnrichmentTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\EnrichmentTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  HarmonyAnalysisTests.cpp
+  HarmonyAnalysisTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\HarmonyAnalysisTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  DemoMain.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/demo/DemoMain.cpp”)
+  
+  RecommendationWorker.cpp
+  MainView.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\malloc.h(16,44): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\itextlabellistener.h(26,52): warning C4100: “label”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,109): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,79): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,60): warning C4100: “axis”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,30): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextedit.h(73,31): warning C4100: “angle”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+  MainViewCompact.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(532,41): warning C4456: “gaps”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(495,20):
+      参见“gaps”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(681,25): warning C4456: “candidate”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(679,20):
+      参见“candidate”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(1013,24): warning C4456: “insertion”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(918,20):
+      参见“insertion”的声明
+  
+  MainViewPreview.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+  MainViewWish.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(254,33): warning C4456: “source”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HarmonyContinuationDemo.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(180,17):
+      参见“source”的声明
+  
+  正在生成代码...
+  HarmonyContinuationDemo.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\HarmonyContinuationDemo.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  plugprovider.cpp
+  module_win32.cpp
+  memorystream.cpp
+  正在生成代码...
+  hc_sdk_host_loader.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\hc_sdk_host_loader.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  HostContractHarness.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../tests/HostContractHarness.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\tests\HostContractHarness.cpp(70,50): warning C4458: “iid”的声明隐藏了类成员 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+      D:\VibeCoding\VST_SDK\vst3sdk\pluginterfaces\gui\iplugview.h(216,20):
+      参见“Steinberg::IPlugFrame::iid”的声明
+  
+  HostContextAdapter.cpp
+  HostAdapters.cpp
+  RecommendationWorker.cpp
+  MainView.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(302,34): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(303,32): warning C4100: “index”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,68): warning C4100: “oldSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(306,46): warning C4100: “newSize”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,44): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(334,30): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,43): warning C4100: “frame”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cframe.h(335,29): warning C4100: “view”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\malloc.h(16,44): warning C4100: “size”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\itextlabellistener.h(26,52): warning C4100: “label”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,109): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,79): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,60): warning C4100: “axis”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextlabel.h(69,30): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\controls\ctextedit.h(73,31): warning C4100: “angle”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainView.cpp”)
+  
+  MainViewCompact.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewCompact.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(532,41): warning C4456: “gaps”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(495,20):
+      参见“gaps”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(681,25): warning C4456: “candidate”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(679,20):
+      参见“candidate”的声明
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(1013,24): warning C4456: “insertion”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewCompact.cpp(918,20):
+      参见“insertion”的声明
+  
+  MainViewPreview.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewPreview.cpp”)
+  
+  MainViewWish.cpp
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(66,62): warning C4100: “updateRect”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,79): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(146,52): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,78): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(148,51): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “buttons”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “distance”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(150,2): warning C4100: “where”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\cview.h(395,38): warning C4100: “state”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,56): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(158,40): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(159,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,71): warning C4100: “result”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,52): warning C4100: “pos”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(160,36): warning C4100: “session”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(205,43): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(206,42): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(207,34): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\VST_SDK\vst3sdk\vstgui4\vstgui\lib\dragging.h(208,29): warning C4100: “eventData”: 未引用的形参 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+  (编译源文件“../src/ui/MainViewWish.cpp”)
+  
+D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(254,33): warning C4456: “source”的声明隐藏了上一个本地声明 [D:\VibeCoding\HarmonyContinuation\build\HostContractHarness.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\src\ui\MainViewWish.cpp(180,17):
+      参见“source”的声明
+  
+  正在生成代码...
+  HostContractHarness.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\HostContractHarness.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  IntentCompletionTests.cpp
+  IntentCompletionTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\IntentCompletionTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  LibraryCompatibilityTests.cpp
+  LibraryCompatibilityTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\LibraryCompatibilityTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  LibraryStoreTests.cpp
+  LibraryStoreTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\LibraryStoreTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  MidiExportTests.cpp
+  MidiExportTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\MidiExportTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  MidiImportTests.cpp
+  MidiImportTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\MidiImportTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  MidiProfileTests.cpp
+  MidiProfileTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\MidiProfileTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  Phase4DTests.cpp
+  RecommendationWorker.cpp
+  HostContextAdapter.cpp
+  正在生成代码...
+  Phase4DTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\Phase4DTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  PreviewTests.cpp
+  PreviewTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\PreviewTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  ProductizationTests.cpp
+  RecommendationWorker.cpp
+  正在生成代码...
+  ProductizationTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\ProductizationTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  DevelopmentTemplates.cpp
+  harmony_dev_fixtures.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_dev_fixtures.lib
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  ProgressionMatcherTests.cpp
+  ProgressionMatcherTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\ProgressionMatcherTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  RecommendationReliabilityTests.cpp
+D:\VibeCoding\HarmonyContinuation\tests\RecommendationReliabilityTests.cpp(252,49): warning C4189: “r01d”: 局部变量已初始化但不引用 [D:\VibeCoding\HarmonyContinuation\build\RecommendationReliabilityTests.vcxproj]
+D:\VibeCoding\HarmonyContinuation\tests\RecommendationReliabilityTests.cpp(658,47): warning C4127: 条件表达式是常量 [D:\VibeCoding\HarmonyContinuation\build\RecommendationReliabilityTests.vcxproj]
+      D:\VibeCoding\HarmonyContinuation\tests\RecommendationReliabilityTests.cpp(658,47):
+      考虑改用 "if constexpr" 语句
+  
+  RecommendationWorker.cpp
+  正在生成代码...
+  RecommendationReliabilityTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\RecommendationReliabilityTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  TendencyTests.cpp
+  TendencyTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\TendencyTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  UILayoutTests.cpp
+  UILayoutTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\UILayoutTests.exe
+  Building Custom Rule D:/VibeCoding/VST_SDK/vst3sdk/vstgui4/vstgui/standalone/CMakeLists.txt
+  application.cpp
+  async.cpp
+  genericalertbox.cpp
+  shareduiresources.cpp
+  uidescriptionwindowcontroller.cpp
+  window.cpp
+  value.cpp
+  win32application.cpp
+  win32commondirectories.cpp
+  win32menu.cpp
+  win32preference.cpp
+  win32window.cpp
+  vstgui_standalone.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\vstgui_standalone.lib
+  Generating ../../../../../bin/Release/VST3Inspector/Resources/window.uidesc
+  [VSTGUI] Copied D:/VibeCoding/VST_SDK/vst3sdk/public.sdk/samples/vst-hosting/inspectorapp/resource/window.uidesc to D:/VibeCoding/HarmonyContinuation/build/bin/Release/VST3Inspector/Resources
+  Building Custom Rule D:/VibeCoding/VST_SDK/vst3sdk/public.sdk/samples/vst-hosting/inspectorapp/CMakeLists.txt
+  coreiids.cpp
+  moduleinfocreator.cpp
+  moduleinfoparser.cpp
+  app.cpp
+  window.cpp
+  module_win32.cpp
+  VST3Inspector.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\bin\Release\VST3Inspector\VST3Inspector.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  VoiceLeadingMetricsTests.cpp
+  VoiceLeadingMetricsTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\VoiceLeadingMetricsTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  VstXmlChordParserTests.cpp
+  VstXmlChordParserTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\VstXmlChordParserTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  VstXmlParserTests.cpp
+  VstXmlParserTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\VstXmlParserTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  WeightBarGeometryTests.cpp
+  WeightBarGeometryTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\WeightBarGeometryTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  WishTests.cpp
+  WishAnnotationChecks.cpp
+  WishSamplerChecks.cpp
+  WishWorkflowChecks.cpp
+  正在生成代码...
+  WishTests.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\WishTests.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  benchmark_compare.cpp
+  benchmark_compare.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\benchmark_compare.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  ConstraintBenchmark.cpp
+  constraint_benchmark.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\constraint_benchmark.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  continuation_benchmark_cli.cpp
+D:\VibeCoding\HarmonyContinuation\tools\continuation_benchmark_cli.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [D:\VibeCoding\HarmonyContinuation\build\continuation_benchmark_cli.vcxproj]
+  continuation_benchmark_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\continuation_benchmark_cli.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  enrichment_benchmark_cli.cpp
+  enrichment_benchmark_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\enrichment_benchmark_cli.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  harmony_cli.cpp
+  harmony_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\harmony_cli.exe
+  library_manager.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\library_manager.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  midi_export_cli.cpp
+  midi_export_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\midi_export_cli.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  preview_cli.cpp
+  preview_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\preview_cli.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  progression_match_bench.cpp
+  progression_match_bench.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\progression_match_bench.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  progression_match_cli.cpp
+  progression_match_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\progression_match_cli.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  recommend_bench.cpp
+  recommend_bench.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\recommend_bench.exe
+  Building Custom Rule D:/VibeCoding/HarmonyContinuation/CMakeLists.txt
+  recommend_cli.cpp
+  recommend_cli.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\Release\recommend_cli.exe
+  Building Custom Rule D:/VibeCoding/VST_SDK/vst3sdk/public.sdk/samples/vst-hosting/validator/CMakeLists.txt
+  memorystream.cpp
+  moduleinit.cpp
+  moduleinfoparser.cpp
+  connectionproxytest.cpp
+  eventlisttest.cpp
+  hostclassestest.cpp
+  miditovsttest.cpp
+  parameterchangestest.cpp
+  pluginterfacesupporttest.cpp
+  processdatatest.cpp
+  plugprovider.cpp
+  busactivation.cpp
+  busconsistency.cpp
+  businvalidindex.cpp
+  checkaudiobusarrangement.cpp
+  scanbusses.cpp
+  sidechainarrangement.cpp
+  editorclasses.cpp
+  midilearn.cpp
+  midimapping.cpp
+  plugcompat.cpp
+  scanparameters.cpp
+  suspendresume.cpp
+  terminit.cpp
+  keyswitch.cpp
+  noteexpression.cpp
+  automation.cpp
+  process.cpp
+  processcontextrequirements.cpp
+  processformat.cpp
+  processinputoverwriting.cpp
+  processtail.cpp
+  processthreaded.cpp
+  silenceflags.cpp
+  silenceprocessing.cpp
+  speakerarrangement.cpp
+  variableblocksize.cpp
+  bypasspersistence.cpp
+  invalidstatetransition.cpp
+  repeatidenticalstatetransition.cpp
+  validstatetransition.cpp
+  testbase.cpp
+  checkunitstructure.cpp
+  scanprograms.cpp
+  scanunits.cpp
+  vsttestsuite.cpp
+  testing.cpp
+  main.cpp
+  usediids.cpp
+  validator.cpp
+  module_win32.cpp
+  validator.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\bin\Release\validator.exe
+  Building Custom Rule D:/VibeCoding/VST_SDK/vst3sdk/vstgui4/vstgui/uidescription-scripting/CMakeLists.txt
+  TinyJS_Functions.cpp
+  TinyJS_MathFunctions.cpp
+  TinyJS.cpp
+  drawcontextobject.cpp
+  drawable.cpp
+  scriptingviewfactory.cpp
+  viewscriptobject.cpp
+  uiscripting.cpp
+  vstgui_uiscripting.vcxproj -> D:\VibeCoding\HarmonyContinuation\build\lib\Release\vstgui_uiscripting.lib

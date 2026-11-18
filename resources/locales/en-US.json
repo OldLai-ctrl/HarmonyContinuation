@@ -1,0 +1,330 @@
+{
+  "structure.all": "All nodes retained; short chords may still carry structure.",
+  "structure.view": "FULL: all; SKELETON: core. Gray nodes remain in preview/MIDI.",
+  "enrich.protected": "No safe operation for this group preserves the defined tones or bass.",
+  "enrich.constraints": "Candidates do not satisfy the melody or preservation constraints.",
+
+  "mode.continue": "Continue",
+  "mode.enrich": "Enrich",
+  "nav.more": "More",
+  "nav.library": "Library",
+  "nav.diagnostics": "Diagnostics",
+  "nav.language": "Language",
+  "nav.about": "About",
+  "phrase.title": "Current Phrase",
+  "phrase.count": "chords",
+  "phrase.empty": "Drop a chord phrase to explore where it can go.",
+  "phrase.select": "Select a chord to inspect it",
+  "group.resolve": "Resolve",
+  "group.develop": "Develop",
+  "group.loop": "Loop",
+  "group.color": "Color",
+  "group.polish": "Polish",
+  "group.rich": "Rich",
+  "group.advanced": "Advanced",
+  "candidate.more": "Show More",
+  "candidate.none": "No strong option",
+  "candidate.why": "Why?",
+  "candidate.pin": "Pin",
+  "candidate.play": "Play",
+  "candidate.compare": "Compare",
+  "candidate.midi": "Export MIDI",
+  "candidate.snapshot": "Save Snapshot",
+  "status.analyzing": "Analyzing…",
+  "status.libraryError": "Library error · see Library",
+  "status.noEnrichment": "No reliable enrichment here",
+  "opportunity.title": "Upgrade opportunity",
+  "label.key": "Key",
+  "label.style": "Style",
+  "label.intent": "Intent",
+  "label.auto": "Auto",
+  "label.debug": "Details"
+  ,"tag.citypop-jpop": "City Pop"
+  ,"tag.common-major": "Major"
+  ,"tag.common-minor": "Minor"
+  ,"tag.functional": "Functional harmony"
+  ,"tag.jazz": "Jazz"
+  ,"tag.pop": "Pop"
+  ,"tag.rnb-soul": "R&B"
+  ,"tag.rock": "Rock"
+  ,"tag.resolve": "Resolve"
+  ,"tag.develop": "Develop"
+  ,"tag.loop": "Loop"
+  ,"tag.color": "Color"
+  ,"tag.secondary_dominant": "Secondary dominant"
+  ,"tag.secondary_leading_tone": "Secondary leading tone"
+  ,"tag.passing_diminished": "Passing diminished"
+  ,"tag.borrowed_chord": "Borrowed chord"
+  ,"tag.seventh_chord": "Seventh chord"
+  ,"tag.cadential_expansion": "Cadential expansion"
+  ,"nav.match": "Match"
+  ,"phrase.scroll": "Wheel to scroll phrase"
+  ,"phrase.starts": "starts"
+  ,"library.factory": "Factory"
+  ,"library.user": "User"
+  ,"library.all": "All"
+  ,"library.search": "Search"
+  ,"library.nameTag": "Name / tag"
+  ,"library.previous": "Previous"
+  ,"library.next": "Next"
+  ,"library.page": "Page"
+  ,"library.error": "Library error"
+  ,"library.filter": "Filter"
+  ,"library.readOnly": "Factory · read only"
+  ,"library.rename": "Rename"
+  ,"library.delete": "Delete"
+  ,"library.favorite": "Favorite"
+  ,"library.unfavorite": "Favorited · click to remove"
+  ,"form.save": "Save custom progression"
+  ,"form.edit": "Edit user progression"
+  ,"form.search": "Search library"
+  ,"form.name": "Name"
+  ,"form.tags": "Tags (optional)"
+  ,"form.note": "Note"
+  ,"form.cancel": "Cancel"
+  ,"form.apply": "Apply"
+  ,"form.invalidName": "Name must be 1–128 characters"
+  ,"inspector.title": "Inspector"
+  ,"candidate.pinnedUnavailable": "Pinned path unavailable"
+  ,"label.forced": "Forced"
+  ,"filter.allSources": "All sources"
+  ,"filter.factoryOnly": "Factory only"
+  ,"filter.userOnly": "User only"
+  ,"filter.allComplexity": "All complexity"
+  ,"filter.basic": "Basic"
+  ,"filter.rich": "Rich"
+  ,"filter.advanced": "Advanced"
+  ,"filter.allTechniques": "All techniques"
+  ,"filter.secondary": "Secondary dominant"
+  ,"filter.passing": "Passing diminished"
+  ,"filter.borrowed": "Borrowed chord"
+  ,"filter.allFavorites": "All favorites"
+  ,"filter.favoriteOnly": "Favorites only"
+  ,"about.build": "Build"
+  ,"about.commit": "Commit"
+  ,"about.factory": "Factory library"
+  ,"about.db": "DB schema"
+  ,"about.session": "Session schema"
+  ,"diagnostics.title": "Advanced analysis"
+  ,"diagnostics.refresh": "Refresh host"
+  ,"diagnostics.clipboard": "Clipboard"
+  ,"diagnostics.generation": "Generation"
+  ,"diagnostics.worker": "Worker"
+  ,"diagnostics.busy": "busy"
+  ,"diagnostics.idle": "idle"
+  ,"diagnostics.last": "Last"
+  ,"diagnostics.topMatch": "Top match"
+  ,"inspector.chord": "Chord"
+  ,"inspector.weight": "Weight"
+  ,"inspector.why": "Why this path"
+  ,"inspector.score": "score"
+  ,"inspector.user": "User"
+  ,"inspector.matched": "Matched"
+  ,"inspector.source": "Source"
+  ,"inspector.cadence": "Cadence"
+  ,"inspector.rhythm": "Rhythm"
+  ,"inspector.prior": "Prior"
+  ,"inspector.support": "Support"
+  ,"inspector.fallback": "fallback"
+  ,"inspector.sources": "Sources"
+  ,"inspector.gap": "gap"
+  ,"inspector.mode": "Mode"
+  ,"inspector.major": "Major"
+  ,"inspector.minor": "Minor"
+  ,"inspector.meter": "Meter"
+  ,"inspector.nearDuplicate": "Near duplicates"
+  ,"inspector.function": "Function"
+  ,"inspector.roles": "Roles"
+  ,"inspector.target": "Target"
+  ,"inspector.confidence": "Confidence"
+  ,"inspector.timing": "Timing"
+  ,"inspector.preservation": "Skeleton retained"
+  ,"inspector.styleFit": "Style fit"
+  ,"inspector.complexity": "Complexity"
+  ,"candidate.unpin": "Unpin"
+  ,"technique.ChordExtension": "Chord extension"
+  ,"technique.SeventhColor": "Seventh color"
+  ,"technique.NinthColor": "Ninth color"
+  ,"technique.Inversion": "Inversion"
+  ,"technique.BassConnection": "Bass connection"
+  ,"technique.SecondaryDominant": "Secondary dominant"
+  ,"technique.SecondaryLeadingTone": "Secondary leading tone"
+  ,"technique.PassingDiminished": "Passing diminished"
+  ,"technique.ChromaticApproach": "Chromatic approach"
+  ,"technique.BorrowedChord": "Borrowed chord"
+  ,"technique.PredominantSubstitution": "Predominant expansion"
+  ,"technique.CadentialExpansion": "Cadential expansion"
+  ,"technique.Turnaround": "Turnaround"
+  ,"reason.ChordExtension": "Add suitable color while keeping the original root and timing"
+  ,"reason.SeventhColor": "Add a seventh while retaining the original root"
+  ,"reason.NinthColor": "Add a ninth to an existing seventh chord"
+  ,"reason.Inversion": "Use an inversion to shorten neighboring bass movements"
+  ,"reason.BassConnection": "Improve the bass connection between neighboring chords"
+  ,"reason.SecondaryDominant": "Approach the target chord through its dominant seventh"
+  ,"reason.SecondaryLeadingTone": "Approach the target chord chromatically through its leading-tone seventh"
+  ,"reason.PassingDiminished": "Connect stepwise chords with a passing diminished seventh"
+  ,"reason.ChromaticApproach": "Connect neighboring chords chromatically"
+  ,"reason.BorrowedChord": "Borrow from the parallel key to add color"
+  ,"reason.PredominantSubstitution": "Expand predominant function before the dominant"
+  ,"reason.CadentialExpansion": "Add a predominant chord before the cadence"
+  ,"reason.Turnaround": "Connect phrase end and beginning with a turnaround"
+  ,"inspector.completion": "Intent completion"
+  ,"completion.dominantTonic": "Dominant to tonic completes the resolution"
+  ,"completion.stableTonic": "Ends on a stable tonic"
+  ,"completion.phraseReturn": "Returns to the phrase beginning"
+  ,"completion.loopClosure": "Completes the library loop segment"
+  ,"completion.developedPath": "Opens a further development path"
+  ,"completion.functionalPivot": "Creates a functional turn"
+  ,"completion.shortDevelopment": "Development path is short"
+  ,"completion.audibleColor": "Adds audible harmonic color"
+  ,"completion.borrowedColor": "Borrows from the parallel key"
+  ,"completion.secondaryColor": "Uses secondary dominant or leading-tone harmony"
+  ,"completion.extendedColor": "Adds seventh or suspended harmony"
+  ,"completion.noEvidence": "Limited evidence for the chosen intent"
+  ,"voice.inversionImprovesBass": "Inversion smooths the bass connection"
+  ,"voice.smoother": "Smoother voice connection"
+  ,"voice.commonTones": "Common tones"
+  ,"voice.bass": "Bass"
+  ,"voice.upper": "Upper voices"
+  ,"voice.upperSmoother": "Smoother motion"
+  ,"voice.upperVaried": "More varied motion"
+  ,"voice.score": "Voice-leading score"
+  ,"melody.label": "Melody constraint"
+  ,"melody.off": "Off"
+  ,"melody.present": "Chord / available tone"
+  ,"melody.top": "Top voice"
+  ,"melody.note": "Note, e.g. E4"
+  ,"melody.role": "Voice role"
+  ,"melody.strictness": "Compatibility"
+  ,"melody.soft": "Soft (default)"
+  ,"melody.hard": "Strict"
+  ,"melody.start": "Start QN"
+  ,"melody.duration": "Duration QN"
+  ,"melody.invalid": "Enter a valid note and timing, e.g. E4, start 0, duration 4"
+  ,"melody.chordTone": "Chord tone"
+  ,"melody.tension": "Available tension"
+  ,"melody.uncertain": "Compatibility uncertain"
+  ,"melody.conflict": "Melody conflict"
+  ,"melody.topConflict": "Cannot preserve this top voice"
+  ,"melody.score": "Melody compatibility"
+  ,"tendency.label": "Harmonic tendency"
+  ,"tendency.conservative": "Conservative"
+  ,"tendency.balanced": "Balanced"
+  ,"tendency.bold": "Bold"
+  ,"zoom.label": "UI zoom"
+  ,"midi.button": "MIDI ↗"
+  ,"midi.cancelled": "MIDI save cancelled"
+  ,"midi.complete": "Complete clip (default)"
+  ,"midi.dragFailed": "MIDI drop was not completed. Click MIDI to save a file."
+  ,"midi.dragged": "MIDI file dropped"
+  ,"midi.failed": "No valid chord progression recognized. Current phrase kept."
+  ,"midi.help": "Click MIDI to save, or drag it to your DAW. More → Import MIDI."
+  ,"midi.import": "Import MIDI"
+  ,"midi.key": "Key"
+  ,"midi.open": "Work in progress (OPEN)"
+  ,"midi.recognized": "Chords recognized"
+  ,"midi.saved": "MIDI saved"
+  ,"midi.saveFailed": "MIDI save failed. See Advanced for details."
+  ,"midi.track": "Selected track"
+  ,"midi.uncertain": "Recognition notices"
+  ,"midi.unsupported": "Only Format 0/1 PPQ MIDI files are supported; SMPTE is not supported.",
+  "nav.hostDiagnostics": "Host Diagnostics",
+  "nav.exportHostDiagnostics": "Export local input and recommendation diagnostics",
+  "color.show": "Color Hints",
+  "color.warm": "Warm",
+  "color.cool": "Cool",
+  "color.balanced": "Balanced",
+  "color.warming": "Warming",
+  "color.cooling": "Cooling",
+  "color.turn": "Warm/cool turn",
+  "color.rising": "Rising tension",
+  "color.release": "Tension Release",
+  "color.contrast": "Connection contrast",
+  "color.uncertain": "Insufficient color data",
+  "color.unknown": "Insufficient color data",
+  "color.whyTitle": "Model color",
+  "color.whyWarm": "Duration-weighted whole path leans warm.",
+  "color.whyCool": "Duration-weighted whole path leans cool.",
+  "color.whyBalanced": "Whole-path mean temperature is balanced.",
+  "color.whyWarming": "Model temperature rises across the path.",
+  "color.whyCooling": "Model temperature falls across the path.",
+  "color.whyTurn": "The path crosses warm and cool regions.",
+  "color.whyRising": "Own tension trends upward across the path.",
+  "color.whyRelease": "Own tension falls in the last connection.",
+  "color.whyContrast": "The path includes a large model distance.",
+  "color.whyEndingWarmer": "The last chord's own temperature rises.",
+  "color.whyEndingCooler": "The last chord's own temperature falls.",
+  "color.whyUncertain": "Multiple directions; no forced color.",
+  "color.whyUnknown": "Pitch set, direction or timing is unknown.",
+  "color.modelNote": "Model temperature is not an emotion rating.",
+  "colorSort.label": "Color Preference",
+  "colorSort.off": "Off",
+  "colorSort.auto": "Continue source color",
+  "colorSort.warmer": "Gradually warmer",
+  "colorSort.cooler": "Gradually cooler",
+  "colorSort.arc": "Tension rise and release",
+  "colorSort.warmClose": "Tension then warm closure",
+  "colorSort.offShort": "Off",
+  "colorSort.autoShort": "Auto",
+  "colorSort.warmerShort": "Warmer",
+  "colorSort.coolerShort": "Cooler",
+  "colorSort.arcShort": "Arc",
+  "colorSort.warmCloseShort": "Warm end",
+  "colorSort.reasonOff": "Original recommendation order.",
+  "colorSort.reasonMatch": "This complete path is matched to the selected color target within comparable musical quality.",
+  "colorSort.reasonUnknown": "Insufficient color information; original order retained.",
+  "colorSort.reasonSource": "Insufficient source trend; original order retained.",
+  "colorSort.reasonFunction": "Existing functional analysis does not support closure; original order retained.",
+  "colorSort.reasonQuality": "Original musical quality and constraint tier retained.",
+  "colorSort.reasonTarget": "This path does not meet the complete color target; original order retained.",
+  "color.whyMissingBass": "Reliable symbolic bass is missing; color remains uncertain.",
+  "colorSort.enrichmentMatch": "This complete upgrade is matched to the selected target while preserving its quality, skeleton and edit budget.",
+  "colorSort.symbolicBass": "Color uses the candidate symbolic bass; final MIDI voicing and perceived sound are not verified.",
+  "whyV2.meanWarm": "The path is warm overall in the model",
+  "whyV2.meanCool": "The path is cool overall in the model",
+  "whyV2.meanBalanced": "The path has balanced warmth in the model",
+  "whyV2.trendWarm": "the complete path gradually warms",
+  "whyV2.trendCool": "the complete path gradually cools",
+  "whyV2.turn": "the path crosses warm and cool regions",
+  "whyV2.release": "tension decreases at the ending",
+  "whyV2.rising": "tension rises across the path",
+  "whyV2.contrast": "adjacent connections have marked spatial contrast",
+  "whyV2.clause": "; ",
+  "whyV2.period": ".",
+  "whyV2.rankPromoted": "Among comparable options, this full path better matches “",
+  "whyV2.rankPromotedEnd": "”.",
+  "whyV2.rankCompared": "The full path was compared for “",
+  "whyV2.rankComparedEnd": "”, keeping musical quality first.",
+  "whyV2.enrichmentStart": "This version uses ",
+  "whyV2.and": " and ",
+  "whyV2.enrichmentEnd": " to reshape the source progression.",
+  "whyV2.enrichmentFallback": "This is a complete upgrade of the source progression.",
+  "whyV2.completion.dominantTonic": "This path resolves from dominant to tonic, providing closure.",
+  "whyV2.completion.stableTonic": "This path ends on the tonic, closing the current phrase.",
+  "whyV2.completion.phraseReturn": "This path returns to the opening, helping the phrase loop.",
+  "whyV2.completion.loopClosure": "This continuation completes the library loop segment; audition two rounds to compare the return to the opening.",
+  "whyV2.completion.developedPath": "This complete path develops the current phrase.",
+  "whyV2.completion.functionalPivot": "This path changes harmonic direction to support further development.",
+  "whyV2.completion.shortDevelopment": "This path offers a short continuation.",
+  "whyV2.completion.audibleColor": "The continuation uses altered, diminished, or augmented harmony to change the harmonic color.",
+  "whyV2.completion.borrowedColor": "The continuation borrows chords from the parallel key to change the harmonic color.",
+  "whyV2.completion.secondaryColor": "The continuation uses secondary dominant or leading-tone harmony to point temporarily toward another chord.",
+  "whyV2.completion.extendedColor": "The continuation uses seventh or suspended chords to add color within the harmony.",
+  "whyV2.completion.noEvidence": "This option is available for comparison; evidence for functional closure is limited.",
+  "colorSort.labelShort": "Color Pref.",
+  "whyV2.details": "Details",
+  "whyV2.metrics": "Color metrics (symbolic)",
+  "whyV2.moreMetrics": "First eight positions shown.",
+  "color.staticPrefix": "Static: ",
+  "color.staticIncomplete": "; path incomplete",
+  "color.staticMixed": "mixed warmth",
+  "color.staticWhy": "Reliable per-chord static warmth shows ",
+  "color.whyMissingTiming": "; OPEN or missing timing prevents a whole-path mean or time trend.",
+  "color.staticRelease": "The final connection releases intrinsic tension independently of the missing duration.",
+  "whyV4.bass": "Preserves the specified bass notes.",
+  "whyV4.pitchSet": "Preserves the explicitly defined chord tones.",
+  "key.searchAuto": "Auto explores multiple keys; the top bar shows the leading analysis.",
+  "key.searchFixed": "Fixed key: search only in",
+  "key.match": "Key used by this recommendation:",
+  "key.alternatives": "Other key interpretations of the same music"
+}

@@ -1,0 +1,25 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	(upstream main d3552c24)
++++ b/CMakeLists.txt	(local, C2026 fix)
+@@ -176,7 +176,20 @@
+     # Product builds embed only the separately reviewed CC0 aggregate. Research
+     # priors remain external inputs to the isolated CLI, never product options.
+     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/data/generation-priors/billboard-cc0.tsv" HC_GENERATION_PRIOR_TEXT)
+-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/GenerationPrior.h" "#pragma once\ninline constexpr const char* hcGenerationPrior=R\"HC_PRIOR(${HC_GENERATION_PRIOR_TEXT})HC_PRIOR\";\n")
++    # MSVC rejects a single narrow string literal above roughly 65,535 bytes
++    # (error C2026), and the reviewed CC0 prior is larger than that. Emit it as
++    # adjacent raw literals: the compiler concatenates them into the identical
++    # byte sequence at translation time, so the parsed prior is unchanged.
++    string(LENGTH "${HC_GENERATION_PRIOR_TEXT}" HC_PRIOR_CHARS)
++    set(HC_PRIOR_LITERALS "")
++    set(HC_PRIOR_OFFSET 0)
++    set(HC_PRIOR_CHUNK_CHARS 8000)
++    while(HC_PRIOR_OFFSET LESS HC_PRIOR_CHARS)
++        string(SUBSTRING "${HC_GENERATION_PRIOR_TEXT}" ${HC_PRIOR_OFFSET} ${HC_PRIOR_CHUNK_CHARS} HC_PRIOR_PIECE)
++        string(APPEND HC_PRIOR_LITERALS "R\"HC_PRIOR(${HC_PRIOR_PIECE})HC_PRIOR\"\n")
++        math(EXPR HC_PRIOR_OFFSET "${HC_PRIOR_OFFSET} + ${HC_PRIOR_CHUNK_CHARS}")
++    endwhile()
++    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/GenerationPrior.h" "#pragma once\ninline constexpr const char* hcGenerationPrior=\n${HC_PRIOR_LITERALS};\n")
+     target_sources(harmony_generation PRIVATE src/generation/ProductGeneration.cpp)
+     target_include_directories(harmony_generation PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ 

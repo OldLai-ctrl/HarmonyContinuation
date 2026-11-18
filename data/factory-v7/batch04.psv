@@ -1,0 +1,91 @@
+family|title|events|mode|intent|ending|boundary|basis|source|section|case|meter
+BassArchitecture|主九到前属的双半音低音|Cmaj9@4 Cmaj7/B@4 Am9@4 Am/G@4 F#m7b5@4 Fmaj9@4 Dm9@4 G13@4|ionian|develop|open|no|C-B-A-G-F#-F-D-G低音统领全句，半减共享A/C/E，末属扩展是前副歌张力。|Uchiyama|prechorus|concept-only|4/4
+BassArchitecture|大主踏板解除到借用小四|Cmaj9@8 Dm9/C@4 Fmaj7/C@4 C/E@4 Fm6/Ab@4 G7sus4@4 Am9@8|ionian|color|deceptive|no|前三和弦C低音固定，E-Ab-G-A解除踏板；Fm6的Ab与悬属的G构成邻接，末vi承压。|Uchiyama|chorus|concept-only|4/4
+BassArchitecture|副属上行遇下属小六|Cmaj7@4 E7/G#@4 Am9@4 A7/C#@4 Dm9@4 Fm6@4 C/E@4 G13@4|ionian|develop|open|no|G#-A与C#-D是两组真实导向，Fm6带Ab下行到C/E后再出V，前后两次推力分工。|Uchiyama|prechorus|concept-only|4/4
+BassArchitecture|降三色块的旋律性下降|Cmaj9@4 Ebmaj7/G@4 Fm9/Ab@4 C/G@4 D7/F#@4 Fmaj9@4 Em7@4 Am9@4|ionian|color|open|no|G-Ab-G-F#-F-E-A低音把借用色块串联到相对六级，Eb并未获得新主终止。|Uchiyama|bridge|concept-only|4/4
+BassArchitecture|低音邻接和副歌前属平台|C@4 C#dim7@2 Dm9@6 Em7@4 Fmaj9@4 Fm6@4 Dm7/G@8|ionian|develop|open|no|C#减七两QN向Dm，F-A-Ab内声反差后Dm/G构成G悬属复合，末不宣称主解决。|Uchiyama|prechorus|passing-diminished application|4/4
+BassArchitecture|六级线性低音转后属|Cmaj7@4 Am9@4 Am/G#@4 Am/G@4 Fmaj9@4 Fm9@4 Bb13@4 C/E@4|ionian|loop|modal-arrival|yes|A-G#-G把小主平台导向IV，Fm-Bb再回C/E；E到首C是主和弦低音重启。|Uchiyama|verse|concept-only|4/4
+BassArchitecture|大七转降七的内声下行|Cmaj9@4 C7/Bb@4 Fmaj9/A@4 Fm6/Ab@4 C/G@4 D9/F#@4 Gsus4@8|ionian|develop|open|no|B-Bb-A-Ab-G-F#的低音和主色差相互配合，D9引到悬G完成强前副歌边界。|Uchiyama|prechorus|cliche and slash-bass application|4/4
+BassArchitecture|王道侧面引出半音低音|C@4 Fmaj9@4 G13@4 Em9@4 Am9@4 Abmaj7@4 C/G@4 Fmaj7/A@4|ionian|color|open|no|Em9的F#作短时高色，A-Ab-G-A低音是主结构，末F/A为副歌延伸平台。|Ramage|chorus|family-only|4/4
+BassArchitecture|根音保留与低音跨段上升|Cmaj7@4 G/C@4 Am/C@4 F/C@4 Dm9/F@4 G13/B@4 Am9/C@4 D7/F#@4|ionian|develop|transition|no|C踏板前句与F-B-C-F#后句对照，末D7指向G区，未作C终止。|Uchiyama|verse-prechorus|concept-only|4/4
+BassArchitecture|小四借用与属上方平行小九|Cmaj9@4 Fm9@4 C/E@4 Em9@4 Ebm9@2 Dm9@6 G13@4 Am9@8|ionian|color|deceptive|no|Em-Ebm-Dm同质下行是局部连接，F#与Gb/Db不改全句中心，末G到Am为欺骗。|Uchiyama|bridge|concept-only|4/4
+BassArchitecture|主和弦增五内声接大二级|C@4 Caug@4 Am/C@4 C7@4 Fmaj7@4 D/F#@4 Fm6@4 Gsus4@4|ionian|color|open|no|G-G#-A-Bb内声增长后落IV；大二级与小四的F#-F反差带到悬属。|Uchiyama|prechorus|cliche application|4/4
+BassArchitecture|三度上行低音的王道后句|C/E@4 Fmaj9@4 E7/G#@4 Am9@4 C/G@4 Fmaj7@4 G13@4 Em7@4|ionian|loop|open|yes|E-F-G#-A上行承载局部vi，随后G-F-G-E回旋；末Em到C/E低音不变。|Ramage|chorus|family-only|4/4
+BassArchitecture|下行到二级再上升的副歌|Cmaj7@4 Em7/B@4 Am9@4 C/G@4 Fmaj9@4 C/E@4 Dm9@4 Em7@4 Fmaj7@8|ionian|loop|open|yes|C-B-A-G-F-E-D低音下降后E-F重新抬升，末F到C产生下属型回接。|Uchiyama|chorus|canon-derived application|4/4
+BassArchitecture|低音三全音枢纽未作替代属|Cmaj9@4 F#m7b5@4 Fmaj9@4 Em7@4 Am9@4 Ebmaj7@4 Dm9@4 Gsus4@4|ionian|color|open|no|F#半减共有C/E/A而非F#主音；E-Eb-D低音后悬属保留全句方向。|Uchiyama|bridge-prechorus|concept-only|4/4
+BassArchitecture|副属低音上行转小调终点|Cmaj7@4 D7/F#@4 G@4 E7/G#@4 Am9@8 Fmaj7@4 Dm9@4|ionian|develop|open|no|F#-G-G#-A形成两次副属级进，Am长停为局部中心，末Dm把循环再次展开。|Uchiyama|verse-prechorus|secondary-dominant application|4/4
+BassArchitecture|小九和弦下行到借用降六|Cmaj9@4 Em9/B@4 Am9@4 Gm9@4 Fmaj9@4 Abmaj9@4 Bb13@4 Gsus4@8|ionian|color|open|no|B-A-G-F低音后升Ab-Bb转借用区域，最后悬G回待C，不把扩展本身当风格。|Uchiyama|bridge|concept-only|4/4
+BassArchitecture|上方三和弦保持与低音释放|C@4 C/D@4 C/E@4 Fmaj7@4 Am7/E@4 Dm7/F@4 G7/B@4 C/G@4|ionian|loop|ambiguous|yes|C-D-E上行低音后F-E-F-B-G，末C/G虽有主和弦音但弱根位，G到首C完成回接。|Uchiyama|verse|slash-bass application|4/4
+BassArchitecture|降七与小四共音后转二级|Cmaj7@4 Bbmaj7@4 F/A@4 Fm/Ab@4 C/G@4 Am7@4 Dm9@8|ionian|color|open|no|Bb-A-Ab-G线性低音连接两种借用和弦，末Dm长平台可接下一段前属。|Uchiyama|bridge-prechorus|concept-only|4/4
+BassArchitecture|根音三度桥的半音上行|C@4 Eb/G@4 E/G#@4 Am9@4 Fmaj7@4 F#dim7@2 G7sus4@6 C/E@4|ionian|loop|modal-arrival|yes|G-G#-A与F-F#-G双上行邻接，末主转位回根位；Eb只是过桥非转调。|Uchiyama|chorus|passing-diminished application|4/4
+BassArchitecture|属低音踏板上延长前属|Cmaj9@4 Dm9@4 Fmaj7/G@4 Dm7/G@4 Em7/G@4 Fm/G@4 G7@8|ionian|develop|open|no|首C定调后G低音上D-F-E-Fm形成内声变化，末真正G7收拢属功能待副歌。|Uchiyama|prechorus|pedal and predominant application|4/4
+ColorTurn|主九与降二门的半音内声|Cmaj9@4 Dbmaj7@4 Fm9@4 C/E@4 Am9@4 Dm7b5@4 G7b9@4 Am9@8|ionian|color|deceptive|no|Db-Fm共有F/Ab，C/E重回主功能，半减降九属最后逃Am；借用与终点功能分开。|Uchiyama|bridge|concept-only|4/4
+ColorTurn|侧门落点后王道重新抬头|Cmaj7@4 Fm7@4 Bb13@4 Cmaj9@4 Fmaj9@4 G13@4 Em7@4 Am9@4|ionian|loop|open|yes|前半侧门确立C，后半王道开放vi，回C共音循环；两段根音逻辑有独立用途。|Ramage|verse-chorus|family-only|4/4
+ColorTurn|三全音替代属后的开放六级|Cmaj9@4 Dm9@4 Db7@4 C/E@4 Fmaj7@4 G7#9b13@4 Am9@8|ionian|color|deceptive|no|Db7-C低音半音是替代属，后变属G7逃Am的C/E与Eb/G#张力解决到A/C/E。|Uchiyama|bridge|editorial substitution application|4/4
+ColorTurn|大主三度侧影回前属|Cmaj7@4 Emaj7@4 Fmaj7@4 Am9@4 Abmaj7@4 Fm9@4 Dm7/G@8|ionian|color|open|no|C-E的大三度色差后F承接E共同音，Ab-Fm进入借用前属再G低音悬置。|Spicer|bridge|concept-only|4/4
+ColorTurn|高原中的降九副属回路|C@4 Fmaj7@4 G@4 Am9@4 Bm7b5@4 E7b9@4 Am9@4 Gsus4@4|ionian|develop|open|no|高原vi经局部A小调ii半减-V回vi，再放至悬G；多处中心不能由音阶兼容自动决定。|Ramage|prechorus|family-only|4/4
+ColorTurn|开放主音上方的增三度色块|Cmaj9@4 Abmaj7/C@4 Cmaj7@4 Emaj7/B@4 Am9@4 Fm6@4 Gsus4@8|ionian|color|open|no|C低音C-E-G到C-Eb-Ab先平行明暗，后B-A-Ab-G低音逐级回悬属。|Uchiyama|bridge|concept-only|4/4
+ColorTurn|主音短落后替代属延展|Cmaj7@4 Fmaj9@4 Em7@4 A7b9@4 Dm9@4 Db7@4 Cmaj9@4 E7@4|ionian|develop|transition|no|A7-Dm与Db7-C各有解决，末E7把句子转向Am而不是将中途C当整句终止。|Uchiyama|postchorus|secondary-dominant application|4/4
+ColorTurn|同质大七侧滑和副属出口|Cmaj7@4 Dbmaj7@4 Ebmaj7@4 C/E@4 Fmaj7@4 D7/F#@4 Gsus4@8|ionian|color|open|no|大七C-Db-Eb是短色彩段，C/E重新定调后F-F#-G导向开放属边界。|Uchiyama|bridge-prechorus|editorial constant-structure application|4/4
+ColorTurn|降六与降二共享内声|Cmaj7@4 Am7@4 Abmaj9@4 Dbmaj7@4 Fm7@4 Bb7@4 C/E@4 Dm7@4|ionian|color|open|no|Ab-Db-Fm共享Ab/C，侧门到C/E再ii；借用区是一个完整色彩弧线。|Spicer|bridge|concept-only|4/4
+ColorTurn|小三度链与同主回归|Cmaj7@4 Ebmaj7@4 Gbmaj7@4 Fm9@4 G7b9@4 Cm9@4 Bb@4 Gsus4@4|ionian|color|transition|no|C-Eb-Gb色块经Fm-G7b9确立Cm，Bb-Gsus等待小调后续；未声称三次连续转调。|Spicer|bridge|editorial chromatic-mediant application|4/4
+ColorTurn|主歌增色后换王道重心|Cmaj9@4 Dm9@4 Em9@4 Fmaj9@4 Fm6@4 C/E@4 G13@4 Am9@8|ionian|loop|deceptive|yes|Em9引入F#后F自然恢复，借iv6回C/E再G-Am，循环尾vi到C保持开放。|Uchiyama|verse-chorus|ascending-bass application|4/4
+ColorTurn|下属延长与调式落点错置|C@4 Fmaj7@8 Dm9@4 Fm9@4 Bb13@4 Abmaj7@4 Gsus4@4|ionian|color|open|no|F长平台后侧门原可回C却落Ab，半音下G悬置制造新的前副歌张力。|Spicer|prechorus|concept-only|4/4
+ColorTurn|大三度侧移接相对小调|Cmaj7@4 Emaj7@4 B7@4 Em9@4 Am9@4 Fmaj9@4 G13@4 Em7@4|ionian|loop|open|yes|Emaj7到B7后Em形成局部大转小，F-G-Em回C共音，未把Emaj孤立认新主。|Spicer|verse|concept-only|4/4
+ColorTurn|借用降七属到同主小调|Cmaj9@4 Bb13@4 Ebmaj7@4 Fm9@4 Dm7b5@4 G7b9@4 Cm9@8|ionian|color|modal-arrival|no|Bb13先导Eb，后小调ii-V-i落Cm；局部中心次序与全局C大起点不同。|LiPR|bridge|sectional reinterpretation application|4/4
+ColorTurn|主音上增色与半音副属回旋|Cmaj7@4 F#dim7/C@4 Dm9/C@4 Cmaj7@4 A7/C#@4 Dm9@4 G13@4 Fmaj9@4|ionian|color|open|no|C踏板上的F#减七非主音改变，解除踏板C#-D建立ii，G不归主而落IV。|Uchiyama|chorus|diminished and slash-bass application|4/4
+ColorTurn|高色属被小四截断|Cmaj9@4 Am9@4 Dm9@4 G7#9b13@4 Fm6@4 C/E@4 Dm7@4 Gsus4@4|ionian|color|open|no|变属后的Fm6保留Ab/C，C/E局部主音后再ii-悬V，完整桥段不以此判Resolve。|Uchiyama|bridge-prechorus|concept-only|4/4
+ColorTurn|上方大三和弦与持续C|C@4 D/C@4 F/C@4 Ab/C@4 Cmaj7@4 Am9@4 Dm9@4 G13@4|ionian|develop|open|no|踏板上D的F#与Ab的Eb/Ab依次扩展，再回Cmaj7清晰主功能后属前准备。|Uchiyama|prechorus|editorial pedal application|4/4
+ColorTurn|大六级色块通往升四半减|Cmaj7@4 Amaj7@4 Dmaj7@4 F#m7b5@4 Fmaj9@4 Em7@4 Am9@4 G13@4|ionian|color|open|no|A-D先构成局部亮面但不充分确立新调，F#半减共享A/C/E转F，末属开放。|Spicer|bridge|concept-only|4/4
+ColorTurn|二级小九与平行减七门|Cmaj9@4 Dm9@4 Ebm9@2 Em9@6 Am9@4 F#dim7@4 G13@4 Fmaj9@4|ionian|color|open|no|D-Eb-E半音同质上滑不是重复节奏变体，F#减七通G后IV留白，C参照首尾可追。|Uchiyama|chorus|editorial chromatic-approach application|4/4
+ColorTurn|侧门之后的大七共同音桥|Cmaj7@4 Fm9@4 Bb13@4 Cmaj7/E@4 Emaj7@4 Fmaj7@4 Dm9@4 Gsus4@8|ionian|develop|open|no|侧门落C/E后Emaj保留E/B而改G#，F接半音上行，最后ii-悬V构成前副歌。|Spicer|prechorus|concept-only|4/4
+ModalSection|多利安主歌和升六副歌前景|Cm7@8 Ebmaj7@4 Dm7@4 F6@4 Cm/G@4 Bb@4 F/A@4 Cm7@4|dorian|loop|modal-arrival|yes|Cm反复且长驻，Dm/F6中的A自然为核心，末Cm回首同主延长而无V-i要求。|Uchiyama|verse|original modal composition|4/4
+ModalSection|多利安四级平台后开放五级|Cm9@4 F13@8 Cm9@4 Dm7@4 Bbmaj7@4 F/A@4 Gm7@8|dorian|loop|open|yes|F13含A/D，Cm两次锚定，末Gm到Cm是小五级回接，不引B导音；全句保留A升六。|Uchiyama|chorus|original modal composition|4/4
+ModalSection|多利安与自然小调交替段落|Cm7@8 F/A@4 Dm7@4 Cm7@4 Abmaj7@4 Bb@4 Gm@4 Cm7@4|dorian|color|modal-arrival|no|前段Dm和F/A显露A自然，后Ab转自然小调暗面；归属为带借用多利安而非音集纯净。|Uchiyama|verse-bridge|original modal composition|4/4
+ModalSection|多利安踏板解除到下属|Cm7@4 F/C@4 Bb/C@4 Cm7@4 Eb/G@4 Dm/A@4 F/A@8|dorian|develop|open|no|C踏板反复建立中心，解除后G-A-A低音突出A自然，末F/A是模态前景不是F转调。|Uchiyama|prechorus|original modal composition|4/4
+ModalSection|混合利底亚的降七双下属|C@8 Bb@4 F/A@4 C/G@4 Dm7@4 Bb@4 F@4 Gm7@4|mixolydian|loop|open|yes|长C加C/G确立主音，Bb与Gm含降七且无B自然属，Gm回C为模态五一。|Spicer|chorus|original modal composition|4/4
+ModalSection|混合利底亚的升降内声门|C7@4 F@4 C@8 Dm7@4 Bb@4 F/A@4 C/G@4|mixolydian|loop|modal-arrival|yes|C7需结合C长驻和回返听作带b7主色，不因单独C7便定F属；尾C/G回根位。|Spicer|verse|original modal composition|4/4
+ModalSection|混合利底亚主歌的二级开放|C@4 Gm7@4 F@4 C/E@4 Bb@4 Dm7@8 F@4|mixolydian|loop|open|yes|C和C/E是主功能锚，Gm/Bb给降七，末F回C属下属式回接而非错误未完结。|Spicer|verse|original modal composition|4/4
+ModalSection|混合利底亚与大调属门|C@8 Bb@4 F@4 C/E@4 Gm7@4 Dm7@4 G7@4|mixolydian|develop|transition|no|前六和弦以Bb/Gm建立降七语境，末G7引B自然转入Ionian副歌；严格混合利底亚应拒。|Spicer|prechorus|original modal composition|4/4
+ModalSection|利底亚主音踏板与升四低音|Cmaj7@8 D/C@4 Cmaj7@4 F#m7b5@4 Em7@4 D/F#@4 C/G@4|lydian|loop|modal-arrival|yes|C踏板和C转位持续锚定，D/F#与半减突出F#，无F自然；末C/G回C是同主低音回接。|Uchiyama|verse|original modal composition|4/4
+ModalSection|利底亚上方大二级的悬浮后句|Cmaj9@4 D@4 Em7@4 Cmaj7@4 Bm7@4 D/F#@4 Cmaj7/G@8|lydian|loop|modal-arrival|yes|两次C主色、D与Bm的F#，尾C/G长驻；不把D自动解释新主。|Uchiyama|chorus|original modal composition|4/4
+ModalSection|利底亚到平行小四的桥段|Cmaj7@8 D/C@4 Em7@4 C@4 Fm6@4 Gsus4@8|lydian|color|transition|no|开头C和D/C显升四，后Fm6的F/Ab是明确借用与换段信号，整句不是纯利底亚音集。|Uchiyama|bridge|original modal composition|4/4
+ModalSection|弗里吉亚主音与降二邻接后句|Cm7@8 Db/C@4 Cm7@4 Bbm7@4 Abmaj7@4 Db@4 Cm7/G@4|phrygian|loop|modal-arrival|yes|Cm反复和C踏板建立中心，Db/Bbm突显Db/Ab，末Cm/G与起点同主归位，避免F#或D扩展。|Uchiyama|verse|original modal composition|4/4
+ModalSection|弗里吉亚降二到小五级留白|Cm@8 Dbmaj7@4 Eb@4 Cm@4 Fm7@4 Bbm7@4 Gm7b5@8|phrygian|loop|open|yes|C主长驻两次，Db明确降二；G半减的Db回Cm可下行邻接，不将半减当Locrian。|Uchiyama|chorus|original modal composition|4/4
+ModalSection|自然小调与借用大四级的抬升|Cm7@8 Ab@4 Bb@4 Gm@4 Cm@4 F/A@4 Bb@8|aeolian|develop|open|no|Cm主锚与Ab/Bb是自然小调，F/A临时借Dorian升六，末Bb准备下一轮Cm不是真正属主。|Spicer|prechorus|original modal composition|4/4
+ModalSection|自然小调下属的侧向回圈|Cm9@4 Abmaj7@4 Fm9@4 Bb@4 Eb/G@4 Cm/G@4 Ab@4 Bbsus4@4|aeolian|loop|open|yes|Cm及Cm/G保主，Eb只作关系大调色彩；末Bbsus4到Cm以F-G半音外的级进回接。|Spicer|chorus|original modal composition|4/4
+ModalSection|同主小调主歌的半音低音|Cm@4 Cm/B@4 Cm/Bb@4 F/A@4 Ab@4 G7@4 Cm@4 Bb@4|aeolian|color|open|no|C-B-Bb-A-Ab-G低音引入和声小调导音及多利安升六，回Cm后Bb重开；借用语境明确。|Uchiyama|verse-bridge|cliche application|4/4
+ModalSection|和声小调的主大七与降二桥|CmMaj7@8 Fm@4 Dm7b5@4 G7b9@4 Cm@4 Dbmaj7@4 G7@8|harmonic_minor|color|open|no|B自然先在CmMaj7与属出现，Db仅短借降二，末属为下一段准备；严格模式因Db拒绝。|Uchiyama|prechorus|original minor composition|4/4
+ModalSection|爵士旋小主歌的上行扩展|CmMaj9@8 Dm7@4 Ebaug@4 F13@4 Bm7b5@4 CmMaj7@4 Dm7@4|melodic_minor_ascending|develop|open|no|Cm大七两次建立中心，A/B自然贯穿Dm/F13/B半减，尾ii保开放；只静态爵士旋小。|Uchiyama|verse|original static melodic-minor composition|4/4
+ModalSection|小调副歌的借用大主一闪|Cm@8 Fm@4 Ab@4 Bb@4 C@4 Dm7b5@4 G7b9@8|aeolian|color|open|no|Cm起点长驻，C大仅平行亮色随后再ii半减-V回向Cm，尾半终止不算已归主。|Uchiyama|prechorus|original minor composition|4/4
+ModalSection|多利安主九与共同音换位|Cm9@4 Dm7/C@4 Cm7@4 F6/A@4 Ebmaj7/G@4 Dm7/F@4 Cm7/Eb@4 F/A@4|dorian|loop|open|yes|C两次与Eb转位为中心锚，C-A-G-F-Eb-A低音独立设计，A自然为结构色彩，末F/A回Cm共享C。|Uchiyama|chorus|original modal composition|4/4
+SectionEnergy|主歌内声爬升到悬属|Cmaj7@8 C6@4 C7@4 Fmaj7@4 F#dim7@2 G7sus4@6 G7@4|ionian|develop|open|no|B-A-Bb的主色变化导IV，F#减七到G悬属再释，构成预副歌能量积累。|Uchiyama|prechorus|cliche and passing-diminished application|4/4
+SectionEnergy|大主副歌的六级暗门|Cmaj9@4 Fmaj9@4 Em7@4 Am9@4 Dm9@4 G13@4 Am9@8 E7/G#@4|ionian|develop|transition|no|G逃Am长驻后又放E7/G#，结尾是相对小调属引导下一段，不封闭C。|Ramage|chorus-bridge|family-only|4/4
+SectionEnergy|下属长平台的属链加速|C@8 F@8 Dm@4 E7@2 Am@2 A7@2 Dm@2 D7@2 Gsus4@6|ionian|develop|open|no|长C/F与后段每两QN副属链形成速度反差，悬G统一收拢，非纯节奏旧曲复本。|Uchiyama|prechorus|secondary-dominant application|4/4
+SectionEnergy|色彩桥段的主和弦迟到|Fmaj9@8 Abmaj7@4 Gsus4@4 Em7@4 Am9@4 Dm9@4 G13@4 Cmaj9@8 E7@4|ionian|develop|transition|no|首次C长落在后段但随后E7重开，借用Ab与主调iii-vi分区，整句不是Resolve。|Spicer|bridge-postchorus|emergent-tonic application|4/4
+SectionEnergy|副歌后段回低能主歌|C@4 G/B@4 Am9@4 E7/G#@4 Am/G@4 Fmaj7@8 C/E@8|ionian|loop|modal-arrival|yes|高潮前四下行后E7增亮，G-F-E逐步降能，末C/E与首C同主循环。|Uchiyama|postchorus-verse|slash-bass application|4/4
+SectionEnergy|借用小四引出二级大属|Cmaj7@8 Fm6@4 C/E@4 Dm9@4 D7/F#@4 G13@4 Fmaj9@8|ionian|loop|open|yes|借iv6回主短驻，Dm改D7激活G，G落IV高原又回C；前后段动能不同。|Spicer|chorus|concept-only|4/4
+SectionEnergy|相对小调段落到王道下拍|C@4 Am9@8 Dm9@4 E7b9@4 Am9@4 Fmaj9@8 G13@4 Em7@4|ionian|loop|open|yes|局部小调前属属后IV长下拍承载副歌起势，尾Em回C共音连贯而无大终止。|Ramage|verse-chorus|family-only|4/4
+SectionEnergy|降七持续色彩后的大属|C@8 Bb/C@4 F/C@4 C@4 Dm7@4 Gm7@4 C7@4 F@4 G7@8|ionian|develop|open|no|前C踏板bVII/IV借用，Gm-C7局部到F再G7恢复C属；后段不是F全局归属。|Uchiyama|prechorus|pedal and secondary-dominant application|4/4
+SectionEnergy|王道明暗两句的前属转接|Cmaj7@4 Fmaj9@4 G13@4 Em7@4 Am9@4 Fm9@4 Abmaj7@4 Dm7b5@4 G7b9@8|ionian|color|open|no|明句王道后暗句Fm-Ab-D半减，共Ab/C引入平行小调，G7b9边界等待下一段主音性质。|Ramage|bridge-prechorus|family-only|4/4
+SectionEnergy|半音低音压缩后的副歌空间|C@8 C/B@2 Am@2 Am/G#@2 C/G@2 Fmaj7@4 Em7@4 Dm7@8 Gsus4@8|ionian|develop|open|no|四个两QN低音压缩后Dm和悬G各延长，根音路线和长前属留白有可辨认段落功能。|Uchiyama|prechorus|slash-bass application|4/4
+SectionEnergy|主音低音重复下的借用展开|Cmaj9@4 Fmaj7/C@4 Abmaj7/C@4 Fm/C@4 Cmaj7@8 Am9@4 Dm9@4|ionian|color|open|no|C踏板内E-Eb与A-Ab换色，Cmaj7再定调后vi-ii离开，桥段完成后进入下一前属。|Uchiyama|bridge-prechorus|pedal application|4/4
+SectionEnergy|循环副歌的延迟小四|C@4 Am@4 Dm7@4 G7@4 C/E@4 Fmaj7@4 Fm6@8|ionian|loop|open|yes|前句有弱转位主，尾IV-iv延长将Ab导回起C的G；循环边界不依末V-I。|Spicer|chorus|fragile-tonic application|4/4
+SectionEnergy|第一转位主音后的小室尾句|C/E@8 F@4 G@4 Am@4 F@4 G@4 C/G@4 Dm7@4|ionian|develop|open|no|起C/E和中C/G主功能均弱根位，vi-IV-V-I/G后Dm重开，尾ii是段落前属。|Spicer|verse-prechorus|fragile-tonic application|4/4
+SectionEnergy|色彩后副歌回到属悬置|Cmaj9@4 Emaj7@4 Am9@4 Abmaj7@4 C/G@4 Fmaj9@4 Dm9@4 G7sus4@8|ionian|color|open|no|E大七的G#半音上A，Ab-C/G低音半音下G，最后ii-悬V把两种运动汇合。|Uchiyama|postchorus|concept-only|4/4
+SectionEnergy|主歌大主与桥段小主分界|C@8 Em@4 F@4 G@4 Cm@8 Ab@4 Fm@4 G7@8|ionian|color|open|no|前句C主属与后句Cm-Ab-Fm-G明确同主调式切换，末属仍可转大或小而不预判。|Spicer|verse-bridge|concept-only|4/4
+SectionEnergy|小调段落到大主瞬间再离开|Cm@8 Fm@4 G7@4 C@4 Am@4 Fmaj7@4 Gsus4@8|aeolian|develop|transition|no|起Cm和Fm-G7确立小调，G7解决到C大后Am-F-悬G属于平行大段；整句多中心。|Uchiyama|bridge-chorus|original parallel-mode design|4/4
+SectionEnergy|逐层主音回避的完整副歌|C/E@4 F@4 G@4 Em@4 Am@4 Dm7@4 G7@4 C/G@4 F@8|ionian|loop|open|yes|两次主和弦均转位且非句末，尾F长平台回起C/E下行半音A到G并共享C/E。|Spicer|chorus|fragile-tonic application|4/4
+SectionEnergy|副歌峰值到前属突然留白|C@4 E7@4 Am9@4 D7/F#@4 G@4 Gm7@4 C7@4 Fmaj9@12|ionian|develop|modal-arrival|no|副属链到G后转Gm-C7使F成为局部终点，长F既休息也可重启王道。|Uchiyama|chorus-postchorus|secondary-dominant application|4/4
+SectionEnergy|二级与小四替代的两层回答|Cmaj9@4 Dm9@4 Em7@4 Fmaj7@4 C/E@4 Fm6@4 Dm7/G@4 Am9@8|ionian|color|deceptive|no|上行前句后C/E-iv6-悬V对答，悬属G低音落Am而非I，创造副歌尾余势。|Uchiyama|chorus|subdominant-minor application|4/4
+SectionEnergy|短主锚点与长高原的对比|C@4 Fmaj7@8 G13@4 Am9@8 Em7@4 Fmaj7@4 D7@4 Gsus4@8|ionian|develop|open|no|C短锚后F/Am长平台，末D7到悬G是明确预副歌目标；长停vi不自动变小调全句。|Duinker|prechorus|concept-only|4/4
+GameSongBridge|主题主音与邻调色彩平台|Cmaj7@8 D/C@4 Cmaj7@4 Ebmaj7@4 Abmaj7@4 Bb7@4 Eb@8|ionian|color|transition|no|主音踏板亮色后Eb-Ab-Bb-Eb确立新调，原C的F#是局部明亮而非全局Lydian。|LiPR|verse-chorus|PR mechanism-only|4/4
+GameSongBridge|相对小调局部终止后转A大|C@8 Bm7b5@4 E7b9@4 Am@8 Bm7@4 E7@4 A@8|ionian|develop|transition|no|先局部Am完整终止，再Bm-E7-A变平行大调，C到A属RP关系有不同准备路径。|LiRP|prechorus-chorus|RP mechanism-only|4/4
+GameSongBridge|降三区回程的共同音门|C@8 F@4 G@4 Ab@4 Bb@4 Eb@8 Fm@4 G7@4 C@8|ionian|loop|closed|yes|两次C长平台包住Eb局部主区域，Fm-G7-C回程有明确属功能，完整跨段环可重启。|LiReturn|verse-chorus-postchorus|reciprocal modulation mechanism-only|4/4
+GameSongBridge|大六级副歌回原主下属|C@8 F@4 E7@4 A@8 D@4 E@4 A@4 Dm@4 G7@4 C@4 F@8|ionian|loop|open|yes|A大调内部D-E-A确认后Dm-G7-C回C，末F是原调高原，回C边界成立。|LiReturn|chorus-postchorus|reciprocal modulation mechanism-only|4/4
+GameSongBridge|半音上行新副歌经降二属准备|C@8 F@4 G@4 C@4 Ebm7@4 Ab7@4 Db@8 Gb@4 Ab@8|ionian|develop|open|no|C调明确主属后Ebm-Ab-Db确认半音上新主，尾Gb-Ab为新前属属边界。|LiPR|prechorus-chorus|chromatic modulation broader than PR|4/4
+GameSongBridge|共同音E串联下方大三度|Cmaj7@8 Am@4 F@4 E7@4 Amaj7@8 Bm7@4 E7@4 F#m@8|ionian|color|deceptive|no|E共同音助C到A，A调ii-V欺骗到F#m，局部vi落点不当原C终止。|LiRP|chorus|RP mechanism-only|4/4
+GameSongBridge|降三转调后副歌前属起拍|C@8 Dm@4 G@4 Abmaj7@8 Bb7@4 Eb@4 Abmaj7@8 Fm7@4 Bb7@4|ionian|develop|open|no|C起点与Ab-Bb-Eb确认区分，后Ab-Fm-Bb是新调下属平台起句，不是原调IV判断。|LiPR|verse-prechorus|This game VE7 mechanism-only|4/4
+GameSongBridge|旧属直接色移与新主后证|C@8 F@4 Dm7@4 G7@4 Ebmaj7@8 Fm7@4 Bb7@4 Eb@4 Ab@8|ionian|color|transition|no|G7直向Eb留B-Bb半音，后ii-V-I才验证转调，末Ab为Eb调IV部分主感。|LiPR|prechorus-chorus|Believe VE6 mechanism-only|4/4
+GameSongBridge|相对小调的属与降三大调双向门|C@8 Am@4 Dm7@4 G7@4 Cm@8 Fm7@4 Bb7@4 Eb@4 Fm@4 G7@8|ionian|color|open|no|G7先转Cm再Fm-Bb-Eb，末Fm-G7又预告Cm；不是一条全程静态音阶归属。|LiDouble|bridge-postchorus|section-limited dual-centre mechanism-only|4/4
+GameSongBridge|副歌抬升和后副歌非主音回接|C@8 F@4 G@4 Ab@4 Bb@4 Eb@8 Ab@4 G7@4 Am@4 F@8|ionian|loop|open|yes|Eb段后G7-Am欺骗回C相对区，F长落点到C回首；以不同段落职能组织两调。|LiReturn|prechorus-chorus-postchorus|reciprocal modulation mechanism-only|4/4

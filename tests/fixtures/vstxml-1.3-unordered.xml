@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<vst-xml version="1.3">
+  <chord id="7"><name>Dm7</name><projectTime domain="quarterNotes">7</projectTime><pitches>D;F;A;C;</pitches><keyNote>62</keyNote><bassNote>26</bassNote><mask>0x489</mask></chord>
+  <chord id="5"><name>Cmaj7</name><projectTime domain="quarterNotes">0</projectTime><pitches>C;E;G;B;</pitches><keyNote>60</keyNote><bassNote>24</bassNote><mask>0x891</mask></chord>
+  <chord id="6"><name>A7</name><projectTime domain="quarterNotes">6</projectTime><pitches>A;C#;E;G;</pitches><keyNote>69</keyNote><bassNote>33</bassNote><mask>0x489</mask></chord>
+  <chord id="6b"><name>Am7</name><projectTime domain="quarterNotes">4</projectTime><pitches>A;C;E;G;</pitches><keyNote>69</keyNote><bassNote>33</bassNote><mask>0x489</mask></chord>
+  <sourceApp>ParserTestFixture</sourceApp>
+</vst-xml>

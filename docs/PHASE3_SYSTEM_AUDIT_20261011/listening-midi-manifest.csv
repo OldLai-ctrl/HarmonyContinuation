@@ -1,0 +1,7 @@
+case_id,FactoryID,intent,key,file,source
+"JAZZ_01","V3_VELVET_045",RESOLVE,"C Major","JAZZ_01__V3_VELVET_045.mid",synthetic abstract Factory realization
+"RNB_01","V3_VELVET_036",RESOLVE,"C Major","RNB_01__V3_VELVET_036.mid",synthetic abstract Factory realization
+"BORROWED_01","V4_A07",RESOLVE,"C Major","BORROWED_01__V4_A07.mid",synthetic abstract Factory realization
+"COLOR_01","V3_VELVET_036",RESOLVE,"C Major","COLOR_01__V3_VELVET_036.mid",synthetic abstract Factory realization
+"R02_A","V3_DUSK_051",RESOLVE,"A Minor","R02_A__V3_DUSK_051.mid",synthetic abstract Factory realization
+"B08_04","V4_B08",RESOLVE,"C Major","B08_04__V4_B08.mid",synthetic abstract Factory realization
