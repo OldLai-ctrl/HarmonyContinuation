@@ -9,6 +9,8 @@
 #include <sstream>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <cstdio>
 
 namespace harmony {
 namespace {
@@ -682,12 +684,85 @@ const char* cadenceName(CadenceType value) noexcept {
         case CadenceType::Unknown: return "unknown"; default: return "none";
     }
 }
+namespace {
+// Phrase cut for long imports: a position is a cut when the chords before it
+// end like a library phrase and the chords after it start like one. Both sides
+// must be confirmed; the tail must be an exact phrase start because the tail is
+// what gets matched. Signs = degree + alteration only, so the song being
+// imported does not need to exist in the library.
+std::string degreeSignature(const MatchEvent& event) {
+    if (!event.degree) return "-";
+    return std::to_string(event.degree->degree) + ":" + std::to_string(event.degree->alteration);
+}
+
+std::optional<std::size_t> phraseCut(const MatchQuery& query, const CandidateIndex& index) {
+    if (query.interpretations.empty() || query.source.size() < 5) return std::nullopt;
+    const auto& interpretation = query.interpretations.front();
+    const auto& events = interpretation.full;
+    if (events.size() < 5) return std::nullopt;
+    std::unordered_set<std::string> tails, heads;
+    std::unordered_set<std::string> seen;
+    for (const auto& item : index.templates()) {
+        if (item.mode != interpretation.key.key.mode || item.full.size() < 2) continue;
+        std::vector<std::string> signs;
+        signs.reserve(item.full.size());
+        for (const auto& e : item.full) signs.push_back(degreeSignature(e));
+        std::string key;
+        for (std::size_t i = 0; i < signs.size(); ++i) { key += signs[i]; key += '|'; }
+        if (!seen.insert(key).second) continue;  // one phrase per distinct shape
+        std::string suffix;
+        for (std::size_t k = signs.size(); k >= 2; --k) {
+            suffix = signs[k - 1] + "|" + suffix;
+            tails.insert(suffix);
+        }
+        std::string prefix;
+        for (std::size_t k = 0; k + 2 <= signs.size(); ++k) {
+            prefix += signs[k] + "|";
+            heads.insert(prefix);
+        }
+    }
+    struct Candidate { std::size_t k; bool tailExact; };
+    std::vector<Candidate> cuts;
+    for (std::size_t k = 2; k + 2 <= events.size(); ++k) {
+        std::string head, tail;
+        for (std::size_t i = 0; i < k; ++i) { head += degreeSignature(events[i]); head += '|'; }
+        for (std::size_t i = k; i < events.size(); ++i) { tail += degreeSignature(events[i]); tail += '|'; }
+        if (tails.count(head) && heads.count(tail)) cuts.push_back({k, true});
+    }
+    if (std::getenv("HC_CUT_DEBUG")) std::fprintf(stderr, "cut candidates=%zu\n", cuts.size());
+    if (cuts.empty()) return std::nullopt;
+    return cuts.front().k;  // shortest confirmed cut
+}
+
+MatchQuery trimmedQuery(const MatchQuery& query, std::size_t cut) {
+    // Rebuild instead of slicing: the analysis (degrees, key, cadence) depends
+    // on the whole progression, so a sliced interpretation is not a query.
+    const auto& events = query.interpretations.front().full;
+    Progression source = query.source;
+    if (cut < events.size() && events[cut].sourceIndex < source.size())
+        source.erase(source.begin(), source.begin() + static_cast<std::ptrdiff_t>(events[cut].sourceIndex));
+    AnalysisContext context;
+    context.forcedKey = query.interpretations.front().key.key;
+    context.timeSigNumerator = query.timeSigNumerator;
+    context.timeSigDenominator = query.timeSigDenominator;
+    return makeMatchQuery(source, context);
+}
+} // namespace
+
 RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
                                          const RecommendationRequest& request, const RecommendationWeights& w,
                                          const RecommendationSet* exactBase) {
     auto result = recommendContinuationsCore(query, index, request, w, exactBase);
     const auto empty = std::all_of(result.groups.begin(), result.groups.end(),
                                    [](const auto& group) { return group.empty(); });
+    if (empty && !query.source.empty() && !std::getenv("HC_NO_CUT")) {
+        if (const auto cut = phraseCut(query, index)) {
+            auto trimmed = recommendContinuationsCore(trimmedQuery(query, *cut), index, request, w, exactBase);
+            if (std::any_of(trimmed.groups.begin(), trimmed.groups.end(),
+                            [](const auto& group) { return !group.empty(); }))
+                result = std::move(trimmed);
+        }
+    }
     if (!empty || query.source.empty()) return result;
     if (std::getenv("HC_NO_RELAX")) return result;
     // Near misses: a five-or-six chord input regularly tops out just under the

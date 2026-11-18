@@ -188,17 +188,24 @@ def cmd_concat(args) -> int:
         ra, rb = rows_by_id[a], rows_by_id[b]
         events = []
         start = 0.0
+        seam = 0
         for row in (ra, rb):
-            for chord in row.get("typedData", {}).get("events", []) or []:
+            typed = row.get("typedData", {})
+            if isinstance(typed, str):
+                typed = json.loads(typed or "{}")
+            row_events = typed.get("events", []) or []
+            for chord in row_events:
                 events.append({
                     "name": chord.get("rawName") or chord.get("name", ""),
                     "start": start,
                     "duration": chord.get("durationQN") or 4.0,
                 })
                 start += chord.get("durationQN") or 4.0
+            if row is ra:
+                seam = len(events)
         out.append({
             "id": f"{a}+{b}", "song": song, "section": section,
-            "mode": ra["mode"], "seam": len(ra.get("typedData", {}).get("events", []) or []),
+            "mode": ra["mode"], "seam": seam,
             "total": len(events), "chords": events,
         })
     Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
