@@ -275,7 +275,16 @@ def period_of(cells, max_period=MAX_PERIOD, coverage=0.95):
     return 0
 
 
-def pickup_length(cells, max_lead=2):
+def bar_total(cell, span=None):
+    """Sounding length of one bar; ``@`` durations win, otherwise one per token."""
+    total = 0.0
+    for token in cell.split():
+        _, _, duration = token.partition("@")
+        total += float(duration) if duration else (1.0 if span is None else span)
+    return total
+
+
+def pickup_length(cells, max_lead=2, span=None):
     """How many opening bars sit outside the section's periodic structure.
 
     A section that repeats ``| C G | F G |`` eight times has a two-bar cell and
@@ -283,7 +292,14 @@ def pickup_length(cells, max_lead=2):
     a bar that never comes back -- the anacrusis the annotator heard.  A bar
     that is merely part of the loop (``| C G |`` as the first bar of a two-bar
     cell) is never mistaken for a pickup.
+
+    A first bar that does not sound for the whole bar is the other kind of
+    anacrusis: the section opens with empty beats and the first chord enters
+    late (I05).  ``span`` is the bar length in quarter notes; without it the
+    gap test is skipped.
     """
+    if span and cells and bar_total(cells[0]) < span - 1e-3:
+        return 1
     if len(cells) < 5:
         return 0
     keys = [cell_key(cell) for cell in cells]

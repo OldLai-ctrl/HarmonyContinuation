@@ -422,14 +422,33 @@ def style_affinity(fs: dict, song: dict) -> dict[str, float]:
         bump("blues", 0.65)
     if fs["inversions"] >= 0.3:
         bump("jazz", 0.65)
-    # Classical writing: fully diatonic triads, inversions for voice leading,
-    # cadences on the tonic.  The corpus base still sets the genre; this only
-    # says the phrase also works as functional harmony.
-    if fs["diatonic"] >= 0.95 and fs["sevenths"] == 0 and fs["borrowed"] == 0 \
-            and fs["inversions"] >= 0.25:
-        bump("classical", 0.55)
-    if fs["cadence_tonic"] and fs["sevenths"] <= 0.4:
-        bump("functional", 0.6)
+    # Genres are not exclusive: the canon progression is pop and classical at
+    # the same time, plain diatonic triads are folk and classical.  These two
+    # therefore add graded evidence instead of gating on an all-or-nothing test
+    # (the old classical gate demanded no sevenths, no borrowed notes and
+    # inversions all at once, which recognised 35 entries of 2,854).
+    classical = 0.0
+    if fs["diatonic"] >= 0.9:
+        classical += 0.35
+        if fs["sevenths"] <= 0.15:
+            classical += 0.15
+        if fs["borrowed"] <= 0.1:
+            classical += 0.10
+        if fs["inversions"] >= 0.25:
+            classical += 0.20
+        if fs["cadence_tonic"]:
+            classical += 0.10
+    if classical:
+        bump("classical", round(min(classical, 0.9), 2))
+    functional = 0.0
+    if fs["cadence_tonic"] or fs["cadence_dominant"]:
+        functional += 0.45
+        if fs["cadence_tonic"]:
+            functional += 0.15
+        if fs["sevenths"] <= 0.4:
+            functional += 0.10
+    if functional:
+        bump("functional", round(min(functional, 0.9), 2))
     score = {style: weight for style, weight in score.items() if weight > 0}
     if not score:
         score["other"] = 0.6
@@ -956,7 +975,7 @@ def split_units(bars: str, mode: str, meter: str, stats: Counter) -> list[tuple[
     # The tonic/dominant test belongs to the unit, not the section: a long
     # verse that alternates I and V may still contain a four-bar answer worth
     # keeping, so the section is cut first and each unit is judged on its own.
-    lead = BD.pickup_length(cells)
+    lead = BD.pickup_length(cells, span=BAR_QN.get(meter))
     if lead:
         stats["pickup"] += 1
     # A cell repeated over the whole section is a loop, not a phrase: fold it to

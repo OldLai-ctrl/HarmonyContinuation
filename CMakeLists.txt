@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.14.0 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.14.1 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "Versioned Factory content; published V5/V7 remain frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)

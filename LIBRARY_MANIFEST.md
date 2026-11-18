@@ -1,6 +1,22 @@
 # 当前库身份与重建链
 
-## v10（2026-11-18，现行）
+## v10c（2026-11-18，现行）
+
+| 项 | 值 |
+|---|---|
+| 条目 | `progressions=4126`（Billboard 2,838 + 手写/继承 1,288） |
+| 版本 | `library_version=9`、`schema_version=2` |
+| 字节 | 18,747,392 |
+| sha256 | `2de2605f6b7405cc5e01b9bbae6f14c1cfeeb7ba7680dc61d1d12ce5f589f274` |
+
+v10c 与 v10 只差风格打分：classical / functional 从"全条件满足才给分"改成按证据累加，
+classical 35 → 1,119 条、functional 838 → 1,880 条；其余字段逐条比对零差异。
+`boundaries.pickup_length` 同时加了"首小节时值不满即弱起"的判据（本语料命中 0 条）。
+安装包 `HarmonyContinuation-0.14.1-Setup.exe`。
+
+只读副本：`data/library/factory-v10c.db`。
+
+## v10（2026-11-18，上一版）
 
 | 项 | 值 |
 |---|---|

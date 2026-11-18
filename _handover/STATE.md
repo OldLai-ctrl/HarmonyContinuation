@@ -740,3 +740,10 @@ songs=838 tokens=86009 phrases=3735 short=450 duplicate=9017 no_style=0 silent_b
   `cmake -S . -B build-tools -DHC_FACTORY_LIBRARY_VERSION=8` + `MSBuild build-tools/HarmonyContinuation.sln /t:factory_v6_compiler`
   单独编一个即可。
 - 坑：`ctest` 需要 `TEMP`/`TMP` 指到工作区，`%TEMP%` 在本沙箱不可建目录。
+
+## 第 10 步：v10c / 0.14.1（2026-11-18）
+
+风格打分多维化（classical 1,119、functional 1,880），弱起判据加"首小节时值不满"（命中 0 条）。
+库 `factory-bb-v10c.db` sha256 `2de2605f…89f274`，包 `HarmonyContinuation-0.14.1-Setup.exe`
+sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
+下一步：架构评审（用户要求）→ 大优化。
