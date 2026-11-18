@@ -315,9 +315,9 @@ DiminishedInsertionDiagnostic evaluateDiminishedPassingInsertion(
     return d;
 }
 
-RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
-                                         const RecommendationRequest& request, const RecommendationWeights& w,
-                                         const RecommendationSet* exactBase) {
+static RecommendationSet recommendContinuationsCore(const MatchQuery& query, const CandidateIndex& index,
+                                                   const RecommendationRequest& request, const RecommendationWeights& w,
+                                                   const RecommendationSet* exactBase) {
     RecommendationSet result;
     result.retrievalTimingMode=query.retrievalTimingMode;
     result.phase3aEnabled=w.diminishedPassingInsertionException;
@@ -615,7 +615,10 @@ RecommendationSet recommendContinuations(const MatchQuery& query, const Candidat
     };
     result.stats.distinct=distinct.size();
     for (auto& [identity,candidate]:distinct) {
-        if (!candidate.baseQualified) { mark(candidate,"minimum_score"); continue; }
+        if (!candidate.baseQualified) {
+            result.stats.maxRejectedEligibility = std::max(result.stats.maxRejectedEligibility, candidate.eligibilityScore);
+            result.stats.maxRejectedMatch = std::max(result.stats.maxRejectedMatch, candidate.matchSimilarity);
+            mark(candidate,"minimum_score"); continue; }
         ++result.stats.scorePassed;
         auto& home = result.groups[groupIndex(candidate.intent)];
         home.push_back(std::move(candidate));
@@ -679,4 +682,27 @@ const char* cadenceName(CadenceType value) noexcept {
         case CadenceType::Unknown: return "unknown"; default: return "none";
     }
 }
+RecommendationSet recommendContinuations(const MatchQuery& query, const CandidateIndex& index,
+                                         const RecommendationRequest& request, const RecommendationWeights& w,
+                                         const RecommendationSet* exactBase) {
+    auto result = recommendContinuationsCore(query, index, request, w, exactBase);
+    const auto empty = std::all_of(result.groups.begin(), result.groups.end(),
+                                   [](const auto& group) { return group.empty(); });
+    if (!empty || query.source.empty()) return result;
+    if (std::getenv("HC_NO_RELAX")) return result;
+    // Near misses: a five-or-six chord input regularly tops out just under the
+    // qualification floor. Re-run once with a lower floor instead of showing
+    // four empty columns; callers mark the set as relaxed.
+    auto relaxed = w;
+    relaxed.minimumMatch = std::min(w.minimumMatch, 0.45f);
+    relaxed.minimumScore = std::min(w.minimumScore, 45.f);
+    auto fallback = recommendContinuationsCore(query, index, request, relaxed, exactBase);
+    if (std::any_of(fallback.groups.begin(), fallback.groups.end(),
+                    [](const auto& group) { return !group.empty(); })) {
+        fallback.relaxedFallback = true;
+        return fallback;
+    }
+    return result;
+}
+
 } // namespace harmony

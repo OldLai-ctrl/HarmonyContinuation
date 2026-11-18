@@ -179,13 +179,19 @@ int main(int argc, char** argv) {
         const harmony::CandidateIndex index(std::move(factory.templates));
         const auto query = harmony::makeMatchQuery(parsed.events, context);
         const auto result = harmony::recommendContinuations(query, index, request);
+        if (result.relaxedFallback) std::cout << "RELAXED\n";
         std::cout << "QUERY\n";
         for (const auto& chord : parsed.events) std::cout << "  " << chord.name << '\n';
         std::cout << "KEY\n";
         for (const auto& key : query.interpretations) std::cout << "  " << harmony::formatKey(key.key.key) << '\n';
         constexpr const char* names[]{"RESOLVE", "DEVELOP", "LOOP", "COLOR"};
         for (std::size_t i = 0; i < 4; ++i) printGroup(names[i], result.groups[i], result.matches, debug);
-        std::cout << "PERF totalMatchMs=" << result.stats.totalMs << " shortlist=" << result.stats.shortlistSize << '\n';
+        std::cout << "PERF totalMatchMs=" << result.stats.totalMs << " shortlist=" << result.stats.shortlistSize
+                  << " analyzed=" << result.stats.analyzed << " aligned=" << result.stats.aligned
+                  << " sim=" << result.stats.similarityPassed << " tail=" << result.stats.tailPassed
+                  << " distinct=" << result.stats.distinct << " score=" << result.stats.scorePassed
+                  << " maxRejElig=" << result.stats.maxRejectedEligibility << " maxRejMatch=" << result.stats.maxRejectedMatch
+                  << '\n';
         return 0;
     } catch (const std::exception& e) { std::cerr << "recommend FAIL: " << e.what() << '\n'; return 1; }
 }

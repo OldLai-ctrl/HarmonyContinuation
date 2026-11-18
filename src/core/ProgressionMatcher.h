@@ -162,6 +162,9 @@ struct MatchWeights {
     float cadentialGapFactor{1.55f};
     float cadentialTonicGapFactor{1.35f};
     float queryTailStructuralFactor{1.85f};
+    // Leading query chords are context: a mismatch there is cheaper than a
+    // mismatch in the two chords the user is actually continuing from.
+    float queryPrefixStructuralFactor{1.0f};
     float templatePrefixSkipCost{0.05f};
     float skeletonWeight{0.68f};
     float fullWeight{0.32f};
@@ -232,6 +235,8 @@ struct MatchRunStats {
     double alignmentMs{};
     double totalMs{};
     std::size_t shortlistSize{};
+    float maxRejectedEligibility{};
+    float maxRejectedMatch{};
 };
 
 MatchQuery makeMatchQuery(const Progression&, const AnalysisContext& = {}, const MatchWeights& = {});

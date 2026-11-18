@@ -240,6 +240,9 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
                    LayerResult* earlierTail = nullptr) {
     if (q.empty() || t.empty()) return {};
     const auto n = q.size(), m = t.size();
+    // Slack for leading context only when the input is longer than a phrase;
+    // short inputs keep the exact-prefix contract.
+    const bool longQuery = n > 4;
     // Select the path by harmony; timing is measured on that path for ranking only.
     std::vector<Cell> dp((n + 1) * (m + 1));
     const auto at = [m, &dp](std::size_t i, std::size_t j) -> Cell& { return dp[i * (m + 1) + j]; };
@@ -248,6 +251,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
     for (std::size_t i = 1; i <= n; ++i) {
         MatchReasonFlags reasons{};
         auto gap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
+        if (longQuery && i + 1 < n) gap *= w.queryPrefixStructuralFactor;
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) gap *= w.queryTailStructuralFactor;
         at(i, 0) = {at(i - 1, 0).cost + gap, 2, 0};
     }
@@ -255,6 +259,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
         MatchReasonFlags reasons{};
         const float pair = at(i - 1, j - 1).cost + pairCost(q[i - 1], t[j - 1], w, reasons, i == n, mode);
         auto insertGap = gapCost(q[i - 1], w, reasons, true, continuousStructure);
+        if (longQuery && i + 1 < n) insertGap *= w.queryPrefixStructuralFactor;
         if (i == n && !hasReason(reasons, MatchReason::EmbellishingInsertion)) insertGap *= w.queryTailStructuralFactor;
         const auto insert = at(i - 1, j).cost + insertGap;
         const auto erase = at(i, j - 1).cost + gapCost(t[j - 1], w, reasons, false, continuousStructure);
@@ -312,6 +317,7 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
                 step.queryIndex = q[i].sourceIndex;
                 step.operation = AlignmentOp::QueryInsertion;
                 step.cost = gapCost(q[i], w, step.reasons, true, continuousStructure);
+                if (longQuery && i + 2 < n) step.cost *= w.queryPrefixStructuralFactor;
                 if (i + 1 == n && !hasReason(step.reasons, MatchReason::EmbellishingInsertion))
                     step.cost *= w.queryTailStructuralFactor;
             } else {

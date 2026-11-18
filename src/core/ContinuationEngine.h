@@ -177,6 +177,9 @@ struct RecommendationSet {
     MatchRunStats stats;
     std::vector<DiminishedInsertionDiagnostic> insertionDiagnostics; // enabled experiment only
     bool abstractChordCompatibility{}; // actual invocation, diagnostic only; never persisted
+    // True when the first pass found nothing and the engine re-ran with a
+    // relaxed qualification floor. UI marks these results as weak matches.
+    bool relaxedFallback{};
     std::size_t contextualExamined{}, contextualQualified{}, transitionExamined{}, transitionQualified{};
     double contextualMs{};
     std::vector<CreativeTrial> creativeTrials;

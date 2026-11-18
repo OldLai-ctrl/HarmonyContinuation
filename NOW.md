@@ -2,6 +2,25 @@
 
 ## 本轮工作与下一步
 
+### 长查询不再空栏：严格失败时放宽兜底（0.14.7，2026-11-18）
+
+第二批第一件：5–6 和弦的完整查询在四栏里全空。
+
+- 度量脚本（工作副本 `_tmp_measure.py`）：从库里取 5–6 和弦的 BB 条目，按事件拼查询，
+  逐条跑 `recommend_cli`，数各类里的 `#N` 行。40 条查询共 160 格。
+- 改前：`空栏 139/160 = 86.9%`、`四栏全空 26/40`；`PERF` 行显示最高被拒资格分 57.95，
+  门槛 60——整个查询只差一点点。
+- 改法：`recommendContinuations` 拆成 `recommendContinuationsCore`（原样）+ 公开包装。
+  严格版四栏全空且有输入时，把 `minimumMatch 0.60→0.45`、`minimumScore 60→45` 再跑一遍；
+  有结果就返回并置 `RecommendationSet::relaxedFallback=true`。`HC_NO_RELAX` 可关掉兜底做 A/B。
+- 改后：`空栏 84/160 = 52.5%`、`四栏全空 3/40`（24 条查询走了兜底）。
+- 另外试过"长查询前缀结构松绑"（`queryPrefixStructuralFactor`，只对 n>4 的前缀打折），
+  对结果无改善且带偏 3 和弦用例，默认值已回到 1.0，字段保留不用。
+- UI：兜底生效时状态行追加"（严格条件下无结果，已放宽匹配）"，避免用户以为匹配质量没变。
+- 诊断：`MatchRunStats` 增加 `maxRejectedEligibility/maxRejectedMatch`，CLI 的 `PERF` 行打印。
+- 包：`HarmonyContinuation-0.14.7-Setup.exe` 5,772,680 B / sha256
+  `ec70c46bf477d3862450372360bd79b3e73d32bca2d2fb2b055939e5739ed72f`；`ctest` 21/21。库未变（v11）。
+
 ### 色彩不再是第四栏：color 变成独立维度（0.14.6，2026-11-18）
 
 用户问"能不能让 color 只判断续写部分、忽略用户输入"，并决定让色彩与收束/发展/循环**非互斥**。

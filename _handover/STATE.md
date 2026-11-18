@@ -801,3 +801,13 @@ sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
 - 包 0.14.6（5,775,427 B / sha256 `21b186bb…9494`）；`ctest` 21/21。
 - 顺带：`CMakeLists.txt` 的 `factory_database` target 全部加 `NOT TARGET` 守卫，
   `build-tools` 重配不再因重名 target 失败。
+
+## 第 16 步：v0.14.7 长查询放宽兜底（2026-11-18）
+
+- `ContinuationEngine`：原入口改名 `recommendContinuationsCore`，新包装在严格结果全空时
+  用 `minimumMatch 0.45` / `minimumScore 45` 重跑并置 `relaxedFallback`；`HC_NO_RELAX` 可关。
+- `RecommendationSet` 加 `relaxedFallback`；`MatchRunStats` 加 `maxRejectedEligibility/maxRejectedMatch`
+  并进 CLI `PERF` 行；`Controller` 在状态行标注"已放宽匹配"。
+- 实测 40 条 5–6 和弦查询：空栏 86.9% → 52.5%，四栏全空 26/40 → 3/40。
+- 前缀结构松绑（`queryPrefixStructuralFactor`）实测无收益，默认值回 1.0。
+- 包 0.14.7（5,772,680 B / sha256 `ec70c46b…d72f`）；`ctest` 21/21。

@@ -282,6 +282,8 @@ void Controller::pollRecommendation() noexcept {
         matchStatus_ = latest->error.empty()
             ? "RECOMMEND：" + std::to_string(matches_.size()) + " 条匹配已计算"
             : "RECOMMEND：" + latest->error;
+        if (latest->error.empty() && activeRecommendations().relaxedFallback)
+            matchStatus_ += "（严格条件下无结果，已放宽匹配）";
         if (view_) {
             view_->setAnalysis(analysis_);
             view_->setMatches(matches_, matchStatus_);
