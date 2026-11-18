@@ -2,6 +2,22 @@
 
 ## 本轮工作与下一步
 
+### 段名修复 v9 与 0.13.0 安装包（2026-11-18）
+
+抽检后用户定："不要设小节限制"，所以没加大节跨度上限。这轮只修 I03 的段名拼串：根因在
+`tools/ingest/billboard.py:156` 存了 `(字母+名, 名)` 元组，`build.py` 再过滤成 `cverseverse`。
+改成纯段名后重跑入库（2,854 个乐句单元），编库 `4,126` 条 / 18,636,800 字节 /
+sha256 `cf7d654e…f243e42`，与 v8 逐条比对 `sequence`/`rhythm`/`intent`/`cadence` 零差异，
+只有段名从 `[cverseverse 3 u1]` 变成 `[verse 3 u1]`。
+
+安装包 `build-installer/output/HarmonyContinuation-0.13.0-Setup.exe`（5,641,000 字节，
+sha256 `84cb8509…0e9fd`）。`ctest` 21/21。构建坑见 `LIBRARY_MANIFEST.md`：
+本机必须 `/p:TrackFileAccess=false /m:1`，`cmake --build` 会静默失败。
+
+下一步：推 GitHub 远端（本会话 HTTPS 被沙箱挡）；BB_0705_00 弱起与 `Dm7–Am–C–Dm7–F–A7`
+零结果仍在 ISSUES。
+
+
 ### 乐句单元入库（I04，2026-11-17）
 
 库里原来存的是整个语料段（中位 9 小节 / 12 和弦），引擎又禁止截断，所以推荐必然长。现在切分放在入库层：

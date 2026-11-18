@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BuildDirectory = 'build-v3-plugin',
     [string]$OutputDirectory = 'build-installer/output',
     [string]$Iscc = 'build-installer/tools/Inno/ISCC.exe',

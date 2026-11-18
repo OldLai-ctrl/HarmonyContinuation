@@ -153,7 +153,10 @@ def parse_lines(text: str):
         marker = re.match(r"^([A-Z])(?:'*)\s*,\s*([A-Za-z0-9 -]+?)\s*,", body)
         if marker:
             groups.extend(flush())
-            section = (marker.group(1) + marker.group(2).strip(), marker.group(2).strip())
+            # The section name is a plain string: storing the letter and the
+            # name as a tuple stringified to "('Cverse', 'verse')" and every
+            # entry label read "[cverseverse 3]" (I03).
+            section = marker.group(2).strip()
             body = body[marker.end():]
         first, last = body.find("|"), body.rfind("|")
         if first < 0 or last <= first:

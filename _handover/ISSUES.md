@@ -136,11 +136,13 @@ warm identity         338.6 ms
   `src/ui/MainView.cpp:1464`（同一模式，用于导出/展示）。所以用户看到的就是 `C → Am → F → G`。
 - 真实语料条目的 `nameZh` 本身也是级数串：
   `BB_0003_00` → `vi vi I I vi vi I I vi vi I I`（手写条目则有文学化名字，如 `City Pop · 紫色回环`）。
-- **附带缺陷（2026-11-16 入库引入，需修）**：`nameEn` 的段名被拼坏——
+- **附带缺陷（2026-11-16 入库引入，2026-11-18 已修，v9）**：`nameEn` 的段名曾被拼坏——
   `BB_0003_01` → `I Don't mind - James Brown [aintrointro 1]`。
-  原因：`tools/ingest/build.py:698` 对 `('a','intro')` 这种 tuple 做
-  `re.sub(r"[^a-z]", "", str(label or "section").lower())`，`str(tuple)` 后只剩字母 → `aintrointro`。
-  应改用单值 `role`（段字母与功能名分开存）。
+  原因：`tools/ingest/billboard.py:156` 把段名存成 `('aintro','intro')` 元组，
+  `tools/ingest/build.py` 再对 label 做 `re.sub(r"[^a-z]", "", str(label or "section").lower())`，
+  `str(tuple)` 后只剩字母 → `aintrointro`。
+  修法：`billboard.py` 改存纯段名（`marker.group(2).strip()`），重跑入库；
+  v9 库 4,126 条，段名形如 `[verse 3 u1]`，与 v8 内容零差异。
 
 **方向（未实施）**
 1. 显示层改三段式：`调性 · 句法角色 · 显著特征`（例：`C 大调 · 主歌起句 · 借用 bVII`），

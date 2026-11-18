@@ -699,3 +699,24 @@ songs=838 tokens=86009 phrases=3735 short=450 duplicate=9017 no_style=0 silent_b
 **续写空间的量化**（这是长度变短的代价）：`q_IV`（C, G 两个和弦）查询下，
 库中留有 ≥2 个和弦续写的条目比例——查 2 个和弦 100%、查 3 个 64%、查 4 个 44%、查 5 个 27%。
 短查询（1–3 和弦）资源充足，长查询（5+）会出现续写几乎为零的条目。
+
+## 第 8 步：I03 段名修复与 0.13.0 安装包（2026-11-18）
+
+用户看抽检表后定："不要设小节限制。没有"明显不像乐句"的条目。试着传到远端并打包吧。" 于是只修段名、不动切分。
+
+- **根因**：`tools/ingest/billboard.py:156` 把段名存成 `(字母+名, 名)` 元组（如 `('Averse','verse')`），
+  `tools/ingest/build.py:1013` 又对 label 做 `re.sub(r"[^a-z]","",str(label).lower())`，`str(tuple)` 只留字母
+  → `cverseverse`。改为直接存纯段名 `marker.group(2).strip()`，VST3 里名字从 `[cverseverse 3 u1]` 变成
+  `[verse 3 u1]`。
+- **重跑入库**：`phrases=2854`，与 v8 同一批（858 首、同一套切分参数）。
+- **编库**：`V9-A PASS schema=2 inherited=1288 added=2838 total=4126`，18,636,800 字节，
+  sha256 `cf7d654e68b35196c465f92ec26aaf306fcaf2b2c25ef758fb3862f03f243e42`。
+  与 v8 逐条比对 `id`/`sequence`/`rhythm`/`intent`/`cadence`：**0 条差异**，只有段名和体积变了。
+- **构建**：`cmake --build` 在本机静默失败（MSBuild 文件跟踪 `TRK0002`/`MSB6006`，CL.exe 退 2），
+  必须 `MSBuild.exe HarmonyContinuation.sln /p:Configuration=Release /m:1 /nodeReuse:false /p:TrackFileAccess=false`。
+  细节写进 `LIBRARY_MANIFEST.md` 的"本机构建环境注意"。`ctest -C Release` 21/21（22.94 s）。
+- **打包**：`tools/build-installer.ps1` 原为无 BOM UTF-8，PowerShell 5.1 直接语法错，已加 BOM。
+  产物 `build-installer/output/HarmonyContinuation-0.13.0-Setup.exe`，5,641,000 字节，
+  sha256 `84cb8509463caeb27646b3fb7cf0367583d0740072ca25e1e007d47b8c00e9fd`。
+- **未做**：推 GitHub 远端（本会话 HTTPS 被沙箱挡在证书通道，见 ISSUES/待办）；BB_0705_00 弱起、
+  `Dm7–Am–C–Dm7–F–A7` 零结果仍在 ISSUES。
