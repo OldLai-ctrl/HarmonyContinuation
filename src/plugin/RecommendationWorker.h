@@ -64,5 +64,11 @@ private:
     std::optional<Task> pending_;
     std::optional<WorkerResult> ready_;
     bool reloadLibrary_{};
+    // Factory templates survive user-library invalidation: saving a user phrase
+    // must not re-read and re-hash the 19 MB factory database.
+    std::vector<ProgressionTemplate> cachedFactory_;
+    int cachedFactoryVersion_{};
+    std::string cachedFactorySha256_;
+    std::size_t cachedFactoryCount_{};
 };
 } // namespace harmony::plugin

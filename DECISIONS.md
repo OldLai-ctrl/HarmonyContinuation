@@ -538,3 +538,12 @@ develop + colorScore 0.9（reason "legacy"）。
 切点必须两侧都被库确认（左侧=某库乐句后缀、右侧=某库乐句前缀），取最短；只单侧成立的是猜测，
 不切。切完用 `makeMatchQuery` 对残端重新分析+构造查询，非空才替换原结果。
 `tools/ingest/ab_concat.py` 是同一规则的 Python 版（留出集：可确认 73%，确认中精确 69%，±1 和弦 86%）。
+
+## D63 · 覆盖罚只决定端点，不进相似度
+
+`minimumMatchedFraction` 的覆盖罚留在端点选择里（同代价时选覆盖更高者），但 `LayerResult.cost`
+必须是原始对齐代价，否则资格门槛读到的是被罚过的分数，长句会被一刀切掉。
+
+## D64 · 保存用户乐句不重读 factory 库
+
+`RecommendationWorker` 缓存 factory 模板、版本与 SHA；`invalidateLibrary()` 只让 user.db 重读并与缓存合并。

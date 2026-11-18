@@ -289,6 +289,9 @@ LayerResult align(const std::vector<MatchEvent>& q, const std::vector<MatchEvent
             end = j;
         }
     }
+    // The coverage penalty only picks the end point; it must not lower the
+    // similarity that the eligibility gate reads.
+    best = at(n, end).cost;
     const auto materialize = [&](std::size_t end, float best) {
         LayerResult out;
         out.cost = best;
@@ -545,7 +548,10 @@ std::vector<MatchResult> matchProgression(const MatchQuery& query, const Candida
                 t.sourceType == "factory";
             const auto full = align(q.full, t.full, w, t.mode, continuousStructure,
                                     recover ? &earlier : nullptr);
-            const auto structural = align(qs, ts, w, t.mode, continuousStructure);
+            // When both sides kept every chord the structural layer would repeat
+            // the same alignment against the same sequences; reuse it.
+            const auto structural = (ts.size() == t.full.size() && qs.size() == q.full.size())
+                ? full : align(qs, ts, w, t.mode, continuousStructure);
             if (!full.pairCount || !structural.pairCount) continue;
             const auto append = [&](const LayerResult& full) {
                 MatchResult r;

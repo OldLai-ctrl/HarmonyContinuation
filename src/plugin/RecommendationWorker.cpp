@@ -179,8 +179,15 @@ void RecommendationWorker::run() {
             reload=reloadLibrary_; reloadLibrary_=false;
         }
         if (reload) {
-            index.reset(); loadError.clear(); factoryCount=0; userCount=0;
-            factoryVersion=0; factorySha256="unavailable";
+            index.reset(); loadError.clear();
+            userCount=0;
+            if (!cachedFactory_.empty()) {
+                factoryCount=cachedFactoryCount_;
+                factoryVersion=cachedFactoryVersion_;
+                factorySha256=cachedFactorySha256_;
+            } else {
+                factoryCount=0; factoryVersion=0; factorySha256="unavailable";
+            }
         }
         WorkerResult result;
         result.generation = task.generation;
@@ -224,35 +231,46 @@ void RecommendationWorker::run() {
             }
             if (task.progression.size() <= maxImportedChordEvents) {
                 if (!index && loadError.empty()) {
-                    auto selectedFactory = library::loadAvailableFactory(
-                        factoryPath_, factoryStore_.value_or(library::factoryStoreDirectory()));
-                    auto& factory = selectedFactory.library;
-                    if (!factory) loadError = "Factory library: " + factory.error;
-                    else {
-                        factoryVersion=factory.libraryVersion;
-                        const auto fileHash=sha256File(selectedFactory.path);
-                        if (!fileHash.error.empty()) {
+                    if (cachedFactory_.empty()) {
+                        auto selectedFactory = library::loadAvailableFactory(
+                            factoryPath_, factoryStore_.value_or(library::factoryStoreDirectory()));
+                        auto& factory = selectedFactory.library;
+                        if (!factory) loadError = "Factory library: " + factory.error;
+                        else {
+                            factoryVersion=factory.libraryVersion;
+                            const auto fileHash=sha256File(selectedFactory.path);
+                            if (!fileHash.error.empty()) {
 #if defined(_WIN32)
-                            loadError = "Factory SHA-256: " + fileHash.error;
+                                loadError = "Factory SHA-256: " + fileHash.error;
 #endif
-                            factorySha256=fileHash.value;
-                        } else factorySha256=fileHash.value;
-                        if (loadError.empty()) {
-                            auto user = library::UserLibrary(userPath_).loadAll();
-                            if (!user) loadError = "User library: " + user.error;
-                            else {
-                                factoryCount=factory.templates.size();
-                                userCount=user.templates.size();
-                                std::unordered_set<TemplateID> ids;
-                                for (const auto& item : factory.templates) ids.insert(item.id);
-                                for (const auto& item : user.templates)
-                                    if (!ids.insert(item.id).second)
-                                        throw std::runtime_error("duplicate factory/user template ID: " + item.id);
-                                factory.templates.insert(factory.templates.end(),
-                                    std::make_move_iterator(user.templates.begin()),
-                                    std::make_move_iterator(user.templates.end()));
-                                index = std::make_unique<CandidateIndex>(std::move(factory.templates));
+                                factorySha256=fileHash.value;
+                            } else factorySha256=fileHash.value;
+                            if (loadError.empty()) {
+                                cachedFactory_=std::move(factory.templates);
+                                cachedFactoryCount_=cachedFactory_.size();
+                                cachedFactoryVersion_=factoryVersion;
+                                cachedFactorySha256_=factorySha256;
                             }
+                        }
+                    }
+                    if (loadError.empty()) {
+                        factoryCount=cachedFactoryCount_;
+                        factoryVersion=cachedFactoryVersion_;
+                        factorySha256=cachedFactorySha256_;
+                        auto user = library::UserLibrary(userPath_).loadAll();
+                        if (!user) loadError = "User library: " + user.error;
+                        else {
+                            userCount=user.templates.size();
+                            std::unordered_set<TemplateID> ids;
+                            std::vector<ProgressionTemplate> merged;
+                            merged.reserve(cachedFactory_.size()+user.templates.size());
+                            for (const auto& item : cachedFactory_) ids.insert(item.id);
+                            merged=cachedFactory_;
+                            for (const auto& item : user.templates)
+                                if (!ids.insert(item.id).second)
+                                    throw std::runtime_error("duplicate factory/user template ID: " + item.id);
+                                else merged.push_back(item);
+                            index = std::make_unique<CandidateIndex>(std::move(merged));
                         }
                     }
                 }

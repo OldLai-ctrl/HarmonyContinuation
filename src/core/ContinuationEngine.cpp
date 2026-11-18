@@ -607,13 +607,36 @@ static RecommendationSet recommendContinuationsCore(const MatchQuery& query, con
             it->second.evidence=std::move(evidence);
         }
     }
+    const auto matchKey=[](const std::string& id,int tonic,int mode,std::size_t start,std::size_t end,std::size_t cont) {
+        return id+"#"+std::to_string(tonic)+"#"+std::to_string(mode)+"#"+std::to_string(start)+"#"+
+            std::to_string(end)+"#"+std::to_string(cont);
+    };
+    using MatchKey=std::string;
+    std::unordered_map<MatchKey,std::vector<std::size_t>> matchIndex;
+    if (result.matches.size()>256) {
+        matchIndex.reserve(result.matches.size());
+        for (std::size_t i=0;i<result.matches.size();++i) {
+            const auto& m=result.matches[i];
+            matchIndex[matchKey(m.templateId,static_cast<int>(m.key.tonic),static_cast<int>(m.key.mode),
+                m.templateMatchStart,m.templateMatchEnd,m.continuationStartIndex)].push_back(i);
+        }
+    }
     const auto mark=[&](const ContinuationCandidate& c,const char* why) {
-        for (auto& m:result.matches)
-            if (std::any_of(c.evidence.begin(),c.evidence.end(),[&](const auto& e) {
-                return e.templateId==m.templateId && e.key.tonic==m.key.tonic && e.key.mode==m.key.mode &&
-                    e.matchStart==m.templateMatchStart && e.matchEnd==m.templateMatchEnd &&
-                    e.continuationStart==m.continuationStartIndex;
-            })) m.disposition=why;
+        if (matchIndex.empty()) {
+            for (auto& m:result.matches)
+                if (std::any_of(c.evidence.begin(),c.evidence.end(),[&](const auto& e) {
+                    return e.templateId==m.templateId && e.key.tonic==m.key.tonic && e.key.mode==m.key.mode &&
+                        e.matchStart==m.templateMatchStart && e.matchEnd==m.templateMatchEnd &&
+                        e.continuationStart==m.continuationStartIndex;
+                })) m.disposition=why;
+            return;
+        }
+        for (const auto& e:c.evidence) {
+            const auto it=matchIndex.find(matchKey(e.templateId,static_cast<int>(e.key.tonic),static_cast<int>(e.key.mode),
+                e.matchStart,e.matchEnd,e.continuationStart));
+            if (it==matchIndex.end()) continue;
+            for (const auto i:it->second) result.matches[i].disposition=why;
+        }
     };
     result.stats.distinct=distinct.size();
     for (auto& [identity,candidate]:distinct) {
