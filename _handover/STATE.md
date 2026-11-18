@@ -722,3 +722,21 @@ songs=838 tokens=86009 phrases=3735 short=450 duplicate=9017 no_style=0 silent_b
   远端 `main` 在 v0.11.0 且与本地是两套无关历史，故推成新分支 `v9-2026-11-18`（未覆盖 main）。
 - **未做**：BB_0705_00 弱起、
   `Dm7–Am–C–Dm7–F–A7` 零结果仍在 ISSUES。
+
+## 第 9 步：意图三分、命名与风格扩类（v10 / 0.14.0，2026-11-18）
+
+用户提三件事：发展栏里全是循环、名字仍是级数、新条目没有十二大类风格。
+
+- `tools/ingest/build.py::classify_phrase` 按"怎么收尾"重排：落主→resolve、落属→resolve/half、
+  周期或末和弦回卷（四/五度、≥3 和弦、≥2 小节）→loop、变化音→color、其余 develop。签名加 `bars`。
+- 新增 `tools/ingest/naming.py`：句式名 → "某进行变式"（前三位相同、编辑距离 ≤2）→ "起句 · 走向 · 收尾"。
+  来源歌名写进 `note`，`aliases` 带上 id 和歌名；两处入库路径（RS200 / Billboard）都接上。
+- 风格：`ProgressionMatcher.h` 加 `Classical=1u<<13`、`Other=1u<<14`（`kAllStyles` 改 15 位），
+  `style_affinity` 加 classical / functional 两条规则。
+- 数据：candidates 2,854；纯级数名 0；句式名 53 / 变式 56 / 生成式 2,745。
+  库 4,126 条 / 18,726,912 字节 / sha256 `d73b41f2…2e532b2`；`ctest` 21/21。
+- 坑：`factory_v6_compiler` 只在 `HC_FACTORY_LIBRARY_VERSION` 为 6/7/8 时生成 target，
+  本机编 9 时用的是旧 exe，遇到新风格名直接 `unknown style`。用
+  `cmake -S . -B build-tools -DHC_FACTORY_LIBRARY_VERSION=8` + `MSBuild build-tools/HarmonyContinuation.sln /t:factory_v6_compiler`
+  单独编一个即可。
+- 坑：`ctest` 需要 `TEMP`/`TMP` 指到工作区，`%TEMP%` 在本沙箱不可建目录。

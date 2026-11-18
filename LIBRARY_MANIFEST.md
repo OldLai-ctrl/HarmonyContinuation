@@ -1,6 +1,22 @@
 # 当前库身份与重建链
 
-## v9（2026-11-18，现行）
+## v10（2026-11-18，现行）
+
+| 项 | 值 |
+|---|---|
+| 条目 | `progressions=4126`（Billboard 2,838 + 手写/继承 1,288） |
+| 版本 | `library_version=9`、`schema_version=2` |
+| 字节 | 18,726,912 |
+| sha256 | `d73b41f2cab13ec59e30a39c738948b5d737fc5c5a5e1b31b6a7150092e532b2` |
+
+v10 改入库层的判定与标签，不动切分：`classify_phrase` 按"怎么收尾"重排（落主/落属→收束，
+周期或回卷→循环，变化音→色彩，其余发展）；新条目用 `tools/ingest/naming.py` 起中文/英文名；
+风格扩到 15 类（新增 classical、other）。BB 2,838 条的意图分布：resolve 1,076 / loop 788 /
+develop 500 / color 490；纯级数名 0 条。
+
+只读副本：`data/library/factory-v10.db`。
+
+## v9（2026-11-18，上一版）
 
 | 项 | 值 |
 |---|---|

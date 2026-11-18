@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import billboard as BB  # noqa: E402
 import boundaries as BD  # noqa: E402
 import chords as C  # noqa: E402
+import naming  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("v8_encoder", ROOT / "data/factory-v8/encode.py")
 v8 = importlib.util.module_from_spec(_spec)
@@ -358,6 +359,15 @@ def features(phrase: list[dict], key: int, mode: str) -> dict:
     dominants = sum(1 for event in phrase if event["quality"] in ("7", "9", "13"))
     inversions = sum(1 for event in phrase if event["bass"] != event["root"])
     total = len(phrase)
+    # A dominant seventh that resolves down a fifth into a degree other than
+    # the tonic is an applied dominant -- the clearest tonal marker the corpus
+    # offers without looking at melody.
+    applied = 0
+    for index in range(total - 1):
+        if phrase[index]["quality"] in ("7", "9", "13") \
+                and offsets[index] != scale[4] \
+                and (offsets[index] - offsets[index + 1]) % 12 == 5:
+            applied += 1
     return {
         "n": total,
         "diatonic": diatonic / total,
@@ -369,6 +379,9 @@ def features(phrase: list[dict], key: int, mode: str) -> dict:
         "has_major_four": mode == "minor" and 5 in offsets,
         "has_flat_seven": mode == "major" and 10 in offsets,
         "has_flat_two": mode == "minor" and 1 in offsets,
+        "applied": applied / total,
+        "cadence_tonic": offsets[-1] == 0,
+        "cadence_dominant": offsets[-1] == scale[4],
         "offsets": offsets,
     }
 
@@ -409,7 +422,18 @@ def style_affinity(fs: dict, song: dict) -> dict[str, float]:
         bump("blues", 0.65)
     if fs["inversions"] >= 0.3:
         bump("jazz", 0.65)
-    return {style: weight for style, weight in score.items() if weight > 0}
+    # Classical writing: fully diatonic triads, inversions for voice leading,
+    # cadences on the tonic.  The corpus base still sets the genre; this only
+    # says the phrase also works as functional harmony.
+    if fs["diatonic"] >= 0.95 and fs["sevenths"] == 0 and fs["borrowed"] == 0 \
+            and fs["inversions"] >= 0.25:
+        bump("classical", 0.55)
+    if fs["cadence_tonic"] and fs["sevenths"] <= 0.4:
+        bump("functional", 0.6)
+    score = {style: weight for style, weight in score.items() if weight > 0}
+    if not score:
+        score["other"] = 0.6
+    return score
 
 
 # ---------------------------------------------------------------- encode
@@ -562,15 +586,23 @@ def _periodic(tokens):
     return False
 
 
-def classify_phrase(tokens, mode):
-    """Derive (intent, cadence) with the same criteria the engine's evaluator certifies.
+def classify_phrase(tokens, mode, bars=1):
+    """Derive (intent, cadence) from what the phrase *does*, not from its spelling.
 
-    The catalogue intent is a prior (see ContinuationEngine: "Only the evaluator can
-    certify actual use"), so a label that the evaluator would reject only costs score
-    and puts the phrase in the wrong column. Every branch below mirrors
-    evaluateIntentCompletion: resolve needs a tonic arrival preceded by 4/5/7,
-    loop needs a real return (periodic block or back to the opening chord),
-    color needs an audible chromatic/diminished marker.
+    The catalogue label is a prior for the engine's own evaluator, so it has to
+    match how a player would use the phrase:
+
+    * loop  -- a cell that repeats itself: an exact period, or a short phrase
+               whose last chord runs back into the first one by a fourth or a
+               fifth (``G-Em-C-D`` returns to ``G`` and is a vamp).  At least
+               three chord changes and two bars, so ``I-V`` does not become a
+               loop by arithmetic alone.
+    * resolve -- settles on the tonic (V/IV/VII -> I) *or* on the dominant
+               (half cadence).  "收束到属/主" is the user's definition.
+    * color -- chromatic, borrowed or diminished writing that neither closes
+               nor repeats.
+    * develop -- everything that keeps moving: stops on a middle function,
+               deceptive cadence, secondary-dominant chains.
     """
     parsed = [_parse_token(token) for token in tokens]
     if not parsed or any(item is None for item in parsed):
@@ -584,14 +616,15 @@ def classify_phrase(tokens, mode):
         previous = parsed[-2][0]
         cadence = "authentic" if previous == 5 else "plagal" if previous == 4 else "modal"
         return "resolve", cadence
-    if len(parsed) >= 4 and tokens[-1] == tokens[0]:
+    if last[0] == 5 and last[1] == 0:
+        return "resolve", "half"
+    if len(parsed) >= 3 and bars >= 2 and len(parsed) <= 8 \
+            and (first[0] - last[0]) % 7 in (3, 4):
         return "loop", "loop_closure"
     if any(token[1] != 0 or "dim" in token[3] or "aug" in token[3] for token in parsed):
         return "color", "none"
     if len(parsed) >= 2 and parsed[-2][0] == 5 and last[0] == 6 and last[1] == 0:
         return "develop", "deceptive"
-    if last[0] == 5 and last[1] == 0:
-        return "develop", "half"
     return "develop", "none"
 
 
@@ -612,12 +645,12 @@ def encode(row: dict) -> dict:
                           quality=FAMILIES[match["quality"]]))
     v8.validate_projection(row["id"], tonic, mode, full, events, raw)
     tokens = [v8.sequence_token(item) for item in full]
-    intent, cadence = classify_phrase(tokens, mode)
+    intent, cadence = classify_phrase(tokens, mode, len(row["bars"].split("|")))
     tags = [f"ingest-{row['source_type']}"]
     built_in = [intent, f"common-{mode}"]
     encoded = dict(id=row["id"], name=row["name_zh"], nameZh=row["name_zh"], nameEn=row["name_en"],
-                   aliases=row["id"], builtInTags=",".join(built_in), techniques="",
-                   complexityLevel="basic", description=row["name_en"], note="",
+                   aliases=row.get("aliases") or row["id"], builtInTags=",".join(built_in), techniques="",
+                   complexityLevel="basic", description=row["name_en"], note=row.get("note", ""),
                    mode=mode, sequence=" ".join(v8.sequence_token(item) for item in full),
                    rhythm=" ".join(str(item["durationQN"]) for item in full), cadence=cadence,
                    intent=intent, loopable=intent == "loop", styles=row["styles"], tags=",".join(tags),
@@ -716,10 +749,12 @@ def build(corpus: str, sources: Path, out: Path, limit: int | None,
                 suffix = f"_{piece_index}" if len(pieces) > 1 else ""
                 ident = (f"RS_{re.sub(r'[^0-9a-zA-Z]+', '_', song['slug']).upper()}"
                          f"_{index:02d}{suffix}")
+                display_zh, display_en = naming.name_phrase(piece_tokens, song["mode"])
                 rows.append(dict(
                     id=ident,
-                    name_zh=" ".join(roman_token(token) for token in piece_tokens),
-                    name_en=f"{song['title']} - {song['artist']} [{index + 1}{suffix}]",
+                    name_zh=display_zh,
+                    name_en=display_en,
+                    note=f"{song['title']} - {song['artist']} [{index + 1}{suffix}]",
                     mode=song["mode"], meter=song["meter"],
                     bars=bars,
                     styles=",".join(f"{style}:{weight:g}"
@@ -731,7 +766,7 @@ def build(corpus: str, sources: Path, out: Path, limit: int | None,
     tsv = out / "phrases.tsv"
     with tsv.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, delimiter="\t",
-                                fieldnames=["id", "name_zh", "name_en", "mode", "meter", "bars", "styles", "source_type"])
+                                fieldnames=["id", "name_zh", "name_en", "note", "mode", "meter", "bars", "styles", "source_type"])
         writer.writeheader()
         writer.writerows(rows)
     candidates = out / "candidates.json"
@@ -1049,11 +1084,13 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
                         tokens = bars_tokens(chunk, TONIC_OF[song["mode"]],
                                              song["mode"], song["meter"])
                         suffix = f"_{chunk_index}" if chunk_index else ""
+                        display_zh, display_en = naming.name_phrase(tokens, song["mode"])
                         rows.append(dict(
                             id=base + (f"_u{unit_index}" if len(units) > 1 else "") + suffix,
-                            name_zh=" ".join(roman_token(token) for token in tokens),
-                            name_en=f"{song['title']} - {song['artist']} "
-                                    f"[{role} {index + 1}{unit_tag}{suffix}]",
+                            name_zh=display_zh,
+                            name_en=display_en,
+                            note=f"{song['title']} - {song['artist']} "
+                                 f"[{role} {index + 1}{unit_tag}{suffix}]",
                             mode=song["mode"], meter=song["meter"], bars=chunk,
                             styles=",".join(f"{style}:{weight:g}"
                                             for style, weight in sorted(piece_styles.items())),
@@ -1062,7 +1099,7 @@ def build_billboard(sources: Path, out: Path, limit: int | None, split: bool = F
                         stats["phrases"] += 1
     out.mkdir(parents=True, exist_ok=True)
     tsv = out / "phrases.tsv"
-    fields = ["id", "name_zh", "name_en", "mode", "meter", "bars", "styles", "source_type"]
+    fields = ["id", "name_zh", "name_en", "note", "mode", "meter", "bars", "styles", "source_type"]
     with tsv.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, delimiter="\t", fieldnames=fields)
         writer.writeheader()

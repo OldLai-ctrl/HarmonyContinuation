@@ -25,7 +25,8 @@ using StyleFlags = std::uint32_t;
 enum class Style : StyleFlags {
     Pop=1u<<0, Rock=1u<<1, Rnb=1u<<2, Jazz=1u<<3, CityPop=1u<<4, Functional=1u<<5,
     Folk=1u<<6, Electronic=1u<<7, Cinematic=1u<<8, LatinWorld=1u<<9,
-    BluesGospel=1u<<10, Anime=1u<<11, Experimental=1u<<12
+    BluesGospel=1u<<10, Anime=1u<<11, Experimental=1u<<12,
+    Classical=1u<<13, Other=1u<<14
 };
 struct StyleInfo { Style id; std::string_view slug; std::string_view label; };
 inline constexpr StyleInfo kStyleTable[] = {
@@ -34,9 +35,10 @@ inline constexpr StyleInfo kStyleTable[] = {
     {Style::Functional,"functional","Functional"}, {Style::Folk,"folk","Folk"},
     {Style::Electronic,"electronic","Electronic"}, {Style::Cinematic,"cinematic","Cinematic"},
     {Style::LatinWorld,"latin","Latin"}, {Style::BluesGospel,"blues","Blues/Gospel"},
-    {Style::Anime,"anime","ACG"}, {Style::Experimental,"experimental","Experimental"}
+    {Style::Anime,"anime","ACG"}, {Style::Experimental,"experimental","Experimental"},
+    {Style::Classical,"classical","Classical"}, {Style::Other,"other","Other"}
 };
-inline constexpr StyleFlags kAllStyles = (1u << 13) - 1;
+inline constexpr StyleFlags kAllStyles = (1u << 15) - 1;
 inline StyleFlags styleBit(Style s) { return static_cast<StyleFlags>(s); }
 inline std::string_view styleSlug(Style s) {
     for (const auto& i : kStyleTable) if (i.id == s) return i.slug;

@@ -2,6 +2,30 @@
 
 ## 本轮工作与下一步
 
+### 意图三分、命名与风格扩类（v10 / 0.14.0，2026-11-18）
+
+用户提的三件事：发展栏里全是循环、名字仍是级数串、十二大类风格没有落到新入库条目上。
+
+- **意图**：`classify_phrase` 改成先判"怎么收尾"再谈其余——落主音→`resolve`(authentic/plagal/modal)、
+  落属→`resolve`(half)、周期或"末和弦回卷到首和弦（四/五度、≥3 个和弦变化、≥2 小节）"→`loop`、
+  有变化音→`color`、其余 `develop`。BB 2,838 条的分布从 develop 1261 变成
+  `resolve 1076 / loop 788 / develop 500 / color 490`（全库 `resolve 1521 / loop 1122 / develop 821 / color 662`）。
+- **命名**：新增 `tools/ingest/naming.py`。老句式（王道、丸之内、小室、卡农、安达卢西亚、二五一、
+  Just the Two of Us…）优先，其次"某进行变式"（前三个数字相同、编辑距离 ≤2），
+  否则生成式"起句 · 走向 · 收尾"（如 `4级起 · 五度循环 · 回主`）。2,854 条里纯级数名 0 条：
+  句式名 53、变式 56、生成式 2,745。来源歌名/段落移进 `note`（详情面板显示），`nameEn` 是同一套的英文版，
+  库里条目仍可用 `id`/歌名搜到。
+- **风格**：`Style` 从 13 位扩到 15 位（新增 `classical`、`other`，UI 勾选自动多两项）。入库加两条规则：
+  classical（全自然音三和弦、无七和弦、转位 ≥25%）、functional（收在主的终止）；`other` 只给完全无法归类者兜底。
+  新库 classical 35 条、functional 838 条、`other` 0 条。
+- **库**：4,126 条 / 18,726,912 字节 / sha256 `d73b41f2cab13ec59e30a39c738948b5d737fc5c5a5e1b31b6a7150092e532b2`，
+  `library_version=9`、schema 2；只读副本 `data/library/factory-v10.db`。`ctest` 21/21。
+- **本机测试注意**：`ctest` 会往 `%TEMP%` 建目录，本沙箱下报"拒绝访问"会让 5 个用例假失败；
+  跑之前把 `TEMP`/`TMP` 指到工作区（`TEMP=D:/VibeCoding/_tmp_hc`）即可，不是用例本身的问题。
+- **安装包**：`build-installer/output/HarmonyContinuation-0.14.0-Setup.exe`，5,615,690 字节，
+  sha256 `f642619ed2ccc288753493219179083f8c9e6595b8a5bfc602eb12ab583156ec`。
+- **下一步**：远端分支；BB_0705_00 弱起、`Dm7–Am–C–Dm7–F–A7` 零结果仍在 ISSUES。
+
 ### 段名修复 v9 与 0.13.0 安装包（2026-11-18）
 
 抽检后用户定："不要设小节限制"，所以没加大节跨度上限。这轮只修 I03 的段名拼串：根因在
