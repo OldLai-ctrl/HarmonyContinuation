@@ -759,3 +759,12 @@ sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
 - 邻接：`phrase-links.tsv`（prev/next/song/section），段内与跨段都连，给乐句级发展推荐占位。
 - 库 `factory-bb-v10d.db` 4,214 条 / 19,181,568 字节 / sha256 `9e0246e2…3b793c`；`ctest` 21/21。
 - 下一步（仍是第一批）：继承条目幂等重标注、派生 `familyId` 折叠、库版本协商与未知风格位兼容。
+
+## 第 12 步：v0.14.3 向前兼容（2026-11-18）
+
+库版本高于插件时不再拒载。
+
+- `tools/TemplateJson.cpp`：未知风格名从"抛错"改成"跳过"，删掉 `styleFromName`。
+- `src/library/LibraryStore.cpp`：已装库版本高于内置版本时给 `warning`，库照常返回。
+- `tests/ContinuationEngineTests.cpp`：原断言"拒绝未知风格"改成"新库可加载 + 未知风格位被丢掉"。
+- `ctest` 21/21（24.75 s）。库未变（仍是 v10d）。

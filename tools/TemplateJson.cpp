@@ -48,10 +48,6 @@ struct Input {
         at = static_cast<std::size_t>(parsed.ptr - text.data()); return result;
     }
 };
-Style styleFromName(std::string_view name) {
-    if (const auto parsed=styleFromSlug(name)) return *parsed;
-    throw std::runtime_error("unknown style: " + std::string(name));
-}
 PhraseIntent intentFromName(std::string_view name) {
     if (name.empty() || name == "neutral") return PhraseIntent::Neutral;
     if (name == "resolve" || name == "cadence") return PhraseIntent::Resolve;
@@ -313,7 +309,11 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
             }
             for (const auto& part : split(stylesText, ',')) {
                 const auto colon = part.find(':');
-                const auto style = styleFromName(std::string_view(part).substr(0, colon));
+                // A newer library may name styles this build does not know yet.
+                // Ignoring the name keeps the rest of the entry usable instead of
+                // rejecting the whole library (forward compatibility).
+                const auto style = styleFromSlug(std::string_view(part).substr(0, colon));
+                if (!style) continue;
                 float weight = 1.f;
                 if (colon != std::string::npos) {
                     const auto value = std::string_view(part).substr(colon + 1);
@@ -321,8 +321,8 @@ JsonTemplates parseTemplateJson(std::string_view text, bool requireFactoryMetada
                     if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size() ||
                         !std::isfinite(weight) || weight <= 0.f || weight > 1.f) throw std::runtime_error("invalid style weight");
                 }
-                if (item.styles & static_cast<StyleFlags>(style)) throw std::runtime_error("duplicate style");
-                item.styles |= static_cast<StyleFlags>(style); item.styleWeights.emplace_back(style, weight);
+                if (item.styles & static_cast<StyleFlags>(*style)) throw std::runtime_error("duplicate style");
+                item.styles |= static_cast<StyleFlags>(*style); item.styleWeights.emplace_back(*style, weight);
             }
             item.tags = split(tagsText, ',');
             item.aliases = split(aliasesText, ',');

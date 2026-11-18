@@ -95,6 +95,14 @@ FactorySelection loadAvailableFactory(const std::filesystem::path& bundled,const
             if (!result.library || result.library.libraryVersion!=version)
                 throw std::runtime_error("installed library invalid: "+result.library.error);
 #if defined(HC_BUNDLED_FACTORY_VERSION)
+            // A newer library stays usable: unknown styles are dropped while loading,
+            // so the user gets the entries this build understands instead of an error.
+            if (result.library.libraryVersion > HC_BUNDLED_FACTORY_VERSION)
+                result.warning = "library v" + std::to_string(result.library.libraryVersion) +
+                                 " is newer than this plugin (v" + std::to_string(HC_BUNDLED_FACTORY_VERSION) +
+                                 "); unknown style names are ignored";
+#endif
+#if defined(HC_BUNDLED_FACTORY_VERSION)
             // Development builds use their own newer versioned bundle without
             // activating or overwriting the production ProgramData library.
             if(version<HC_BUNDLED_FACTORY_VERSION){auto development=loadFactory(bundled);

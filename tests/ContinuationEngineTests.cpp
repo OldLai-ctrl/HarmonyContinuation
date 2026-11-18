@@ -193,8 +193,11 @@ int main() {
         });
     }),"unified retrieval retains guarded directional extension compatibility");
     check(makeMatchQuery(a).interpretations.size() >= 2, "P ambiguous key interpretations retained");
-    check(!dev::parseTemplateJson(R"([{"id":"bad","mode":"major","sequence":"I V","styles":"unknown:1"}])"),
-          "factory rejects unknown style");
+    const auto newerLibrary = dev::parseTemplateJson(
+        R"([{"id":"future","mode":"major","sequence":"I V","styles":"unknown:1,pop:0.9"}])");
+    check(newerLibrary && newerLibrary.templates.size() == 1 &&
+              newerLibrary.templates.front().styles == styleBit(Style::Pop),
+          "a library from a newer version loads; unknown style names are ignored");
     check(!dev::parseTemplateJson(R"([{"id":"bad","id":"again","mode":"major","sequence":"I V"}])"),
           "duplicate JSON field rejected");
     check(!dev::parseTemplateJson(R"([{"id":"bad","mode":"major","sequence":"I V"}])", true),
