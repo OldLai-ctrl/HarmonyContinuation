@@ -538,6 +538,7 @@ void MainView::setLibrary(std::vector<ProgressionTemplate> f,std::vector<Progres
         wishFactoryIdentity_ = std::move(identity);
     }
     factory_=std::move(f); user_=std::move(u); libraryError_=std::move(e);
+    ++libraryStamp_;
     if (factoryChanged) invalidateWishWorkspace();
     invalid();
 }
@@ -953,6 +954,17 @@ std::string libraryFamilyKey(const ProgressionTemplate& item) {
 }
 }
 std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
+    std::string key;
+    key.reserve(128);
+    key+=std::to_string(libraryStamp_); key+='|';
+    key+=std::to_string(libraryStyleMask_); key+='|';
+    key+=libraryIntent_?std::to_string(static_cast<int>(*libraryIntent_)):"-"; key+='|';
+    key+=libraryMode_?std::to_string(static_cast<int>(*libraryMode_)):"-"; key+='|';
+    key+=std::to_string(librarySource_); key+='|';
+    key+=libraryComplexity_?std::to_string(static_cast<int>(*libraryComplexity_)):"-"; key+='|';
+    key+=libraryFavoriteOnly_?'1':'0'; key+='|';
+    key+=libraryTechnique_; key+='|'; key+=librarySearch_;
+    if (key==libraryCacheKey_ && libraryCacheStamp_!=~0ull) { libraryFoldCounts_=libraryCacheFoldCounts_; return libraryCacheRows_; }
     std::vector<std::pair<bool,std::size_t>> out;
     libraryFoldCounts_.clear();
     std::unordered_map<std::string,std::size_t> familySlot;
@@ -986,7 +998,10 @@ std::vector<std::pair<bool,std::size_t>> MainView::filteredLibrary() const {
             libraryFoldCounts_.push_back(1);
         }
     };
-    append(factory_,true); append(user_,false); return out;
+    append(factory_,true); append(user_,false);
+    libraryCacheKey_=std::move(key); libraryCacheStamp_=1; libraryCacheRows_=out;
+    libraryCacheFoldCounts_=libraryFoldCounts_;
+    return out;
 }
 void MainView::drawRect(CDrawContext* dc,const CRect& update) {
     refreshLayout();
@@ -1935,9 +1950,15 @@ void MainView::drawResponsiveInspector(CDrawContext* dc) {
         add(t("inspector.prior")+"  "+fixed(item->priorWeight,2),muted);
         std::string tags;for(const auto& tag:item->tags){if(!tags.empty())tags+=", ";tags+=tag;}add(t("form.tags")+"  "+tags,muted);
         if(!item->note.empty())add(t("form.note")+"  "+item->note,muted);
-        std::size_t nearCount{};for(const auto& other:factory_)if(other.id!=item->id&&
-            other.fingerprint.skeletonDegrees==item->fingerprint.skeletonDegrees&&
-            other.fingerprint.rhythmShape==item->fingerprint.rhythmShape)++nearCount;
+        if(nearDuplicateStamp_!=libraryStamp_){nearDuplicateCache_.clear();nearDuplicateStamp_=libraryStamp_;}
+        auto nearIt=nearDuplicateCache_.find(item->id);
+        if(nearIt==nearDuplicateCache_.end()){
+            std::size_t nearCount{};for(const auto& other:factory_)if(other.id!=item->id&&
+                other.fingerprint.skeletonDegrees==item->fingerprint.skeletonDegrees&&
+                other.fingerprint.rhythmShape==item->fingerprint.rhythmShape)++nearCount;
+            nearIt=nearDuplicateCache_.emplace(item->id,nearCount).first;
+        }
+        const std::size_t nearCount=nearIt->second;
         add(t("inspector.nearDuplicate")+"  "+std::to_string(nearCount),muted);
     } else if(selectedChord_&&*selectedChord_<analysis_.full.size()) {
         const auto& c=state_.imported.events[*selectedChord_];const auto& a=analysis_.full[*selectedChord_];

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.14.12 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.14.13 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "Versioned Factory content; published V5/V7 remain frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
@@ -731,3 +731,11 @@ if(WIN32)
  endforeach()
 endif()
 
+
+# Every test here finishes in seconds; a hang used to consume the whole CI budget.
+if(BUILD_TESTING)
+    get_property(_hc_tests DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY TESTS)
+    if(_hc_tests)
+        set_tests_properties(${_hc_tests} PROPERTIES TIMEOUT 300 LABELS "harmony")
+    endif()
+endif()

@@ -1,0 +1,38 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base", "hidden": true,
+      "generator": "Visual Studio 17 2022", "architecture": "x64",
+      "cacheVariables": { "HC_BUILD_PLUGIN": "OFF" }
+    },
+    {
+      "name": "windows-x64", "displayName": "Windows x64, core + tests only",
+      "inherits": "base", "binaryDir": "${sourceDir}/build-core"
+    },
+    {
+      "name": "windows-x64-plugin", "displayName": "Windows x64 with VST3 plugin",
+      "inherits": "base", "binaryDir": "${sourceDir}/build",
+      "cacheVariables": { "HC_BUILD_PLUGIN": "ON" }
+    },
+    {
+      "name": "windows-x64-library", "displayName": "Windows x64 with the prebuilt v11 library",
+      "inherits": "windows-x64-plugin",
+      "cacheVariables": {
+        "HC_FACTORY_LIBRARY_VERSION": "11",
+        "HC_FACTORY_PREBUILT_DB": "${sourceDir}/data/library/factory-lib11.db",
+        "HC_FACTORY_PREBUILT_HCA": "$env{HC_FACTORY_HCA}"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "core-release", "configurePreset": "windows-x64", "configuration": "Release" },
+    { "name": "plugin-release", "configurePreset": "windows-x64-plugin", "configuration": "Release" },
+    { "name": "library-release", "configurePreset": "windows-x64-library", "configuration": "Release" }
+  ],
+  "testPresets": [
+    { "name": "core-release", "configurePreset": "windows-x64", "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "plugin-release", "configurePreset": "windows-x64-plugin", "configuration": "Release", "output": { "outputOnFailure": true } }
+  ]
+}

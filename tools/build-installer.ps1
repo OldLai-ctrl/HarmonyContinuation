@@ -1,9 +1,9 @@
-﻿param(
-    [string]$BuildDirectory = 'build-v3-plugin',
+﻿﻿param(
+    [string]$BuildDirectory = 'build',
     [string]$OutputDirectory = 'build-installer/output',
-    [string]$Iscc = 'build-installer/tools/Inno/ISCC.exe',
+    [string]$Iscc = 'D:/VibeCoding/_tools/InnoSetup-6.7.4/ISCC.exe',
     [string]$RuntimeDirectory = '',
-    [string]$FactoryDatabase = '',
+    [string]$FactoryDatabase = 'build/factory.db',
     [string]$TestRoot = '',
     [string]$TestSuffix = '-IsolatedTest',
     [switch]$LibraryOnly

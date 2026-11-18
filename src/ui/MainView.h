@@ -276,6 +276,15 @@ private:
     std::optional<std::pair<std::size_t,std::size_t>> selectedEnrichment_;
     std::optional<std::pair<bool,std::size_t>> selectedLibrary_;
     mutable std::vector<std::size_t> libraryFoldCounts_;
+    // Kept between paints: the library tab used to re-filter all 4,126 rows on
+    // every frame. Any filter or library change bumps the stamp and misses.
+    mutable unsigned long long libraryStamp_{};
+    mutable std::string libraryCacheKey_;
+    mutable unsigned long long libraryCacheStamp_{~0ull};
+    mutable std::vector<std::pair<bool,std::size_t>> libraryCacheRows_;
+    mutable std::vector<std::size_t> libraryCacheFoldCounts_;
+    mutable unsigned long long nearDuplicateStamp_{~0ull};
+    mutable std::unordered_map<std::string,std::size_t> nearDuplicateCache_;
     std::size_t libraryPage_{};
     StyleFlags libraryStyleMask_{};
     std::optional<PhraseIntent> libraryIntent_;
