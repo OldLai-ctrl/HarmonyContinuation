@@ -52,6 +52,9 @@ public:
     void pollRecommendation() noexcept;
     void setRecommendationPreferences(harmony::StyleFlags, std::optional<harmony::PhraseIntent>) noexcept;
     void applySessionState(const harmony::session::PluginSessionState&) noexcept;
+    // Tells the host the project has unsaved musical changes. UI-only changes
+    // (zoom, scrolling, which tab is open) must not reach this.
+    void markProjectDirty() noexcept;
     std::string saveRecommendation(const harmony::ContinuationCandidate&, const harmony::session::SaveMetadata&) noexcept;
     std::string updateUserProgression(const harmony::ProgressionTemplate&) noexcept;
     std::string deleteUserProgression(const std::string&) noexcept;

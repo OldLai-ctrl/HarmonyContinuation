@@ -329,9 +329,23 @@ bool Controller::currentCandidate(const harmony::enrichment::EnrichmentCandidate
         if(current.id==candidate.id&&current.fingerprint==candidate.fingerprint)return true;
     return false;
 }
+void Controller::markProjectDirty() noexcept {
+    try {
+        if (componentHandler2) { componentHandler2->setDirty(true); return; }
+        if (auto* handler = getComponentHandler()) {
+            Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler2> extended(handler);
+            if (extended) extended->setDirty(true);
+        }
+    } catch (...) {}
+}
+
 void Controller::applySessionState(const harmony::session::PluginSessionState& next) noexcept {
     try {
         const auto old=sessionState_;
+        // Only musical state dirties the project. UI geometry, zoom, scroll and
+        // navigation arrive through the same callback and used to be saved too.
+        const bool musicalChange = harmony::session::recomputeScope(old, next) != harmony::session::RecomputeScope::None ||
+            old.pinnedCandidateIds != next.pinnedCandidateIds;
         const auto recompute=harmony::session::recomputeScope(old,next);
         const auto keyChanged=recompute==harmony::session::RecomputeScope::Analysis;
         if (recompute!=harmony::session::RecomputeScope::None) stopPreview();
@@ -352,6 +366,7 @@ void Controller::applySessionState(const harmony::session::PluginSessionState& n
         }
         if (recompute!=harmony::session::RecomputeScope::None)
             submitRecommendation(recompute==harmony::session::RecomputeScope::Ranking);
+        if (musicalChange) markProjectDirty();
     } catch (...) {}
 }
 
