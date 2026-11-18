@@ -18,25 +18,11 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
-  #if LibraryVersion == "10"
-   #define MinimumPluginVersion "0.14.4"
-  #elif LibraryVersion == "9"
-   #define MinimumPluginVersion "0.12.0"
-  #elif LibraryVersion == "8"
-   #define MinimumPluginVersion "0.11.0-dev.9"
-  #elif LibraryVersion == "7"
-   #define MinimumPluginVersion "0.11.0-dev.6"
-  #elif LibraryVersion == "6"
-  #define MinimumPluginVersion "0.11.0-dev.4"
- #elif LibraryVersion == "5"
-  #define MinimumPluginVersion "0.10.0-dev.12"
- #elif LibraryVersion == "4"
-  #define MinimumPluginVersion "0.10.0-dev.1"
- #else
-  #define MinimumPluginVersion "0.9.0-dev.2"
- #endif
+ ; Historical floors are facts about released packages and are supplied by
+ ; tools/build-installer.ps1; newer libraries fall back to the product itself.
+ #define MinimumPluginVersion ProductVersion
 #endif
-#if LibraryVersion == "6" || LibraryVersion == "7" || LibraryVersion == "8" || LibraryVersion == "9" || LibraryVersion == "10"
+#ifdef AnnotationHash
  #define FactoryWithAnnotation
 #endif
 #ifndef AnnotationHash

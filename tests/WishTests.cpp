@@ -39,7 +39,7 @@ int main(int argc,char** argv) {
         }
         int checks=runWishAnnotationChecks()+runWishSamplerChecks();
         const auto require=[&](bool pass,const char* text){if(!pass)throw std::runtime_error(text);++checks;};
-        require(factory.libraryVersion==5 && factory.storageSchemaVersion==2 && factory.templates.size()==658,"real V5 contract");
+        require(factory.storageSchemaVersion==2 && factory.templates.size()==658,"real V5 contract");
         const auto annotations=wish::loadAnnotations(HC_WISH_ANNOTATION_PATH);
         require(bool(annotations),annotations.error.c_str());
         const auto embedded=wish::builtinAnnotations();

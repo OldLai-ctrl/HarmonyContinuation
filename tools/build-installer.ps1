@@ -106,6 +106,11 @@ if (Test-Path -LiteralPath $legacyDb) { $legacyFactoryHash = (Get-FileHash -Lite
 $setupFileStem = "HarmonyContinuation-$productVersion-Setup"
 $common = @('/Qp',('/DStageDir='+$stage),('/DOutputPath='+$outputPath),('/DProductVersion='+$productVersion),('/DSetupFileStem='+$setupFileStem),('/DLibraryVersion='+$libraryVersion),('/DFactoryHash='+$factoryHash),('/DLegacyFactoryHash='+$legacyFactoryHash))
 $common += '/DFactoryEntryCount='+$factoryEntryCount
+# Library floors for already-published packages; anything newer is readable by
+# the forward compatible reader (D53, 0.14.3), so no per-library edit is needed.
+$publishedFloors = @{ '4'='0.10.0-dev.1'; '5'='0.10.0-dev.12'; '6'='0.11.0-dev.4'; '7'='0.11.0-dev.6'; '8'='0.11.0-dev.9'; '9'='0.12.0' }
+$minimumPluginVersion = if ($publishedFloors.ContainsKey($libraryVersion)) { $publishedFloors[$libraryVersion] } else { '0.14.3' }
+$common += '/DMinimumPluginVersion='+$minimumPluginVersion
 if ([int]$libraryVersion -ge 6) { $common += '/DAnnotationHash='+$annotationHash }
 if ($TestRoot) {
     $common += '/DTestRoot='+(Absolute $TestRoot)

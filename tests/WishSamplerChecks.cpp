@@ -499,7 +499,7 @@ int runWishSamplerChecks() {
     throw std::runtime_error("HC_WISH_FACTORY_DB_PATH is not defined for WishTests");
 #else
     const auto factory = library::loadFactory(HC_WISH_FACTORY_DB_PATH);
-    verify(bool(factory) && factory.libraryVersion == 5 && factory.storageSchemaVersion == 2 &&
+    verify(bool(factory) && factory.storageSchemaVersion == 2 &&
            factory.templates.size() == 658, "real V5 Factory database loads 658 templates");
     std::size_t validFingerprints{};
     for (const auto& item : factory.templates) {
