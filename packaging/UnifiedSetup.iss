@@ -18,7 +18,9 @@
  #define FactoryEntryCount "629"
 #endif
 #ifndef MinimumPluginVersion
-  #if LibraryVersion == "9"
+  #if LibraryVersion == "10"
+   #define MinimumPluginVersion "0.14.4"
+  #elif LibraryVersion == "9"
    #define MinimumPluginVersion "0.12.0"
   #elif LibraryVersion == "8"
    #define MinimumPluginVersion "0.11.0-dev.9"
@@ -34,7 +36,7 @@
   #define MinimumPluginVersion "0.9.0-dev.2"
  #endif
 #endif
-#if LibraryVersion == "6" || LibraryVersion == "7" || LibraryVersion == "8" || LibraryVersion == "9"
+#if LibraryVersion == "6" || LibraryVersion == "7" || LibraryVersion == "8" || LibraryVersion == "9" || LibraryVersion == "10"
  #define FactoryWithAnnotation
 #endif
 #ifndef AnnotationHash

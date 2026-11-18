@@ -2,6 +2,23 @@
 
 ## 本轮工作与下一步
 
+### 风格重标注与库版本抬到 10（0.14.5，2026-11-18）
+
+第一批地基的最后一件：那 272 条一直挂着模板默认风格 `pop:0.55,rock:0.35` 的继承条目，现在按
+自己的和声重新打了分。
+
+- `tools/library_compile/relabel_styles.py`：把 `sequence` 解析回和弦（`_parse_token` 复用入库用的
+  同一套级数解析），跑 `features` + `style_affinity`；`pop:0.55,rock:0.35` 保留为底，证据分只做
+  "加维度"，不把目录原来的流行/摇滚先验抹掉。
+- 结果：272 条全部重标（解析失败 0 条）。相对 v10d，functional +114、classical +129、
+  anime/cinematic 各 +77、folk +43、experimental +23、blues +57；pop、rock 计数不变。
+- 库 `library_version` 9 → 10：内容变了必须抬版本，否则已装 v9 的机器会报"同版本号不同内容"。
+- 为了抬版本改了四处接线：`CMakeLists.txt` 的 version-10 预编译分支（与 9 同构）、
+  进 VST3 包的 `factory.hca` 条件、`WishTests` 读 V5 契约库的条件、`packaging/UnifiedSetup.iss`
+  的 `MinimumPluginVersion`（10 → 0.14.4）与 `FactoryWithAnnotation` 判定。
+- 库身份：4,214 条 / 19,185,664 B / sha256 `db8415e9571244f45e293b88f6e789f3a9cf80fa91789d4d02a434cbd4369f47`。
+- 包：`HarmonyContinuation-0.14.5-Setup.exe` 5,768,958 B / sha256 `0231a83c35f5a405c5b14de67a0d9efd260e04be1042e6a24356ecc16ef7de8e`；`ctest` 21/21。
+
 ### 库列表按骨架折叠（0.14.4，2026-11-18）
 
 用户答复"3，折叠"。

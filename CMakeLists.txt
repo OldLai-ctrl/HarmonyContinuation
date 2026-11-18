@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(HarmonyContinuation VERSION 0.14.4 LANGUAGES C CXX)
+project(HarmonyContinuation VERSION 0.14.5 LANGUAGES C CXX)
 set(HC_PRERELEASE "" CACHE STRING "Product prerelease suffix (empty for an approved release)")
 set(HC_FACTORY_LIBRARY_VERSION 8 CACHE STRING "Versioned Factory content; published V5/V7 remain frozen")
 option(HC_BUILD_FACTORY_V6_EXPERIMENT "Enable the isolated Factory V6 compiler and validation targets" OFF)
@@ -334,21 +334,21 @@ set(HC_FACTORY_ADDITIONS)
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "3")
     list(APPEND HC_FACTORY_ADDITIONS "${CMAKE_CURRENT_SOURCE_DIR}/data/factory-v3")
 endif()
-if(HC_FACTORY_LIBRARY_VERSION STREQUAL "9")
-    # Factory V9 is compiled outside CMake by tools/ingest (RS200 + Billboard 2.0
+if(HC_FACTORY_LIBRARY_VERSION STREQUAL "9" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "10")
+    # Factory V9 and later are compiled outside CMake by tools/ingest (RS200 + Billboard 2.0
     # real-corpus material), so the build stages an existing database instead of
     # recompiling authored JSON. The annotation catalog is not extended for the
     # new entries; the V8 file is carried forward so authored memberships for the
     # legacy ids stay bound.
-    set(HC_FACTORY_PREBUILT_DB "" CACHE FILEPATH "Prebuilt Factory database used when HC_FACTORY_LIBRARY_VERSION is 9")
-    set(HC_FACTORY_PREBUILT_HCA "" CACHE FILEPATH "Prebuilt Factory annotation file used when HC_FACTORY_LIBRARY_VERSION is 9")
+    set(HC_FACTORY_PREBUILT_DB "" CACHE FILEPATH "Prebuilt Factory database used when HC_FACTORY_LIBRARY_VERSION is 9 or later")
+    set(HC_FACTORY_PREBUILT_HCA "" CACHE FILEPATH "Prebuilt Factory annotation file used when HC_FACTORY_LIBRARY_VERSION is 9 or later")
     set(HC_FACTORY_RUNTIME_HCA "${CMAKE_CURRENT_BINARY_DIR}/factory.hca")
     target_compile_definitions(harmony_library PRIVATE HC_BUNDLED_FACTORY_VERSION=${HC_FACTORY_LIBRARY_VERSION})
     if(NOT HC_FACTORY_PREBUILT_DB OR NOT EXISTS "${HC_FACTORY_PREBUILT_DB}")
-        message(FATAL_ERROR "HC_FACTORY_LIBRARY_VERSION 9 requires -DHC_FACTORY_PREBUILT_DB=<compiled factory database>")
+        message(FATAL_ERROR "HC_FACTORY_LIBRARY_VERSION ${HC_FACTORY_LIBRARY_VERSION} requires -DHC_FACTORY_PREBUILT_DB=<compiled factory database>")
     endif()
     if(NOT HC_FACTORY_PREBUILT_HCA OR NOT EXISTS "${HC_FACTORY_PREBUILT_HCA}")
-        message(FATAL_ERROR "HC_FACTORY_LIBRARY_VERSION 9 requires -DHC_FACTORY_PREBUILT_HCA=<factory annotation file>")
+        message(FATAL_ERROR "HC_FACTORY_LIBRARY_VERSION ${HC_FACTORY_LIBRARY_VERSION} requires -DHC_FACTORY_PREBUILT_HCA=<factory annotation file>")
     endif()
     add_custom_command(OUTPUT "${HC_FACTORY_DB}" "${HC_FACTORY_RUNTIME_HCA}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_PREBUILT_DB}" "${HC_FACTORY_DB}"
@@ -386,7 +386,7 @@ add_custom_command(OUTPUT "${HC_FACTORY_DB}"
     DEPENDS db_compiler ${HC_FACTORY_JSON} ${HC_FACTORY_V3_JSON}
     VERBATIM)
 endif()
-if(NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "6" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "7" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "8" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "9")
+if(NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "6" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "7" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "8" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "9" AND NOT HC_FACTORY_LIBRARY_VERSION STREQUAL "10")
     add_custom_target(factory_database ALL DEPENDS "${HC_FACTORY_DB}")
 endif()
 if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR (HC_BUILD_FACTORY_V6_EXPERIMENT AND HC_FACTORY_LIBRARY_VERSION STREQUAL "5"))
@@ -539,7 +539,7 @@ if(HC_BUILD_PLUGIN)
             "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.db"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_ZH_LOCALE}" "${HC_EN_LOCALE}"
             "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "9")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "9" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "10")
         add_custom_command(TARGET HarmonyContinuation POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${HC_FACTORY_RUNTIME_HCA}"
                 "${CMAKE_BINARY_DIR}/VST3/$<CONFIG>/HarmonyContinuation.vst3/Contents/Resources/factory.hca")
@@ -633,7 +633,7 @@ if(BUILD_TESTING)
     # contract must read the V5 database even when the product ships a newer factory.
     # V6/V7/V8 builds emit factory-v5.db as the intermediate step of factory.db.
     set(HC_WISH_FACTORY_DB "${HC_FACTORY_DB}")
-    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "9")
+    if(HC_FACTORY_LIBRARY_VERSION STREQUAL "6" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "7" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "8" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "9" OR HC_FACTORY_LIBRARY_VERSION STREQUAL "10")
         set(HC_WISH_FACTORY_DB "${CMAKE_CURRENT_BINARY_DIR}/factory-v5.db")
     endif()
     target_compile_definitions(WishTests PRIVATE

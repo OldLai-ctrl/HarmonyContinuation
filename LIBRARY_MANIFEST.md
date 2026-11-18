@@ -1,6 +1,29 @@
 # 当前库身份与重建链
 
-## v10d（2026-11-18，现行）
+## v10 / library_version 10（2026-11-18，现行）
+
+| 项 | 值 |
+|---|---|
+| 条目 | `progressions=4214`（Billboard 2,926 + 手写/继承 1,288） |
+| 版本 | `library_version=10`、`schema_version=2` |
+| 字节 | 19,185,664 |
+| sha256 | `db8415e9571244f45e293b88f6e789f3a9cf80fa91789d4d02a434cbd4369f47` |
+
+与 v10d 数据完全一致，只有两处不同：272 条模板默认风格的继承条目按各自和声重打风格分
+（`tools/library_compile/relabel_styles.py`，保留 pop/rock 作底），以及 `library_version`
+从 9 抬到 10（内容变了必须抬版本，见 D56）。只读副本：`data/library/factory-lib10.db`。
+
+重建链：
+
+1. `python tools/ingest/build.py billboard --sources data/library/corpus --out <工作目录> --split-units`
+2. `python tools/library_compile/compile_bb.py data/library/v8_base.db <工作目录>/candidates.json/candidates.json <库>.db <丢弃名单>`
+   （必须用 v8_base 作基线；直接给 C++ 编译会因 16 条同演奏重复而 FAIL）
+3. `python tools/library_compile/relabel_styles.py <库>.db <库>-lib10.db --library-version 10`
+4. `cmake -S . -B build -DHC_FACTORY_LIBRARY_VERSION=10 -DHC_FACTORY_PREBUILT_DB=<库>-lib10.db -DHC_FACTORY_PREBUILT_HCA=_tools/factory-v8-annotations.hca`
+5. `MSBuild build/HarmonyContinuation.sln /p:Configuration=Release /m:1 /nodeReuse:false /p:TrackFileAccess=false`
+6. `powershell -File tools/build-installer.ps1 -BuildDirectory build -OutputDirectory build-installer/output -Iscc _tools/InnoSetup-6.7.4/ISCC.exe -FactoryDatabase build/factory.db`
+
+## v10d（2026-11-18，上一版）
 
 | 项 | 值 |
 |---|---|

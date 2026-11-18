@@ -776,3 +776,14 @@ sha256 `a9599cce…c62a1`，`ctest` 21/21。版本号规则见 DECISIONS D48。
 - 列表行显示代表条目并追加 `×N`；检索/筛选/分页作用在折叠后的行上。
 - v10d：4,214 条 → 3,924 行，隐藏 290 行，最大一族 7 条；`ctest` 21/21。
 - 待办：1,288 条继承条目重标注（等用户确认是否覆盖人工调过的风格权重）。
+
+## 第 14 步：v0.14.5 风格重标注与库版本 10（2026-11-18）
+
+- `tools/library_compile/relabel_styles.py`：把 272 条模板默认风格（`pop:0.55,rock:0.35`）的
+  继承条目按 `sequence` 重算风格，保留 pop/rock 作底、证据分只加维度。
+- 结果：functional +114、classical +129、anime/cinematic 各 +77、folk +43、experimental +23、
+  blues +57；pop/rock 不变。
+- `library_version` 9 → 10；`CMakeLists.txt` 增加 version-10 预编译分支、`factory.hca` 与
+  `WishTests` 的 V5 契约库条件；`UnifiedSetup.iss` 把库 10 映射到 `MinimumPluginVersion 0.14.4`。
+- 库 4,214 条 / 19,185,664 B / sha256 `db8415e9…f47`；包 5,768,958 B / sha256 `0231a83c…e8e`；
+  `ctest` 21/21。
